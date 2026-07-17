@@ -3,7 +3,6 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Media.Imaging;
 using Avalonia.Media;
-using FluentAvalonia.Styling;
 using LibVLCSharp.Avalonia;
 using LibVLCSharp.Shared;
 using Microsoft.Extensions.DependencyInjection;
@@ -24,7 +23,6 @@ public sealed partial class FrontierShellWindow : MainWindow
     private readonly ZzzLauncherMediaService _mediaService;
     private readonly Image _backgroundImage;
     private readonly ContentControl _backgroundVideoHost;
-    private readonly Border _contentSurface;
     private Bitmap? _backgroundBitmap;
     private LibVLC? _libVlc;
     private MediaPlayer? _mediaPlayer;
@@ -48,9 +46,6 @@ public sealed partial class FrontierShellWindow : MainWindow
         _backgroundVideoHost = this.FindControl<ContentControl>("BackgroundVideoHost")
             ?? throw new InvalidOperationException("前卫 Shell 缺少背景视频层。");
         InitializeShell(navigationRegistry, pageLifecycle, navigationService, runRoot);
-        _contentSurface = this.FindControl<Border>("FrontierContentSurface")
-            ?? throw new InvalidOperationException("前卫 Shell 缺少内容表面。");
-        ApplyHighContrastSurface();
         Opened += async (_, _) => await LoadBackgroundSafelyAsync().ConfigureAwait(true);
         Closed += (_, _) =>
         {
@@ -78,10 +73,6 @@ public sealed partial class FrontierShellWindow : MainWindow
 
     private async Task LoadBackgroundAsync()
     {
-        if (IsHighContrast())
-        {
-            return;
-        }
         IReadOnlyList<ZzzLauncherMediaItem> items = await _mediaService.GetDashboardMediaAsync().ConfigureAwait(true);
         ZzzLauncherMediaItem? item = items.FirstOrDefault(media => !string.IsNullOrWhiteSpace(media.LocalPath));
         if (item?.LocalPath is not { } path)
@@ -115,25 +106,6 @@ public sealed partial class FrontierShellWindow : MainWindow
         }
     }
 
-    private void ApplyHighContrastSurface()
-    {
-        if (!IsHighContrast())
-        {
-            return;
-        }
-
-        NavigationControl.Background = Brushes.Black;
-        NavigationControl.Foreground = Brushes.White;
-        _contentSurface.Background = Brushes.Black;
-        _contentSurface.BorderBrush = Brushes.White;
-        _contentSurface.Opacity = 1;
-    }
-
-    private static bool IsHighContrast() =>
-        string.Equals(Environment.GetEnvironmentVariable("ZZZOD_GUI_THEME"), "highcontrast", StringComparison.OrdinalIgnoreCase)
-        || string.Equals(Environment.GetEnvironmentVariable("ZZZOD_GUI_THEME"), "high-contrast", StringComparison.OrdinalIgnoreCase)
-        || Application.Current?.RequestedThemeVariant == FluentAvaloniaTheme.HighContrastTheme
-        || Application.Current?.ActualThemeVariant == FluentAvaloniaTheme.HighContrastTheme;
 
     protected override void OnRouteChanged(object? sender, string routeKey)
     {
