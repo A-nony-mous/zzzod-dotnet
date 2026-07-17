@@ -1,4 +1,5 @@
 using ZzzOd.Gui.Shell;
+using ZzzOd.Gui.Views;
 using Xunit;
 
 namespace ZzzOd.GameLogic.Tests.AppHost;
@@ -56,5 +57,14 @@ public sealed class GuiShellPresetTests
         object? actual = ZzzNavigationIconConverter.Instance.Convert(["regular", "selected", selected], typeof(string), null, null!);
 
         Assert.Equal(expected, actual);
+    }
+
+    [Theory]
+    [InlineData(ZzzGuiShellPreset.Classic, typeof(MainWindow))]
+    [InlineData(ZzzGuiShellPreset.Mixed, typeof(MixedShellWindow))]
+    [InlineData(ZzzGuiShellPreset.Frontier, typeof(FrontierShellWindow))]
+    public void ShellWindowFactory_MapsEachPresetToDedicatedWindow(ZzzGuiShellPreset preset, Type expected)
+    {
+        Assert.Equal(expected, ZzzShellWindowFactory.GetWindowType(preset));
     }
 }

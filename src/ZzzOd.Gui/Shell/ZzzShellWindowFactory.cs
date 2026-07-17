@@ -23,12 +23,14 @@ public sealed class ZzzShellWindowFactory
             throw new InvalidOperationException(resolution.Error);
         }
 
-        return resolution.Preset switch
-        {
-            ZzzGuiShellPreset.Classic => ActivatorUtilities.CreateInstance<MainWindow>(_services),
-            ZzzGuiShellPreset.Mixed => ActivatorUtilities.CreateInstance<MixedShellWindow>(_services),
-            ZzzGuiShellPreset.Frontier => ActivatorUtilities.CreateInstance<FrontierShellWindow>(_services),
-            _ => throw new ArgumentOutOfRangeException(),
-        };
+        return (Window)ActivatorUtilities.CreateInstance(_services, GetWindowType(resolution.Preset));
     }
+
+    internal static Type GetWindowType(ZzzGuiShellPreset preset) => preset switch
+    {
+        ZzzGuiShellPreset.Classic => typeof(MainWindow),
+        ZzzGuiShellPreset.Mixed => typeof(MixedShellWindow),
+        ZzzGuiShellPreset.Frontier => typeof(FrontierShellWindow),
+        _ => throw new ArgumentOutOfRangeException(nameof(preset), preset, "未知 GUI Shell 预设。"),
+    };
 }
