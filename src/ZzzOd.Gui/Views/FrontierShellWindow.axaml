@@ -66,7 +66,8 @@
         </DataTemplate>
       </fa:NavigationView.MenuItemTemplate>
       <fa:NavigationView.Content>
-        <Border Margin="16,44,16,16"
+        <Border x:Name="FrontierContentSurface"
+                Margin="16,44,16,16"
                 Padding="{DynamicResource ZzzFrontierContentPadding}"
                 Background="{DynamicResource ZzzFrontierContentSurfaceBrush}"
                 TextElement.Foreground="#FFF5F7FA"

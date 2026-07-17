@@ -38,6 +38,8 @@ public partial class MainWindow : Window
 
     protected virtual string ToastBarControlName => "ToastBar";
 
+    protected NavigationView NavigationControl => _navigation;
+
     public MainWindow()
     {
         throw new InvalidOperationException("MainWindow 必须通过应用宿主的依赖注入创建。");
