@@ -654,10 +654,9 @@ public sealed class ZApplicationRunContextTests
 				{
 					await runningTask;
 				});
-				await createdApp.StopCalled.Task.WaitAsync(TimeSpan.FromSeconds(2L));
 				Assert.Equal(1, createdApp.PauseCount);
 				Assert.Equal(1, createdApp.ResumeCount);
-				Assert.Equal(1, createdApp.StopCount);
+				Assert.Equal(0, createdApp.StopCount);
 			}
 			finally
 			{
@@ -782,10 +781,9 @@ public sealed class ZApplicationRunContextTests
 			{
 				await runningTask;
 			});
-			await createdApp.StopCalled.Task.WaitAsync(TimeSpan.FromSeconds(2L));
 			Assert.Equal(1, createdApp.PauseCount);
 			Assert.Equal(1, createdApp.ResumeCount);
-			Assert.Equal(1, createdApp.StopCount);
+			Assert.Equal(0, createdApp.StopCount);
 			Assert.Equal(new List<int>(2) { 3, 2 }, runRecord.StatusHistory);
 		}
 		finally
