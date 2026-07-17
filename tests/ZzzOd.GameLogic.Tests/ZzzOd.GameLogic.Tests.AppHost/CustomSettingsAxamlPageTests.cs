@@ -34,6 +34,9 @@ public sealed class CustomSettingsAxamlPageTests
 		Assert.Contains("Language changed successfully. Please restart the application for changes to take effect.", actualString, StringComparison.Ordinal);
 		Assert.Contains("Restart Now", actualString, StringComparison.Ordinal);
 		Assert.Contains("Restart Later", actualString, StringComparison.Ordinal);
+		Assert.Contains("!Save(ZzzGuiShellPresetService.ConfigKey, option.Value)", actualString, StringComparison.Ordinal);
+		Assert.Contains("ConfigureShellRestartDialog(dialog)", actualString, StringComparison.Ordinal);
+		Assert.Contains("ContentDialogResult.Primary", actualString, StringComparison.Ordinal);
 		Assert.Contains("SHA256.HashData", actualString, StringComparison.Ordinal);
 		Assert.Contains("RequiredBool(current.Value.Values, \"custom_banner\")", actualString, StringComparison.Ordinal);
 		Assert.DoesNotContain("[\"custom_banner\"] = true", actualString, StringComparison.Ordinal);
