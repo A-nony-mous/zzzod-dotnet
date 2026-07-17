@@ -3,6 +3,7 @@
                         xmlns:fa="using:FluentAvalonia.UI.Controls"
                         xmlns:local="using:ZzzOd.Gui.Views"
                         xmlns:shell="using:ZzzOd.Gui.Shell"
+                        x:Class="ZzzOd.Gui.Views.MixedShellWindow"
                         x:DataType="shell:ZzzShellViewModel"
                         Title="{Binding WindowTitle}"
                         Width="1140"
@@ -35,15 +36,18 @@
       <Setter Property="BorderBrush" Value="{DynamicResource SystemAccentColor}" />
       <Setter Property="BorderThickness" Value="1" />
     </Style>
-    <Style Selector="fa|SettingsExpanderItem">
-      <Setter Property="Margin" Value="{DynamicResource ZzzMixedControlSpacing}" />
+    <Style Selector="fa|NavigationViewItem">
+      <Setter Property="Foreground" Value="#FFF5F7FA" />
     </Style>
-    <Style Selector="fa|TabViewItem">
-      <Setter Property="Margin" Value="0,0,4,0" />
+    <Style Selector="fa|NavigationViewItem TextBlock">
+      <Setter Property="Foreground" Value="#FFF5F7FA" />
+    </Style>
+    <Style Selector="fa|NavigationViewItem fa|FontIcon">
+      <Setter Property="Foreground" Value="#FFF5F7FA" />
     </Style>
   </Window.Styles>
   <Grid>
-    <fa:NavigationView x:Name="Navigation"
+    <fa:NavigationView x:Name="MixedNavigation"
                        PaneDisplayMode="Left"
                        OpenPaneLength="280"
                        CompactPaneLength="48"
@@ -82,20 +86,20 @@
                 BorderBrush="{DynamicResource ZzzMixedContentBorderBrush}"
                 BorderThickness="1"
                 CornerRadius="8">
-          <fa:Frame x:Name="ContentFrame"
+          <fa:Frame x:Name="MixedContentFrame"
                     HorizontalContentAlignment="Stretch"
                     VerticalContentAlignment="Stretch"
                     IsNavigationStackEnabled="False" />
         </Border>
       </fa:NavigationView.Content>
     </fa:NavigationView>
-    <Grid x:Name="TitleBar"
+    <Grid x:Name="MixedTitleBar"
           Height="32"
           Margin="48,0,0,0"
           ColumnDefinitions="Auto,*,Auto"
           ZIndex="10"
           PointerPressed="OnTitleBarPointerPressed">
-      <Image x:Name="TitleBarIcon" Width="18" Height="18" VerticalAlignment="Center" />
+      <Image x:Name="MixedTitleBarIcon" Width="18" Height="18" VerticalAlignment="Center" />
       <TextBlock Grid.Column="1" Margin="8,0" VerticalAlignment="Center" Text="{Binding WindowTitle}" />
       <StackPanel Grid.Column="2" Orientation="Horizontal">
         <Button Click="OnMinimizeClicked"><fa:FontIcon Glyph="&#xE921;" /></Button>
@@ -103,7 +107,7 @@
         <Button Click="OnCloseClicked"><fa:FontIcon Glyph="&#xE8BB;" /></Button>
       </StackPanel>
     </Grid>
-    <fa:InfoBar x:Name="ToastBar"
+    <fa:InfoBar x:Name="MixedToastBar"
                 Margin="0,40,24,0"
                 HorizontalAlignment="Right"
                 VerticalAlignment="Top"

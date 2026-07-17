@@ -8,6 +8,7 @@
     <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
     <CheckForOverflowUnderflow>False</CheckForOverflowUnderflow>
     <RootNamespace />
+    <NoWarn>$(NoWarn);CS0108</NoWarn>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="LibVLCSharp.Avalonia" Version="3.10.0" />

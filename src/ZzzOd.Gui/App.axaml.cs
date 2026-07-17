@@ -46,7 +46,16 @@ public sealed partial class App : Application
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
             desktop.ShutdownMode = ShutdownMode.OnExplicitShutdown;
-            Window mainWindow = Host.Services.GetRequiredService<ZzzShellWindowFactory>().Create();
+            Window mainWindow;
+            try
+            {
+                mainWindow = Host.Services.GetRequiredService<ZzzShellWindowFactory>().Create();
+            }
+            catch (Exception exception)
+            {
+                WriteShellStartupFailure(exception);
+                throw;
+            }
             desktop.MainWindow = mainWindow;
             mainWindow.Opened += (_, _) => ZzzGuiControlTreeEvidence.TryWrite(mainWindow);
             InstallTray(desktop, mainWindow);
@@ -114,6 +123,24 @@ public sealed partial class App : Application
 
         mainWindow.Show();
         mainWindow.Activate();
+    }
+
+    private static void WriteShellStartupFailure(Exception exception)
+    {
+        if (string.IsNullOrWhiteSpace(RunRoot))
+        {
+            return;
+        }
+
+        try
+        {
+            string path = Path.Combine(RunRoot, ".log", "zzz-gui-startup-error.log");
+            Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+            File.AppendAllText(path, $"[{DateTimeOffset.Now:O}] {exception}{Environment.NewLine}");
+        }
+        catch
+        {
+        }
     }
 
     private void ApplyEvidenceTheme()

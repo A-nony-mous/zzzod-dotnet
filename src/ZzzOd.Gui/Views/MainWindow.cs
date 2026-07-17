@@ -28,6 +28,16 @@ public partial class MainWindow : Window
     private IZzzShellPageHost _pageHost = null!;
     private Bitmap? _titleBarIconBitmap;
 
+    protected virtual string NavigationControlName => "Navigation";
+
+    protected virtual string ContentFrameControlName => "ContentFrame";
+
+    protected virtual string TitleBarControlName => "TitleBar";
+
+    protected virtual string TitleBarIconControlName => "TitleBarIcon";
+
+    protected virtual string ToastBarControlName => "ToastBar";
+
     public MainWindow()
     {
         throw new InvalidOperationException("MainWindow 必须通过应用宿主的依赖注入创建。");
@@ -74,15 +84,15 @@ public partial class MainWindow : Window
         ZzzShellNavigationService navigationService,
         ZzzRunRoot runRoot)
     {
-        _navigation = this.FindControl<NavigationView>("Navigation")
+        _navigation = this.FindControl<NavigationView>(NavigationControlName)
             ?? throw new InvalidOperationException("MainWindow 缺少 NavigationView?");
-        _contentFrame = this.FindControl<Frame>("ContentFrame")
+        _contentFrame = this.FindControl<Frame>(ContentFrameControlName)
             ?? throw new InvalidOperationException("MainWindow 缺少 Frame?");
-        _titleBar = this.FindControl<Grid>("TitleBar")
+        _titleBar = this.FindControl<Grid>(TitleBarControlName)
             ?? throw new InvalidOperationException("MainWindow 缺少标题栏。");
-        _titleBarIcon = this.FindControl<Image>("TitleBarIcon")
+        _titleBarIcon = this.FindControl<Image>(TitleBarIconControlName)
             ?? throw new InvalidOperationException("MainWindow 缺少标题栏图标。");
-        _toastBar = this.FindControl<InfoBar>("ToastBar")
+        _toastBar = this.FindControl<InfoBar>(ToastBarControlName)
             ?? throw new InvalidOperationException("MainWindow 缺少 InfoBar?");
         LoadTitleBarIcon(runRoot.Path);
 

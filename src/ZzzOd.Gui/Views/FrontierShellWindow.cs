@@ -12,6 +12,12 @@ namespace ZzzOd.Gui.Views;
 
 public sealed partial class FrontierShellWindow : MainWindow
 {
+    protected override string NavigationControlName => "FrontierNavigation";
+    protected override string ContentFrameControlName => "FrontierContentFrame";
+    protected override string TitleBarControlName => "FrontierTitleBar";
+    protected override string TitleBarIconControlName => "FrontierTitleBarIcon";
+    protected override string ToastBarControlName => "FrontierToastBar";
+
     private readonly ZzzLauncherMediaService _mediaService;
     private readonly Image _backgroundImage;
     private readonly VideoView _backgroundVideo;

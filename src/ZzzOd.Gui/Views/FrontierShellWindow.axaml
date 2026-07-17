@@ -4,6 +4,7 @@
                            xmlns:vlc="clr-namespace:LibVLCSharp.Avalonia;assembly=LibVLCSharp.Avalonia"
                            xmlns:local="using:ZzzOd.Gui.Views"
                            xmlns:shell="using:ZzzOd.Gui.Shell"
+                           x:Class="ZzzOd.Gui.Views.FrontierShellWindow"
                            x:DataType="shell:ZzzShellViewModel"
                            Title="{Binding WindowTitle}"
                            Width="1140"
@@ -22,11 +23,14 @@
     </ResourceDictionary>
   </Window.Resources>
   <Window.Styles>
-    <Style Selector="fa|SettingsExpanderItem">
-      <Setter Property="Margin" Value="{DynamicResource ZzzFrontierControlSpacing}" />
+    <Style Selector="fa|NavigationViewItem">
+      <Setter Property="Foreground" Value="#FFF5F7FA" />
     </Style>
-    <Style Selector="fa|TabViewItem">
-      <Setter Property="Margin" Value="0,0,5,0" />
+    <Style Selector="fa|NavigationViewItem TextBlock">
+      <Setter Property="Foreground" Value="#FFF5F7FA" />
+    </Style>
+    <Style Selector="fa|NavigationViewItem fa|FontIcon">
+      <Setter Property="Foreground" Value="#FFF5F7FA" />
     </Style>
   </Window.Styles>
   <Grid Background="{DynamicResource ApplicationPageBackgroundThemeBrush}">
@@ -34,7 +38,7 @@
            Stretch="UniformToFill"
            IsVisible="False" />
     <vlc:VideoView x:Name="BackgroundVideo" IsVisible="False" />
-    <fa:NavigationView x:Name="Navigation"
+    <fa:NavigationView x:Name="FrontierNavigation"
                        PaneDisplayMode="LeftCompact"
                        OpenPaneLength="240"
                        CompactPaneLength="48"
@@ -66,20 +70,20 @@
                 BorderThickness="1"
                 Opacity="0.92"
                 CornerRadius="12">
-          <fa:Frame x:Name="ContentFrame"
+          <fa:Frame x:Name="FrontierContentFrame"
                     HorizontalContentAlignment="Stretch"
                     VerticalContentAlignment="Stretch"
                     IsNavigationStackEnabled="False" />
         </Border>
       </fa:NavigationView.Content>
     </fa:NavigationView>
-    <Grid x:Name="TitleBar"
+    <Grid x:Name="FrontierTitleBar"
           Height="32"
           Margin="48,0,0,0"
           ColumnDefinitions="Auto,*,Auto"
           ZIndex="10"
           PointerPressed="OnTitleBarPointerPressed">
-      <Image x:Name="TitleBarIcon" Width="18" Height="18" VerticalAlignment="Center" />
+      <Image x:Name="FrontierTitleBarIcon" Width="18" Height="18" VerticalAlignment="Center" />
       <TextBlock Grid.Column="1" Margin="8,0" VerticalAlignment="Center" Text="{Binding WindowTitle}" />
       <StackPanel Grid.Column="2" Orientation="Horizontal">
         <Button Click="OnMinimizeClicked"><fa:FontIcon Glyph="&#xE921;" /></Button>
@@ -87,7 +91,7 @@
         <Button Click="OnCloseClicked"><fa:FontIcon Glyph="&#xE8BB;" /></Button>
       </StackPanel>
     </Grid>
-    <fa:InfoBar x:Name="ToastBar"
+    <fa:InfoBar x:Name="FrontierToastBar"
                 Margin="0,40,24,0"
                 HorizontalAlignment="Right"
                 VerticalAlignment="Top"
