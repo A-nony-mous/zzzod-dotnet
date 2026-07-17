@@ -9,9 +9,6 @@ using FluentAvalonia.UI.Controls;
 using Microsoft.Extensions.DependencyInjection;
 using ZzzOd.AppHost;
 using ZzzOd.Gui.Controls;
-using ZzzOd.Gui.Overlay;
-using ZzzOd.Gui.Services.Dialogs;
-using ZzzOd.Gui.Services.Windows;
 using ZzzOd.Gui.Shell;
 
 namespace ZzzOd.Gui.Views;
@@ -20,19 +17,15 @@ public partial class MainWindow : Window
 {
     private readonly IServiceProvider _services;
     private readonly ZzzShellNavigationService _navigationService;
-    private readonly IZzzDialogService _dialogService;
     private readonly ZzzShellViewModel _shellViewModel;
-    private readonly ZzzOverlayController _overlayController;
-    private readonly ZzzGlobalInputMonitor _globalInputMonitor;
-    private readonly ZzzWindowBackdropService _backdropService;
+    private readonly IZzzShellWindowRuntime _windowRuntime;
     private string? _evidenceRoute;
     private InfoBar _toastBar = null!;
-    private DispatcherTimer _toastTimer = null!;
     private Frame _contentFrame = null!;
     private NavigationView _navigation = null!;
     private Grid _titleBar = null!;
     private Image _titleBarIcon = null!;
-    private ZzzShellPageHost _pageHost = null!;
+    private IZzzShellPageHost _pageHost = null!;
     private Bitmap? _titleBarIconBitmap;
 
     public MainWindow()
@@ -46,10 +39,10 @@ public partial class MainWindow : Window
         ZzzNavigationRegistry navigationRegistry,
         ZzzPageLifecycleService pageLifecycle,
         ZzzShellNavigationService navigationService,
-        IZzzDialogService dialogService,
         ZzzShellViewModel shellViewModel,
+        IZzzShellWindowRuntime windowRuntime,
         ZzzRunRoot runRoot)
-        : this(services, navigationRegistry, pageLifecycle, navigationService, dialogService, shellViewModel, runRoot, true)
+        : this(services, navigationRegistry, pageLifecycle, navigationService, shellViewModel, windowRuntime, runRoot, true)
     {
     }
 
@@ -58,18 +51,15 @@ public partial class MainWindow : Window
         ZzzNavigationRegistry navigationRegistry,
         ZzzPageLifecycleService pageLifecycle,
         ZzzShellNavigationService navigationService,
-        IZzzDialogService dialogService,
         ZzzShellViewModel shellViewModel,
+        IZzzShellWindowRuntime windowRuntime,
         ZzzRunRoot runRoot,
         bool loadMainWindowAxaml)
     {
         _services = services;
         _navigationService = navigationService;
-        _dialogService = dialogService;
         _shellViewModel = shellViewModel;
-        _overlayController = services.GetRequiredService<ZzzOverlayController>();
-        _globalInputMonitor = services.GetRequiredService<ZzzGlobalInputMonitor>();
-        _backdropService = services.GetRequiredService<ZzzWindowBackdropService>();
+        _windowRuntime = windowRuntime;
         DataContext = shellViewModel;
         if (loadMainWindowAxaml)
         {
@@ -98,15 +88,6 @@ public partial class MainWindow : Window
 
         ZzzGuiEvidenceSelection evidenceSelection = ZzzGuiEvidenceSelection.FromEnvironment();
         ApplyEvidenceSize(evidenceSelection);
-        _toastTimer = new DispatcherTimer
-        {
-            Interval = TimeSpan.FromSeconds(4),
-        };
-        _toastTimer.Tick += (_, _) =>
-        {
-            _toastTimer.Stop();
-            _toastBar.IsOpen = false;
-        };
         ApplyEvidencePaneState(_navigation, evidenceSelection);
 
         _pageHost = new ZzzShellPageHost(
@@ -124,21 +105,16 @@ public partial class MainWindow : Window
             : initialPage;
 
         _pageHost.Initialize(initialPage);
-        Opened += OnOpened;
         Closed += (_, _) =>
         {
-            _globalInputMonitor.InputPressed -= OnGlobalInputPressed;
-            _overlayController.Hide();
-            _toastTimer.Stop();
             _titleBarIconBitmap?.Dispose();
             _titleBarIconBitmap = null;
             _pageHost.RouteChanged -= OnRouteChanged;
             _pageHost.Dispose();
+            _navigationService.NavigationRequested -= OnNavigationRequested;
         };
-        _dialogService.ToastRequested += OnToastRequested;
         _navigationService.NavigationRequested += OnNavigationRequested;
-        _globalInputMonitor.InputPressed += OnGlobalInputPressed;
-        _ = _globalInputMonitor.EnsureStarted();
+        _windowRuntime.Attach(this, _toastBar);
     }
 
     protected void OnNavigationSelectionChanged(object? sender, NavigationViewSelectionChangedEventArgs args)
@@ -170,11 +146,6 @@ public partial class MainWindow : Window
         _titleBar.Classes.Set("home-mode", state.IsHomeMode);
     }
 
-    private void OnToastRequested(object? sender, ZzzToastRequest request)
-    {
-        Dispatcher.UIThread.Post(() => ShowToast(request.Title, request.Message, TimeSpan.FromSeconds(4), InfoBarSeverity.Informational));
-    }
-
     private void OnNavigationRequested(object? sender, string key)
     {
         Dispatcher.UIThread.Post(() => _pageHost.NavigateToRequestedTarget(key));
@@ -204,32 +175,11 @@ public partial class MainWindow : Window
         }
 
         await clipboard.SetTextAsync(version).ConfigureAwait(true);
-        ShowToast("已复制版本号", string.Empty, TimeSpan.FromSeconds(2), InfoBarSeverity.Success);
-    }
-
-    private void ShowToast(string title, string message, TimeSpan duration, InfoBarSeverity severity)
-    {
-        _toastBar.Title = title;
-        _toastBar.Message = message;
-        _toastBar.Severity = severity;
-        _toastBar.IsOpen = true;
-        _toastTimer.Stop();
-        _toastTimer.Interval = duration;
-        _toastTimer.Start();
+        _windowRuntime.ShowToast("已复制版本号", string.Empty, TimeSpan.FromSeconds(2), InfoBarSeverity.Success);
     }
 
     protected void OnMinimizeClicked(object? sender, RoutedEventArgs args) =>
         WindowState = WindowState.Minimized;
-
-    private void OnOpened(object? sender, EventArgs args)
-    {
-        _backdropService.Apply(this);
-        Activate();
-        _overlayController.Start();
-    }
-
-    private void OnGlobalInputPressed(object? sender, string key) =>
-        _overlayController.TryToggleFromHotkey(key);
 
     protected void OnTitleBarPointerPressed(object? sender, PointerPressedEventArgs args)
     {

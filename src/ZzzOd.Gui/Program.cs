@@ -53,6 +53,7 @@ internal static class Program
                 services.AddSingleton<ZzzGuiOperationTracker>();
                 services.AddSingleton<ZzzPageLifecycleService>();
                 services.AddSingleton<ZzzShellNavigationService>();
+                services.AddTransient<IZzzShellWindowRuntime, ZzzShellWindowRuntime>();
                 services.AddSingleton<IZzzUiDispatcher, ZzzAvaloniaUiDispatcher>();
                 services.AddSingleton<ZzzShellViewModel>();
                 services.AddSingleton<ZzzGuiRunIntentService>();

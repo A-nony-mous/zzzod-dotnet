@@ -3,7 +3,20 @@ using FluentAvalonia.UI.Controls;
 
 namespace ZzzOd.Gui.Shell;
 
-public sealed class ZzzShellPageHost : IDisposable
+public interface IZzzShellPageHost : IDisposable
+{
+    event EventHandler<string>? RouteChanged;
+
+    void Initialize(string initialRoute);
+
+    void ShowPage(string route);
+
+    void NavigateToRequestedTarget(string key);
+
+    void GoBack();
+}
+
+public sealed class ZzzShellPageHost : IZzzShellPageHost
 {
     private readonly IServiceProvider _services;
     private readonly ZzzNavigationRegistry _navigationRegistry;

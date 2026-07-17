@@ -465,10 +465,12 @@ public sealed class GuiStaticAuditTests
 		Assert.Contains("OnCloseClicked", actualString, StringComparison.Ordinal);
 		Assert.Contains("Path.Combine(runRoot, \"assets\", \"ui\", \"logo.ico\")", actualString2, StringComparison.Ordinal);
 		Assert.Contains("new Bitmap(iconPath)", actualString2, StringComparison.Ordinal);
-		Assert.Contains("Opened += OnOpened", actualString2, StringComparison.Ordinal);
-		Assert.Contains("private void OnOpened(object? sender, EventArgs args)", actualString2, StringComparison.Ordinal);
-		Assert.Contains("Activate();", actualString2, StringComparison.Ordinal);
-		Assert.Contains("_overlayController.Start();", actualString2, StringComparison.Ordinal);
+		Assert.Contains("IZzzShellWindowRuntime", actualString2, StringComparison.Ordinal);
+		Assert.Contains("_windowRuntime.Attach(this, _toastBar)", actualString2, StringComparison.Ordinal);
+		string actualString4 = File.ReadAllText(Path.Combine(path, "Shell", "ZzzShellWindowRuntime.cs"));
+		Assert.Contains("ZzzWindowBackdropService", actualString4, StringComparison.Ordinal);
+		Assert.Contains("_overlayController.Start();", actualString4, StringComparison.Ordinal);
+		Assert.Contains("_globalInputMonitor.InputPressed += OnGlobalInputPressed", actualString4, StringComparison.Ordinal);
 		Assert.Contains("if (!IsActive)", actualString2, StringComparison.Ordinal);
 		Assert.Contains("BeginMoveDrag(args)", actualString2, StringComparison.Ordinal);
 		Assert.DoesNotContain("PageHeader", actualString, StringComparison.Ordinal);
@@ -476,6 +478,18 @@ public sealed class GuiStaticAuditTests
 		Assert.DoesNotContain("new NavigationViewItem", actualString2, StringComparison.Ordinal);
 		Assert.DoesNotContain("new StackPanel", actualString2, StringComparison.Ordinal);
 		Assert.DoesNotContain("new ContentControl", actualString2, StringComparison.Ordinal);
+	}
+
+	[Fact]
+	public void ShellPageHostExposesSharedRouteLifecycleAndBackNavigationContract()
+	{
+		Assert.True(typeof(IZzzShellPageHost).IsAssignableFrom(typeof(ZzzShellPageHost)));
+		string path = FindGuiRoot();
+		string text = File.ReadAllText(Path.Combine(path, "Shell", "ZzzShellPageHost.cs"));
+		Assert.Contains("Dictionary<string, Control> _pageCache", text, StringComparison.Ordinal);
+		Assert.Contains("ZzzPageLifecycleService", text, StringComparison.Ordinal);
+		Assert.Contains("IZzzShellBackNavigationHost", text, StringComparison.Ordinal);
+		Assert.Contains("NavigateToRequestedTarget", text, StringComparison.Ordinal);
 	}
 
 	/// <summary>

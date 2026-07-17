@@ -5,7 +5,6 @@ using LibVLCSharp.Avalonia;
 using LibVLCSharp.Shared;
 using Microsoft.Extensions.DependencyInjection;
 using ZzzOd.AppHost;
-using ZzzOd.Gui.Services.Dialogs;
 using ZzzOd.Gui.Services.LauncherMedia;
 using ZzzOd.Gui.Shell;
 
@@ -26,11 +25,11 @@ public sealed partial class FrontierShellWindow : MainWindow
         ZzzNavigationRegistry navigationRegistry,
         ZzzPageLifecycleService pageLifecycle,
         ZzzShellNavigationService navigationService,
-        IZzzDialogService dialogService,
         ZzzShellViewModel shellViewModel,
+        IZzzShellWindowRuntime windowRuntime,
         ZzzRunRoot runRoot,
         ZzzLauncherMediaService mediaService)
-        : base(services, navigationRegistry, pageLifecycle, navigationService, dialogService, shellViewModel, runRoot, false)
+        : base(services, navigationRegistry, pageLifecycle, navigationService, shellViewModel, windowRuntime, runRoot, false)
     {
         _mediaService = mediaService;
         AvaloniaXamlLoader.Load(this);
