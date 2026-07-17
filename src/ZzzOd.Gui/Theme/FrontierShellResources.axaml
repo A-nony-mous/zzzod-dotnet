@@ -2,4 +2,8 @@
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
                     xmlns:fa="using:FluentAvalonia.UI.Controls">
   <SolidColorBrush x:Key="ZzzFrontierContentSurfaceBrush" Color="#E6111722" />
+  <SolidColorBrush x:Key="ZzzFrontierContentBorderBrush" Color="#80D6E4F5" />
+  <SolidColorBrush x:Key="ZzzFrontierControlSurfaceBrush" Color="#BF1C2636" />
+  <Thickness x:Key="ZzzFrontierContentPadding">12</Thickness>
+  <Thickness x:Key="ZzzFrontierControlSpacing">0,4</Thickness>
 </ResourceDictionary>

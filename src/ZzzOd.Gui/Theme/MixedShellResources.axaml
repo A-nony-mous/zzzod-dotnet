@@ -1,4 +1,9 @@
 <ResourceDictionary xmlns="https://github.com/avaloniaui"
-                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:fa="using:FluentAvalonia.UI.Controls">
   <SolidColorBrush x:Key="ZzzMixedNavigationSurfaceBrush" Color="#F5222730" />
+  <SolidColorBrush x:Key="ZzzMixedContentSurfaceBrush" Color="#F8191D25" />
+  <SolidColorBrush x:Key="ZzzMixedContentBorderBrush" Color="#4D8E98A8" />
+  <Thickness x:Key="ZzzMixedContentPadding">12</Thickness>
+  <Thickness x:Key="ZzzMixedControlSpacing">0,3</Thickness>
 </ResourceDictionary>

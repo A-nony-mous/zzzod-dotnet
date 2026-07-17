@@ -35,6 +35,12 @@
       <Setter Property="BorderBrush" Value="{DynamicResource SystemAccentColor}" />
       <Setter Property="BorderThickness" Value="1" />
     </Style>
+    <Style Selector="fa|SettingsExpanderItem">
+      <Setter Property="Margin" Value="{DynamicResource ZzzMixedControlSpacing}" />
+    </Style>
+    <Style Selector="fa|TabViewItem">
+      <Setter Property="Margin" Value="0,0,4,0" />
+    </Style>
   </Window.Styles>
   <Grid>
     <fa:NavigationView x:Name="Navigation"
@@ -69,10 +75,17 @@
         </DataTemplate>
       </fa:NavigationView.MenuItemTemplate>
       <fa:NavigationView.Content>
-        <fa:Frame x:Name="ContentFrame"
-                  HorizontalContentAlignment="Stretch"
-                  VerticalContentAlignment="Stretch"
-                  IsNavigationStackEnabled="False" />
+        <Border Margin="12,44,12,12"
+                Padding="{DynamicResource ZzzMixedContentPadding}"
+                Background="{DynamicResource ZzzMixedContentSurfaceBrush}"
+                BorderBrush="{DynamicResource ZzzMixedContentBorderBrush}"
+                BorderThickness="1"
+                CornerRadius="8">
+          <fa:Frame x:Name="ContentFrame"
+                    HorizontalContentAlignment="Stretch"
+                    VerticalContentAlignment="Stretch"
+                    IsNavigationStackEnabled="False" />
+        </Border>
       </fa:NavigationView.Content>
     </fa:NavigationView>
     <Grid x:Name="TitleBar"

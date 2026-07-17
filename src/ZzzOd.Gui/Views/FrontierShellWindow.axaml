@@ -21,6 +21,14 @@
       </ResourceDictionary.MergedDictionaries>
     </ResourceDictionary>
   </Window.Resources>
+  <Window.Styles>
+    <Style Selector="fa|SettingsExpanderItem">
+      <Setter Property="Margin" Value="{DynamicResource ZzzFrontierControlSpacing}" />
+    </Style>
+    <Style Selector="fa|TabViewItem">
+      <Setter Property="Margin" Value="0,0,5,0" />
+    </Style>
+  </Window.Styles>
   <Grid Background="{DynamicResource ApplicationPageBackgroundThemeBrush}">
     <Image x:Name="BackgroundImage"
            Stretch="UniformToFill"
@@ -49,7 +57,13 @@
         </DataTemplate>
       </fa:NavigationView.MenuItemTemplate>
       <fa:NavigationView.Content>
-        <Border Margin="16" Background="{DynamicResource ZzzFrontierContentSurfaceBrush}" Opacity="0.92" CornerRadius="12">
+        <Border Margin="16,44,16,16"
+                Padding="{DynamicResource ZzzFrontierContentPadding}"
+                Background="{DynamicResource ZzzFrontierContentSurfaceBrush}"
+                BorderBrush="{DynamicResource ZzzFrontierContentBorderBrush}"
+                BorderThickness="1"
+                Opacity="0.92"
+                CornerRadius="12">
           <fa:Frame x:Name="ContentFrame"
                     HorizontalContentAlignment="Stretch"
                     VerticalContentAlignment="Stretch"

@@ -79,6 +79,18 @@ public sealed class GuiStaticAuditTests
 			Assert.DoesNotContain("后端尚未", text, StringComparison.Ordinal);
 			Assert.DoesNotContain("fallback", text, StringComparison.OrdinalIgnoreCase);
 		}
+		string mixedResources = File.ReadAllText(Path.Combine(path, "Theme", "MixedShellResources.axaml"));
+		string frontierResources = File.ReadAllText(Path.Combine(path, "Theme", "FrontierShellResources.axaml"));
+		string mixed = File.ReadAllText(Path.Combine(path, "Views", "MixedShellWindow.axaml"));
+		string frontier = File.ReadAllText(Path.Combine(path, "Views", "FrontierShellWindow.axaml"));
+		Assert.Contains("ZzzMixedContentSurfaceBrush", mixedResources, StringComparison.Ordinal);
+		Assert.Contains("ZzzMixedContentBorderBrush", mixedResources, StringComparison.Ordinal);
+		Assert.Contains("ZzzMixedContentPadding", mixed, StringComparison.Ordinal);
+		Assert.Contains("fa|SettingsExpanderItem", mixed, StringComparison.Ordinal);
+		Assert.Contains("ZzzFrontierContentSurfaceBrush", frontierResources, StringComparison.Ordinal);
+		Assert.Contains("ZzzFrontierContentBorderBrush", frontierResources, StringComparison.Ordinal);
+		Assert.Contains("ZzzFrontierContentPadding", frontier, StringComparison.Ordinal);
+		Assert.Contains("fa|SettingsExpanderItem", frontier, StringComparison.Ordinal);
 	}
 
 	/// <summary>
