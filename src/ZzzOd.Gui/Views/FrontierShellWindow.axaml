@@ -14,6 +14,9 @@
                            ExtendClientAreaToDecorationsHint="True"
                            ExtendClientAreaTitleBarHeightHint="32">
   <Grid Background="{DynamicResource ApplicationPageBackgroundThemeBrush}">
+    <Image x:Name="BackgroundImage"
+           Stretch="UniformToFill"
+           IsVisible="False" />
     <fa:NavigationView x:Name="Navigation"
                        PaneDisplayMode="LeftCompact"
                        OpenPaneLength="240"
@@ -36,7 +39,7 @@
         </DataTemplate>
       </fa:NavigationView.MenuItemTemplate>
       <fa:NavigationView.Content>
-        <Border Margin="16" Background="{DynamicResource CardBackgroundFillColorDefaultBrush}" CornerRadius="12">
+        <Border Margin="16" Background="{DynamicResource CardBackgroundFillColorDefaultBrush}" Opacity="0.92" CornerRadius="12">
           <fa:Frame x:Name="ContentFrame"
                     HorizontalContentAlignment="Stretch"
                     VerticalContentAlignment="Stretch"
