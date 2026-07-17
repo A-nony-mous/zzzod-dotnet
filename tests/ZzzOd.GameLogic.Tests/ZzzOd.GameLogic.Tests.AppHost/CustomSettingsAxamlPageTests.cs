@@ -39,6 +39,10 @@ public sealed class CustomSettingsAxamlPageTests
 		Assert.Contains("!Save(ZzzGuiShellPresetService.ConfigKey, option.Value)", actualString, StringComparison.Ordinal);
 		Assert.Contains("ConfigureShellRestartDialog(dialog)", actualString, StringComparison.Ordinal);
 		Assert.Contains("ContentDialogResult.Primary", actualString, StringComparison.Ordinal);
+		Assert.Contains("App.ExitForRestart();", actualString, StringComparison.Ordinal);
+		string appSource = File.ReadAllText(Path.Combine(FindSettingsDirectory(), "..", "..", "App.axaml.cs"));
+		Assert.Contains("internal static void ExitForRestart()", appSource, StringComparison.Ordinal);
+		Assert.Contains("app._exitRequested = true;", appSource, StringComparison.Ordinal);
 		Assert.Contains("SHA256.HashData", actualString, StringComparison.Ordinal);
 		Assert.Contains("RequiredBool(current.Value.Values, \"custom_banner\")", actualString, StringComparison.Ordinal);
 		Assert.DoesNotContain("[\"custom_banner\"] = true", actualString, StringComparison.Ordinal);

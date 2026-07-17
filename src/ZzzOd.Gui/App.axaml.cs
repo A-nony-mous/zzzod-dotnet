@@ -125,6 +125,19 @@ public sealed partial class App : Application
         mainWindow.Activate();
     }
 
+    internal static void ExitForRestart()
+    {
+        if (Current is App app)
+        {
+            app._exitRequested = true;
+        }
+
+        if (Current?.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
+        {
+            desktop.Shutdown();
+        }
+    }
+
     private static void WriteShellStartupFailure(Exception exception)
     {
         if (string.IsNullOrWhiteSpace(RunRoot))

@@ -409,10 +409,7 @@ internal sealed partial class ZzzCustomSettingsAxamlPage : UserControl, IZzzPage
             Process.Start(startInfo);
         }
 
-        if (Application.Current?.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
-        {
-            desktop.Shutdown();
-        }
+        App.ExitForRestart();
     }
 
     private static IReadOnlyList<ZzzCustomOption> Options(params (string Label, string Value)[] values) =>
