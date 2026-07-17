@@ -1,26 +1,23 @@
 using Avalonia.Controls;
-using ZzzOd.AppHost.Backend;
+using ZzzOd.Gui.Shell;
 
 namespace ZzzOd.Gui.Services.Windows;
 
 public sealed class ZzzWindowBackdropService
 {
-    private readonly IZzzAppBackend _backend;
+    private readonly ZzzGuiShellPresetService _presetService;
 
-    public ZzzWindowBackdropService(IZzzAppBackend backend)
+    public ZzzWindowBackdropService(ZzzGuiShellPresetService presetService)
     {
-        _backend = backend;
+        _presetService = presetService;
     }
 
     public WindowTransparencyLevel? ActualLevel { get; private set; }
 
     public void Apply(Window window)
     {
-        ZzzBackendResult<ZzzConfigScopeValuesDto> custom = _backend.GetConfigScope("custom");
-        string? preset = custom.Success && custom.Value is not null && custom.Value.Values.TryGetValue("fluent_visual_preset", out object? raw)
-            ? raw?.ToString()
-            : null;
-        if (!string.Equals(preset, "store-fluent", StringComparison.Ordinal))
+        ZzzGuiShellPresetResolution resolution = _presetService.Read();
+        if (!resolution.Success || resolution.Preset is ZzzGuiShellPreset.Classic)
         {
             window.TransparencyLevelHint = [WindowTransparencyLevel.None];
             ActualLevel = window.ActualTransparencyLevel;
