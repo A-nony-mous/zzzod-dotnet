@@ -48,6 +48,7 @@
                        OpenPaneLength="280"
                        CompactPaneLength="48"
                        IsPaneOpen="True"
+                       Foreground="#FFF5F7FA"
                        Background="{DynamicResource ZzzMixedNavigationSurfaceBrush}"
                        IsBackButtonVisible="True"
                        IsBackEnabled="False"
