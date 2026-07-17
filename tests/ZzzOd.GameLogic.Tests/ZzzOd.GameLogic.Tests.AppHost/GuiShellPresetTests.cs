@@ -1,4 +1,5 @@
 using ZzzOd.Gui.Shell;
+using ZzzOd.Gui.Services.Windows;
 using ZzzOd.Gui.Views;
 using Xunit;
 
@@ -66,5 +67,17 @@ public sealed class GuiShellPresetTests
     public void ShellWindowFactory_MapsEachPresetToDedicatedWindow(ZzzGuiShellPreset preset, Type expected)
     {
         Assert.Equal(expected, ZzzShellWindowFactory.GetWindowType(preset));
+    }
+
+    [Fact]
+    public void WindowBackdropPolicy_KeepsClassicSolidAndOtherShellsDegradable()
+    {
+        Assert.Equal([Avalonia.Controls.WindowTransparencyLevel.None], ZzzWindowBackdropService.GetTransparencyLevels(ZzzGuiShellPreset.Classic));
+        Assert.Equal(
+            [Avalonia.Controls.WindowTransparencyLevel.Mica, Avalonia.Controls.WindowTransparencyLevel.AcrylicBlur, Avalonia.Controls.WindowTransparencyLevel.Blur, Avalonia.Controls.WindowTransparencyLevel.None],
+            ZzzWindowBackdropService.GetTransparencyLevels(ZzzGuiShellPreset.Mixed));
+        Assert.Equal(
+            [Avalonia.Controls.WindowTransparencyLevel.Mica, Avalonia.Controls.WindowTransparencyLevel.AcrylicBlur, Avalonia.Controls.WindowTransparencyLevel.Blur, Avalonia.Controls.WindowTransparencyLevel.None],
+            ZzzWindowBackdropService.GetTransparencyLevels(ZzzGuiShellPreset.Frontier));
     }
 }

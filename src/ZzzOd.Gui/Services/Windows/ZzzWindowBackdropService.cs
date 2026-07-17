@@ -17,20 +17,8 @@ public sealed class ZzzWindowBackdropService
     public void Apply(Window window)
     {
         ZzzGuiShellPresetResolution resolution = _presetService.Read();
-        if (!resolution.Success || resolution.Preset is ZzzGuiShellPreset.Classic)
-        {
-            window.TransparencyLevelHint = [WindowTransparencyLevel.None];
-            ActualLevel = window.ActualTransparencyLevel;
-            return;
-        }
-
-        window.TransparencyLevelHint =
-        [
-            WindowTransparencyLevel.Mica,
-            WindowTransparencyLevel.AcrylicBlur,
-            WindowTransparencyLevel.Blur,
-            WindowTransparencyLevel.None,
-        ];
+        window.TransparencyLevelHint = GetTransparencyLevels(
+            resolution.Success ? resolution.Preset : ZzzGuiShellPreset.Classic);
         ActualLevel = window.ActualTransparencyLevel;
         window.PropertyChanged += (_, args) =>
         {
@@ -40,4 +28,12 @@ public sealed class ZzzWindowBackdropService
             }
         };
     }
+
+    internal static IReadOnlyList<WindowTransparencyLevel> GetTransparencyLevels(ZzzGuiShellPreset preset) => preset switch
+    {
+        ZzzGuiShellPreset.Classic => [WindowTransparencyLevel.None],
+        ZzzGuiShellPreset.Mixed => [WindowTransparencyLevel.Mica, WindowTransparencyLevel.AcrylicBlur, WindowTransparencyLevel.Blur, WindowTransparencyLevel.None],
+        ZzzGuiShellPreset.Frontier => [WindowTransparencyLevel.Mica, WindowTransparencyLevel.AcrylicBlur, WindowTransparencyLevel.Blur, WindowTransparencyLevel.None],
+        _ => throw new ArgumentOutOfRangeException(nameof(preset), preset, "未知 GUI Shell 预设。"),
+    };
 }
