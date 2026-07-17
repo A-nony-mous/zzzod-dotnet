@@ -492,6 +492,37 @@ public sealed class GuiStaticAuditTests
 		Assert.Contains("NavigateToRequestedTarget", text, StringComparison.Ordinal);
 	}
 
+	[Fact]
+	public void ClassicShellKeepsPythonPrimaryAndFooterNavigationOrder()
+	{
+		ZzzNavigationRegistry registry = new ZzzNavigationRegistry();
+		Assert.Equal(
+			new[] { "home", "game-assistant", "one-dragon", "standalone" },
+			registry.Entries.Where(entry => entry.Placement == ZzzNavigationPlacement.Primary).Select(entry => entry.Key));
+		Assert.Equal(
+			new[] { "devtools", "accounts", "settings" },
+			registry.Entries.Where(entry => entry.Placement == ZzzNavigationPlacement.Footer).Select(entry => entry.Key).Take(3));
+		Assert.All(registry.Entries, entry => Assert.False(string.IsNullOrWhiteSpace(entry.IconGlyph)));
+		Assert.All(registry.Entries, entry => Assert.False(string.IsNullOrWhiteSpace(entry.AccessibleName)));
+	}
+
+	[Fact]
+	public void ClassicShellTitleBarUsesProjectInstanceVersionsIssueAndWindowControls()
+	{
+		string path = FindGuiRoot();
+		string window = File.ReadAllText(Path.Combine(path, "Views", "MainWindow.axaml"));
+		string viewModel = File.ReadAllText(Path.Combine(path, "Shell", "ZzzShellViewModel.cs"));
+		Assert.Contains("Text=\"{Binding WindowTitle}\"", window, StringComparison.Ordinal);
+		Assert.Contains("Content=\"{Binding LauncherVersionText}\"", window, StringComparison.Ordinal);
+		Assert.Contains("Content=\"{Binding CodeVersionText}\"", window, StringComparison.Ordinal);
+		Assert.Contains("Text=\"问题反馈\"", window, StringComparison.Ordinal);
+		Assert.Contains("OnMinimizeClicked", window, StringComparison.Ordinal);
+		Assert.Contains("OnMaximizeClicked", window, StringComparison.Ordinal);
+		Assert.Contains("OnCloseClicked", window, StringComparison.Ordinal);
+		Assert.Contains("GetCurrentInstance()", viewModel, StringComparison.Ordinal);
+		Assert.Contains("_issueUrl", viewModel, StringComparison.Ordinal);
+	}
+
 	/// <summary>
 	/// 首页路由使用零边距和标题栏首页样式，离开首页恢复 BaselineParity 普通页面边距。
 	/// </summary>
