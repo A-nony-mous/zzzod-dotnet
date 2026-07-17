@@ -14,19 +14,32 @@ public sealed class ZzzWindowBackdropService
 
     public WindowTransparencyLevel? ActualLevel { get; private set; }
 
+    public event EventHandler<WindowTransparencyLevel?>? ActualLevelChanged;
+
     public void Apply(Window window)
     {
         ZzzGuiShellPresetResolution resolution = _presetService.Read();
         window.TransparencyLevelHint = GetTransparencyLevels(
             resolution.Success ? resolution.Preset : ZzzGuiShellPreset.Classic);
-        ActualLevel = window.ActualTransparencyLevel;
+        UpdateActualLevel(window.ActualTransparencyLevel);
         window.PropertyChanged += (_, args) =>
         {
             if (args.Property == TopLevel.ActualTransparencyLevelProperty)
             {
-                ActualLevel = window.ActualTransparencyLevel;
+                UpdateActualLevel(window.ActualTransparencyLevel);
             }
         };
+    }
+
+    private void UpdateActualLevel(WindowTransparencyLevel? level)
+    {
+        if (ActualLevel == level)
+        {
+            return;
+        }
+
+        ActualLevel = level;
+        ActualLevelChanged?.Invoke(this, level);
     }
 
     internal static IReadOnlyList<WindowTransparencyLevel> GetTransparencyLevels(ZzzGuiShellPreset preset) => preset switch

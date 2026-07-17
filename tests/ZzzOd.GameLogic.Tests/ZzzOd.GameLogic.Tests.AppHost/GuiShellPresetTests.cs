@@ -80,4 +80,28 @@ public sealed class GuiShellPresetTests
             [Avalonia.Controls.WindowTransparencyLevel.Mica, Avalonia.Controls.WindowTransparencyLevel.AcrylicBlur, Avalonia.Controls.WindowTransparencyLevel.Blur, Avalonia.Controls.WindowTransparencyLevel.None],
             ZzzWindowBackdropService.GetTransparencyLevels(ZzzGuiShellPreset.Frontier));
     }
+
+    [Fact]
+    public void WindowBackdropService_ExposesActualTransparencyLevelObservation()
+    {
+        string source = File.ReadAllText(Path.Combine(FindGuiRoot(), "Services", "Windows", "ZzzWindowBackdropService.cs"));
+
+        Assert.Contains("ActualLevelChanged", source, StringComparison.Ordinal);
+        Assert.Contains("TopLevel.ActualTransparencyLevelProperty", source, StringComparison.Ordinal);
+        Assert.Contains("UpdateActualLevel(window.ActualTransparencyLevel)", source, StringComparison.Ordinal);
+    }
+
+    private static string FindGuiRoot()
+    {
+        for (DirectoryInfo? directory = new DirectoryInfo(AppContext.BaseDirectory); directory is not null; directory = directory.Parent)
+        {
+            string path = Path.Combine(directory.FullName, "zzzod-dotnet", "src", "ZzzOd.Gui");
+            if (Directory.Exists(path))
+            {
+                return path;
+            }
+        }
+
+        throw new DirectoryNotFoundException("未找到 ZzzOd.Gui 源码目录。");
+    }
 }
