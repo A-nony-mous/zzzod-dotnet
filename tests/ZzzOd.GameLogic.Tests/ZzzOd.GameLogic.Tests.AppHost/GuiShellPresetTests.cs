@@ -47,4 +47,14 @@ public sealed class GuiShellPresetTests
     {
         Assert.Equal(expected, ZzzGuiShellPresetService.ToConfigValue(preset));
     }
+
+    [Theory]
+    [InlineData(false, "regular")]
+    [InlineData(true, "selected")]
+    public void NavigationIconConverter_UsesSelectionState(bool selected, string expected)
+    {
+        object? actual = ZzzNavigationIconConverter.Instance.Convert(["regular", "selected", selected], typeof(string), null, null!);
+
+        Assert.Equal(expected, actual);
+    }
 }

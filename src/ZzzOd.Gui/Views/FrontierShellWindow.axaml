@@ -31,7 +31,8 @@
         <DataTemplate x:DataType="shell:ZzzNavigationEntry">
           <fa:NavigationViewItem Tag="{Binding Key}"
                                  Content="{Binding Text}"
-                                 ToolTip.Tip="{Binding AccessibleName}">
+                                 ToolTip.Tip="{Binding AccessibleName}"
+                                 AutomationProperties.Name="{Binding AccessibleName}">
             <fa:NavigationViewItem.IconSource>
               <fa:FontIconSource Glyph="{Binding IconGlyph}" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" />
             </fa:NavigationViewItem.IconSource>

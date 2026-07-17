@@ -29,9 +29,18 @@
         <DataTemplate x:DataType="shell:ZzzNavigationEntry">
           <fa:NavigationViewItem Tag="{Binding Key}"
                                  Content="{Binding Text}"
-                                 ToolTip.Tip="{Binding AccessibleName}">
+                                 ToolTip.Tip="{Binding AccessibleName}"
+                                 AutomationProperties.Name="{Binding AccessibleName}">
             <fa:NavigationViewItem.IconSource>
-              <fa:FontIconSource Glyph="{Binding IconGlyph}" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" />
+              <fa:FontIconSource FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets">
+                <fa:FontIconSource.Glyph>
+                  <MultiBinding Converter="{x:Static shell:ZzzNavigationIconConverter.Instance}">
+                    <Binding Path="IconGlyph" />
+                    <Binding Path="SelectedIconGlyph" />
+                    <Binding Path="IsSelected" RelativeSource="{RelativeSource AncestorType=fa:NavigationViewItem}" />
+                  </MultiBinding>
+                </fa:FontIconSource.Glyph>
+              </fa:FontIconSource>
             </fa:NavigationViewItem.IconSource>
           </fa:NavigationViewItem>
         </DataTemplate>
