@@ -21,6 +21,21 @@
       </ResourceDictionary.MergedDictionaries>
     </ResourceDictionary>
   </Window.Resources>
+  <Window.Styles>
+    <Style Selector="fa|NavigationViewItem:selected">
+      <Setter Property="Background" Value="#2D3E78D8" />
+    </Style>
+    <Style Selector="fa|NavigationViewItem:pointerover">
+      <Setter Property="Background" Value="#1F6B7280" />
+    </Style>
+    <Style Selector="fa|NavigationViewItem:pressed">
+      <Setter Property="Background" Value="#454A90E2" />
+    </Style>
+    <Style Selector="fa|NavigationViewItem:focus">
+      <Setter Property="BorderBrush" Value="{DynamicResource SystemAccentColor}" />
+      <Setter Property="BorderThickness" Value="1" />
+    </Style>
+  </Window.Styles>
   <Grid>
     <fa:NavigationView x:Name="Navigation"
                        PaneDisplayMode="Left"
