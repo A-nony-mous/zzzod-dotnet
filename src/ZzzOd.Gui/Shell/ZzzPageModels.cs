@@ -1,4 +1,5 @@
 using Avalonia.Controls;
+using FluentAvalonia.UI.Controls;
 
 namespace ZzzOd.Gui.Shell;
 
@@ -73,7 +74,14 @@ public sealed class ZzzUnavailablePageModel
     public ZzzPageStatusModel ToStatus() =>
         new(ZzzPageStatusSeverity.Warning, Title, string.IsNullOrWhiteSpace(MissingService) ? Reason : $"{Reason}：{MissingService}");
 
-    public Control ToControl() => new ZzzOd.Gui.Controls.ZzzInfoBar(Title, ToStatus().Message, ZzzOd.Gui.Controls.ZzzInfoBarSeverity.Warning);
+    public Control ToControl() => new InfoBar
+    {
+        Title = Title,
+        Message = ToStatus().Message,
+        Severity = InfoBarSeverity.Warning,
+        IsOpen = true,
+        IsClosable = false,
+    };
 }
 
 public sealed record ZzzGuiEvidenceSelection(

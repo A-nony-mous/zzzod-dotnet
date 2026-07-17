@@ -651,7 +651,14 @@ public sealed class GuiStaticAuditTests
 		foreach (string item3 in Directory.EnumerateFiles(path2, "*.cs", SearchOption.AllDirectories))
 		{
 			string text2 = File.ReadAllText(item3);
-			if (ContainsAny(text2, "class ZzzSettingCard : Border", "class ZzzSettingsGroup : Border", "class ZzzStatusPill : Border", "Classes = { \"zzz-segmented\" }"))
+			if (ContainsAny(
+				text2,
+				"class ZzzSettingCard : Border",
+				"class ZzzSettingsGroup",
+				"class ZzzStatusPill",
+				"class ZzzCommandBar",
+				"class ZzzInfoBar",
+				"Classes = { \"zzz-segmented\" }"))
 			{
 				list4.Add(Normalize(Path.GetRelativePath(guiRoot, item3)));
 			}

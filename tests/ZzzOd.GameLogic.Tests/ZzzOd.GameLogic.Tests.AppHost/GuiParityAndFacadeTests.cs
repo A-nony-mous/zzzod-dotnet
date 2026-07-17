@@ -1948,7 +1948,9 @@ public sealed class GuiParityAndFacadeTests
 		Assert.Contains("ResourceDownloadService", unavailable.ToStatus().Message, StringComparison.Ordinal);
 		RunOnUiThread(delegate
 		{
-			Assert.IsType<ZzzInfoBar>(unavailable.ToControl());
+			InfoBar infoBar = Assert.IsType<InfoBar>(unavailable.ToControl());
+			Assert.Equal(InfoBarSeverity.Warning, infoBar.Severity);
+			Assert.True(infoBar.IsOpen);
 		});
 	}
 
@@ -2100,7 +2102,7 @@ public sealed class GuiParityAndFacadeTests
 	}
 
 	/// <summary>
-	/// 项目提示条应使用 FluentAvalonia InfoBar 语义。
+	/// 提示条直接使用 FluentAvalonia InfoBar。
 	/// </summary>
 	[Fact]
 	public void InfoBarUsesFluentSeverityActionAndClosableState()
@@ -2112,19 +2114,26 @@ public sealed class GuiParityAndFacadeTests
 			{
 				Content = "处理"
 			};
-			ZzzInfoBar zzzInfoBar = new ZzzInfoBar("警告", "需要处理", ZzzInfoBarSeverity.Warning, button, isClosable: true);
-			Assert.IsAssignableFrom<InfoBar>(zzzInfoBar);
-			Assert.Equal("警告", zzzInfoBar.Title);
-			Assert.Equal("需要处理", zzzInfoBar.Message);
-			Assert.Equal(InfoBarSeverity.Warning, zzzInfoBar.Severity);
-			Assert.True(zzzInfoBar.IsOpen);
-			Assert.True(zzzInfoBar.IsClosable);
-			Assert.Same(button, zzzInfoBar.ActionButton);
+			InfoBar infoBar = new InfoBar
+			{
+				Title = "警告",
+				Message = "需要处理",
+				Severity = InfoBarSeverity.Warning,
+				IsOpen = true,
+				IsClosable = true,
+				ActionButton = button,
+			};
+			Assert.Equal("警告", infoBar.Title);
+			Assert.Equal("需要处理", infoBar.Message);
+			Assert.Equal(InfoBarSeverity.Warning, infoBar.Severity);
+			Assert.True(infoBar.IsOpen);
+			Assert.True(infoBar.IsClosable);
+			Assert.Same(button, infoBar.ActionButton);
 		});
 	}
 
 	/// <summary>
-	/// 项目命令栏应使用 FluentAvalonia CommandBar 分组。
+	/// 命令栏直接使用 FluentAvalonia CommandBar 分组。
 	/// </summary>
 	[Fact]
 	public void CommandBarUsesFluentPrimaryAndSecondaryGroups()
@@ -2140,12 +2149,13 @@ public sealed class GuiParityAndFacadeTests
 			{
 				Content = "更多"
 			};
-			ZzzCommandBar zzzCommandBar = new ZzzCommandBar(new Control[] { item }, new Control[] { item2 });
-			Assert.IsAssignableFrom<CommandBar>(zzzCommandBar);
-			Assert.Single(zzzCommandBar.PrimaryCommands);
-			Assert.Single(zzzCommandBar.SecondaryCommands);
-			Assert.IsType<CommandBarElementContainer>(zzzCommandBar.PrimaryCommands[0]);
-			Assert.IsType<CommandBarElementContainer>(zzzCommandBar.SecondaryCommands[0]);
+			CommandBar commandBar = new CommandBar();
+			commandBar.PrimaryCommands.Add(new CommandBarElementContainer { Content = item });
+			commandBar.SecondaryCommands.Add(new CommandBarElementContainer { Content = item2 });
+			Assert.Single(commandBar.PrimaryCommands);
+			Assert.Single(commandBar.SecondaryCommands);
+			Assert.IsType<CommandBarElementContainer>(commandBar.PrimaryCommands[0]);
+			Assert.IsType<CommandBarElementContainer>(commandBar.SecondaryCommands[0]);
 		});
 	}
 
