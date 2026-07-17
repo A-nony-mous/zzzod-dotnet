@@ -64,6 +64,23 @@ public sealed class GuiStaticAuditTests
 		Assert.Empty(guiAuditResult.UnapprovedControls);
 	}
 
+	[Fact]
+	public void MultiShellWindowsUseOfficialFluentControlsWithoutExplanatoryCopy()
+	{
+		string path = FindGuiRoot();
+		foreach (string fileName in new[] { "MixedShellWindow.axaml", "FrontierShellWindow.axaml" })
+		{
+			string text = File.ReadAllText(Path.Combine(path, "Views", fileName));
+			Assert.Contains("<fa:NavigationView", text, StringComparison.Ordinal);
+			Assert.Contains("<fa:NavigationViewItem", text, StringComparison.Ordinal);
+			Assert.Contains("<fa:Frame", text, StringComparison.Ordinal);
+			Assert.Contains("<fa:FontIconSource", text, StringComparison.Ordinal);
+			Assert.DoesNotContain("对应 Python", text, StringComparison.Ordinal);
+			Assert.DoesNotContain("后端尚未", text, StringComparison.Ordinal);
+			Assert.DoesNotContain("fallback", text, StringComparison.OrdinalIgnoreCase);
+		}
+	}
+
 	/// <summary>
 	/// 游戏助手容器使用 AXAML FluentAvalonia TabView，并固定 BaselineParity 子页顺序。
 	/// </summary>
@@ -478,7 +495,7 @@ public sealed class GuiStaticAuditTests
 		string actualString2 = File.ReadAllText(Path.Combine(path, "Views", "MainWindow.cs"));
 		string actualString3 = File.ReadAllText(Path.Combine(path, "Theme", "ZzzComponentStyles.axaml"));
 		Assert.Contains("Classes=\"zzz-titlebar\"", actualString, StringComparison.Ordinal);
-		Assert.Contains("ApplyRouteVisualState(entry.Key)", actualString2, StringComparison.Ordinal);
+		Assert.Contains("_pageHost.RouteChanged += OnRouteChanged", actualString2, StringComparison.Ordinal);
 		Assert.Contains("_titleBar.Classes.Set(\"home-mode\", state.IsHomeMode)", actualString2, StringComparison.Ordinal);
 		Assert.Contains("Grid.zzz-titlebar.home-mode TextBlock.zzz-titlebar-title", actualString3, StringComparison.Ordinal);
 		Assert.Contains("Grid.zzz-titlebar.home-mode Button.zzz-titlebar-action", actualString3, StringComparison.Ordinal);
