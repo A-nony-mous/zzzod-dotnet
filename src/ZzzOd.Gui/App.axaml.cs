@@ -10,6 +10,7 @@ using FluentAvalonia.Styling;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using ZzzOd.AppHost.Backend;
+using ZzzOd.Gui.Shell;
 using ZzzOd.Gui.Views;
 using System.Text.Json;
 
@@ -45,7 +46,7 @@ public sealed partial class App : Application
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
             desktop.ShutdownMode = ShutdownMode.OnExplicitShutdown;
-            MainWindow mainWindow = ActivatorUtilities.CreateInstance<MainWindow>(Host.Services);
+            Window mainWindow = Host.Services.GetRequiredService<ZzzShellWindowFactory>().Create();
             desktop.MainWindow = mainWindow;
             mainWindow.Opened += (_, _) => ZzzGuiControlTreeEvidence.TryWrite(mainWindow);
             InstallTray(desktop, mainWindow);

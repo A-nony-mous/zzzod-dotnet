@@ -16,7 +16,7 @@ using ZzzOd.Gui.Shell;
 
 namespace ZzzOd.Gui.Views;
 
-public sealed partial class MainWindow : Window
+public partial class MainWindow : Window
 {
     private readonly IServiceProvider _services;
     private readonly ZzzShellNavigationService _navigationService;
@@ -25,14 +25,14 @@ public sealed partial class MainWindow : Window
     private readonly ZzzOverlayController _overlayController;
     private readonly ZzzGlobalInputMonitor _globalInputMonitor;
     private readonly ZzzWindowBackdropService _backdropService;
-    private readonly string? _evidenceRoute;
-    private readonly InfoBar _toastBar;
-    private readonly DispatcherTimer _toastTimer;
-    private readonly Frame _contentFrame;
-    private readonly NavigationView _navigation;
-    private readonly Grid _titleBar;
-    private readonly Image _titleBarIcon;
-    private readonly ZzzShellPageHost _pageHost;
+    private string? _evidenceRoute;
+    private InfoBar _toastBar = null!;
+    private DispatcherTimer _toastTimer = null!;
+    private Frame _contentFrame = null!;
+    private NavigationView _navigation = null!;
+    private Grid _titleBar = null!;
+    private Image _titleBarIcon = null!;
+    private ZzzShellPageHost _pageHost = null!;
     private Bitmap? _titleBarIconBitmap;
 
     public MainWindow()
@@ -49,6 +49,19 @@ public sealed partial class MainWindow : Window
         IZzzDialogService dialogService,
         ZzzShellViewModel shellViewModel,
         ZzzRunRoot runRoot)
+        : this(services, navigationRegistry, pageLifecycle, navigationService, dialogService, shellViewModel, runRoot, true)
+    {
+    }
+
+    protected MainWindow(
+        IServiceProvider services,
+        ZzzNavigationRegistry navigationRegistry,
+        ZzzPageLifecycleService pageLifecycle,
+        ZzzShellNavigationService navigationService,
+        IZzzDialogService dialogService,
+        ZzzShellViewModel shellViewModel,
+        ZzzRunRoot runRoot,
+        bool loadMainWindowAxaml)
     {
         _services = services;
         _navigationService = navigationService;
@@ -58,7 +71,19 @@ public sealed partial class MainWindow : Window
         _globalInputMonitor = services.GetRequiredService<ZzzGlobalInputMonitor>();
         _backdropService = services.GetRequiredService<ZzzWindowBackdropService>();
         DataContext = shellViewModel;
-        AvaloniaXamlLoader.Load(this);
+        if (loadMainWindowAxaml)
+        {
+            AvaloniaXamlLoader.Load(this);
+            InitializeShell(navigationRegistry, pageLifecycle, navigationService, runRoot);
+        }
+    }
+
+    protected void InitializeShell(
+        ZzzNavigationRegistry navigationRegistry,
+        ZzzPageLifecycleService pageLifecycle,
+        ZzzShellNavigationService navigationService,
+        ZzzRunRoot runRoot)
+    {
         _navigation = this.FindControl<NavigationView>("Navigation")
             ?? throw new InvalidOperationException("MainWindow 缺少 NavigationView?");
         _contentFrame = this.FindControl<Frame>("ContentFrame")
@@ -116,7 +141,7 @@ public sealed partial class MainWindow : Window
         _ = _globalInputMonitor.EnsureStarted();
     }
 
-    private void OnNavigationSelectionChanged(object? sender, NavigationViewSelectionChangedEventArgs args)
+    protected void OnNavigationSelectionChanged(object? sender, NavigationViewSelectionChangedEventArgs args)
     {
         string tag = args.SelectedItem switch
         {
@@ -133,7 +158,7 @@ public sealed partial class MainWindow : Window
         _pageHost.ShowPage(tag);
     }
 
-    private void OnNavigationBackRequested(object? sender, NavigationViewBackRequestedEventArgs args)
+    protected void OnNavigationBackRequested(object? sender, NavigationViewBackRequestedEventArgs args)
     {
         _pageHost.GoBack();
     }
@@ -155,7 +180,7 @@ public sealed partial class MainWindow : Window
         Dispatcher.UIThread.Post(() => _pageHost.NavigateToRequestedTarget(key));
     }
 
-    private void OnIssueClicked(object? sender, RoutedEventArgs args)
+    protected void OnIssueClicked(object? sender, RoutedEventArgs args)
     {
         if (!Uri.TryCreate(_shellViewModel.IssueUrl, UriKind.Absolute, out Uri? uri))
         {
@@ -165,10 +190,10 @@ public sealed partial class MainWindow : Window
         Process.Start(new ProcessStartInfo(uri.AbsoluteUri) { UseShellExecute = true });
     }
 
-    private async void OnLauncherVersionClicked(object? sender, RoutedEventArgs args) =>
+    protected async void OnLauncherVersionClicked(object? sender, RoutedEventArgs args) =>
         await CopyVersionAsync(_shellViewModel.LauncherVersion).ConfigureAwait(true);
 
-    private async void OnCodeVersionClicked(object? sender, RoutedEventArgs args) =>
+    protected async void OnCodeVersionClicked(object? sender, RoutedEventArgs args) =>
         await CopyVersionAsync(_shellViewModel.CodeVersion).ConfigureAwait(true);
 
     private async Task CopyVersionAsync(string version)
@@ -193,7 +218,7 @@ public sealed partial class MainWindow : Window
         _toastTimer.Start();
     }
 
-    private void OnMinimizeClicked(object? sender, RoutedEventArgs args) =>
+    protected void OnMinimizeClicked(object? sender, RoutedEventArgs args) =>
         WindowState = WindowState.Minimized;
 
     private void OnOpened(object? sender, EventArgs args)
@@ -206,7 +231,7 @@ public sealed partial class MainWindow : Window
     private void OnGlobalInputPressed(object? sender, string key) =>
         _overlayController.TryToggleFromHotkey(key);
 
-    private void OnTitleBarPointerPressed(object? sender, PointerPressedEventArgs args)
+    protected void OnTitleBarPointerPressed(object? sender, PointerPressedEventArgs args)
     {
         PointerPoint point = args.GetCurrentPoint(this);
         if (point.Properties.PointerUpdateKind is not PointerUpdateKind.LeftButtonPressed)
@@ -228,10 +253,10 @@ public sealed partial class MainWindow : Window
         BeginMoveDrag(args);
     }
 
-    private void OnMaximizeClicked(object? sender, RoutedEventArgs args) =>
+    protected void OnMaximizeClicked(object? sender, RoutedEventArgs args) =>
         WindowState = WindowState is WindowState.Maximized ? WindowState.Normal : WindowState.Maximized;
 
-    private void OnCloseClicked(object? sender, RoutedEventArgs args) => Close();
+    protected void OnCloseClicked(object? sender, RoutedEventArgs args) => Close();
 
     private void LoadTitleBarIcon(string runRoot)
     {

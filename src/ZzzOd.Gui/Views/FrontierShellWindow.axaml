@@ -1,0 +1,69 @@
+<local:FrontierShellWindow xmlns="https://github.com/avaloniaui"
+                           xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                           xmlns:fa="using:FluentAvalonia.UI.Controls"
+                           xmlns:local="using:ZzzOd.Gui.Views"
+                           xmlns:shell="using:ZzzOd.Gui.Shell"
+                           x:DataType="shell:ZzzShellViewModel"
+                           Title="{Binding WindowTitle}"
+                           Width="1140"
+                           Height="760"
+                           MinWidth="960"
+                           MinHeight="640"
+                           ShowActivated="True"
+                           SystemDecorations="None"
+                           ExtendClientAreaToDecorationsHint="True"
+                           ExtendClientAreaTitleBarHeightHint="32">
+  <Grid Background="{DynamicResource ApplicationPageBackgroundThemeBrush}">
+    <fa:NavigationView x:Name="Navigation"
+                       PaneDisplayMode="LeftCompact"
+                       OpenPaneLength="240"
+                       CompactPaneLength="48"
+                       IsPaneOpen="False"
+                       IsBackButtonVisible="True"
+                       IsBackEnabled="False"
+                       IsSettingsVisible="False"
+                       BackRequested="OnNavigationBackRequested"
+                       SelectionChanged="OnNavigationSelectionChanged">
+      <fa:NavigationView.MenuItemTemplate>
+        <DataTemplate x:DataType="shell:ZzzNavigationEntry">
+          <fa:NavigationViewItem Tag="{Binding Key}"
+                                 Content="{Binding Text}"
+                                 ToolTip.Tip="{Binding AccessibleName}">
+            <fa:NavigationViewItem.IconSource>
+              <fa:FontIconSource Glyph="{Binding IconGlyph}" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" />
+            </fa:NavigationViewItem.IconSource>
+          </fa:NavigationViewItem>
+        </DataTemplate>
+      </fa:NavigationView.MenuItemTemplate>
+      <fa:NavigationView.Content>
+        <Border Margin="16" Background="{DynamicResource CardBackgroundFillColorDefaultBrush}" CornerRadius="12">
+          <fa:Frame x:Name="ContentFrame"
+                    HorizontalContentAlignment="Stretch"
+                    VerticalContentAlignment="Stretch"
+                    IsNavigationStackEnabled="False" />
+        </Border>
+      </fa:NavigationView.Content>
+    </fa:NavigationView>
+    <Grid x:Name="TitleBar"
+          Height="32"
+          Margin="48,0,0,0"
+          ColumnDefinitions="Auto,*,Auto"
+          ZIndex="10"
+          PointerPressed="OnTitleBarPointerPressed">
+      <Image x:Name="TitleBarIcon" Width="18" Height="18" VerticalAlignment="Center" />
+      <TextBlock Grid.Column="1" Margin="8,0" VerticalAlignment="Center" Text="{Binding WindowTitle}" />
+      <StackPanel Grid.Column="2" Orientation="Horizontal">
+        <Button Click="OnMinimizeClicked"><fa:FontIcon Glyph="&#xE921;" /></Button>
+        <Button Click="OnMaximizeClicked"><fa:FontIcon Glyph="&#xE922;" /></Button>
+        <Button Click="OnCloseClicked"><fa:FontIcon Glyph="&#xE8BB;" /></Button>
+      </StackPanel>
+    </Grid>
+    <fa:InfoBar x:Name="ToastBar"
+                Margin="0,40,24,0"
+                HorizontalAlignment="Right"
+                VerticalAlignment="Top"
+                IsOpen="False"
+                IsClosable="False"
+                ZIndex="20" />
+  </Grid>
+</local:FrontierShellWindow>
