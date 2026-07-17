@@ -29,12 +29,7 @@
         PointerEntered="OnHomePointerEntered"
         PointerExited="OnHomePointerExited">
     <Image x:Name="BannerImage"
-           Stretch="UniformToFill"
-           RenderTransformOrigin="0,0">
-      <Image.RenderTransform>
-        <ScaleTransform ScaleX="1.5" />
-      </Image.RenderTransform>
-    </Image>
+           Stretch="UniformToFill" />
 
     <Border x:Name="MediaPlaceholder"
             Background="#66000000"
