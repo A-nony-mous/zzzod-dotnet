@@ -28,6 +28,8 @@ public sealed class CustomSettingsAxamlPageTests
 		Assert.Contains("PasswordChar=\"●\"", text, StringComparison.Ordinal);
 		Assert.Contains("ValueChanged=\"OnThemeColorValueChanged\"", text, StringComparison.Ordinal);
 		Assert.Contains("SaveConfigScope", actualString, StringComparison.Ordinal);
+		string customConfig = File.ReadAllText(Path.Combine(FindSettingsDirectory(), "..", "..", "..", "ZzzOd.GameLogic", "ZzzOd.GameLogic.Config", "CustomGuiConfig.cs"));
+		Assert.Contains("Alias = \"gui_shell_preset\"", customConfig, StringComparison.Ordinal);
 		Assert.Contains("ApplyAccentColor", actualString, StringComparison.Ordinal);
 		Assert.Contains("SaveCustomBackgroundAsync", actualString, StringComparison.Ordinal);
 		Assert.Contains("RequestedThemeVariant", actualString, StringComparison.Ordinal);
