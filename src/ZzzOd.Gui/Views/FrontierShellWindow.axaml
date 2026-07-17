@@ -85,16 +85,12 @@
     <Grid x:Name="FrontierTitleBar"
           Height="32"
           Margin="48,0,0,0"
+          VerticalAlignment="Top"
           ColumnDefinitions="Auto,*,Auto"
           ZIndex="10"
           PointerPressed="OnTitleBarPointerPressed">
       <Image x:Name="FrontierTitleBarIcon" Width="18" Height="18" VerticalAlignment="Center" />
       <TextBlock Grid.Column="1" Margin="8,0" VerticalAlignment="Center" Text="{Binding WindowTitle}" />
-      <StackPanel Grid.Column="2" Orientation="Horizontal">
-        <Button Click="OnMinimizeClicked"><fa:FontIcon Glyph="&#xE921;" /></Button>
-        <Button Click="OnMaximizeClicked"><fa:FontIcon Glyph="&#xE922;" /></Button>
-        <Button Click="OnCloseClicked"><fa:FontIcon Glyph="&#xE8BB;" /></Button>
-      </StackPanel>
     </Grid>
     <fa:InfoBar x:Name="FrontierToastBar"
                 Margin="0,40,24,0"

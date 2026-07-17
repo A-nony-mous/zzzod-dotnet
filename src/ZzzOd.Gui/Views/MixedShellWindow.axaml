@@ -11,6 +11,7 @@
                         MinWidth="960"
                         MinHeight="640"
                         ShowActivated="True"
+                        RequestedThemeVariant="Light"
                         SystemDecorations="None"
                         ExtendClientAreaToDecorationsHint="True"
                         ExtendClientAreaTitleBarHeightHint="32"
@@ -45,7 +46,31 @@
     <Style Selector="fa|NavigationViewItem fa|FontIcon">
       <Setter Property="Foreground" Value="#FFF5F7FA" />
     </Style>
-    <Style Selector="fa|InfoBar TextBlock">
+    <Style Selector="fa|NavigationView Button">
+      <Setter Property="Foreground" Value="#FFF5F7FA" />
+    </Style>
+    <Style Selector="fa|NavigationView Button fa|FontIcon">
+      <Setter Property="Foreground" Value="#FFF5F7FA" />
+    </Style>
+    <Style Selector="Border#MixedContentSurface TextBlock">
+      <Setter Property="Foreground" Value="#FF1A1C1F" />
+    </Style>
+    <Style Selector="Border#MixedContentSurface Button">
+      <Setter Property="Foreground" Value="#FF1A1C1F" />
+    </Style>
+    <Style Selector="Border#MixedContentSurface TextBox">
+      <Setter Property="Foreground" Value="#FF1A1C1F" />
+    </Style>
+    <Style Selector="Border#MixedContentSurface fa|FAComboBox">
+      <Setter Property="Foreground" Value="#FF1A1C1F" />
+    </Style>
+    <Style Selector="Border#MixedContentSurface fa|TabViewItem">
+      <Setter Property="Foreground" Value="#FF1A1C1F" />
+    </Style>
+    <Style Selector="Border#MixedContentSurface fa|InfoBar">
+      <Setter Property="Foreground" Value="#FF1A1C1F" />
+    </Style>
+    <Style Selector="Border#MixedContentSurface fa|InfoBar /template/ TextBlock">
       <Setter Property="Foreground" Value="#FF1A1C1F" />
     </Style>
   </Window.Styles>
@@ -83,7 +108,8 @@
         </DataTemplate>
       </fa:NavigationView.MenuItemTemplate>
       <fa:NavigationView.Content>
-        <Border Margin="12,44,12,12"
+        <Border x:Name="MixedContentSurface"
+                Margin="12,44,12,12"
                 Padding="{DynamicResource ZzzMixedContentPadding}"
                 Background="{DynamicResource ZzzMixedContentSurfaceBrush}"
                 BorderBrush="{DynamicResource ZzzMixedContentBorderBrush}"
@@ -99,16 +125,12 @@
     <Grid x:Name="MixedTitleBar"
           Height="32"
           Margin="48,0,0,0"
+          VerticalAlignment="Top"
           ColumnDefinitions="Auto,*,Auto"
           ZIndex="10"
           PointerPressed="OnTitleBarPointerPressed">
       <Image x:Name="MixedTitleBarIcon" Width="18" Height="18" VerticalAlignment="Center" />
       <TextBlock Grid.Column="1" Margin="8,0" VerticalAlignment="Center" Text="{Binding WindowTitle}" />
-      <StackPanel Grid.Column="2" Orientation="Horizontal">
-        <Button Click="OnMinimizeClicked"><fa:FontIcon Glyph="&#xE921;" /></Button>
-        <Button Click="OnMaximizeClicked"><fa:FontIcon Glyph="&#xE922;" /></Button>
-        <Button Click="OnCloseClicked"><fa:FontIcon Glyph="&#xE8BB;" /></Button>
-      </StackPanel>
     </Grid>
     <fa:InfoBar x:Name="MixedToastBar"
                 Margin="0,40,24,0"
