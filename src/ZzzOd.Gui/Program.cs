@@ -19,12 +19,14 @@ namespace ZzzOd.Gui;
 
 internal static class Program
 {
+    internal const string RestartArgument = "--restart";
+
     [STAThread]
     public static int Main(string[] args)
     {
         ZzzRunRootResolution runRootResolution = ZzzRunRootResolver.Resolve(args);
         string runRoot = runRootResolution.RunRoot.Path;
-        using ZzzRuntimeLock? runtimeLock = ZzzRuntimeLock.TryAcquire(runRoot);
+        using ZzzRuntimeLock? runtimeLock = AcquireRuntimeLock(runRoot, args);
         if (runtimeLock is null)
         {
             if (ZzzGuiSingleInstanceSignal.TryShowExistingAsync(runRoot).GetAwaiter().GetResult())
@@ -78,4 +80,21 @@ internal static class Program
         AppBuilder.Configure<App>()
             .UsePlatformDetect()
             .LogToTrace();
+
+    private static ZzzRuntimeLock? AcquireRuntimeLock(string runRoot, IReadOnlyList<string> args)
+    {
+        bool isRestart = args.Any(argument => string.Equals(argument, RestartArgument, StringComparison.Ordinal));
+        DateTime deadline = DateTime.UtcNow.AddSeconds(isRestart ? 15 : 0);
+        do
+        {
+            ZzzRuntimeLock? runtimeLock = ZzzRuntimeLock.TryAcquire(runRoot);
+            if (runtimeLock is not null || !isRestart || DateTime.UtcNow >= deadline)
+            {
+                return runtimeLock;
+            }
+
+            Thread.Sleep(100);
+        }
+        while (true);
+    }
 }

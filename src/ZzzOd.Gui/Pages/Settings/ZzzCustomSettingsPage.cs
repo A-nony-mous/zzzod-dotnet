@@ -395,7 +395,18 @@ internal sealed partial class ZzzCustomSettingsAxamlPage : UserControl, IZzzPage
         string? path = Environment.ProcessPath;
         if (!string.IsNullOrWhiteSpace(path))
         {
-            Process.Start(new ProcessStartInfo(path) { UseShellExecute = true });
+            ProcessStartInfo startInfo = new(path) { UseShellExecute = true };
+            foreach (string argument in Environment.GetCommandLineArgs().Skip(1))
+            {
+                startInfo.ArgumentList.Add(argument);
+            }
+
+            if (!startInfo.ArgumentList.Any(argument => string.Equals(argument, Program.RestartArgument, StringComparison.Ordinal)))
+            {
+                startInfo.ArgumentList.Add(Program.RestartArgument);
+            }
+
+            Process.Start(startInfo);
         }
 
         if (Application.Current?.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
