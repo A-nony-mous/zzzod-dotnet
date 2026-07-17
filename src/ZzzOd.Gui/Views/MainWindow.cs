@@ -19,8 +19,6 @@ namespace ZzzOd.Gui.Views;
 public sealed partial class MainWindow : Window
 {
     private readonly IServiceProvider _services;
-    private readonly ZzzNavigationRegistry _navigationRegistry;
-    private readonly ZzzPageLifecycleService _pageLifecycle;
     private readonly ZzzShellNavigationService _navigationService;
     private readonly IZzzDialogService _dialogService;
     private readonly ZzzShellViewModel _shellViewModel;
@@ -34,9 +32,8 @@ public sealed partial class MainWindow : Window
     private readonly NavigationView _navigation;
     private readonly Grid _titleBar;
     private readonly Image _titleBarIcon;
-    private readonly Dictionary<string, Control> _pageCache = [];
+    private readonly ZzzShellPageHost _pageHost;
     private Bitmap? _titleBarIconBitmap;
-    private IZzzShellBackNavigationHost? _backNavigationHost;
 
     public MainWindow()
     {
@@ -54,8 +51,6 @@ public sealed partial class MainWindow : Window
         ZzzRunRoot runRoot)
     {
         _services = services;
-        _navigationRegistry = navigationRegistry;
-        _pageLifecycle = pageLifecycle;
         _navigationService = navigationService;
         _dialogService = dialogService;
         _shellViewModel = shellViewModel;
@@ -87,25 +82,23 @@ public sealed partial class MainWindow : Window
             _toastTimer.Stop();
             _toastBar.IsOpen = false;
         };
-        _navigation.MenuItemsSource = _navigationRegistry.Entries
-            .Where(entry => entry.Placement is ZzzNavigationPlacement.Primary)
-            .ToArray();
-        _navigation.FooterMenuItemsSource = _navigationRegistry.Entries
-            .Where(entry => entry.Placement is ZzzNavigationPlacement.Footer)
-            .ToArray();
         ApplyEvidencePaneState(_navigation, evidenceSelection);
 
+        _pageHost = new ZzzShellPageHost(
+            _services,
+            navigationRegistry,
+            pageLifecycle,
+            navigationService,
+            _contentFrame,
+            _navigation);
+        _pageHost.RouteChanged += OnRouteChanged;
         string initialPage = evidenceSelection.Page;
-        if (_navigationRegistry.Entries.All(entry => !string.Equals(entry.Key, initialPage, StringComparison.Ordinal)))
-        {
-            initialPage = "home";
-        }
 
         _evidenceRoute = string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("ZZZOD_GUI_EVIDENCE_PAGE"))
             ? null
             : initialPage;
 
-        ShowPage(initialPage);
+        _pageHost.Initialize(initialPage);
         Opened += OnOpened;
         Closed += (_, _) =>
         {
@@ -114,21 +107,8 @@ public sealed partial class MainWindow : Window
             _toastTimer.Stop();
             _titleBarIconBitmap?.Dispose();
             _titleBarIconBitmap = null;
-            BindBackNavigationHost(null);
-            _pageLifecycle.DisposeCurrent();
-            object? current = _contentFrame.Content;
-            foreach (Control page in _pageCache.Values)
-            {
-                if (ReferenceEquals(page, current))
-                {
-                    continue;
-                }
-
-                if (page is IZzzPageLifecycle lifecycle)
-                {
-                    lifecycle.DisposePage();
-                }
-            }
+            _pageHost.RouteChanged -= OnRouteChanged;
+            _pageHost.Dispose();
         };
         _dialogService.ToastRequested += OnToastRequested;
         _navigationService.NavigationRequested += OnNavigationRequested;
@@ -146,53 +126,23 @@ public sealed partial class MainWindow : Window
         };
         if (_evidenceRoute is not null && !string.Equals(tag, _evidenceRoute, StringComparison.Ordinal))
         {
-            Dispatcher.UIThread.Post(() => ShowPage(_evidenceRoute));
+            Dispatcher.UIThread.Post(() => _pageHost.ShowPage(_evidenceRoute));
             return;
         }
 
-        ShowPage(tag);
+        _pageHost.ShowPage(tag);
     }
 
     private void OnNavigationBackRequested(object? sender, NavigationViewBackRequestedEventArgs args)
     {
-        if (_backNavigationHost?.CanGoBack == true)
-        {
-            _backNavigationHost.GoBack();
-        }
+        _pageHost.GoBack();
     }
 
-    private void ShowPage(string tag)
-    {
-        ZzzNavigationEntry entry = _navigationRegistry.GetRequired(tag);
-        ApplyRouteVisualState(entry.Key);
-        if (!ReferenceEquals(_navigation.SelectedItem, entry))
-        {
-            _navigation.SelectedItem = entry;
-        }
-
-        Control page = GetPage(entry);
-        _contentFrame.Content = page;
-        BindBackNavigationHost(page as IZzzShellBackNavigationHost);
-        _pageLifecycle.NavigateTo(page, entry.Key);
-    }
-
-    private void ApplyRouteVisualState(string routeKey)
+    private void OnRouteChanged(object? sender, string routeKey)
     {
         ZzzShellRouteVisualState state = ZzzShellRouteVisualState.ForRoute(routeKey);
         _contentFrame.Margin = state.ContentMargin;
         _titleBar.Classes.Set("home-mode", state.IsHomeMode);
-    }
-
-    private Control GetPage(ZzzNavigationEntry entry)
-    {
-        if (_pageCache.TryGetValue(entry.Key, out Control? page))
-        {
-            return page;
-        }
-
-        page = entry.CreatePage(_services);
-        _pageCache[entry.Key] = page;
-        return page;
     }
 
     private void OnToastRequested(object? sender, ZzzToastRequest request)
@@ -202,18 +152,7 @@ public sealed partial class MainWindow : Window
 
     private void OnNavigationRequested(object? sender, string key)
     {
-        Dispatcher.UIThread.Post(() => NavigateToRequestedTarget(key));
-    }
-
-    private void NavigateToRequestedTarget(string key)
-    {
-        ZzzShellNavigationTarget target = _navigationService.Resolve(key);
-        ShowPage(target.RootKey);
-        if (!string.IsNullOrWhiteSpace(target.PivotHeader)
-            && _contentFrame.Content is IZzzPivotNavigationHost pivot)
-        {
-            pivot.SelectByHeader(target.PivotHeader);
-        }
+        Dispatcher.UIThread.Post(() => _pageHost.NavigateToRequestedTarget(key));
     }
 
     private void OnIssueClicked(object? sender, RoutedEventArgs args)
@@ -293,30 +232,6 @@ public sealed partial class MainWindow : Window
         WindowState = WindowState is WindowState.Maximized ? WindowState.Normal : WindowState.Maximized;
 
     private void OnCloseClicked(object? sender, RoutedEventArgs args) => Close();
-
-    private void BindBackNavigationHost(IZzzShellBackNavigationHost? host)
-    {
-        if (_backNavigationHost is not null)
-        {
-            _backNavigationHost.BackNavigationStateChanged -= OnBackNavigationStateChanged;
-        }
-
-        _backNavigationHost = host;
-        if (_backNavigationHost is not null)
-        {
-            _backNavigationHost.BackNavigationStateChanged += OnBackNavigationStateChanged;
-        }
-
-        UpdateBackNavigationState();
-    }
-
-    private void OnBackNavigationStateChanged(object? sender, EventArgs args) =>
-        UpdateBackNavigationState();
-
-    private void UpdateBackNavigationState()
-    {
-        _navigation.IsBackEnabled = _backNavigationHost?.CanGoBack == true;
-    }
 
     private void LoadTitleBarIcon(string runRoot)
     {
