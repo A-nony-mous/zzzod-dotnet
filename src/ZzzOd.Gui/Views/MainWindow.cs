@@ -254,6 +254,11 @@ public partial class MainWindow : Window
 
     private static void ApplyEvidencePaneState(NavigationView navigation, ZzzGuiEvidenceSelection evidenceSelection)
     {
+        if (string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("ZZZOD_GUI_EVIDENCE_PANE")))
+        {
+            return;
+        }
+
         if (string.Equals(evidenceSelection.Pane, "compact", StringComparison.OrdinalIgnoreCase))
         {
             navigation.PaneDisplayMode = NavigationViewPaneDisplayMode.LeftCompact;

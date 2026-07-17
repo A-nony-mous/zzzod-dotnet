@@ -8,8 +8,8 @@
                         Title="{Binding WindowTitle}"
                         Width="1140"
                         Height="760"
-                        MinWidth="960"
-                        MinHeight="640"
+                        MinWidth="1140"
+                        MinHeight="760"
                         ShowActivated="True"
                         RequestedThemeVariant="Light"
                         SystemDecorations="None"
@@ -76,7 +76,7 @@
   </Window.Styles>
   <Grid>
     <fa:NavigationView x:Name="MixedNavigation"
-                       PaneDisplayMode="Left"
+                       PaneDisplayMode="Auto"
                        OpenPaneLength="280"
                        CompactPaneLength="48"
                        IsPaneOpen="True"
