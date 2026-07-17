@@ -9,6 +9,7 @@ using Avalonia.VisualTree;
 using FluentAvalonia.Styling;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 using ZzzOd.AppHost.Backend;
 using ZzzOd.Gui.Shell;
 using ZzzOd.Gui.Views;
@@ -20,6 +21,8 @@ public sealed partial class App : Application
 {
     private TrayIcon? _trayIcon;
     private ZzzGuiSingleInstanceSignal? _singleInstanceSignal;
+    private ILogger<App>? _logger;
+    private bool _unhandledExceptionLoggingRegistered;
     private bool _exitRequested;
 
     public static IHost? Host { get; set; }
@@ -43,6 +46,7 @@ public sealed partial class App : Application
         IZzzAppBackend backend = Host.Services.GetRequiredService<IZzzAppBackend>();
         ApplyConfiguredTheme(backend);
         ApplyConfiguredAccentColor(backend);
+        RegisterUnhandledExceptionLogging(Host.Services.GetRequiredService<ILogger<App>>());
         
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
@@ -74,6 +78,7 @@ public sealed partial class App : Application
 
             desktop.Exit += (_, _) =>
             {
+                UnregisterUnhandledExceptionLogging();
                 _singleInstanceSignal?.Dispose();
                 _trayIcon?.Dispose();
                 Host.StopAsync(TimeSpan.FromSeconds(3)).GetAwaiter().GetResult();
@@ -156,6 +161,81 @@ public sealed partial class App : Application
             string path = Path.Combine(RunRoot, ".log", "zzz-gui-startup-error.log");
             Directory.CreateDirectory(Path.GetDirectoryName(path)!);
             File.AppendAllText(path, $"[{DateTimeOffset.Now:O}] {exception}{Environment.NewLine}");
+        }
+        catch
+        {
+        }
+    }
+
+    private void RegisterUnhandledExceptionLogging(ILogger<App> logger)
+    {
+        _logger = logger;
+        if (_unhandledExceptionLoggingRegistered)
+        {
+            return;
+        }
+
+        AppDomain.CurrentDomain.UnhandledException += OnAppDomainUnhandledException;
+        TaskScheduler.UnobservedTaskException += OnUnobservedTaskException;
+        Dispatcher.UIThread.UnhandledException += OnDispatcherUnhandledException;
+        _unhandledExceptionLoggingRegistered = true;
+    }
+
+    private void UnregisterUnhandledExceptionLogging()
+    {
+        if (!_unhandledExceptionLoggingRegistered)
+        {
+            return;
+        }
+
+        AppDomain.CurrentDomain.UnhandledException -= OnAppDomainUnhandledException;
+        TaskScheduler.UnobservedTaskException -= OnUnobservedTaskException;
+        Dispatcher.UIThread.UnhandledException -= OnDispatcherUnhandledException;
+        _unhandledExceptionLoggingRegistered = false;
+        _logger = null;
+    }
+
+    private void OnDispatcherUnhandledException(object? sender, DispatcherUnhandledExceptionEventArgs args)
+    {
+        WriteUnhandledException("Avalonia UI 线程", args.Exception);
+    }
+
+    private void OnUnobservedTaskException(object? sender, UnobservedTaskExceptionEventArgs args)
+    {
+        WriteUnhandledException("未观察任务", args.Exception);
+    }
+
+    private void OnAppDomainUnhandledException(object? sender, UnhandledExceptionEventArgs args)
+    {
+        Exception exception = args.ExceptionObject as Exception
+            ?? new InvalidOperationException(args.ExceptionObject?.ToString() ?? "进程级未处理异常没有异常对象。");
+        WriteUnhandledException("进程", exception);
+    }
+
+    private void WriteUnhandledException(string source, Exception exception)
+    {
+        try
+        {
+            if (_logger is not null)
+            {
+                _logger.LogCritical(exception, "{Source}发生未处理异常", source);
+                return;
+            }
+        }
+        catch
+        {
+        }
+
+        if (string.IsNullOrWhiteSpace(RunRoot))
+        {
+            return;
+        }
+
+        try
+        {
+            string path = Path.Combine(RunRoot, ".log", "zzz-gui-unhandled.log");
+            Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+            File.AppendAllText(path, $"[{DateTimeOffset.Now:O}] [{source}] {exception}{Environment.NewLine}");
         }
         catch
         {
