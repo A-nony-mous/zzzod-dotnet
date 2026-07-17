@@ -1,6 +1,7 @@
 <local:FrontierShellWindow xmlns="https://github.com/avaloniaui"
                            xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
                            xmlns:fa="using:FluentAvalonia.UI.Controls"
+                           xmlns:vlc="clr-namespace:LibVLCSharp.Avalonia;assembly=LibVLCSharp.Avalonia"
                            xmlns:local="using:ZzzOd.Gui.Views"
                            xmlns:shell="using:ZzzOd.Gui.Shell"
                            x:DataType="shell:ZzzShellViewModel"
@@ -24,6 +25,7 @@
     <Image x:Name="BackgroundImage"
            Stretch="UniformToFill"
            IsVisible="False" />
+    <vlc:VideoView x:Name="BackgroundVideo" IsVisible="False" />
     <fa:NavigationView x:Name="Navigation"
                        PaneDisplayMode="LeftCompact"
                        OpenPaneLength="240"

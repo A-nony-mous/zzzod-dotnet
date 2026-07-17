@@ -1,6 +1,8 @@
 using Avalonia.Markup.Xaml;
 using Avalonia.Controls;
 using Avalonia.Media.Imaging;
+using LibVLCSharp.Avalonia;
+using LibVLCSharp.Shared;
 using Microsoft.Extensions.DependencyInjection;
 using ZzzOd.AppHost;
 using ZzzOd.Gui.Services.Dialogs;
@@ -13,7 +15,10 @@ public sealed partial class FrontierShellWindow : MainWindow
 {
     private readonly ZzzLauncherMediaService _mediaService;
     private readonly Image _backgroundImage;
+    private readonly VideoView _backgroundVideo;
     private Bitmap? _backgroundBitmap;
+    private LibVLC? _libVlc;
+    private MediaPlayer? _mediaPlayer;
 
     [ActivatorUtilitiesConstructor]
     public FrontierShellWindow(
@@ -31,21 +36,37 @@ public sealed partial class FrontierShellWindow : MainWindow
         AvaloniaXamlLoader.Load(this);
         _backgroundImage = this.FindControl<Image>("BackgroundImage")
             ?? throw new InvalidOperationException("前卫 Shell 缺少背景图像层。");
+        _backgroundVideo = this.FindControl<VideoView>("BackgroundVideo")
+            ?? throw new InvalidOperationException("前卫 Shell 缺少背景视频层。");
         InitializeShell(navigationRegistry, pageLifecycle, navigationService, runRoot);
         Opened += async (_, _) => await LoadBackgroundAsync().ConfigureAwait(true);
         Closed += (_, _) =>
         {
             _backgroundBitmap?.Dispose();
             _backgroundBitmap = null;
+            _mediaPlayer?.Dispose();
+            _libVlc?.Dispose();
         };
     }
 
     private async Task LoadBackgroundAsync()
     {
         IReadOnlyList<ZzzLauncherMediaItem> items = await _mediaService.GetDashboardMediaAsync().ConfigureAwait(true);
-        ZzzLauncherMediaItem? item = items.FirstOrDefault(media => media.IsImage && !string.IsNullOrWhiteSpace(media.LocalPath));
+        ZzzLauncherMediaItem? item = items.FirstOrDefault(media => !string.IsNullOrWhiteSpace(media.LocalPath));
         if (item?.LocalPath is not { } path)
         {
+            return;
+        }
+
+        if (item.IsVideo)
+        {
+            Core.Initialize();
+            _libVlc = new LibVLC();
+            _mediaPlayer = new MediaPlayer(_libVlc);
+            _backgroundVideo.MediaPlayer = _mediaPlayer;
+            using Media media = new(_libVlc, new Uri(path));
+            _mediaPlayer.Play(media);
+            _backgroundVideo.IsVisible = true;
             return;
         }
 
