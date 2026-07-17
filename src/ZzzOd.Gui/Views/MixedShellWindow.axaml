@@ -45,6 +45,9 @@
     <Style Selector="fa|NavigationViewItem fa|FontIcon">
       <Setter Property="Foreground" Value="#FFF5F7FA" />
     </Style>
+    <Style Selector="fa|InfoBar TextBlock">
+      <Setter Property="Foreground" Value="#FF1A1C1F" />
+    </Style>
   </Window.Styles>
   <Grid>
     <fa:NavigationView x:Name="MixedNavigation"
