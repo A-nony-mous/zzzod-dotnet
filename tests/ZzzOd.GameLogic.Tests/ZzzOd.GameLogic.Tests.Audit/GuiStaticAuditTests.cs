@@ -523,6 +523,29 @@ public sealed class GuiStaticAuditTests
 		Assert.Contains("_issueUrl", viewModel, StringComparison.Ordinal);
 	}
 
+	[Fact]
+	public void ClassicHomeUsesRealMediaAnnouncementsAndProductActions()
+	{
+		string path = FindGuiRoot();
+		string home = File.ReadAllText(Path.Combine(path, "Pages", "Home", "ZzzHomePage.axaml"));
+		string homeCode = File.ReadAllText(Path.Combine(path, "Pages", "Home", "ZzzHomePage.cs"));
+		Assert.Contains("x:Name=\"StartButton\"", home, StringComparison.Ordinal);
+		Assert.Contains("x:Name=\"HomeLinkButton\"", home, StringComparison.Ordinal);
+		Assert.Contains("x:Name=\"GithubLinkButton\"", home, StringComparison.Ordinal);
+		Assert.Contains("GetDashboardMediaAsync", homeCode, StringComparison.Ordinal);
+		Assert.Contains("ZzzNoticeCard", home, StringComparison.Ordinal);
+	}
+
+	[Fact]
+	public void ShellResourcesStayIsolatedFromClassicWindow()
+	{
+		string path = FindGuiRoot();
+		string classic = File.ReadAllText(Path.Combine(path, "Views", "MainWindow.axaml"));
+		Assert.Contains("Theme/ClassicShellResources.axaml", classic, StringComparison.Ordinal);
+		Assert.DoesNotContain("Theme/MixedShellResources.axaml", classic, StringComparison.Ordinal);
+		Assert.DoesNotContain("Theme/FrontierShellResources.axaml", classic, StringComparison.Ordinal);
+	}
+
 	/// <summary>
 	/// 首页路由使用零边距和标题栏首页样式，离开首页恢复 BaselineParity 普通页面边距。
 	/// </summary>
