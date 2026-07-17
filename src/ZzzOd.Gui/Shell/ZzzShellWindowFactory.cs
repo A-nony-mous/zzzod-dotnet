@@ -28,7 +28,9 @@ public sealed class ZzzShellWindowFactory
 
         Type windowType = GetWindowType(resolution.Preset);
         _logger.LogInformation("创建 {ShellPreset} Shell 窗口 {WindowType}", resolution.Preset, windowType.Name);
-        return (Window)ActivatorUtilities.CreateInstance(_services, windowType);
+        Window window = (Window)ActivatorUtilities.CreateInstance(_services, windowType);
+        _logger.LogInformation("已创建 {ShellPreset} Shell 窗口 {WindowType}", resolution.Preset, windowType.Name);
+        return window;
     }
 
     internal static Type GetWindowType(ZzzGuiShellPreset preset) => preset switch

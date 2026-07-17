@@ -9,6 +9,7 @@
     <CheckForOverflowUnderflow>False</CheckForOverflowUnderflow>
     <RootNamespace />
     <NoWarn>$(NoWarn);CS0108</NoWarn>
+    <HotAvalonia Condition="'$(HotAvalonia)' == ''">false</HotAvalonia>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="LibVLCSharp.Avalonia" Version="3.10.0" />

@@ -57,8 +57,13 @@ public sealed partial class App : Application
                 WriteShellStartupFailure(exception);
                 throw;
             }
+            ILogger<App> logger = Host.Services.GetRequiredService<ILogger<App>>();
             desktop.MainWindow = mainWindow;
-            mainWindow.Opened += (_, _) => ZzzGuiControlTreeEvidence.TryWrite(mainWindow);
+            mainWindow.Opened += (_, _) =>
+            {
+                logger.LogInformation("GUI 主窗口已打开 {WindowType}", mainWindow.GetType().Name);
+                ZzzGuiControlTreeEvidence.TryWrite(mainWindow);
+            };
             InstallTray(desktop, mainWindow);
             InstallCloseToTray(mainWindow);
             if (!string.IsNullOrWhiteSpace(RunRoot))
