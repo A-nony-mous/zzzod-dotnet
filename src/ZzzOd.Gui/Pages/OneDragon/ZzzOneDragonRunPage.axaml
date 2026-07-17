@@ -1,0 +1,181 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:fa="using:FluentAvalonia.UI.Controls"
+             xmlns:local="using:ZzzOd.Gui.Pages.OneDragon"
+             x:Class="ZzzOd.Gui.Pages.OneDragon.ZzzOneDragonRunPage">
+  <Grid Margin="11,11,11,0"
+        ColumnDefinitions="*,10,*">
+    <Grid Grid.Column="0"
+          RowDefinitions="Auto,*">
+      <fa:InfoBar x:Name="ActionInfoBar"
+                  IsOpen="False"
+                  IsClosable="True"
+                  Severity="Informational" />
+      <ScrollViewer Grid.Row="1"
+                    HorizontalScrollBarVisibility="Disabled"
+                    VerticalScrollBarVisibility="Auto">
+        <ItemsControl x:Name="AppList">
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="local:ZzzOneDragonAppRowModel">
+                <fa:SettingsExpanderItem Content="{Binding Name}"
+                                         Description="{Binding LastRunText}"
+                                         Margin="0,0,0,1"
+                                         DragDrop.AllowDrop="True"
+                                         PointerPressed="OnAppPointerPressed"
+                                         PointerMoved="OnAppPointerMoved"
+                                         DragDrop.DragOver="OnAppDragOver"
+                                         DragDrop.Drop="OnAppDrop">
+                  <fa:SettingsExpanderItem.IconSource>
+                    <fa:FontIconSource Glyph="{Binding StatusGlyph}" />
+                  </fa:SettingsExpanderItem.IconSource>
+                  <fa:SettingsExpanderItem.Footer>
+                    <StackPanel Orientation="Horizontal"
+                                Spacing="4">
+                      <Button Width="36"
+                              Height="32"
+                              Padding="0"
+                              ToolTip.Tip="应用设置"
+                              IsVisible="{Binding SettingVisible}"
+                              Tag="{Binding}"
+                              Click="OnAppSettingClicked">
+                        <fa:FontIcon Glyph="&#xE713;" />
+                      </Button>
+                      <Button Width="36"
+                              Height="32"
+                              Padding="0"
+                              ToolTip.Tip="更多"
+                              Tag="{Binding}"
+                              Click="OnMoreClicked">
+                        <fa:FontIcon Glyph="&#xE712;" />
+                        <Button.Flyout>
+                          <MenuFlyout>
+                            <MenuItem Header="通知设置"
+                                      Tag="{Binding}"
+                                      IsVisible="{Binding NotifyVisible}"
+                                      Click="OnAppNotifyClicked">
+                              <MenuItem.Icon>
+                                <fa:SymbolIcon Symbol="Message" />
+                              </MenuItem.Icon>
+                            </MenuItem>
+                            <MenuItem Header="移到顶部"
+                                      Tag="{Binding}"
+                                      Click="OnMoveTopClicked">
+                              <MenuItem.Icon>
+                                <fa:FontIcon Glyph="&#xE74A;" />
+                              </MenuItem.Icon>
+                            </MenuItem>
+                          </MenuFlyout>
+                        </Button.Flyout>
+                      </Button>
+                      <Button Width="36"
+                              Height="32"
+                              Padding="0"
+                              ToolTip.Tip="运行"
+                              IsEnabled="{Binding RunAvailable}"
+                              Click="OnRunAppClicked">
+                        <fa:SymbolIcon Symbol="Play" />
+                      </Button>
+                      <ToggleSwitch IsChecked="{Binding Enabled}"
+                                    OnContent=""
+                                    OffContent=""
+                                    Click="OnAppEnabledClicked" />
+                    </StackPanel>
+                  </fa:SettingsExpanderItem.Footer>
+                </fa:SettingsExpanderItem>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+        </ItemsControl>
+      </ScrollViewer>
+    </Grid>
+
+    <Grid Grid.Column="2"
+          RowDefinitions="Auto,*">
+      <StackPanel Spacing="8">
+        <TextBlock Text="运行设置"
+                   FontSize="18"
+                   FontWeight="SemiBold" />
+        <fa:SettingsExpanderItem Content="使用说明"
+                                 Description="先看说明 再使用与提问">
+          <fa:SettingsExpanderItem.IconSource>
+            <fa:SymbolIconSource Symbol="Message" />
+          </fa:SettingsExpanderItem.IconSource>
+          <fa:SettingsExpanderItem.Footer>
+            <Button Content="点此查看指南"
+                    Click="OnHelpClicked" />
+          </fa:SettingsExpanderItem.Footer>
+        </fa:SettingsExpanderItem>
+        <fa:SettingsExpanderItem Content="应用通知">
+          <fa:SettingsExpanderItem.IconSource>
+            <fa:FontIconSource Glyph="&#xE7F4;" />
+          </fa:SettingsExpanderItem.IconSource>
+          <fa:SettingsExpanderItem.Footer>
+            <StackPanel Orientation="Horizontal"
+                        Spacing="8">
+              <Button x:Name="GlobalNotifySettingsButton"
+                      Content="设置"
+                      Click="OnGlobalNotifySettingsClicked" />
+              <ToggleSwitch x:Name="NotifyToggle"
+                            OnContent=""
+                            OffContent=""
+                            Click="OnNotifyToggleClicked" />
+            </StackPanel>
+          </fa:SettingsExpanderItem.Footer>
+        </fa:SettingsExpanderItem>
+        <fa:SettingsExpanderItem Content="运行实例">
+          <fa:SettingsExpanderItem.IconSource>
+            <fa:FontIconSource Glyph="&#xE716;" />
+          </fa:SettingsExpanderItem.IconSource>
+          <fa:SettingsExpanderItem.Footer>
+            <fa:FAComboBox x:Name="InstanceRunCombo"
+                           Width="140"
+                           SelectionChanged="OnInstanceRunChanged" />
+          </fa:SettingsExpanderItem.Footer>
+        </fa:SettingsExpanderItem>
+        <fa:SettingsExpanderItem Content="结束后">
+          <fa:SettingsExpanderItem.IconSource>
+            <fa:FontIconSource Glyph="&#xE787;" />
+          </fa:SettingsExpanderItem.IconSource>
+          <fa:SettingsExpanderItem.Footer>
+            <fa:FAComboBox x:Name="AfterDoneCombo"
+                           Width="140"
+                           SelectionChanged="OnAfterDoneChanged" />
+          </fa:SettingsExpanderItem.Footer>
+        </fa:SettingsExpanderItem>
+      </StackPanel>
+      <ContentControl x:Name="RunHost"
+                      Grid.Row="1"
+                      Margin="0,8,0,0"
+                      HorizontalContentAlignment="Stretch"
+                      VerticalContentAlignment="Stretch" />
+    </Grid>
+
+    <fa:TeachingTip x:Name="AppNotifyTip"
+                    IsLightDismissEnabled="True"
+                    PreferredPlacement="Right"
+                    TailVisibility="Visible">
+      <StackPanel Spacing="8"
+                  MinWidth="250">
+        <TextBlock Text="应用通知"
+                   FontWeight="SemiBold" />
+        <fa:FAComboBox x:Name="AppLifecycleCombo"
+                       SelectionChanged="OnAppNotifyModeChanged">
+          <fa:FAComboBox.ItemTemplate>
+            <DataTemplate x:DataType="local:ZzzNotifyModeOption">
+              <TextBlock Text="{Binding Label}" />
+            </DataTemplate>
+          </fa:FAComboBox.ItemTemplate>
+        </fa:FAComboBox>
+        <TextBlock Text="节点通知"
+                   FontWeight="SemiBold" />
+        <fa:FAComboBox x:Name="AppDetailCombo"
+                       SelectionChanged="OnAppNotifyModeChanged">
+          <fa:FAComboBox.ItemTemplate>
+            <DataTemplate x:DataType="local:ZzzNotifyModeOption">
+              <TextBlock Text="{Binding Label}" />
+            </DataTemplate>
+          </fa:FAComboBox.ItemTemplate>
+        </fa:FAComboBox>
+      </StackPanel>
+    </fa:TeachingTip>
+  </Grid>
+</UserControl>

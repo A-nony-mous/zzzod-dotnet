@@ -1,0 +1,121 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:fa="using:FluentAvalonia.UI.Controls"
+             x:Class="ZzzOd.Gui.Pages.GameAssistant.ZzzGameAssistantPage">
+  <UserControl.Styles>
+    <Style Selector="fa|TabView#AssistantPivot /template/ Rectangle#LeftBottomBorderLine">
+      <Setter Property="IsVisible" Value="False" />
+    </Style>
+    <Style Selector="fa|TabView#AssistantPivot /template/ Rectangle#RightBottomBorderLine">
+      <Setter Property="IsVisible" Value="False" />
+    </Style>
+    <Style Selector="fa|TabViewItem.assistant-pivot-item">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="Padding" Value="0" />
+      <Setter Property="HorizontalContentAlignment" Value="Center" />
+      <Setter Property="VerticalContentAlignment" Value="Center" />
+    </Style>
+    <Style Selector="fa|TabViewItem.assistant-pivot-item /template/ Border#BottomBorderLine">
+      <Setter Property="IsVisible" Value="False" />
+    </Style>
+    <Style Selector="fa|TabViewItem.assistant-pivot-item /template/ Path#LeftRadiusRenderArc">
+      <Setter Property="IsVisible" Value="False" />
+    </Style>
+    <Style Selector="fa|TabViewItem.assistant-pivot-item /template/ Path#RightRadiusRenderArc">
+      <Setter Property="IsVisible" Value="False" />
+    </Style>
+    <Style Selector="fa|TabViewItem.assistant-pivot-item /template/ Path#SelectedBackgroundPath">
+      <Setter Property="IsVisible" Value="False" />
+    </Style>
+    <Style Selector="fa|TabViewItem.assistant-pivot-item /template/ Border#TabSeparator">
+      <Setter Property="IsVisible" Value="False" />
+    </Style>
+    <Style Selector="fa|TabViewItem.assistant-pivot-item /template/ Border#TabContainerBorder">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="Margin" Value="0" />
+      <Setter Property="Padding" Value="0" />
+    </Style>
+    <Style Selector="fa|TabViewItem.assistant-pivot-item /template/ ContentPresenter#ContentPresenter">
+      <Setter Property="FontSize" Value="16" />
+    </Style>
+    <Style Selector="fa|TabViewItem.assistant-pivot-item Border.assistant-pivot-indicator">
+      <Setter Property="Opacity" Value="0" />
+    </Style>
+    <Style Selector="fa|TabViewItem.assistant-pivot-item:selected Border.assistant-pivot-indicator">
+      <Setter Property="Opacity" Value="1" />
+    </Style>
+  </UserControl.Styles>
+
+  <fa:TabView x:Name="AssistantPivot"
+              IsAddTabButtonVisible="False"
+              CanDragTabs="False"
+              CanReorderTabs="False"
+              TabWidthMode="SizeToContent"
+              Margin="0,7,0,0"
+              Padding="0">
+    <fa:TabViewItem x:Name="BattleTab"
+                    Header="战斗助手"
+                    IsClosable="False"
+                    MinWidth="72"
+                    MaxWidth="72"
+                    Classes="assistant-pivot-item"
+                    Focusable="True"
+                    AutomationProperties.Name="战斗助手 选项卡">
+      <fa:TabViewItem.HeaderTemplate>
+        <DataTemplate>
+          <Grid Width="72"
+                Height="32"
+                RowDefinitions="*,3">
+            <TextBlock HorizontalAlignment="Center"
+                       VerticalAlignment="Center"
+                       Text="{Binding}" />
+            <Border Grid.Row="1"
+                    Classes="assistant-pivot-indicator"
+                    Width="16"
+                    Height="3"
+                    CornerRadius="2"
+                    HorizontalAlignment="Center"
+                    Background="{DynamicResource SystemAccentColor}" />
+          </Grid>
+        </DataTemplate>
+      </fa:TabViewItem.HeaderTemplate>
+      <fa:Frame x:Name="BattleFrame"
+                HorizontalContentAlignment="Stretch"
+                VerticalContentAlignment="Stretch"
+                IsNavigationStackEnabled="False" />
+    </fa:TabViewItem>
+    <fa:TabViewItem x:Name="CommissionTab"
+                    Header="委托助手"
+                    IsClosable="False"
+                    MinWidth="72"
+                    MaxWidth="72"
+                    Classes="assistant-pivot-item"
+                    Focusable="True"
+                    AutomationProperties.Name="委托助手 选项卡">
+      <fa:TabViewItem.HeaderTemplate>
+        <DataTemplate>
+          <Grid Width="72"
+                Height="32"
+                RowDefinitions="*,3">
+            <TextBlock HorizontalAlignment="Center"
+                       VerticalAlignment="Center"
+                       Text="{Binding}" />
+            <Border Grid.Row="1"
+                    Classes="assistant-pivot-indicator"
+                    Width="16"
+                    Height="3"
+                    CornerRadius="2"
+                    HorizontalAlignment="Center"
+                    Background="{DynamicResource SystemAccentColor}" />
+          </Grid>
+        </DataTemplate>
+      </fa:TabViewItem.HeaderTemplate>
+      <fa:Frame x:Name="CommissionFrame"
+                HorizontalContentAlignment="Stretch"
+                VerticalContentAlignment="Stretch"
+                IsNavigationStackEnabled="False" />
+    </fa:TabViewItem>
+  </fa:TabView>
+</UserControl>

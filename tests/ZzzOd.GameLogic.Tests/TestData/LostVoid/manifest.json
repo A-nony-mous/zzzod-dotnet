@@ -1,0 +1,28 @@
+{
+  "sourceDirectory": "real-game-debug",
+  "captureDate": "2026-07-14",
+  "purpose": "生产 ScreenContext、TemplateMatcher 和 LostVoidDetector 固定资产回归",
+  "files": [
+    {
+      "name": "lost_void-initial.png",
+      "source": "real-game-debug/lost_void-initial.png",
+      "sourceLastWriteTime": "2026-07-14T01:54:02+08:00",
+      "sha256": "8BD1956AC14E6182112680CB9C830432006B759828806EA546C9663C48278101",
+      "use": "识别普通大世界与进入零号空洞前置画面"
+    },
+    {
+      "name": "lost_void-before.png",
+      "source": "real-game-debug/lost_void-before.png",
+      "sourceLastWriteTime": "2026-07-14T01:54:10+08:00",
+      "sha256": "62B307CE2FE8EB2F29938FF9681CD328164C1FCA763597F762CCC445D7C6A954",
+      "use": "识别进入迷失之地前的普通大世界与入口导航状态"
+    },
+    {
+      "name": "lost_void-after.png",
+      "source": "real-game-debug/lost_void-after.png",
+      "sourceLastWriteTime": "2026-07-14T01:58:55+08:00",
+      "sha256": "4626BEAC1FB0165426FD2FE53E54D9BB5479AA1EC33C8B6610157B97E40BBCC4",
+      "use": "验证迷失之地大世界模板与真实 LostVoid YOLO 目标检测"
+    }
+  ]
+}

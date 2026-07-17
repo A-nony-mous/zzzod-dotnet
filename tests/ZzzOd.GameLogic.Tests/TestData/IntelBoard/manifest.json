@@ -1,0 +1,44 @@
+{
+  "source_root": "D:\\zzz-od-dotnet\\real-game-debug",
+  "capture_method": "PrintWindow",
+  "input_mode": "foreground keyboard",
+  "ocr_profile": "ppocrv6",
+  "template_contracts": [
+    {
+      "sub_dir": "intel_board",
+      "template_id": "Star",
+      "threshold": 0.8,
+      "only_best": false,
+      "raw_sha256": "0A43653EEB7C193AC4AB474822E5B531A07C1FD7F3222D8ADABA5FFEF7BF3D88",
+      "mask_sha256": "39CE82BEDA9BC6691D4E2039FD442D0B6FC6D63482774657901D75009EDB3A32",
+      "fixture": "intel-board-list.png",
+      "expected_match_count": 0
+    }
+  ],
+  "fixtures": [
+    {
+      "file": "intel-board-list.png",
+      "source": "20260708-140810-intel_board-intel-board-accept-commission-01-before.png",
+      "captured_at_local": "2026-07-08T14:08:10+08:00",
+      "sha256": "813A1B13F6BAC3A50F023306DBC64F0CA34E71C1A6BB03ECB378185197DDD27E"
+    },
+    {
+      "file": "intel-board-accept.png",
+      "source": "20260709-111101-intel_board-intel-board-accept-commission-before.png",
+      "captured_at_local": "2026-07-09T11:11:01+08:00",
+      "sha256": "9960C04A348B8F9ABC750918FD86892AE235ADEB5B1AE4F87611628F9940F1ED"
+    },
+    {
+      "file": "intel-board-running.png",
+      "source": "20260709-111108-intel_board-intel-board-accept-commission-before.png",
+      "captured_at_local": "2026-07-09T11:11:08+08:00",
+      "sha256": "B9D29016D80484AE04792F33DB9B9329D8B859E4C2F4BCD34F6992F5CE6F3BDA"
+    },
+    {
+      "file": "intel-board-accept-failed.png",
+      "source": "20260708-144018-intel_board-intel-board-accept-commission-01-after.png",
+      "captured_at_local": "2026-07-08T14:40:22+08:00",
+      "sha256": "401BC530528577356BD5A86195F03B01D740F494E2E1848EBFD577F25BAAED53"
+    }
+  ]
+}

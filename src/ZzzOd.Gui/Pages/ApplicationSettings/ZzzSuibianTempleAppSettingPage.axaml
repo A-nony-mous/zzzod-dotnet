@@ -1,0 +1,56 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:fa="using:FluentAvalonia.UI.Controls"
+             x:Class="ZzzOd.Gui.Pages.ApplicationSettings.ZzzSuibianTempleAppSettingPage">
+  <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+    <StackPanel Margin="11" Spacing="1">
+      <fa:InfoBar x:Name="ErrorBar" IsOpen="False" IsClosable="True" Severity="Error" />
+      <fa:SettingsExpanderItem Content="自动托管"
+                               Description="启用后选择游戏内自动托管经营随便观相关任务，随便观35级后可用">
+        <fa:SettingsExpanderItem.Footer>
+          <ToggleSwitch x:Name="AutoManageToggle" Click="OnAutoManageChanged" />
+        </fa:SettingsExpanderItem.Footer>
+      </fa:SettingsExpanderItem>
+      <fa:SettingsExpanderItem x:Name="YumChaItem" Content="饮茶仙">
+        <fa:SettingsExpanderItem.Footer><ToggleSwitch x:Name="YumChaToggle" Tag="yum_cha_sin" Click="OnBoolChanged" /></fa:SettingsExpanderItem.Footer>
+      </fa:SettingsExpanderItem>
+      <fa:SettingsExpanderItem x:Name="YumChaRefreshItem" Content="饮茶仙-委托刷新">
+        <fa:SettingsExpanderItem.Footer><ToggleSwitch x:Name="YumChaRefreshToggle" Tag="yum_cha_sin_period_refresh" Click="OnBoolChanged" /></fa:SettingsExpanderItem.Footer>
+      </fa:SettingsExpanderItem>
+      <fa:SettingsExpanderItem x:Name="AdventureDurationItem" Content="派遣-时长">
+        <fa:SettingsExpanderItem.Footer><fa:FAComboBox x:Name="AdventureDurationCombo" Tag="adventure_duration" Width="180" SelectionChanged="OnComboChanged" /></fa:SettingsExpanderItem.Footer>
+      </fa:SettingsExpanderItem>
+      <fa:SettingsExpanderItem x:Name="AdventureMissionItem" Content="派遣-副本优先级" Description="按优先级将剩余小队派遣">
+        <fa:SettingsExpanderItem.Footer>
+          <StackPanel Orientation="Horizontal" Spacing="6">
+            <fa:FAComboBox x:Name="AdventureMission1Combo" Tag="adventure_mission_1" Width="150" SelectionChanged="OnComboChanged" />
+            <fa:FAComboBox x:Name="AdventureMission2Combo" Tag="adventure_mission_2" Width="150" SelectionChanged="OnComboChanged" />
+            <fa:FAComboBox x:Name="AdventureMission3Combo" Tag="adventure_mission_3" Width="150" SelectionChanged="OnComboChanged" />
+            <fa:FAComboBox x:Name="AdventureMission4Combo" Tag="adventure_mission_4" Width="150" SelectionChanged="OnComboChanged" />
+          </StackPanel>
+        </fa:SettingsExpanderItem.Footer>
+      </fa:SettingsExpanderItem>
+      <fa:SettingsExpanderItem x:Name="CraftDragItem" Content="制造坊-最大下拉次数" Description="跳过底部的低级商品">
+        <fa:SettingsExpanderItem.Footer><fa:NumberBox x:Name="CraftDragNumber" Minimum="0" Maximum="99" SmallChange="1" ValueChanged="OnCraftDragChanged" /></fa:SettingsExpanderItem.Footer>
+      </fa:SettingsExpanderItem>
+      <fa:SettingsExpanderItem Content="好物铺购买" Description="自动购买好物铺中的指定商品">
+        <fa:SettingsExpanderItem.Footer><ToggleSwitch x:Name="GoodGoodsToggle" Tag="good_goods_purchase_enabled" Click="OnBoolChanged" /></fa:SettingsExpanderItem.Footer>
+      </fa:SettingsExpanderItem>
+      <fa:SettingsExpanderItem Content="邦巢-购买" Description="自动刷新购买S级别邦布。随便观25级后可用。">
+        <fa:SettingsExpanderItem.Footer><ToggleSwitch x:Name="BooBoxToggle" Tag="boo_box_purchase_enabled" Click="OnBoolChanged" /></fa:SettingsExpanderItem.Footer>
+      </fa:SettingsExpanderItem>
+      <fa:SettingsExpanderItem Content="邦巢-最低购买价格">
+        <fa:SettingsExpanderItem.Footer>
+          <StackPanel Orientation="Horizontal" Spacing="6">
+            <TextBlock VerticalAlignment="Center" Text="游历" />
+            <fa:FAComboBox x:Name="BooBoxAdventureCombo" Tag="boo_box_adventure_price" Width="110" SelectionChanged="OnComboChanged" />
+            <TextBlock VerticalAlignment="Center" Text="制造" />
+            <fa:FAComboBox x:Name="BooBoxCraftCombo" Tag="boo_box_craft_price" Width="110" SelectionChanged="OnComboChanged" />
+            <TextBlock VerticalAlignment="Center" Text="售卖" />
+            <fa:FAComboBox x:Name="BooBoxSellCombo" Tag="boo_box_sell_price" Width="110" SelectionChanged="OnComboChanged" />
+          </StackPanel>
+        </fa:SettingsExpanderItem.Footer>
+      </fa:SettingsExpanderItem>
+    </StackPanel>
+  </ScrollViewer>
+</UserControl>

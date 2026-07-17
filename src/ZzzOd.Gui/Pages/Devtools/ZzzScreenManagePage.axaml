@@ -1,0 +1,86 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:fa="using:FluentAvalonia.UI.Controls"
+             xmlns:local="using:ZzzOd.Gui.Pages.Devtools"
+             x:Class="ZzzOd.Gui.Pages.Devtools.ZzzScreenManagePage"
+             x:CompileBindings="False">
+  <Grid Margin="11" ColumnDefinitions="640,*" ColumnSpacing="12">
+    <ScrollViewer Grid.Column="0" VerticalScrollBarVisibility="Auto">
+      <StackPanel Spacing="8">
+        <fa:InfoBar x:Name="StatusBar" IsOpen="False" IsClosable="True" />
+
+        <fa:SettingsExpanderItem Content="更新合并配置文件"
+                                 Description="手动更改yml文件后 需要触发更新生效">
+          <fa:SettingsExpanderItem.Footer>
+            <Button x:Name="MergeButton" Content="更新" Click="OnMergeClicked" />
+          </fa:SettingsExpanderItem.Footer>
+        </fa:SettingsExpanderItem>
+
+        <fa:CommandBar IsOpen="True" DefaultLabelPosition="Right">
+          <fa:CommandBar.Content>
+            <fa:FAComboBox x:Name="ScreenSelector" Width="220" PlaceholderText="选择已有" SelectionChanged="OnScreenSelectionChanged" />
+          </fa:CommandBar.Content>
+          <fa:CommandBar.PrimaryCommands>
+            <fa:CommandBarButton Label="新建" Click="OnCreateClicked" />
+            <fa:CommandBarButton Label="保存" Click="OnSaveClicked" />
+            <fa:CommandBarButton Label="删除" Click="OnDeleteClicked" />
+            <fa:CommandBarButton Label="取消" Click="OnCancelClicked" />
+          </fa:CommandBar.PrimaryCommands>
+        </fa:CommandBar>
+
+        <fa:CommandBar IsOpen="True" DefaultLabelPosition="Right">
+          <fa:CommandBar.Content>
+            <CheckBox x:Name="PcAltToggle" Content="PC 点击需 Alt" Click="OnPcAltChanged" />
+          </fa:CommandBar.Content>
+          <fa:CommandBar.PrimaryCommands>
+            <fa:CommandBarButton Label="选择图片" Click="OnChooseImageClicked" />
+            <fa:CommandBarButton Label="截图" Click="OnScreenshotClicked" />
+            <fa:CommandBarButton Label="导入模板区域" Click="OnImportTemplateClicked" />
+          </fa:CommandBar.PrimaryCommands>
+        </fa:CommandBar>
+
+        <fa:SettingsExpander Header="画面信息" IsExpanded="True">
+          <fa:SettingsExpanderItem Content="ID">
+            <fa:SettingsExpanderItem.Footer>
+              <TextBox x:Name="ScreenIdBox" Width="260" TextChanged="OnScreenInfoChanged" />
+            </fa:SettingsExpanderItem.Footer>
+          </fa:SettingsExpanderItem>
+          <fa:SettingsExpanderItem Content="名称">
+            <fa:SettingsExpanderItem.Footer>
+              <TextBox x:Name="ScreenNameBox" Width="260" TextChanged="OnScreenInfoChanged" />
+            </fa:SettingsExpanderItem.Footer>
+          </fa:SettingsExpanderItem>
+        </fa:SettingsExpander>
+
+        <TextBlock Text="区域表格" FontSize="18" FontWeight="SemiBold" />
+        <local:ZzzScreenAreaTable x:Name="AreaTable" Height="310" />
+        <fa:CommandBar IsOpen="True" DefaultLabelPosition="Right">
+          <fa:CommandBar.PrimaryCommands>
+            <fa:CommandBarButton Label="新增区域" Click="OnAddAreaClicked" />
+            <fa:CommandBarButton Label="删除区域" Click="OnDeleteAreaClicked" />
+            <fa:CommandBarButton Label="弹出表格" Click="OnPopupTableClicked" />
+          </fa:CommandBar.PrimaryCommands>
+        </fa:CommandBar>
+      </StackPanel>
+    </ScrollViewer>
+
+    <Grid Grid.Column="1" RowDefinitions="Auto,*" RowSpacing="8">
+      <fa:SettingsExpanderItem Content="鼠标点击坐标" Description="图片左上角为(0, 0)">
+        <fa:SettingsExpanderItem.Footer>
+          <StackPanel Orientation="Horizontal" Spacing="6">
+            <TextBox x:Name="XPositionBox" Width="90" Watermark="横" IsReadOnly="True" />
+            <TextBox x:Name="YPositionBox" Width="90" Watermark="纵" IsReadOnly="True" />
+          </StackPanel>
+        </fa:SettingsExpanderItem.Footer>
+      </fa:SettingsExpanderItem>
+      <ScrollViewer Grid.Row="1" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto">
+        <Image x:Name="ScreenPreview"
+               MinWidth="420"
+               MinHeight="360"
+               Stretch="Uniform"
+               PointerPressed="OnPreviewPointerPressed"
+               PointerReleased="OnPreviewPointerReleased" />
+      </ScrollViewer>
+    </Grid>
+  </Grid>
+</UserControl>

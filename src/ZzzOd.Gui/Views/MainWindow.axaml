@@ -1,0 +1,132 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:fa="using:FluentAvalonia.UI.Controls"
+        xmlns:shell="using:ZzzOd.Gui.Shell"
+        x:Class="ZzzOd.Gui.Views.MainWindow"
+        x:DataType="shell:ZzzShellViewModel"
+        Title="{Binding WindowTitle}"
+        Width="1140"
+        Height="760"
+        MinWidth="960"
+        MinHeight="640"
+        ShowActivated="True"
+        SystemDecorations="None"
+        ExtendClientAreaToDecorationsHint="True"
+        ExtendClientAreaTitleBarHeightHint="32"
+        TransparencyLevelHint="Mica, AcrylicBlur, Blur, Transparent, None"
+        Background="{DynamicResource ApplicationPageBackgroundThemeBrush}">
+  <Grid>
+    <fa:NavigationView x:Name="Navigation"
+                       PaneDisplayMode="Left"
+                       OpenPaneLength="{DynamicResource ZzzNavigationPaneWidth}"
+                       CompactPaneLength="{DynamicResource ZzzNavigationPaneWidth}"
+                       IsPaneOpen="True"
+                       IsPaneToggleButtonVisible="False"
+                       IsBackButtonVisible="True"
+                       IsBackEnabled="False"
+                       IsSettingsVisible="False"
+                       BackRequested="OnNavigationBackRequested"
+                       SelectionChanged="OnNavigationSelectionChanged">
+      <fa:NavigationView.MenuItemTemplate>
+        <DataTemplate x:DataType="shell:ZzzNavigationEntry">
+          <fa:NavigationViewItem Tag="{Binding Key}"
+                                 Classes="zzz-navigation-item"
+                                 ToolTip.Tip="{Binding AccessibleName}">
+            <StackPanel Width="{DynamicResource ZzzNavigationPaneWidth}"
+                        Margin="-4,0,0,0"
+                        Spacing="1"
+                        HorizontalAlignment="Center"
+                        VerticalAlignment="Center">
+              <fa:FontIcon Glyph="{Binding IconGlyph}"
+                           FontSize="20"
+                           HorizontalAlignment="Center"
+                           FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" />
+              <TextBlock Text="{Binding Text}"
+                         FontSize="12"
+                         TextWrapping="NoWrap"
+                         TextAlignment="Center"
+                         HorizontalAlignment="Center" />
+            </StackPanel>
+          </fa:NavigationViewItem>
+        </DataTemplate>
+      </fa:NavigationView.MenuItemTemplate>
+
+      <fa:NavigationView.Content>
+        <fa:Frame x:Name="ContentFrame"
+                  Margin="{DynamicResource ZzzShellContentMargin}"
+                  HorizontalContentAlignment="Stretch"
+                  VerticalContentAlignment="Stretch"
+                  IsNavigationStackEnabled="False" />
+      </fa:NavigationView.Content>
+    </fa:NavigationView>
+
+    <Grid x:Name="TitleBar"
+          Classes="zzz-titlebar"
+          Background="Transparent"
+          Height="{DynamicResource ZzzTitleBarHeight}"
+          Margin="88,0,0,0"
+          VerticalAlignment="Top"
+          ColumnDefinitions="Auto,*,Auto"
+          ZIndex="10"
+          PointerPressed="OnTitleBarPointerPressed">
+      <Image x:Name="TitleBarIcon"
+             Width="18"
+             Height="18"
+             VerticalAlignment="Center"
+             Stretch="Uniform" />
+
+      <TextBlock Grid.Column="1"
+                 Margin="6,0,8,0"
+                 VerticalAlignment="Center"
+                 Classes="zzz-titlebar-title"
+                 Text="{Binding WindowTitle}" />
+
+      <StackPanel Grid.Column="2"
+                  Orientation="Horizontal"
+                  HorizontalAlignment="Right">
+        <Button Classes="zzz-titlebar-action"
+                IsVisible="{Binding HasLauncherVersion}"
+                Click="OnLauncherVersionClicked"
+                Content="{Binding LauncherVersionText}" />
+        <Button Classes="zzz-titlebar-action"
+                IsVisible="{Binding HasCodeVersion}"
+                Click="OnCodeVersionClicked"
+                Content="{Binding CodeVersionText}" />
+        <Button Classes="zzz-titlebar-action"
+                IsVisible="{Binding HasIssueUrl}"
+                Click="OnIssueClicked">
+          <StackPanel Orientation="Horizontal"
+                      Spacing="5">
+            <fa:FontIcon Glyph="&#xE897;"
+                         FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" />
+            <TextBlock Text="问题反馈" />
+          </StackPanel>
+        </Button>
+        <Button Classes="zzz-window-control"
+                Click="OnMinimizeClicked">
+          <fa:FontIcon Glyph="&#xE921;"
+                       FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" />
+        </Button>
+        <Button Classes="zzz-window-control"
+                Click="OnMaximizeClicked">
+          <fa:FontIcon Glyph="&#xE922;"
+                       FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" />
+        </Button>
+        <Button Classes="zzz-window-control"
+                Click="OnCloseClicked">
+          <fa:FontIcon Glyph="&#xE8BB;"
+                       FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" />
+        </Button>
+      </StackPanel>
+    </Grid>
+
+    <fa:InfoBar x:Name="ToastBar"
+                Margin="0,40,24,0"
+                HorizontalAlignment="Right"
+                VerticalAlignment="Top"
+                Classes="zzz-info-bar"
+                IsOpen="False"
+                IsClosable="False"
+                ZIndex="20" />
+  </Grid>
+</Window>

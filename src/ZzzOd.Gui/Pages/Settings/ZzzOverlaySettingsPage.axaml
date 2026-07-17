@@ -1,0 +1,240 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:fa="using:FluentAvalonia.UI.Controls"
+             x:Class="ZzzOd.Gui.Pages.Settings.ZzzOverlaySettingsAxamlPage">
+  <ScrollViewer HorizontalScrollBarVisibility="Disabled"
+                VerticalScrollBarVisibility="Auto">
+    <StackPanel x:Name="SettingsRoot"
+                Margin="11"
+                Spacing="8">
+      <fa:InfoBar x:Name="UnsupportedBar"
+                  Title="Overlay 不可用"
+                  Message="系统版本低于 Windows 10 2004，Overlay 已禁用"
+                  Severity="Warning"
+                  IsClosable="False"
+                  IsOpen="False" />
+      <fa:InfoBar x:Name="ErrorBar"
+                  Severity="Error"
+                  IsClosable="True"
+                  IsOpen="False" />
+      <fa:InfoBar x:Name="ResultBar"
+                  Severity="Success"
+                  IsClosable="True"
+                  IsOpen="False" />
+
+      <fa:SettingsExpander Header="Overlay 基础">
+        <fa:SettingsExpanderItem x:Name="EnabledItem"
+                                 Content="启用 Overlay"
+                                 Description="启用后可通过 Ctrl+Alt+O 切换显隐">
+          <fa:SettingsExpanderItem.Footer>
+            <ToggleSwitch x:Name="EnabledToggle"
+                          Tag="enabled"
+                          OnContent="开启"
+                          OffContent="关闭"
+                          Click="OnToggleChanged" />
+          </fa:SettingsExpanderItem.Footer>
+        </fa:SettingsExpanderItem>
+        <fa:SettingsExpanderItem Content="显隐热键主键"
+                                 Description="组合键固定 Ctrl+Alt，主键可自定义">
+          <fa:SettingsExpanderItem.Footer>
+            <TextBox x:Name="HotkeyTextBox"
+                     Tag="toggle_hotkey"
+                     Width="180"
+                     MaxLength="24"
+                     LostFocus="OnTextChanged" />
+          </fa:SettingsExpanderItem.Footer>
+        </fa:SettingsExpanderItem>
+        <fa:SettingsExpanderItem Content="默认显示"
+                                 Description="启动后 Overlay 是否默认可见">
+          <fa:SettingsExpanderItem.Footer>
+            <ToggleSwitch x:Name="VisibleToggle"
+                          Tag="visible"
+                          OnContent="开启"
+                          OffContent="关闭"
+                          Click="OnToggleChanged" />
+          </fa:SettingsExpanderItem.Footer>
+        </fa:SettingsExpanderItem>
+        <fa:SettingsExpanderItem Content="防截图保护"
+                                 Description="使用 WDA_EXCLUDEFROMCAPTURE 隐藏 Overlay">
+          <fa:SettingsExpanderItem.Footer>
+            <ToggleSwitch x:Name="AntiCaptureToggle"
+                          Tag="anti_capture"
+                          OnContent="开启"
+                          OffContent="关闭"
+                          Click="OnToggleChanged" />
+          </fa:SettingsExpanderItem.Footer>
+        </fa:SettingsExpanderItem>
+      </fa:SettingsExpander>
+
+      <fa:SettingsExpander Header="视觉绘制">
+        <fa:SettingsExpanderItem Content="启用视觉层"
+                                 Description="显示 YOLO/OCR/Template/CV 绘制结果">
+          <fa:SettingsExpanderItem.Footer>
+            <ToggleSwitch x:Name="VisionLayerToggle" Tag="vision_layer_enabled" Click="OnToggleChanged" />
+          </fa:SettingsExpanderItem.Footer>
+        </fa:SettingsExpanderItem>
+        <fa:SettingsExpanderItem Content="显示 YOLO">
+          <fa:SettingsExpanderItem.Footer>
+            <ToggleSwitch x:Name="VisionYoloToggle" Tag="vision_yolo_enabled" Click="OnToggleChanged" />
+          </fa:SettingsExpanderItem.Footer>
+        </fa:SettingsExpanderItem>
+        <fa:SettingsExpanderItem Content="显示 OCR">
+          <fa:SettingsExpanderItem.Footer>
+            <ToggleSwitch x:Name="VisionOcrToggle" Tag="vision_ocr_enabled" Click="OnToggleChanged" />
+          </fa:SettingsExpanderItem.Footer>
+        </fa:SettingsExpanderItem>
+        <fa:SettingsExpanderItem Content="显示 Template">
+          <fa:SettingsExpanderItem.Footer>
+            <ToggleSwitch x:Name="VisionTemplateToggle" Tag="vision_template_enabled" Click="OnToggleChanged" />
+          </fa:SettingsExpanderItem.Footer>
+        </fa:SettingsExpanderItem>
+        <fa:SettingsExpanderItem Content="显示 CV Pipeline">
+          <fa:SettingsExpanderItem.Footer>
+            <ToggleSwitch x:Name="VisionCvToggle" Tag="vision_cv_enabled" Click="OnToggleChanged" />
+          </fa:SettingsExpanderItem.Footer>
+        </fa:SettingsExpanderItem>
+        <fa:SettingsExpanderItem Content="视觉层 X 偏移"
+                                 Description="用于校正识别框左右偏移（像素）">
+          <fa:SettingsExpanderItem.Footer>
+            <fa:NumberBox x:Name="VisionOffsetXNumber" Tag="vision_offset_x" Width="180" Minimum="-400" Maximum="400" SmallChange="1" ValueChanged="OnNumberChanged" />
+          </fa:SettingsExpanderItem.Footer>
+        </fa:SettingsExpanderItem>
+        <fa:SettingsExpanderItem Content="视觉层 Y 偏移"
+                                 Description="用于校正识别框上下偏移（像素）">
+          <fa:SettingsExpanderItem.Footer>
+            <fa:NumberBox x:Name="VisionOffsetYNumber" Tag="vision_offset_y" Width="180" Minimum="-400" Maximum="400" SmallChange="1" ValueChanged="OnNumberChanged" />
+          </fa:SettingsExpanderItem.Footer>
+        </fa:SettingsExpanderItem>
+        <fa:SettingsExpanderItem Content="视觉层 X 缩放">
+          <fa:SettingsExpanderItem.Footer>
+            <fa:NumberBox x:Name="VisionScaleXNumber" Tag="vision_scale_x" Width="180" Minimum="0.5" Maximum="1.5" SmallChange="0.01" ValueChanged="OnNumberChanged" />
+          </fa:SettingsExpanderItem.Footer>
+        </fa:SettingsExpanderItem>
+        <fa:SettingsExpanderItem Content="视觉层 Y 缩放">
+          <fa:SettingsExpanderItem.Footer>
+            <fa:NumberBox x:Name="VisionScaleYNumber" Tag="vision_scale_y" Width="180" Minimum="0.5" Maximum="1.5" SmallChange="0.01" ValueChanged="OnNumberChanged" />
+          </fa:SettingsExpanderItem.Footer>
+        </fa:SettingsExpanderItem>
+      </fa:SettingsExpander>
+
+      <fa:SettingsExpander Header="面板与刷新">
+        <fa:SettingsExpanderItem Content="显示日志面板">
+          <fa:SettingsExpanderItem.Footer>
+            <ToggleSwitch x:Name="LogPanelToggle" Tag="log_panel_enabled" Click="OnToggleChanged" />
+          </fa:SettingsExpanderItem.Footer>
+        </fa:SettingsExpanderItem>
+        <fa:SettingsExpanderItem Content="显示状态面板">
+          <fa:SettingsExpanderItem.Footer>
+            <ToggleSwitch x:Name="StatePanelToggle" Tag="state_panel_enabled" Click="OnToggleChanged" />
+          </fa:SettingsExpanderItem.Footer>
+        </fa:SettingsExpanderItem>
+        <fa:SettingsExpanderItem Content="显示决策链路面板">
+          <fa:SettingsExpanderItem.Footer>
+            <ToggleSwitch x:Name="DecisionPanelToggle" Tag="decision_panel_enabled" Click="OnToggleChanged" />
+          </fa:SettingsExpanderItem.Footer>
+        </fa:SettingsExpanderItem>
+        <fa:SettingsExpanderItem Content="显示时间轴面板">
+          <fa:SettingsExpanderItem.Footer>
+            <ToggleSwitch x:Name="TimelinePanelToggle" Tag="timeline_panel_enabled" Click="OnToggleChanged" />
+          </fa:SettingsExpanderItem.Footer>
+        </fa:SettingsExpanderItem>
+        <fa:SettingsExpanderItem Content="显示性能面板">
+          <fa:SettingsExpanderItem.Footer>
+            <ToggleSwitch x:Name="PerformancePanelToggle" Tag="performance_panel_enabled" Click="OnToggleChanged" />
+          </fa:SettingsExpanderItem.Footer>
+        </fa:SettingsExpanderItem>
+        <fa:SettingsExpanderItem Content="面板编辑模式"
+                                 Description="开启后可拖拽调整位置，并可在日志窗调整字体/透明度">
+          <fa:SettingsExpanderItem.Footer>
+            <ToggleSwitch x:Name="PanelEditModeToggle" Tag="panel_edit_mode" Click="OnToggleChanged" />
+          </fa:SettingsExpanderItem.Footer>
+        </fa:SettingsExpanderItem>
+        <fa:SettingsExpanderItem Content="面板字体大小">
+          <fa:SettingsExpanderItem.Footer>
+            <fa:NumberBox x:Name="FontSizeNumber" Tag="font_size" Width="180" Minimum="10" Maximum="28" SmallChange="1" ValueChanged="OnNumberChanged" />
+          </fa:SettingsExpanderItem.Footer>
+        </fa:SettingsExpanderItem>
+        <fa:SettingsExpanderItem Content="文字颜色"
+                                 Description="Hex 颜色，例如 #f2f2f2">
+          <fa:SettingsExpanderItem.Footer>
+            <TextBox x:Name="PanelTextColorTextBox" Tag="panel_text_color" Width="180" Watermark="#f2f2f2" MaxLength="7" LostFocus="OnTextChanged" />
+          </fa:SettingsExpanderItem.Footer>
+        </fa:SettingsExpanderItem>
+        <fa:SettingsExpanderItem Content="日志最大行数">
+          <fa:SettingsExpanderItem.Footer>
+            <fa:NumberBox x:Name="LogMaxLinesNumber" Tag="log_max_lines" Width="180" Minimum="20" Maximum="500" SmallChange="10" ValueChanged="OnNumberChanged" />
+          </fa:SettingsExpanderItem.Footer>
+        </fa:SettingsExpanderItem>
+        <fa:SettingsExpanderItem Content="日志过期秒数">
+          <fa:SettingsExpanderItem.Footer>
+            <fa:NumberBox x:Name="LogFadeSecondsNumber" Tag="log_fade_seconds" Width="180" Minimum="3" Maximum="120" SmallChange="1" ValueChanged="OnNumberChanged" />
+          </fa:SettingsExpanderItem.Footer>
+        </fa:SettingsExpanderItem>
+        <fa:SettingsExpanderItem Content="窗口跟随间隔(ms)">
+          <fa:SettingsExpanderItem.Footer>
+            <fa:NumberBox x:Name="FollowIntervalNumber" Tag="follow_interval_ms" Width="180" Minimum="30" Maximum="500" SmallChange="10" ValueChanged="OnNumberChanged" />
+          </fa:SettingsExpanderItem.Footer>
+        </fa:SettingsExpanderItem>
+        <fa:SettingsExpanderItem Content="状态刷新间隔(ms)">
+          <fa:SettingsExpanderItem.Footer>
+            <fa:NumberBox x:Name="StatePollIntervalNumber" Tag="state_poll_interval_ms" Width="180" Minimum="80" Maximum="1000" SmallChange="20" ValueChanged="OnNumberChanged" />
+          </fa:SettingsExpanderItem.Footer>
+        </fa:SettingsExpanderItem>
+        <fa:SettingsExpanderItem Content="面板透明度(%)">
+          <fa:SettingsExpanderItem.Footer>
+            <fa:NumberBox x:Name="PanelOpacityNumber" Tag="panel_opacity" Width="180" Minimum="5" Maximum="100" SmallChange="1" ValueChanged="OnNumberChanged" />
+          </fa:SettingsExpanderItem.Footer>
+        </fa:SettingsExpanderItem>
+        <fa:SettingsExpanderItem Content="重置面板位置"
+                                 Description="重置 Overlay 面板到默认位置与尺寸">
+          <fa:SettingsExpanderItem.Footer>
+            <Button x:Name="ResetGeometryButton" Content="重置" Click="OnResetGeometryClicked" />
+          </fa:SettingsExpanderItem.Footer>
+        </fa:SettingsExpanderItem>
+      </fa:SettingsExpander>
+
+      <fa:SettingsExpander Header="性能指标">
+        <fa:SettingsExpanderItem Content="显示 OCR 耗时">
+          <fa:SettingsExpanderItem.Footer>
+            <ToggleSwitch x:Name="OcrMetricToggle" Tag="perf:ocr_ms" Click="OnToggleChanged" />
+          </fa:SettingsExpanderItem.Footer>
+        </fa:SettingsExpanderItem>
+        <fa:SettingsExpanderItem Content="显示 YOLO 耗时">
+          <fa:SettingsExpanderItem.Footer>
+            <ToggleSwitch x:Name="YoloMetricToggle" Tag="perf:yolo_ms" Click="OnToggleChanged" />
+          </fa:SettingsExpanderItem.Footer>
+        </fa:SettingsExpanderItem>
+        <fa:SettingsExpanderItem Content="显示 CV Pipeline 耗时">
+          <fa:SettingsExpanderItem.Footer>
+            <ToggleSwitch x:Name="CvMetricToggle" Tag="perf:cv_pipeline_ms" Click="OnToggleChanged" />
+          </fa:SettingsExpanderItem.Footer>
+        </fa:SettingsExpanderItem>
+        <fa:SettingsExpanderItem Content="显示 节点轮次耗时">
+          <fa:SettingsExpanderItem.Footer>
+            <ToggleSwitch x:Name="OperationMetricToggle" Tag="perf:operation_round_ms" Click="OnToggleChanged" />
+          </fa:SettingsExpanderItem.Footer>
+        </fa:SettingsExpanderItem>
+        <fa:SettingsExpanderItem Content="显示 Overlay 刷新耗时">
+          <fa:SettingsExpanderItem.Footer>
+            <ToggleSwitch x:Name="OverlayMetricToggle" Tag="perf:overlay_refresh_ms" Click="OnToggleChanged" />
+          </fa:SettingsExpanderItem.Footer>
+        </fa:SettingsExpanderItem>
+      </fa:SettingsExpander>
+
+      <fa:SettingsExpander Header="截图">
+        <fa:SettingsExpanderItem Content="保存 patched 合成图"
+                                 Description="保留原截图与剪贴板行为，额外输出一张叠加 Overlay 的图片">
+          <fa:SettingsExpanderItem.Footer>
+            <ToggleSwitch x:Name="PatchedCaptureToggle" Tag="patched_capture_enabled" Click="OnToggleChanged" />
+          </fa:SettingsExpanderItem.Footer>
+        </fa:SettingsExpanderItem>
+        <fa:SettingsExpanderItem Content="patched 文件后缀"
+                                 Description="默认 _patched">
+          <fa:SettingsExpanderItem.Footer>
+            <TextBox x:Name="PatchedSuffixTextBox" Tag="patched_capture_suffix" Width="180" Watermark="_patched" MaxLength="40" LostFocus="OnTextChanged" />
+          </fa:SettingsExpanderItem.Footer>
+        </fa:SettingsExpanderItem>
+      </fa:SettingsExpander>
+    </StackPanel>
+  </ScrollViewer>
+</UserControl>

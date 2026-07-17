@@ -1,0 +1,3 @@
+namespace ZzzOd.GameLogic.AutoBattle;
+
+public sealed record AutoBattleFlashClassification(int ClassIndex, double ColorConversionElapsedMilliseconds, double PreprocessElapsedMilliseconds, double InferenceElapsedMilliseconds, double PostprocessElapsedMilliseconds, double TotalElapsedMilliseconds);

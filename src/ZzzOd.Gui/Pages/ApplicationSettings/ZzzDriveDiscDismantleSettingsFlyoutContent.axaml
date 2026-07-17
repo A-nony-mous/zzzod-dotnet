@@ -1,0 +1,22 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:fa="using:FluentAvalonia.UI.Controls"
+             x:Class="ZzzOd.Gui.Pages.ApplicationSettings.ZzzDriveDiscDismantleSettingsFlyoutContent"
+             MinWidth="420">
+  <StackPanel Margin="8" Spacing="1">
+    <fa:InfoBar x:Name="ErrorBar" IsOpen="False" IsClosable="True" Severity="Error" />
+    <fa:SettingsExpanderItem Content="拆解等级">
+      <fa:SettingsExpanderItem.Footer>
+        <fa:FAComboBox x:Name="LevelCombo"
+                       Width="180"
+                       SelectionChanged="OnLevelChanged" />
+      </fa:SettingsExpanderItem.Footer>
+    </fa:SettingsExpanderItem>
+    <fa:SettingsExpanderItem Content="全部已弃置">
+      <fa:SettingsExpanderItem.Footer>
+        <ToggleSwitch x:Name="AbandonToggle"
+                      Click="OnAbandonChanged" />
+      </fa:SettingsExpanderItem.Footer>
+    </fa:SettingsExpanderItem>
+  </StackPanel>
+</UserControl>

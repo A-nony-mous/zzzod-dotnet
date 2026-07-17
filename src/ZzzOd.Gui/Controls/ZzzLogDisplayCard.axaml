@@ -1,0 +1,16 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="ZzzOd.Gui.Controls.ZzzLogDisplayCard">
+  <ScrollViewer HorizontalScrollBarVisibility="Disabled"
+                VerticalScrollBarVisibility="Auto"
+                Classes="zzz-log-scroll">
+    <TextBox x:Name="OutputText"
+             Text=""
+             IsReadOnly="True"
+             AcceptsReturn="True"
+             TextWrapping="Wrap"
+             ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+             ScrollViewer.VerticalScrollBarVisibility="Disabled"
+             Classes="zzz-log-line" />
+  </ScrollViewer>
+</UserControl>

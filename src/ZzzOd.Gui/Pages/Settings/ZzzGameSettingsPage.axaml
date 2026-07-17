@@ -1,0 +1,221 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:fa="using:FluentAvalonia.UI.Controls"
+             xmlns:local="using:ZzzOd.Gui.Pages.Settings"
+             x:Class="ZzzOd.Gui.Pages.Settings.ZzzGameSettingsAxamlPage">
+  <UserControl.Resources>
+    <DataTemplate x:Key="ActionKeyTemplate" x:DataType="local:ZzzGameActionKeyRow">
+      <fa:SettingsExpanderItem Content="{Binding Label}">
+        <fa:SettingsExpanderItem.Footer>
+          <StackPanel Orientation="Horizontal" Spacing="6">
+            <fa:FAComboBox Width="150"
+                           ItemsSource="{Binding ModifierOptions}"
+                           SelectedItem="{Binding SelectedModifier, Mode=TwoWay}"
+                           SelectionChanged="OnActionKeyChanged">
+              <fa:FAComboBox.ItemTemplate>
+                <DataTemplate x:DataType="local:ZzzGameSettingOption">
+                  <TextBlock Text="{Binding Label}" />
+                </DataTemplate>
+              </fa:FAComboBox.ItemTemplate>
+            </fa:FAComboBox>
+            <fa:FAComboBox Width="150"
+                           ItemsSource="{Binding ButtonOptions}"
+                           SelectedItem="{Binding SelectedButton, Mode=TwoWay}"
+                           SelectionChanged="OnActionKeyChanged">
+              <fa:FAComboBox.ItemTemplate>
+                <DataTemplate x:DataType="local:ZzzGameSettingOption">
+                  <TextBlock Text="{Binding Label}" />
+                </DataTemplate>
+              </fa:FAComboBox.ItemTemplate>
+            </fa:FAComboBox>
+          </StackPanel>
+        </fa:SettingsExpanderItem.Footer>
+      </fa:SettingsExpanderItem>
+    </DataTemplate>
+
+    <DataTemplate x:Key="KeyboardKeyTemplate" x:DataType="local:ZzzGameKeyCaptureRow">
+      <fa:SettingsExpanderItem Content="{Binding Label}">
+        <fa:SettingsExpanderItem.Footer>
+          <Button MinWidth="150"
+                  Content="{Binding DisplayValue}"
+                  Click="OnKeyCaptureClicked"
+                  KeyDown="OnKeyCaptureKeyDown"
+                  PointerPressed="OnKeyCapturePointerPressed" />
+        </fa:SettingsExpanderItem.Footer>
+      </fa:SettingsExpanderItem>
+    </DataTemplate>
+
+    <DataTemplate x:Key="GamepadKeyTemplate" x:DataType="local:ZzzGamepadKeyRow">
+      <fa:SettingsExpanderItem Content="{Binding Label}">
+        <fa:SettingsExpanderItem.Footer>
+          <fa:FAComboBox Width="180"
+                         ItemsSource="{Binding Options}"
+                         SelectedItem="{Binding SelectedOption, Mode=TwoWay}"
+                         SelectionChanged="OnGamepadKeyChanged">
+            <fa:FAComboBox.ItemTemplate>
+              <DataTemplate x:DataType="local:ZzzGameSettingOption">
+                <TextBlock Text="{Binding Label}" />
+              </DataTemplate>
+            </fa:FAComboBox.ItemTemplate>
+          </fa:FAComboBox>
+        </fa:SettingsExpanderItem.Footer>
+      </fa:SettingsExpanderItem>
+    </DataTemplate>
+  </UserControl.Resources>
+
+  <ScrollViewer HorizontalScrollBarVisibility="Disabled"
+                VerticalScrollBarVisibility="Auto">
+    <StackPanel Margin="11" Spacing="8">
+      <fa:InfoBar x:Name="DependencyWarningBar"
+                  IsOpen="False"
+                  IsClosable="True"
+                  Severity="Warning" />
+
+      <fa:SettingsExpanderItem Content="设置说明"
+                               Description="游戏路径、输入方式等基础设置，建议首次使用前检查一遍">
+        <fa:SettingsExpanderItem.IconSource>
+          <fa:SymbolIconSource Symbol="Help" />
+        </fa:SettingsExpanderItem.IconSource>
+        <fa:SettingsExpanderItem.Footer>
+          <Button Content="查看"
+                  Click="OnHelpClicked" />
+        </fa:SettingsExpanderItem.Footer>
+      </fa:SettingsExpanderItem>
+
+      <TextBlock Text="游戏基础"
+                 Margin="0,8,0,0"
+                 FontSize="18"
+                 FontWeight="SemiBold" />
+
+      <fa:SettingsExpanderItem x:Name="InputWayItem" Content="输入方式">
+        <fa:SettingsExpanderItem.Footer>
+          <fa:FAComboBox x:Name="InputWayCombo"
+                         Width="180"
+                         SelectionChanged="OnInputWayChanged" />
+        </fa:SettingsExpanderItem.Footer>
+      </fa:SettingsExpanderItem>
+
+      <fa:SettingsExpander x:Name="BackgroundModeExpander"
+                           Header="后台模式（测试版）"
+                           Description="需要虚拟手柄驱动和 PrintWindow 截图方式。运行时会短暂抢占鼠标进行点击操作，无需游戏窗口置顶。请勿在前台玩支持手柄的游戏。">
+        <fa:SettingsExpander.Footer>
+          <StackPanel Orientation="Horizontal" Spacing="8">
+            <ToggleSwitch x:Name="BackgroundModeToggle"
+                          OnContent=""
+                          OffContent=""
+                          Click="OnBackgroundModeChanged" />
+            <fa:FAComboBox x:Name="BackgroundGamepadTypeCombo"
+                           Width="120"
+                           SelectionChanged="OnBackgroundGamepadTypeChanged" />
+          </StackPanel>
+        </fa:SettingsExpander.Footer>
+        <fa:SettingsExpanderItem Content="闪切时长（秒）"
+                                 Description="后台模式切换键鼠输入时的前台停留时长，过小可能切换失败">
+          <fa:SettingsExpanderItem.Footer>
+            <fa:NumberBox x:Name="MouseFlashDurationBox"
+                          Width="150"
+                          Minimum="0.01"
+                          Maximum="0.2"
+                          SmallChange="0.01"
+                          SpinButtonPlacementMode="Compact"
+                          ValueChanged="OnMouseFlashDurationChanged" />
+          </fa:SettingsExpanderItem.Footer>
+        </fa:SettingsExpanderItem>
+        <ItemsControl x:Name="BackgroundActionList"
+                      ItemTemplate="{StaticResource ActionKeyTemplate}" />
+      </fa:SettingsExpander>
+
+      <fa:SettingsExpanderItem Content="切换 HDR 状态"
+                               Description="仅影响手动启动游戏，一条龙启动游戏会自动禁用 HDR">
+        <fa:SettingsExpanderItem.Footer>
+          <StackPanel Orientation="Horizontal" Spacing="8">
+            <Button x:Name="DisableHdrButton"
+                    Content="禁用 HDR"
+                    Click="OnDisableHdrClicked" />
+            <Button x:Name="EnableHdrButton"
+                    Content="启用 HDR"
+                    Click="OnEnableHdrClicked" />
+          </StackPanel>
+        </fa:SettingsExpanderItem.Footer>
+      </fa:SettingsExpanderItem>
+
+      <fa:SettingsExpander Header="启动参数">
+        <fa:SettingsExpander.Footer>
+          <ToggleSwitch x:Name="LaunchArgumentToggle"
+                        OnContent=""
+                        OffContent=""
+                        Click="OnLaunchArgumentChanged" />
+        </fa:SettingsExpander.Footer>
+        <fa:SettingsExpanderItem Content="窗口尺寸">
+          <fa:SettingsExpanderItem.Footer>
+            <fa:FAComboBox x:Name="ScreenSizeCombo" Width="180" SelectionChanged="OnScreenSizeChanged" />
+          </fa:SettingsExpanderItem.Footer>
+        </fa:SettingsExpanderItem>
+        <fa:SettingsExpanderItem Content="全屏">
+          <fa:SettingsExpanderItem.Footer>
+            <fa:FAComboBox x:Name="FullScreenCombo" Width="180" SelectionChanged="OnFullScreenChanged" />
+          </fa:SettingsExpanderItem.Footer>
+        </fa:SettingsExpanderItem>
+        <fa:SettingsExpanderItem Content="无边框窗口">
+          <fa:SettingsExpanderItem.Footer>
+            <ToggleSwitch x:Name="PopupWindowToggle" OnContent="" OffContent="" Click="OnPopupWindowChanged" />
+          </fa:SettingsExpanderItem.Footer>
+        </fa:SettingsExpanderItem>
+        <fa:SettingsExpanderItem Content="显示器序号">
+          <fa:SettingsExpanderItem.Footer>
+            <fa:FAComboBox x:Name="MonitorCombo" Width="180" SelectionChanged="OnMonitorChanged" />
+          </fa:SettingsExpanderItem.Footer>
+        </fa:SettingsExpanderItem>
+        <fa:SettingsExpanderItem Content="高级参数">
+          <fa:SettingsExpanderItem.Footer>
+            <TextBox x:Name="LaunchArgumentAdvanceTextBox"
+                     Width="300"
+                     Watermark="如果你不知道这是做什么的 请不要填写"
+                     LostFocus="OnLaunchArgumentAdvanceLostFocus" />
+          </fa:SettingsExpanderItem.Footer>
+        </fa:SettingsExpanderItem>
+      </fa:SettingsExpander>
+
+      <TextBlock Text="按键设置"
+                 Margin="0,8,0,0"
+                 FontSize="18"
+                 FontWeight="SemiBold" />
+
+      <fa:SettingsExpanderItem Content="操控方式"
+                               Description="仅影响自动战斗。如需使用手柄，请先安装虚拟手柄依赖。">
+        <fa:SettingsExpanderItem.Footer>
+          <fa:FAComboBox x:Name="ControlMethodCombo"
+                         Width="180"
+                         SelectionChanged="OnControlMethodChanged" />
+        </fa:SettingsExpanderItem.Footer>
+      </fa:SettingsExpanderItem>
+
+      <fa:SettingsExpander Header="键盘按键">
+        <ItemsControl x:Name="KeyboardKeyList"
+                      ItemTemplate="{StaticResource KeyboardKeyTemplate}" />
+      </fa:SettingsExpander>
+
+      <fa:SettingsExpander Header="手柄按键">
+        <fa:SettingsExpander.Footer>
+          <fa:FAComboBox x:Name="GamepadDisplayCombo"
+                         Width="120"
+                         SelectionChanged="OnGamepadDisplayChanged" />
+        </fa:SettingsExpander.Footer>
+        <fa:SettingsExpanderItem Content="单次按键持续时间(秒)"
+                                 Description="自行调整，过小可能按键被吞，过大可能影响操作">
+          <fa:SettingsExpanderItem.Footer>
+            <fa:NumberBox x:Name="GamepadKeyPressTimeBox"
+                          Width="150"
+                          Minimum="0"
+                          Maximum="10"
+                          SmallChange="0.01"
+                          SpinButtonPlacementMode="Compact"
+                          ValueChanged="OnGamepadKeyPressTimeChanged" />
+          </fa:SettingsExpanderItem.Footer>
+        </fa:SettingsExpanderItem>
+        <ItemsControl x:Name="GamepadKeyList"
+                      ItemTemplate="{StaticResource GamepadKeyTemplate}" />
+      </fa:SettingsExpander>
+    </StackPanel>
+  </ScrollViewer>
+</UserControl>

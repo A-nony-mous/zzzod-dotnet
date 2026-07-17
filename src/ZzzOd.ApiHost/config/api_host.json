@@ -1,0 +1,8 @@
+{
+  "Enabled": true,
+  "ListenAddress": "127.0.0.1",
+  "Port": 18990,
+  "Token": "e91758ded16188c829c5a374dd26eb56e585754ce7fa168c13e25df0c0cede31",
+  "CorsOrigins": [],
+  "StartWithGui": false
+}

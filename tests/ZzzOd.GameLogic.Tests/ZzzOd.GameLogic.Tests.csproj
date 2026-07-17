@@ -1,0 +1,45 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AssemblyName>ZzzOd.GameLogic.Tests</AssemblyName>
+    <GenerateAssemblyInfo>False</GenerateAssemblyInfo>
+    <TargetFramework>net10.0-windows10.0.19041.0</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
+    <CheckForOverflowUnderflow>False</CheckForOverflowUnderflow>
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+    <NoWarn>$(NoWarn);CS0436;xUnit1014;xUnit1021</NoWarn>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Remove="System.Text.RegularExpressions.Generated\**" />
+    <Compile Remove="Microsoft.AspNetCore.OpenApi.Generated\**" />
+    <None Update="TestData\**\*">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\ZzzOd.Api\ZzzOd.Api.csproj" />
+    <ProjectReference Include="..\..\src\ZzzOd.AppHost\ZzzOd.AppHost.csproj" />
+    <ProjectReference Include="..\..\src\ZzzOd.GameLogic\ZzzOd.GameLogic.csproj" />
+    <ProjectReference Include="..\..\src\ZzzOd.Gui\ZzzOd.Gui.csproj" />
+    <ProjectReference Include="..\..\tools\ZzzOd.RealGameE2E\ZzzOd.RealGameE2E.csproj" />
+    <ProjectReference Include="..\..\..\od-dotnet\src\OneDragon.Core.Abstractions\OneDragon.Core.Abstractions.csproj" />
+    <ProjectReference Include="..\..\..\od-dotnet\src\OneDragon.Core\OneDragon.Core.csproj" />
+    <ProjectReference Include="..\..\..\od-dotnet\src\OneDragon.Core.Windows\OneDragon.Core.Windows.csproj" />
+    <PackageReference Include="Avalonia" Version="11.3.18" />
+    <PackageReference Include="Avalonia.Desktop" Version="11.3.18" />
+    <PackageReference Include="FluentAvaloniaUI" Version="2.5.1" />
+    <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.9" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.14.1" />
+    <PackageReference Include="Microsoft.OpenApi" Version="2.10.0" />
+    <PackageReference Include="NAudio" Version="2.2.1" />
+    <PackageReference Include="OpenCvSharp4" Version="4.11.0.20250507" />
+    <PackageReference Include="Serilog" Version="4.3.0" />
+    <PackageReference Include="xunit" Version="2.9.3" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="3.1.4">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="YamlDotNet" Version="16.3.0" />
+  </ItemGroup>
+</Project>

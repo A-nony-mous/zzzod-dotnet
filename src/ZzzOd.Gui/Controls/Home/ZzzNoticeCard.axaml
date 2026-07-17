@@ -1,0 +1,101 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:fa="using:FluentAvalonia.UI.Controls"
+             xmlns:notices="using:ZzzOd.Gui.Services.Notices"
+             x:Class="ZzzOd.Gui.Controls.Home.ZzzNoticeCard"
+             Width="589"
+             Height="150">
+  <UserControl.Resources>
+    <SolidColorBrush x:Key="TabViewBackground" Color="Transparent" />
+    <SolidColorBrush x:Key="TabViewItemHeaderBackground" Color="Transparent" />
+    <SolidColorBrush x:Key="TabViewItemHeaderBackgroundPointerOver" Color="#20FFFFFF" />
+    <SolidColorBrush x:Key="TabViewItemHeaderBackgroundPressed" Color="#30FFFFFF" />
+    <SolidColorBrush x:Key="TabViewItemHeaderBackgroundSelected" Color="Transparent" />
+    <SolidColorBrush x:Key="TabViewItemHeaderForeground" Color="#DDDDDD" />
+    <SolidColorBrush x:Key="TabViewItemHeaderForegroundPointerOver" Color="White" />
+    <SolidColorBrush x:Key="TabViewItemHeaderForegroundPressed" Color="White" />
+    <SolidColorBrush x:Key="TabViewItemHeaderForegroundSelected" Color="White" />
+    <SolidColorBrush x:Key="TabViewBorderBrush" Color="Transparent" />
+    <SolidColorBrush x:Key="TabViewSelectedItemBorderBrush"
+                     Color="{DynamicResource SystemAccentColor}" />
+    <Thickness x:Key="TabViewSelectedItemBorderThickness">0,0,0,2</Thickness>
+    <SolidColorBrush x:Key="TabViewItemSeparator" Color="Transparent" />
+    <DataTemplate x:Key="NoticePostTemplate"
+                  x:DataType="notices:ZzzNoticePost">
+      <Grid Height="26"
+            Margin="12,0"
+            ColumnDefinitions="*,64">
+        <TextBlock VerticalAlignment="Center"
+                   Foreground="White"
+                   Text="{Binding Title}" />
+        <TextBlock Grid.Column="1"
+                   HorizontalAlignment="Right"
+                   VerticalAlignment="Center"
+                   Foreground="#DDDDDD"
+                   Text="{Binding Date}" />
+      </Grid>
+    </DataTemplate>
+  </UserControl.Resources>
+
+  <Border Classes="zzz-notice-card"
+          ClipToBounds="True">
+    <Grid ColumnDefinitions="225,*">
+      <Image x:Name="BannerImage"
+             Width="225"
+             Height="150"
+             Cursor="Hand"
+             PointerReleased="OnBannerPointerReleased"
+             Stretch="UniformToFill" />
+
+      <Grid Grid.Column="1">
+        <fa:TabView Background="Transparent"
+                    Foreground="White"
+                    SelectedIndex="2"
+                    IsAddTabButtonVisible="False">
+          <fa:TabViewItem Header="游戏攻略"
+                          Background="Transparent"
+                          IsClosable="False">
+            <ListBox x:Name="GameGuidesList"
+                     Background="Transparent"
+                     BorderThickness="0"
+                     ItemTemplate="{StaticResource NoticePostTemplate}"
+                     SelectionChanged="OnPostSelectionChanged" />
+          </fa:TabViewItem>
+          <fa:TabViewItem Header="软件科研"
+                          Background="Transparent"
+                          IsClosable="False">
+            <ListBox x:Name="SoftwareResearchList"
+                     Background="Transparent"
+                     BorderThickness="0"
+                     ItemTemplate="{StaticResource NoticePostTemplate}"
+                     SelectionChanged="OnPostSelectionChanged" />
+          </fa:TabViewItem>
+          <fa:TabViewItem Header="公告要闻"
+                          Background="Transparent"
+                          IsClosable="False">
+            <ListBox x:Name="AnnouncementsList"
+                     Background="Transparent"
+                     BorderThickness="0"
+                     ItemTemplate="{StaticResource NoticePostTemplate}"
+                     SelectionChanged="OnPostSelectionChanged" />
+          </fa:TabViewItem>
+        </fa:TabView>
+
+        <fa:InfoBar x:Name="FailureInfoBar"
+                    Margin="8"
+                    VerticalAlignment="Bottom"
+                    Severity="Warning"
+                    Title="公告加载失败"
+                    IsClosable="False"
+                    IsOpen="False" />
+        <Button x:Name="RetryButton"
+                Margin="8"
+                HorizontalAlignment="Right"
+                VerticalAlignment="Bottom"
+                Content="重试"
+                IsVisible="False"
+                Click="OnRetryClicked" />
+      </Grid>
+    </Grid>
+  </Border>
+</UserControl>
