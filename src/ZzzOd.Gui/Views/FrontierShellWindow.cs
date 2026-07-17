@@ -130,7 +130,9 @@ public sealed partial class FrontierShellWindow : MainWindow
     }
 
     private static bool IsHighContrast() =>
-        Application.Current?.ActualThemeVariant == FluentAvaloniaTheme.HighContrastTheme;
+        string.Equals(Environment.GetEnvironmentVariable("ZZZOD_GUI_THEME"), "highcontrast", StringComparison.OrdinalIgnoreCase)
+        || string.Equals(Environment.GetEnvironmentVariable("ZZZOD_GUI_THEME"), "high-contrast", StringComparison.OrdinalIgnoreCase)
+        || Application.Current?.ActualThemeVariant == FluentAvaloniaTheme.HighContrastTheme;
 
     protected override void OnRouteChanged(object? sender, string routeKey)
     {
