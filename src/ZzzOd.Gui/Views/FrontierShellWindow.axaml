@@ -12,6 +12,7 @@
                            MinWidth="1140"
                            MinHeight="760"
                            ShowActivated="True"
+                           RequestedThemeVariant="Dark"
                            SystemDecorations="None"
                            ExtendClientAreaToDecorationsHint="True"
                            ExtendClientAreaTitleBarHeightHint="32">
