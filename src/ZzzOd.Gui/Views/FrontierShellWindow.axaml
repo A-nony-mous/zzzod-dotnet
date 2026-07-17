@@ -32,14 +32,18 @@
     <Style Selector="fa|NavigationViewItem fa|FontIcon">
       <Setter Property="Foreground" Value="#FFF5F7FA" />
     </Style>
+    <Style Selector="fa|InfoBar TextBlock">
+      <Setter Property="Foreground" Value="#FF1A1C1F" />
+    </Style>
   </Window.Styles>
   <Grid Background="{DynamicResource ApplicationPageBackgroundThemeBrush}">
     <Image x:Name="BackgroundImage"
            Stretch="UniformToFill"
            IsVisible="False" />
-    <vlc:VideoView x:Name="BackgroundVideo" IsVisible="False" />
+    <ContentControl x:Name="BackgroundVideoHost" IsVisible="False" />
     <fa:NavigationView x:Name="FrontierNavigation"
                        PaneDisplayMode="LeftCompact"
+                       Background="#B0111722"
                        OpenPaneLength="240"
                        CompactPaneLength="48"
                        IsPaneOpen="False"
