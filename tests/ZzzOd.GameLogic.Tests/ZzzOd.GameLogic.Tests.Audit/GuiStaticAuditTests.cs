@@ -91,6 +91,21 @@ public sealed class GuiStaticAuditTests
 		Assert.Contains("ZzzFrontierContentPadding", frontier, StringComparison.Ordinal);
 	}
 
+	[Fact]
+	public void ShellResourcesDoNotContainExplanatoryProductCopy()
+	{
+		string path = FindGuiRoot();
+		string content = string.Join(
+			Environment.NewLine,
+			Directory.EnumerateFiles(Path.Combine(path, "Views"), "*ShellWindow.axaml")
+				.Concat(Directory.EnumerateFiles(Path.Combine(path, "Theme"), "*ShellResources.axaml"))
+				.Select(File.ReadAllText));
+		foreach (string forbidden in new[] { "对应 Python", "后端尚未", "fallback", "本页面", "此面板", "来源说明", "实现说明", "数据读取自" })
+		{
+			Assert.DoesNotContain(forbidden, content, StringComparison.OrdinalIgnoreCase);
+		}
+	}
+
 	/// <summary>
 	/// 游戏助手容器使用 AXAML FluentAvalonia TabView，并固定 BaselineParity 子页顺序。
 	/// </summary>
