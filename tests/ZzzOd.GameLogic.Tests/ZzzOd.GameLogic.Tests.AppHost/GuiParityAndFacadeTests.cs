@@ -727,6 +727,8 @@ public sealed class GuiParityAndFacadeTests
 			Assert.All(registry.Entries, delegate(ZzzNavigationEntry entry)
 			{
 				Assert.False(string.IsNullOrWhiteSpace(entry.IconGlyph));
+				Assert.False(string.IsNullOrWhiteSpace(entry.SelectedIconGlyph));
+				Assert.False(string.IsNullOrWhiteSpace(entry.AccessibleName));
 			});
 			Assert.All(ZzzGuiParityRouteScope.ExcludedParityRouteKeys, delegate(string key)
 			{
