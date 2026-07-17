@@ -41,6 +41,7 @@ public sealed partial class App : Application
 
         Host.StartAsync().GetAwaiter().GetResult();
         IZzzAppBackend backend = Host.Services.GetRequiredService<IZzzAppBackend>();
+        ApplyConfiguredTheme(backend);
         ApplyConfiguredAccentColor(backend);
         
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
@@ -174,6 +175,31 @@ public sealed partial class App : Application
             "highcontrast" or "high-contrast" => FluentAvaloniaTheme.HighContrastTheme,
             _ => null,
         };
+
+    internal static void ApplyConfiguredTheme(IZzzAppBackend backend)
+    {
+        ArgumentNullException.ThrowIfNull(backend);
+        if (!string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("ZZZOD_GUI_THEME")))
+        {
+            return;
+        }
+
+        ZzzBackendResult<ZzzConfigScopeValuesDto> custom = backend.GetConfigScope("custom");
+        string configured = custom.Success
+            && custom.Value is not null
+            && custom.Value.Values.TryGetValue("theme", out object? rawTheme)
+                ? rawTheme?.ToString()?.Trim() ?? "Auto"
+                : "Auto";
+        if (Current is not null)
+        {
+            Current.RequestedThemeVariant = configured.ToLowerInvariant() switch
+            {
+                "light" => ThemeVariant.Light,
+                "dark" => ThemeVariant.Dark,
+                _ => ThemeVariant.Default,
+            };
+        }
+    }
 
     internal static void ApplyAccentColor(Color color)
     {

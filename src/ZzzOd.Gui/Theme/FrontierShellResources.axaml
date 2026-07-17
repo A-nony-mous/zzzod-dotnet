@@ -1,9 +1,26 @@
 <ResourceDictionary xmlns="https://github.com/avaloniaui"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
                     xmlns:fa="using:FluentAvalonia.UI.Controls">
-  <SolidColorBrush x:Key="ZzzFrontierContentSurfaceBrush" Color="#E6111722" />
-  <SolidColorBrush x:Key="ZzzFrontierContentBorderBrush" Color="#80D6E4F5" />
-  <SolidColorBrush x:Key="ZzzFrontierControlSurfaceBrush" Color="#BF1C2636" />
+  <ResourceDictionary.ThemeDictionaries>
+    <ResourceDictionary x:Key="Light">
+      <SolidColorBrush x:Key="ZzzFrontierWindowFallbackBrush" Color="#FFF3F3F3" />
+      <SolidColorBrush x:Key="ZzzFrontierNavigationSurfaceBrush" Color="#B8F7F8FA" />
+      <SolidColorBrush x:Key="ZzzFrontierNavigationForegroundBrush" Color="#FF202124" />
+      <SolidColorBrush x:Key="ZzzFrontierContentSurfaceBrush" Color="#E8FFFFFF" />
+      <SolidColorBrush x:Key="ZzzFrontierContentForegroundBrush" Color="#FF1A1C1F" />
+      <SolidColorBrush x:Key="ZzzFrontierContentBorderBrush" Color="#6699A2AE" />
+      <SolidColorBrush x:Key="ZzzFrontierControlSurfaceBrush" Color="#E8FFFFFF" />
+    </ResourceDictionary>
+    <ResourceDictionary x:Key="Dark">
+      <SolidColorBrush x:Key="ZzzFrontierWindowFallbackBrush" Color="#FF111722" />
+      <SolidColorBrush x:Key="ZzzFrontierNavigationSurfaceBrush" Color="#B0111722" />
+      <SolidColorBrush x:Key="ZzzFrontierNavigationForegroundBrush" Color="#FFF5F7FA" />
+      <SolidColorBrush x:Key="ZzzFrontierContentSurfaceBrush" Color="#E6111722" />
+      <SolidColorBrush x:Key="ZzzFrontierContentForegroundBrush" Color="#FFF5F7FA" />
+      <SolidColorBrush x:Key="ZzzFrontierContentBorderBrush" Color="#80D6E4F5" />
+      <SolidColorBrush x:Key="ZzzFrontierControlSurfaceBrush" Color="#BF1C2636" />
+    </ResourceDictionary>
+  </ResourceDictionary.ThemeDictionaries>
   <Thickness x:Key="ZzzFrontierContentPadding">12</Thickness>
   <Thickness x:Key="ZzzFrontierControlSpacing">0,4</Thickness>
 </ResourceDictionary>

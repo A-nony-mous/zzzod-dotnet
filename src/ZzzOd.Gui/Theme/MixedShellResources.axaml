@@ -1,9 +1,28 @@
 <ResourceDictionary xmlns="https://github.com/avaloniaui"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
                     xmlns:fa="using:FluentAvalonia.UI.Controls">
-  <SolidColorBrush x:Key="ZzzMixedNavigationSurfaceBrush" Color="#F5222730" />
-  <SolidColorBrush x:Key="ZzzMixedContentSurfaceBrush" Color="#FFF7F8FA" />
-  <SolidColorBrush x:Key="ZzzMixedContentBorderBrush" Color="#FFCDD2DA" />
+  <ResourceDictionary.ThemeDictionaries>
+    <ResourceDictionary x:Key="Light">
+      <SolidColorBrush x:Key="ZzzMixedWindowFallbackBrush" Color="#FFF3F3F3" />
+      <SolidColorBrush x:Key="ZzzMixedNavigationSurfaceBrush" Color="#DDF7F5FC" />
+      <SolidColorBrush x:Key="ZzzMixedNavigationForegroundBrush" Color="#FF5B5B62" />
+      <SolidColorBrush x:Key="ZzzMixedNavigationSelectedForegroundBrush" Color="#FF0067C0" />
+      <SolidColorBrush x:Key="ZzzMixedNavigationSelectedBrush" Color="#F8FFFFFF" />
+      <SolidColorBrush x:Key="ZzzMixedNavigationHoverBrush" Color="#99FFFFFF" />
+      <SolidColorBrush x:Key="ZzzMixedContentSurfaceBrush" Color="#E8FFFFFF" />
+      <SolidColorBrush x:Key="ZzzMixedContentBorderBrush" Color="#66AEB4BE" />
+    </ResourceDictionary>
+    <ResourceDictionary x:Key="Dark">
+      <SolidColorBrush x:Key="ZzzMixedWindowFallbackBrush" Color="#FF202124" />
+      <SolidColorBrush x:Key="ZzzMixedNavigationSurfaceBrush" Color="#DD202127" />
+      <SolidColorBrush x:Key="ZzzMixedNavigationForegroundBrush" Color="#FFD7D9DE" />
+      <SolidColorBrush x:Key="ZzzMixedNavigationSelectedForegroundBrush" Color="#FF60CDFF" />
+      <SolidColorBrush x:Key="ZzzMixedNavigationSelectedBrush" Color="#33FFFFFF" />
+      <SolidColorBrush x:Key="ZzzMixedNavigationHoverBrush" Color="#1FFFFFFF" />
+      <SolidColorBrush x:Key="ZzzMixedContentSurfaceBrush" Color="#D9202124" />
+      <SolidColorBrush x:Key="ZzzMixedContentBorderBrush" Color="#4DFFFFFF" />
+    </ResourceDictionary>
+  </ResourceDictionary.ThemeDictionaries>
   <Thickness x:Key="ZzzMixedContentPadding">12</Thickness>
   <Thickness x:Key="ZzzMixedControlSpacing">0,3</Thickness>
 </ResourceDictionary>

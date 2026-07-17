@@ -11,11 +11,12 @@
                         MinWidth="1140"
                         MinHeight="760"
                         ShowActivated="True"
-                        RequestedThemeVariant="Light"
                         SystemDecorations="None"
                         ExtendClientAreaToDecorationsHint="True"
                         ExtendClientAreaTitleBarHeightHint="32"
-                        Background="{DynamicResource ApplicationPageBackgroundThemeBrush}">
+                        TransparencyLevelHint="Mica, AcrylicBlur, Blur, Transparent, None"
+                        TransparencyBackgroundFallback="{DynamicResource ZzzMixedWindowFallbackBrush}"
+                        Background="Transparent">
   <Window.Resources>
     <ResourceDictionary>
       <ResourceDictionary.MergedDictionaries>
@@ -25,62 +26,57 @@
   </Window.Resources>
   <Window.Styles>
     <Style Selector="fa|NavigationViewItem:selected">
-      <Setter Property="Background" Value="#2D3E78D8" />
+      <Setter Property="Background" Value="{DynamicResource ZzzMixedNavigationSelectedBrush}" />
+      <Setter Property="Foreground" Value="{DynamicResource ZzzMixedNavigationSelectedForegroundBrush}" />
     </Style>
     <Style Selector="fa|NavigationViewItem:pointerover">
-      <Setter Property="Background" Value="#1F6B7280" />
+      <Setter Property="Background" Value="{DynamicResource ZzzMixedNavigationHoverBrush}" />
     </Style>
     <Style Selector="fa|NavigationViewItem:pressed">
-      <Setter Property="Background" Value="#454A90E2" />
+      <Setter Property="Background" Value="{DynamicResource ZzzMixedNavigationSelectedBrush}" />
     </Style>
     <Style Selector="fa|NavigationViewItem:focus">
       <Setter Property="BorderBrush" Value="{DynamicResource SystemAccentColor}" />
       <Setter Property="BorderThickness" Value="1" />
     </Style>
     <Style Selector="fa|NavigationViewItem">
-      <Setter Property="Foreground" Value="#FFF5F7FA" />
+      <Setter Property="Width" Value="94" />
+      <Setter Property="Height" Value="76" />
+      <Setter Property="MinHeight" Value="76" />
+      <Setter Property="Margin" Value="7,2" />
+      <Setter Property="Padding" Value="0" />
+      <Setter Property="CornerRadius" Value="7" />
+      <Setter Property="HorizontalContentAlignment" Value="Center" />
+      <Setter Property="VerticalContentAlignment" Value="Center" />
+      <Setter Property="Foreground" Value="{DynamicResource ZzzMixedNavigationForegroundBrush}" />
     </Style>
     <Style Selector="fa|NavigationViewItem TextBlock">
-      <Setter Property="Foreground" Value="#FFF5F7FA" />
+      <Setter Property="Foreground" Value="{DynamicResource ZzzMixedNavigationForegroundBrush}" />
     </Style>
     <Style Selector="fa|NavigationViewItem fa|FontIcon">
-      <Setter Property="Foreground" Value="#FFF5F7FA" />
+      <Setter Property="Foreground" Value="{DynamicResource ZzzMixedNavigationForegroundBrush}" />
+    </Style>
+    <Style Selector="fa|NavigationViewItem:selected TextBlock">
+      <Setter Property="Foreground" Value="{DynamicResource ZzzMixedNavigationSelectedForegroundBrush}" />
+    </Style>
+    <Style Selector="fa|NavigationViewItem:selected fa|FontIcon">
+      <Setter Property="Foreground" Value="{DynamicResource ZzzMixedNavigationSelectedForegroundBrush}" />
     </Style>
     <Style Selector="fa|NavigationView Button">
-      <Setter Property="Foreground" Value="#FFF5F7FA" />
+      <Setter Property="Foreground" Value="{DynamicResource ZzzMixedNavigationForegroundBrush}" />
     </Style>
     <Style Selector="fa|NavigationView Button fa|FontIcon">
-      <Setter Property="Foreground" Value="#FFF5F7FA" />
-    </Style>
-    <Style Selector="Border#MixedContentSurface TextBlock">
-      <Setter Property="Foreground" Value="#FF1A1C1F" />
-    </Style>
-    <Style Selector="Border#MixedContentSurface Button">
-      <Setter Property="Foreground" Value="#FF1A1C1F" />
-    </Style>
-    <Style Selector="Border#MixedContentSurface TextBox">
-      <Setter Property="Foreground" Value="#FF1A1C1F" />
-    </Style>
-    <Style Selector="Border#MixedContentSurface fa|FAComboBox">
-      <Setter Property="Foreground" Value="#FF1A1C1F" />
-    </Style>
-    <Style Selector="Border#MixedContentSurface fa|TabViewItem">
-      <Setter Property="Foreground" Value="#FF1A1C1F" />
-    </Style>
-    <Style Selector="Border#MixedContentSurface fa|InfoBar">
-      <Setter Property="Foreground" Value="#FF1A1C1F" />
-    </Style>
-    <Style Selector="Border#MixedContentSurface fa|InfoBar /template/ TextBlock">
-      <Setter Property="Foreground" Value="#FF1A1C1F" />
+      <Setter Property="Foreground" Value="{DynamicResource ZzzMixedNavigationForegroundBrush}" />
     </Style>
   </Window.Styles>
   <Grid>
     <fa:NavigationView x:Name="MixedNavigation"
-                       PaneDisplayMode="Auto"
-                       OpenPaneLength="280"
+                       PaneDisplayMode="Left"
+                       OpenPaneLength="108"
                        CompactPaneLength="48"
                        IsPaneOpen="True"
-                       Foreground="#FFF5F7FA"
+                       IsPaneToggleButtonVisible="False"
+                       Foreground="{DynamicResource ZzzMixedNavigationForegroundBrush}"
                        Background="{DynamicResource ZzzMixedNavigationSurfaceBrush}"
                        IsBackButtonVisible="True"
                        IsBackEnabled="False"
@@ -89,21 +85,31 @@
                        SelectionChanged="OnNavigationSelectionChanged">
       <fa:NavigationView.MenuItemTemplate>
         <DataTemplate x:DataType="shell:ZzzNavigationEntry">
-          <fa:NavigationViewItem Tag="{Binding Key}"
-                                 Content="{Binding Text}"
+          <fa:NavigationViewItem x:Name="NavigationItem"
+                                 Tag="{Binding Key}"
                                  ToolTip.Tip="{Binding AccessibleName}"
                                  AutomationProperties.Name="{Binding AccessibleName}">
-            <fa:NavigationViewItem.IconSource>
-              <fa:FontIconSource FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets">
-                <fa:FontIconSource.Glyph>
+            <StackPanel Width="86"
+                        Height="64"
+                        Spacing="4"
+                        HorizontalAlignment="Center"
+                        VerticalAlignment="Center">
+              <fa:FontIcon FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets"
+                           FontSize="24"
+                           HorizontalAlignment="Center">
+                <fa:FontIcon.Glyph>
                   <MultiBinding Converter="{x:Static shell:ZzzNavigationIconConverter.Instance}">
                     <Binding Path="IconGlyph" />
                     <Binding Path="SelectedIconGlyph" />
-                    <Binding Path="IsSelected" RelativeSource="{RelativeSource AncestorType=fa:NavigationViewItem}" />
+                    <Binding Path="IsSelected" ElementName="NavigationItem" />
                   </MultiBinding>
-                </fa:FontIconSource.Glyph>
-              </fa:FontIconSource>
-            </fa:NavigationViewItem.IconSource>
+                </fa:FontIcon.Glyph>
+              </fa:FontIcon>
+              <TextBlock Text="{Binding Text}"
+                         FontSize="12"
+                         TextAlignment="Center"
+                         HorizontalAlignment="Center" />
+            </StackPanel>
           </fa:NavigationViewItem>
         </DataTemplate>
       </fa:NavigationView.MenuItemTemplate>
@@ -112,6 +118,7 @@
                 Margin="12,44,12,12"
                 Padding="{DynamicResource ZzzMixedContentPadding}"
                 Background="{DynamicResource ZzzMixedContentSurfaceBrush}"
+                TextElement.Foreground="{DynamicResource TextFillColorPrimaryBrush}"
                 BorderBrush="{DynamicResource ZzzMixedContentBorderBrush}"
                 BorderThickness="1"
                 CornerRadius="8">
@@ -130,7 +137,9 @@
           ZIndex="10"
           PointerPressed="OnTitleBarPointerPressed">
       <Image x:Name="MixedTitleBarIcon" Width="18" Height="18" VerticalAlignment="Center" />
-      <TextBlock Grid.Column="1" Margin="8,0" VerticalAlignment="Center" Text="{Binding WindowTitle}" />
+      <TextBlock Grid.Column="1" Margin="8,0" VerticalAlignment="Center"
+                 Foreground="{DynamicResource ZzzMixedNavigationForegroundBrush}"
+                 Text="{Binding WindowTitle}" />
     </Grid>
     <fa:InfoBar x:Name="MixedToastBar"
                 Margin="0,40,24,0"

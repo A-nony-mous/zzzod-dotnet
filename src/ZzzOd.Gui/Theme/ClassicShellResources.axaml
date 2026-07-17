@@ -1,4 +1,13 @@
 <ResourceDictionary xmlns="https://github.com/avaloniaui"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
-  <SolidColorBrush x:Key="ZzzClassicNavigationSurfaceBrush" Color="#F612141E" />
+  <ResourceDictionary.ThemeDictionaries>
+    <ResourceDictionary x:Key="Light">
+      <SolidColorBrush x:Key="ZzzClassicNavigationSurfaceBrush" Color="#F5F3F3F3" />
+      <SolidColorBrush x:Key="ZzzClassicNavigationForegroundBrush" Color="#FF202124" />
+    </ResourceDictionary>
+    <ResourceDictionary x:Key="Dark">
+      <SolidColorBrush x:Key="ZzzClassicNavigationSurfaceBrush" Color="#F612141E" />
+      <SolidColorBrush x:Key="ZzzClassicNavigationForegroundBrush" Color="#FFF5F7FA" />
+    </ResourceDictionary>
+  </ResourceDictionary.ThemeDictionaries>
 </ResourceDictionary>

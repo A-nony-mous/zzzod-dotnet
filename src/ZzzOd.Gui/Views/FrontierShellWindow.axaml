@@ -12,10 +12,12 @@
                            MinWidth="1140"
                            MinHeight="760"
                            ShowActivated="True"
-                           RequestedThemeVariant="Dark"
                            SystemDecorations="None"
                            ExtendClientAreaToDecorationsHint="True"
-                           ExtendClientAreaTitleBarHeightHint="32">
+                           ExtendClientAreaTitleBarHeightHint="32"
+                           TransparencyLevelHint="Mica, AcrylicBlur, Blur, Transparent, None"
+                           TransparencyBackgroundFallback="{DynamicResource ZzzFrontierWindowFallbackBrush}"
+                           Background="Transparent">
   <Window.Resources>
     <ResourceDictionary>
       <ResourceDictionary.MergedDictionaries>
@@ -25,30 +27,27 @@
   </Window.Resources>
   <Window.Styles>
     <Style Selector="fa|NavigationViewItem">
-      <Setter Property="Foreground" Value="#FFF5F7FA" />
+      <Setter Property="Foreground" Value="{DynamicResource ZzzFrontierNavigationForegroundBrush}" />
     </Style>
     <Style Selector="fa|NavigationViewItem TextBlock">
-      <Setter Property="Foreground" Value="#FFF5F7FA" />
+      <Setter Property="Foreground" Value="{DynamicResource ZzzFrontierNavigationForegroundBrush}" />
     </Style>
     <Style Selector="fa|NavigationViewItem fa|FontIcon">
-      <Setter Property="Foreground" Value="#FFF5F7FA" />
-    </Style>
-    <Style Selector="fa|InfoBar TextBlock">
-      <Setter Property="Foreground" Value="#FF1A1C1F" />
+      <Setter Property="Foreground" Value="{DynamicResource ZzzFrontierNavigationForegroundBrush}" />
     </Style>
   </Window.Styles>
-  <Grid Background="{DynamicResource ApplicationPageBackgroundThemeBrush}">
+  <Grid Background="Transparent">
     <Image x:Name="BackgroundImage"
            Stretch="UniformToFill"
            IsVisible="False" />
     <ContentControl x:Name="BackgroundVideoHost" IsVisible="False" />
     <fa:NavigationView x:Name="FrontierNavigation"
                        PaneDisplayMode="LeftCompact"
-                       Background="#B0111722"
+                       Background="{DynamicResource ZzzFrontierNavigationSurfaceBrush}"
                        OpenPaneLength="240"
                        CompactPaneLength="48"
                        IsPaneOpen="False"
-                       Foreground="#FFF5F7FA"
+                       Foreground="{DynamicResource ZzzFrontierNavigationForegroundBrush}"
                        IsBackButtonVisible="True"
                        IsBackEnabled="False"
                        IsSettingsVisible="False"
@@ -71,7 +70,7 @@
                 Margin="16,44,16,16"
                 Padding="{DynamicResource ZzzFrontierContentPadding}"
                 Background="{DynamicResource ZzzFrontierContentSurfaceBrush}"
-                TextElement.Foreground="#FFF5F7FA"
+                TextElement.Foreground="{DynamicResource ZzzFrontierContentForegroundBrush}"
                 BorderBrush="{DynamicResource ZzzFrontierContentBorderBrush}"
                 BorderThickness="1"
                 Opacity="0.92"
@@ -91,7 +90,9 @@
           ZIndex="10"
           PointerPressed="OnTitleBarPointerPressed">
       <Image x:Name="FrontierTitleBarIcon" Width="18" Height="18" VerticalAlignment="Center" />
-      <TextBlock Grid.Column="1" Margin="8,0" VerticalAlignment="Center" Text="{Binding WindowTitle}" />
+      <TextBlock Grid.Column="1" Margin="8,0" VerticalAlignment="Center"
+                 Foreground="{DynamicResource ZzzFrontierNavigationForegroundBrush}"
+                 Text="{Binding WindowTitle}" />
     </Grid>
     <fa:InfoBar x:Name="FrontierToastBar"
                 Margin="0,40,24,0"
