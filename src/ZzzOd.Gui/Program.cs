@@ -45,6 +45,7 @@ internal static class Program
                 services.AddZzzGuiApiServer();
                 services.AddSingleton<ZzzOverlayController>();
                 services.AddSingleton<ZzzWindowBackdropService>();
+                services.AddSingleton<ZzzGuiShellPresetService>();
                 services.AddSingleton<ZzzNavigationRegistry>();
                 services.AddSingleton<ZzzGuiOperationTracker>();
                 services.AddSingleton<ZzzPageLifecycleService>();
