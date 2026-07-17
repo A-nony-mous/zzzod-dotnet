@@ -163,7 +163,7 @@ public partial class MainWindow : Window
         _pageHost.GoBack();
     }
 
-    private void OnRouteChanged(object? sender, string routeKey)
+    protected virtual void OnRouteChanged(object? sender, string routeKey)
     {
         ZzzShellRouteVisualState state = ZzzShellRouteVisualState.ForRoute(routeKey);
         _contentFrame.Margin = state.ContentMargin;

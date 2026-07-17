@@ -83,4 +83,21 @@ public sealed partial class FrontierShellWindow : MainWindow
             _backgroundImage.IsVisible = false;
         }
     }
+
+    protected override void OnRouteChanged(object? sender, string routeKey)
+    {
+        base.OnRouteChanged(sender, routeKey);
+        if (_mediaPlayer is null)
+        {
+            return;
+        }
+
+        if (string.Equals(routeKey, "home", StringComparison.Ordinal))
+        {
+            _mediaPlayer.Play();
+            return;
+        }
+
+        _mediaPlayer.Pause();
+    }
 }
