@@ -131,12 +131,17 @@ public partial class MainWindow : Window
 
     protected void OnNavigationSelectionChanged(object? sender, NavigationViewSelectionChangedEventArgs args)
     {
-        string tag = args.SelectedItem switch
+        string? tag = args.SelectedItem switch
         {
             ZzzNavigationEntry entry => entry.Key,
             NavigationViewItem item when item.Tag is string itemTag => itemTag,
-            _ => "home",
+            _ => (args.SelectedItemContainer as NavigationViewItem)?.Tag as string,
         };
+        if (string.IsNullOrWhiteSpace(tag))
+        {
+            return;
+        }
+
         if (_evidenceRoute is not null && !string.Equals(tag, _evidenceRoute, StringComparison.Ordinal))
         {
             Dispatcher.UIThread.Post(() => _pageHost.ShowPage(_evidenceRoute));

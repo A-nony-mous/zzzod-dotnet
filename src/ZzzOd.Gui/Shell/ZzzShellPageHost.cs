@@ -26,6 +26,8 @@ public sealed class ZzzShellPageHost : IZzzShellPageHost
     private readonly NavigationView _navigation;
     private readonly Dictionary<string, Control> _pageCache = [];
     private IZzzShellBackNavigationHost? _backNavigationHost;
+    private string? _activeRoute;
+    private string? _navigatingRoute;
     private bool _disposed;
 
     public ZzzShellPageHost(
@@ -61,17 +63,33 @@ public sealed class ZzzShellPageHost : IZzzShellPageHost
     public void ShowPage(string route)
     {
         ThrowIfDisposed();
-        ZzzNavigationEntry entry = _navigationRegistry.GetRequired(ResolveKnownRoute(route));
-        if (!ReferenceEquals(_navigation.SelectedItem, entry))
+        string resolvedRoute = ResolveKnownRoute(route);
+        if (string.Equals(_navigatingRoute, resolvedRoute, StringComparison.Ordinal)
+            || string.Equals(_activeRoute, resolvedRoute, StringComparison.Ordinal))
         {
-            _navigation.SelectedItem = entry;
+            return;
         }
 
-        Control page = GetPage(entry);
-        _contentFrame.Content = page;
-        BindBackNavigationHost(page as IZzzShellBackNavigationHost);
-        _pageLifecycle.NavigateTo(page, entry.Key);
-        RouteChanged?.Invoke(this, entry.Key);
+        _navigatingRoute = resolvedRoute;
+        try
+        {
+            ZzzNavigationEntry entry = _navigationRegistry.GetRequired(resolvedRoute);
+            if (!ReferenceEquals(_navigation.SelectedItem, entry))
+            {
+                _navigation.SelectedItem = entry;
+            }
+
+            Control page = GetPage(entry);
+            _contentFrame.Content = page;
+            BindBackNavigationHost(page as IZzzShellBackNavigationHost);
+            _pageLifecycle.NavigateTo(page, entry.Key);
+            _activeRoute = entry.Key;
+            RouteChanged?.Invoke(this, entry.Key);
+        }
+        finally
+        {
+            _navigatingRoute = null;
+        }
     }
 
     public void NavigateToRequestedTarget(string key)
@@ -115,6 +133,8 @@ public sealed class ZzzShellPageHost : IZzzShellPageHost
         }
 
         _pageCache.Clear();
+        _activeRoute = null;
+        _navigatingRoute = null;
     }
 
     private string ResolveKnownRoute(string route) =>
