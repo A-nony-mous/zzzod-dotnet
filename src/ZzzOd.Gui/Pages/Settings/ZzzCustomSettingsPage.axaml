@@ -54,12 +54,12 @@
             <fa:FAComboBox x:Name="ThemeCombo" Width="180" SelectionChanged="OnThemeChanged" />
           </fa:SettingsExpanderItem.Footer>
         </fa:SettingsExpanderItem>
-        <fa:SettingsExpanderItem Content="视觉预设">
+        <fa:SettingsExpanderItem Content="界面样式">
           <fa:SettingsExpanderItem.IconSource>
             <fa:FontIconSource Glyph="&#xE790;" />
           </fa:SettingsExpanderItem.IconSource>
           <fa:SettingsExpanderItem.Footer>
-            <fa:FAComboBox x:Name="VisualPresetCombo" Width="180" SelectionChanged="OnVisualPresetChanged" />
+            <fa:FAComboBox x:Name="ShellPresetCombo" Width="180" SelectionChanged="OnShellPresetChanged" />
           </fa:SettingsExpanderItem.Footer>
         </fa:SettingsExpanderItem>
         <fa:SettingsExpanderItem Content="自定义主题色"

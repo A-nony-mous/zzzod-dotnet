@@ -31,7 +31,7 @@ internal sealed partial class ZzzCustomSettingsAxamlPage : UserControl, IZzzPage
     private readonly InfoBar _errorBar;
     private readonly FAComboBox _languageCombo;
     private readonly FAComboBox _themeCombo;
-    private readonly FAComboBox _visualPresetCombo;
+    private readonly FAComboBox _shellPresetCombo;
     private readonly FAComboBox _backgroundTypeCombo;
     private readonly ToggleSwitch _customThemeColorToggle;
     private readonly ToggleSwitch _customBannerToggle;
@@ -54,7 +54,7 @@ internal sealed partial class ZzzCustomSettingsAxamlPage : UserControl, IZzzPage
         _errorBar = Required<InfoBar>("ErrorBar");
         _languageCombo = Required<FAComboBox>("LanguageCombo");
         _themeCombo = Required<FAComboBox>("ThemeCombo");
-        _visualPresetCombo = Required<FAComboBox>("VisualPresetCombo");
+        _shellPresetCombo = Required<FAComboBox>("ShellPresetCombo");
         _backgroundTypeCombo = Required<FAComboBox>("BackgroundTypeCombo");
         _customThemeColorToggle = Required<ToggleSwitch>("CustomThemeColorToggle");
         _customBannerToggle = Required<ToggleSwitch>("CustomBannerToggle");
@@ -65,7 +65,7 @@ internal sealed partial class ZzzCustomSettingsAxamlPage : UserControl, IZzzPage
 
         _languageCombo.ItemsSource = Options(("跟随系统", "auto"), ("简体中文", "zh"), ("English", "en"));
         _themeCombo.ItemsSource = Options(("跟随系统", "Auto"), ("浅色", "Light"), ("深色", "Dark"));
-        _visualPresetCombo.ItemsSource = Options(("Baseline 兼容", "baseline-parity"), ("Store Fluent", "store-fluent"));
+        _shellPresetCombo.ItemsSource = Options(("经典", "classic"), ("混合", "mixed"), ("前卫", "frontier"));
         _backgroundTypeCombo.ItemsSource = Options(
             ("版本海报", "version_poster"),
             ("静态背景", "static_background"),
@@ -135,7 +135,7 @@ internal sealed partial class ZzzCustomSettingsAxamlPage : UserControl, IZzzPage
         {
             Select(_languageCombo, RequiredString(values, "ui_language"));
             Select(_themeCombo, RequiredString(values, "theme"));
-            Select(_visualPresetCombo, ReadString(values, "fluent_visual_preset", "baseline-parity"));
+            Select(_shellPresetCombo, ReadString(values, ZzzGuiShellPresetService.ConfigKey, "classic"));
             Select(_backgroundTypeCombo, RequiredString(values, "background_type"));
             _customThemeColorToggle.IsChecked = RequiredBool(values, "custom_theme_color");
             _customBannerToggle.IsChecked = RequiredBool(values, "custom_banner");
@@ -187,14 +187,19 @@ internal sealed partial class ZzzCustomSettingsAxamlPage : UserControl, IZzzPage
         }
     }
 
-    private void OnVisualPresetChanged(object? sender, SelectionChangedEventArgs args)
+    private async void OnShellPresetChanged(object? sender, SelectionChangedEventArgs args)
     {
-        if (_loading || _visualPresetCombo.SelectedItem is not ZzzCustomOption option || !Save("fluent_visual_preset", option.Value))
+        if (_loading || _shellPresetCombo.SelectedItem is not ZzzCustomOption option || !Save(ZzzGuiShellPresetService.ConfigKey, option.Value))
         {
             return;
         }
 
-        App.ApplyVisualPreset(option.Value);
+        ContentDialog dialog = (ContentDialog)Resources["RestartDialog"]!;
+        ConfigureShellRestartDialog(dialog);
+        if (await dialog.ShowAsync().ConfigureAwait(true) == ContentDialogResult.Primary)
+        {
+            RestartApplication();
+        }
     }
 
     private void OnCustomThemeColorChanged(object? sender, RoutedEventArgs args)
@@ -375,6 +380,14 @@ internal sealed partial class ZzzCustomSettingsAxamlPage : UserControl, IZzzPage
             : "语言切换成功，需要重启应用程序以生效";
         dialog.PrimaryButtonText = english ? "Restart Now" : "立即重启";
         dialog.CloseButtonText = english ? "Restart Later" : "稍后重启";
+    }
+
+    private static void ConfigureShellRestartDialog(ContentDialog dialog)
+    {
+        dialog.Title = "提示";
+        dialog.Content = "界面样式已保存，重启应用后生效";
+        dialog.PrimaryButtonText = "立即重启";
+        dialog.CloseButtonText = "稍后重启";
     }
 
     private static void RestartApplication()
