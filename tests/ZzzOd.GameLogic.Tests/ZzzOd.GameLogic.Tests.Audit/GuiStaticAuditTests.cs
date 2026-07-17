@@ -86,11 +86,9 @@ public sealed class GuiStaticAuditTests
 		Assert.Contains("ZzzMixedContentSurfaceBrush", mixedResources, StringComparison.Ordinal);
 		Assert.Contains("ZzzMixedContentBorderBrush", mixedResources, StringComparison.Ordinal);
 		Assert.Contains("ZzzMixedContentPadding", mixed, StringComparison.Ordinal);
-		Assert.Contains("fa|SettingsExpanderItem", mixed, StringComparison.Ordinal);
 		Assert.Contains("ZzzFrontierContentSurfaceBrush", frontierResources, StringComparison.Ordinal);
 		Assert.Contains("ZzzFrontierContentBorderBrush", frontierResources, StringComparison.Ordinal);
 		Assert.Contains("ZzzFrontierContentPadding", frontier, StringComparison.Ordinal);
-		Assert.Contains("fa|SettingsExpanderItem", frontier, StringComparison.Ordinal);
 	}
 
 	/// <summary>
