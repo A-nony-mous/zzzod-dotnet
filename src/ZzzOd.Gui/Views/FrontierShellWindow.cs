@@ -27,7 +27,7 @@ public sealed partial class FrontierShellWindow : MainWindow
     private LibVLC? _libVlc;
     private MediaPlayer? _mediaPlayer;
     private Media? _backgroundVideo;
-    private bool _isHomeRoute;
+    private readonly ZzzFrontierMediaLifecycle _mediaLifecycle = new();
 
     [ActivatorUtilitiesConstructor]
     public FrontierShellWindow(
@@ -51,6 +51,7 @@ public sealed partial class FrontierShellWindow : MainWindow
         Opened += async (_, _) => await LoadBackgroundSafelyAsync().ConfigureAwait(true);
         Closed += (_, _) =>
         {
+            _mediaLifecycle.Release();
             _backgroundBitmap?.Dispose();
             _backgroundBitmap = null;
             _mediaPlayer?.Pause();
@@ -93,7 +94,7 @@ public sealed partial class FrontierShellWindow : MainWindow
             _mediaPlayer = new MediaPlayer(_libVlc);
             _backgroundVideoHost.Content = new VideoView { MediaPlayer = _mediaPlayer };
             _backgroundVideo = new Media(_libVlc, new Uri(path));
-            if (_isHomeRoute)
+            if (_mediaLifecycle.ShouldPlay)
             {
                 _mediaPlayer.Play(_backgroundVideo);
             }
@@ -119,13 +120,13 @@ public sealed partial class FrontierShellWindow : MainWindow
     protected override void OnRouteChanged(object? sender, string routeKey)
     {
         base.OnRouteChanged(sender, routeKey);
-        _isHomeRoute = string.Equals(routeKey, "home", StringComparison.Ordinal);
+        _mediaLifecycle.OnRouteChanged(routeKey);
         if (_mediaPlayer is null)
         {
             return;
         }
 
-        if (_isHomeRoute)
+        if (_mediaLifecycle.ShouldPlay)
         {
             _mediaPlayer.Play();
             return;
