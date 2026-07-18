@@ -222,15 +222,26 @@ public sealed class ZzzAppBackend : IZzzAppBackend, IZzzIntelBoardProgressBacken
 	public ZzzBackendResult<IReadOnlyList<ZzzInstanceDto>> CreateInstance()
 	{
 		ZzzBackendResult<IReadOnlyList<ZzzInstanceDto>> result = _runtime.CreateInstance();
-		PublishInstanceChanged(result);
+		PublishInstanceListChanged(result);
 		return result;
 	}
 
 	/// <inheritdoc />
 	public ZzzBackendResult<IReadOnlyList<ZzzInstanceDto>> UpdateInstance(ZzzUpdateInstanceRequest request)
 	{
+		ArgumentNullException.ThrowIfNull(request);
+		if (!_runtime.IsRunActive)
+		{
+			IReadOnlyList<ZzzInstanceDto> instances = _runtime.ListInstances();
+			ZzzInstanceDto? current = instances.FirstOrDefault(instance => instance.Index == request.Index);
+			if (current is not null && IsUnchangedInstanceUpdate(current, request))
+			{
+				return ZzzBackendResult<IReadOnlyList<ZzzInstanceDto>>.Ok(instances);
+			}
+		}
+
 		ZzzBackendResult<IReadOnlyList<ZzzInstanceDto>> result = _runtime.UpdateInstance(request);
-		PublishInstanceChanged(result);
+		PublishInstanceListChanged(result);
 		return result;
 	}
 
@@ -238,7 +249,7 @@ public sealed class ZzzAppBackend : IZzzAppBackend, IZzzIntelBoardProgressBacken
 	public ZzzBackendResult<IReadOnlyList<ZzzInstanceDto>> DeleteInstance(int instanceIndex)
 	{
 		ZzzBackendResult<IReadOnlyList<ZzzInstanceDto>> result = _runtime.DeleteInstance(instanceIndex);
-		PublishInstanceChanged(result);
+		PublishInstanceListChanged(result);
 		return result;
 	}
 
@@ -2519,15 +2530,19 @@ public sealed class ZzzAppBackend : IZzzAppBackend, IZzzIntelBoardProgressBacken
 		return Math.Clamp((now - recorder.LastRecordTimestampUtc.Value).TotalSeconds, 0.0, 999.0);
 	}
 
-	private void PublishInstanceChanged(ZzzBackendResult<IReadOnlyList<ZzzInstanceDto>> result)
+	private static bool IsUnchangedInstanceUpdate(ZzzInstanceDto current, ZzzUpdateInstanceRequest request)
+	{
+		string? name = request.Name is null
+			? null
+			: string.IsNullOrWhiteSpace(request.Name) ? request.Index.ToString("00") : request.Name.Trim();
+		return (name is null || string.Equals(current.Name, name, StringComparison.Ordinal))
+			&& (!request.ActiveInOneDragon.HasValue || current.ActiveInOneDragon == request.ActiveInOneDragon.Value);
+	}
+
+	private void PublishInstanceListChanged(ZzzBackendResult<IReadOnlyList<ZzzInstanceDto>> result)
 	{
 		if (result.Success && result.Value != null)
 		{
-			ZzzInstanceDto zzzInstanceDto = result.Value.FirstOrDefault((ZzzInstanceDto instance) => instance.Active);
-			if ((object)zzzInstanceDto != null)
-			{
-				_eventBus.Publish("instance.activeChanged", zzzInstanceDto);
-			}
 			_eventBus.Publish("instance.changed", result.Value);
 		}
 	}

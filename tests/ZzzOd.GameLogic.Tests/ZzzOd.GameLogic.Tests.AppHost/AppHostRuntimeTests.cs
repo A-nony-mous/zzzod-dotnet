@@ -577,6 +577,23 @@ public sealed class AppHostRuntimeTests
 	}
 
 	/// <summary>
+	/// 同值实例更新不应触发实例变更事件。
+	/// </summary>
+	[Fact]
+	public void BackendSameInstanceUpdateDoesNotPublishEvents()
+	{
+		using BackendHarness backendHarness = BackendHarness.Create();
+		ChannelReader<ZzzBackendEvent> events = backendHarness.Backend.SubscribeEvents();
+		ZzzInstanceDto current = backendHarness.Backend.GetCurrentInstance().Value!;
+		ZzzBackendResult<IReadOnlyList<ZzzInstanceDto>> result = backendHarness.Backend.UpdateInstance(
+			new ZzzUpdateInstanceRequest(current.Index, current.Name, current.ActiveInOneDragon));
+
+		Assert.True(result.Success);
+		Assert.False(events.TryRead(out _));
+		backendHarness.Backend.UnsubscribeEvents(events);
+	}
+
+	/// <summary>
 	/// BaselineParity 当前没有配置登录操作，空闲调用应返回同义状态。
 	/// </summary>
 	[Fact]

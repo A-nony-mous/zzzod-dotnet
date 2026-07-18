@@ -30,6 +30,8 @@ internal sealed class ZzzAccountInstanceRow : INotifyPropertyChanged
 {
     private string _name;
     private ZzzAccountRunOption _selectedRunOption;
+    private string _persistedName;
+    private bool _persistedActiveInOneDragon;
 
     public ZzzAccountInstanceRow(
         ZzzInstanceDto instance,
@@ -39,12 +41,14 @@ internal sealed class ZzzAccountInstanceRow : INotifyPropertyChanged
     {
         Index = instance.Index;
         _name = instance.Name;
+        _persistedName = instance.Name;
         IsActive = instance.Active;
         CanEdit = canSwitch;
         CanActivate = canSwitch && !instance.Active;
         CanDelete = canSwitch && instanceCount > 1;
         RunOptions = runOptions;
         _selectedRunOption = runOptions.First(option => option.Value == instance.ActiveInOneDragon);
+        _persistedActiveInOneDragon = instance.ActiveInOneDragon;
     }
 
     public event PropertyChangedEventHandler? PropertyChanged;
@@ -73,6 +77,18 @@ internal sealed class ZzzAccountInstanceRow : INotifyPropertyChanged
     {
         get => _selectedRunOption;
         set => SetField(ref _selectedRunOption, value);
+    }
+
+    public bool HasPendingNameChange => !string.Equals(_name, _persistedName, StringComparison.Ordinal);
+
+    public bool HasPendingRunOptionChange => _selectedRunOption.Value != _persistedActiveInOneDragon;
+
+    public void SynchronizePersistedValues(ZzzInstanceDto instance)
+    {
+        _persistedName = instance.Name;
+        _persistedActiveInOneDragon = instance.ActiveInOneDragon;
+        Name = instance.Name;
+        SelectedRunOption = RunOptions.First(option => option.Value == instance.ActiveInOneDragon);
     }
 
     private void SetField<T>(ref T field, T value, [CallerMemberName] string? propertyName = null)
@@ -226,6 +242,7 @@ internal sealed class ZzzInstanceManagementPage
 internal sealed class ZzzCurrentAccountSettingsPage
 {
     private readonly IZzzAppBackend _backend;
+    private IReadOnlyDictionary<string, object?> _values = new Dictionary<string, object?>(StringComparer.Ordinal);
 
     public ZzzCurrentAccountSettingsPage(IZzzAppBackend backend)
     {
@@ -257,6 +274,10 @@ internal sealed class ZzzCurrentAccountSettingsPage
         ActiveInstanceIndex = _backend.GetCurrentInstance().Value?.Index
             ?? _backend.GetInstances().Value?.FirstOrDefault(instance => instance.Active)?.Index
             ?? 0;
+        ZzzBackendResult<ZzzConfigScopeValuesDto> result = _backend.GetConfigScope("instance", ActiveInstanceIndex);
+        _values = result.Success && result.Value is not null
+            ? new Dictionary<string, object?>(result.Value.Values, StringComparer.Ordinal)
+            : new Dictionary<string, object?>(StringComparer.Ordinal);
         GameRegion = ReadString("game_region");
     }
 
@@ -276,18 +297,14 @@ internal sealed class ZzzCurrentAccountSettingsPage
 
     public string ReadString(string key)
     {
-        ZzzBackendResult<ZzzConfigScopeValuesDto> result = _backend.GetConfigScope("instance", ActiveInstanceIndex);
-        return result.Success
-            && result.Value?.Values.TryGetValue(key, out object? value) == true
+        return _values.TryGetValue(key, out object? value)
             ? value?.ToString() ?? string.Empty
             : string.Empty;
     }
 
     public bool ReadBool(string key)
     {
-        ZzzBackendResult<ZzzConfigScopeValuesDto> result = _backend.GetConfigScope("instance", ActiveInstanceIndex);
-        return result.Success
-            && result.Value?.Values.TryGetValue(key, out object? value) == true
+        return _values.TryGetValue(key, out object? value)
             && value is bool boolean
             && boolean;
     }
@@ -298,9 +315,15 @@ internal sealed class ZzzCurrentAccountSettingsPage
             "instance",
             new Dictionary<string, object?> { [key] = value },
             ActiveInstanceIndex));
-        if (result.Success && key == "game_region")
+        if (result.Success)
         {
-            GameRegion = value?.ToString() ?? string.Empty;
+            _values = result.Value is not null
+                ? new Dictionary<string, object?>(result.Value.Values, StringComparer.Ordinal)
+                : new Dictionary<string, object?>(_values, StringComparer.Ordinal) { [key] = value };
+            if (key == "game_region")
+            {
+                GameRegion = value?.ToString() ?? string.Empty;
+            }
         }
 
         return result;
@@ -501,22 +524,41 @@ internal sealed partial class ZzzAccountsPage : UserControl, IZzzPageLifecycle
 
     private void OnInstanceNameChanged(object? sender, TextChangedEventArgs args)
     {
-        if (_loading || sender is not TextBox { DataContext: ZzzAccountInstanceRow row })
+        if (_loading
+            || sender is not TextBox { DataContext: ZzzAccountInstanceRow row }
+            || !row.HasPendingNameChange)
         {
             return;
         }
 
-        ShowResult(InstanceManagement.UpdateInstance(row.Index, row.Name, null));
+        SaveInstanceRow(row, row.Name, null);
     }
 
     private void OnInstanceRunChanged(object? sender, SelectionChangedEventArgs args)
     {
-        if (_loading || sender is not Control { DataContext: ZzzAccountInstanceRow row })
+        if (_loading
+            || sender is not Control { DataContext: ZzzAccountInstanceRow row }
+            || !row.HasPendingRunOptionChange)
         {
             return;
         }
 
-        ShowResult(InstanceManagement.UpdateInstance(row.Index, null, row.SelectedRunOption.Value));
+        SaveInstanceRow(row, null, row.SelectedRunOption.Value);
+    }
+
+    private void SaveInstanceRow(ZzzAccountInstanceRow row, string? name, bool? activeInOneDragon)
+    {
+        ZzzBackendResult<IReadOnlyList<ZzzInstanceDto>> result = InstanceManagement.UpdateInstance(row.Index, name, activeInOneDragon);
+        if (result.Success)
+        {
+            ZzzInstanceDto? persisted = result.Value?.FirstOrDefault(instance => instance.Index == row.Index);
+            if (persisted is not null)
+            {
+                row.SynchronizePersistedValues(persisted);
+            }
+        }
+
+        ShowResult(result);
     }
 
     private void OnActivateInstanceClicked(object? sender, RoutedEventArgs args)
