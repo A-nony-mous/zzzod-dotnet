@@ -1,166 +1,115 @@
-using System.Runtime.InteropServices;
 using Avalonia;
 using Avalonia.Controls;
-using Avalonia.Layout;
 using Avalonia.Media;
 using Avalonia.Platform;
+using Avalonia.Threading;
+using ZzzOd.AppHost.Backend;
 using ZzzOd.AppHost.Overlay;
 
 namespace ZzzOd.Gui.Overlay;
 
 internal sealed class ZzzOverlayTechnicalWindow : Window
 {
-    private readonly Canvas _canvas = new();
+    private readonly ZzzOverlayVisionControl _visionControl = new();
     private ZzzOverlayGuiSettings _settings = new();
+    private ZzzWindowStatusDto? _lastGameWindow;
+    private ZzzOverlayFrameDto? _lastFrame;
+    private double _geometryScaling = 1d;
+    private bool _scalingRefreshQueued;
 
     public ZzzOverlayTechnicalWindow()
     {
-        Title = "ZZZ Overlay";
-        Width = 1280;
-        Height = 720;
+        Title = string.Empty;
+        Width = 1;
+        Height = 1;
         CanResize = false;
+        ShowActivated = false;
         ShowInTaskbar = false;
         Topmost = true;
         SystemDecorations = SystemDecorations.None;
         TransparencyLevelHint = [WindowTransparencyLevel.Transparent];
         Background = Brushes.Transparent;
-        Content = _canvas;
-        Opened += (_, _) => ZzzOverlayNativeWindow.Apply(this, _settings.ClickThrough, _settings.PreventCapture);
+        Content = _visionControl;
+        Opened += (_, _) =>
+        {
+            ZzzOverlayNativeWindow.Apply(this, clickThrough: true, preventCapture: _settings.PreventCapture);
+            if (_lastGameWindow is not null)
+            {
+                FollowGameWindow(_lastGameWindow);
+            }
+        };
+        ScalingChanged += (_, _) => QueueScalingRefresh();
+        Closed += (_, _) =>
+        {
+            _lastGameWindow = null;
+            _lastFrame = null;
+            _scalingRefreshQueued = false;
+        };
     }
 
     public void ApplySettings(ZzzOverlayGuiSettings settings)
     {
+        ArgumentNullException.ThrowIfNull(settings);
         _settings = settings;
-        Opacity = Math.Clamp(settings.Opacity, 0.1d, 1d);
-        ZzzOverlayNativeWindow.Apply(this, settings.ClickThrough && !settings.LayoutEditMode, settings.PreventCapture);
+        ZzzOverlayNativeWindow.Apply(this, clickThrough: true, preventCapture: settings.PreventCapture);
     }
 
-    public void FollowGameWindow(string? windowTitle)
+    public void FollowGameWindow(ZzzWindowStatusDto window)
     {
-        if (!_settings.FollowGameWindow || string.IsNullOrWhiteSpace(windowTitle))
+        ArgumentNullException.ThrowIfNull(window);
+        Dispatcher.UIThread.VerifyAccess();
+        _lastGameWindow = window;
+        if (!_settings.FollowGameWindow ||
+            !window.X.HasValue ||
+            !window.Y.HasValue ||
+            window.Width is not > 0 ||
+            window.Height is not > 0)
         {
             return;
         }
 
-        if (!TryGetClientRect(windowTitle, out NativeRect rect))
-        {
-            return;
-        }
+        Position = new PixelPoint(window.X.Value, window.Y.Value);
+        _geometryScaling = Math.Max(0.5d, DesktopScaling);
+        Width = window.Width.Value / _geometryScaling;
+        Height = window.Height.Value / _geometryScaling;
+    }
 
-        double scale = _settings.DpiAware ? Math.Max(0.5d, DesktopScaling) : 1d;
-        Position = new PixelPoint(rect.Left, rect.Top);
-        Width = Math.Max(320, (rect.Right - rect.Left) / scale);
-        Height = Math.Max(180, (rect.Bottom - rect.Top) / scale);
+    public void Render(ZzzOverlayFrameDto? frame)
+    {
+        _lastFrame = frame;
+        _visionControl.Update(frame?.Items ?? [], _settings, _geometryScaling);
     }
 
     public void Render(
-        ZzzOverlayStatusDto status,
+        ZzzOverlayStatusDto _,
         ZzzOverlayFrameDto? frame,
-        IReadOnlyList<ZzzOverlayPerformanceSampleDto> performanceSamples)
-    {
-        _canvas.Children.Clear();
-        foreach (ZzzOverlayPanelSettings panel in _settings.Panels.Where(panel => panel.Enabled))
-        {
-            _canvas.Children.Add(CreatePanel(panel, status, performanceSamples));
-        }
+        IReadOnlyList<ZzzOverlayPerformanceSampleDto> __) => Render(frame);
 
-        if (frame is null)
+    internal PixelRect PhysicalBounds => new(
+        Position.X,
+        Position.Y,
+        Math.Max(1, (int)Math.Round(Width * _geometryScaling)),
+        Math.Max(1, (int)Math.Round(Height * _geometryScaling)));
+
+    private void QueueScalingRefresh()
+    {
+        if (_scalingRefreshQueued || _lastGameWindow is null)
         {
             return;
         }
 
-        foreach (ZzzOverlayDrawItemDto item in frame.Items)
+        _scalingRefreshQueued = true;
+        Dispatcher.UIThread.Post(() =>
         {
-            _canvas.Children.Add(CreateDrawItem(item));
-        }
-    }
-
-    private Control CreatePanel(
-        ZzzOverlayPanelSettings panel,
-        ZzzOverlayStatusDto status,
-        IReadOnlyList<ZzzOverlayPerformanceSampleDto> performanceSamples)
-    {
-        Border border = new()
-        {
-            Width = panel.Width,
-            Height = panel.Height,
-            Background = new SolidColorBrush(Color.FromArgb(180, 18, 20, 24)),
-            BorderBrush = new SolidColorBrush(Color.FromArgb(210, 96, 176, 255)),
-            BorderThickness = new Thickness(1),
-            Padding = new Thickness(10),
-            Child = new StackPanel
+            _scalingRefreshQueued = false;
+            if (_lastGameWindow is null)
             {
-                Spacing = 4,
-                Children =
-                {
-                    new TextBlock
-                    {
-                        Text = panel.Title,
-                        Foreground = Brushes.White,
-                        FontFamily = new FontFamily(_settings.FontFamily),
-                        FontSize = _settings.FontSize + 1,
-                    },
-                    new TextBlock
-                    {
-                        Text = FormatPanelText(panel.Id, status, performanceSamples, _settings.PerformanceMetrics),
-                        Foreground = new SolidColorBrush(Color.FromRgb(210, 228, 240)),
-                        FontFamily = new FontFamily(_settings.FontFamily),
-                        FontSize = _settings.FontSize,
-                        TextWrapping = TextWrapping.Wrap,
-                    },
-                },
-            },
-        };
-        Canvas.SetLeft(border, panel.X);
-        Canvas.SetTop(border, panel.Y);
-        return border;
-    }
+                return;
+            }
 
-    private Control CreateDrawItem(ZzzOverlayDrawItemDto item)
-    {
-        Border border = new()
-        {
-            Width = Math.Max(12, item.Bounds.Width * _settings.Visual.ScaleX),
-            Height = Math.Max(12, item.Bounds.Height * _settings.Visual.ScaleY),
-            BorderBrush = ParseBrush(item.Color),
-            BorderThickness = new Thickness(2),
-            Child = string.IsNullOrWhiteSpace(item.Text)
-                ? null
-                : new TextBlock
-                {
-                    Text = item.Text,
-                    Foreground = ParseBrush(item.Color),
-                    FontSize = Math.Max(10, _settings.FontSize - 1),
-                },
-        };
-        Canvas.SetLeft(border, (item.Bounds.X + _settings.Visual.OffsetX) * _settings.Visual.ScaleX);
-        Canvas.SetTop(border, (item.Bounds.Y + _settings.Visual.OffsetY) * _settings.Visual.ScaleY);
-        return border;
-    }
-
-    private static IBrush ParseBrush(string? color)
-    {
-        return Color.TryParse(color, out Color parsed)
-            ? new SolidColorBrush(parsed)
-            : new SolidColorBrush(Color.FromRgb(100, 220, 255));
-    }
-
-    internal static string FormatPanelText(
-        string id,
-        ZzzOverlayStatusDto status,
-        IReadOnlyList<ZzzOverlayPerformanceSampleDto> performanceSamples,
-        IReadOnlyDictionary<string, bool>? enabledMetricMap = null,
-        DateTimeOffset? now = null)
-    {
-        return id switch
-        {
-            "log" => "显示运行日志和最近事件。",
-            "state" => $"启用：{status.Enabled}\n绘制项：{status.ItemCount}",
-            "decision" => "显示当前任务、下一步动作和异常分支。",
-            "timeline" => $"最后绘制：{status.LastFrameAt?.ToLocalTime().ToString("HH:mm:ss") ?? "-"}",
-            "performance" => FormatPerformancePanelText(performanceSamples, enabledMetricMap, now),
-            _ => string.Empty,
-        };
+            FollowGameWindow(_lastGameWindow);
+            Render(_lastFrame);
+        });
     }
 
     internal static string FormatPerformancePanelText(
@@ -176,63 +125,5 @@ internal sealed class ZzzOverlayTechnicalWindow : Window
             Environment.NewLine,
             visible.Select(sample =>
                 $"{sample.Metric}: {sample.Value:F2} {sample.Unit} ({Math.Max(0, (int)(current - sample.CreatedAt).TotalMilliseconds)}ms ago)"));
-    }
-
-    private static bool TryGetClientRect(string windowTitle, out NativeRect rect)
-    {
-        rect = default;
-        nint hwnd = FindWindowW(null, windowTitle);
-        if (hwnd == 0 || !GetClientRect(hwnd, out NativeRect clientRect))
-        {
-            return false;
-        }
-
-        NativePoint point = new(clientRect.Left, clientRect.Top);
-        if (!ClientToScreen(hwnd, ref point))
-        {
-            return false;
-        }
-
-        rect = new NativeRect
-        {
-            Left = point.X,
-            Top = point.Y,
-            Right = point.X + clientRect.Right,
-            Bottom = point.Y + clientRect.Bottom,
-        };
-        return rect.Right > rect.Left && rect.Bottom > rect.Top;
-    }
-
-    [DllImport("user32.dll", EntryPoint = "FindWindowW", CharSet = CharSet.Unicode, SetLastError = true)]
-    private static extern nint FindWindowW(string? lpClassName, string? lpWindowName);
-
-    [DllImport("user32.dll", SetLastError = true)]
-    [return: MarshalAs(UnmanagedType.Bool)]
-    private static extern bool GetClientRect(nint hWnd, out NativeRect lpRect);
-
-    [DllImport("user32.dll", SetLastError = true)]
-    [return: MarshalAs(UnmanagedType.Bool)]
-    private static extern bool ClientToScreen(nint hWnd, ref NativePoint lpPoint);
-
-    [StructLayout(LayoutKind.Sequential)]
-    private struct NativeRect
-    {
-        public int Left;
-        public int Top;
-        public int Right;
-        public int Bottom;
-    }
-
-    [StructLayout(LayoutKind.Sequential)]
-    private struct NativePoint
-    {
-        public NativePoint(int x, int y)
-        {
-            X = x;
-            Y = y;
-        }
-
-        public int X;
-        public int Y;
     }
 }

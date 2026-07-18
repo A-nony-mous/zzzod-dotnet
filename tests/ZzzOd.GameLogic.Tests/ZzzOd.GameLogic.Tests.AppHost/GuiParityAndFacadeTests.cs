@@ -241,11 +241,9 @@ public sealed class GuiParityAndFacadeTests
 	{
 		private bool _enabled;
 
-		private ZzzOverlayFrameDto? _frame;
-
 		public ZzzOverlayStatusDto GetStatus()
 		{
-			return new ZzzOverlayStatusDto(_enabled, _frame?.Timestamp, _frame?.Items.Count ?? 0);
+			return new ZzzOverlayStatusDto(_enabled, null, 0);
 		}
 
 		public void SetEnabled(bool enabled)
@@ -253,14 +251,9 @@ public sealed class GuiParityAndFacadeTests
 			_enabled = enabled;
 		}
 
-		public void SubmitFrame(ZzzOverlayFrameDto frame)
-		{
-			_frame = frame;
-		}
-
 		public ZzzOverlayFrameDto? GetLastFrame()
 		{
-			return _frame;
+			return null;
 		}
 
 		public void SubmitPerformanceSample(ZzzOverlayPerformanceSampleDto sample)

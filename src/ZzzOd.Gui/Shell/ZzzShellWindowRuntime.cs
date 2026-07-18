@@ -88,7 +88,7 @@ public sealed class ZzzShellWindowRuntime : IZzzShellWindowRuntime
 
     private void OnWindowClosed(object? sender, EventArgs args)
     {
-        _overlayController.Hide();
+        _overlayController.Dispose();
         Dispose();
     }
 

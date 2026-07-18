@@ -10,6 +10,7 @@ using OneDragon.Core.Configuration;
 using OneDragon.Core.Runtime;
 using YamlDotNet.Serialization;
 using ZzzOd.AppHost.Notifications;
+using ZzzOd.AppHost.Overlay;
 using ZzzOd.GameLogic.Application.ChargePlan;
 using ZzzOd.GameLogic.Application.Coffee;
 using ZzzOd.GameLogic.Application.CommissionAssistant;
@@ -73,6 +74,14 @@ internal sealed class ZzzConfigScopeService
 
 		private static readonly string[] PanelNames = new string[5] { "log_panel", "state_panel", "decision_panel", "timeline_panel", "performance_panel" };
 
+		private static readonly string[] PanelPhysicalGeometryKeys = new string[4] { "x", "y", "w", "h" };
+
+		private static readonly string[] PanelLockedGeometryKeys = new string[4] { "locked_x", "locked_y", "locked_w", "locked_h" };
+
+		private static readonly string[] PanelFreeGeometryKeys = new string[4] { "free_x", "free_y", "free_w", "free_h" };
+
+		private static readonly string[] PanelFreeWorkAreaKeys = new string[4] { "free_work_area_x", "free_work_area_y", "free_work_area_w", "free_work_area_h" };
+
 		private static readonly IReadOnlyDictionary<string, bool> DefaultPerformanceMetrics = new Dictionary<string, bool>(StringComparer.Ordinal)
 		{
 			["ocr_ms"] = true,
@@ -90,6 +99,7 @@ internal sealed class ZzzConfigScopeService
 			["toggle_hotkey"] = "o",
 			["vision_layer_enabled"] = true,
 			["vision_yolo_enabled"] = true,
+			["vision_yolo_dedup_iou_threshold"] = ZzzOverlayDisplayOptionsDto.DefaultYoloDedupIouThreshold,
 			["vision_ocr_enabled"] = true,
 			["vision_template_enabled"] = true,
 			["vision_cv_enabled"] = true,
@@ -145,7 +155,9 @@ internal sealed class ZzzConfigScopeService
 				dictionary3[key2] = NormalizeScalar(key2, dictionary2.TryGetValue(key2, out var value3) ? value3 : obj);
 			}
 			dictionary3["performance_metric_enabled_map"] = NormalizePerformanceMetrics(dictionary2.TryGetValue("performance_metric_enabled_map", out var value4) ? value4 : null);
-			dictionary3["panel_free_mode_map"] = NormalizePanelFreeModes(dictionary2.TryGetValue("panel_free_mode_map", out var value5) ? value5 : null, Convert.ToBoolean(dictionary3["panel_lock_to_game_window"], CultureInfo.InvariantCulture));
+			Dictionary<string, bool> panelFreeModes = NormalizePanelFreeModes(dictionary2.TryGetValue("panel_free_mode_map", out var value5) ? value5 : null, Convert.ToBoolean(dictionary3["panel_lock_to_game_window"], CultureInfo.InvariantCulture));
+			dictionary3["panel_free_mode_map"] = panelFreeModes;
+			dictionary3["panel_lock_to_game_window"] = AreAllPanelsLocked(panelFreeModes);
 			dictionary3["panel_geometry"] = NormalizePanelGeometry(dictionary2.TryGetValue("panel_geometry", out var value6) ? value6 : null);
 			dictionary3["panel_appearance"] = NormalizePanelAppearance(dictionary2.TryGetValue("panel_appearance", out var value7) ? value7 : null);
 			return new ZzzConfigScopeValuesDto(Descriptor, null, null, dictionary3);
@@ -157,33 +169,60 @@ internal sealed class ZzzConfigScopeService
 			Dictionary<string, object> dictionary = ReadRaw(path);
 			object value;
 			Dictionary<string, object> dictionary2 = (dictionary.TryGetValue("overlay", out value) ? ConvertMap(value) : new Dictionary<string, object>(StringComparer.Ordinal));
-			foreach (KeyValuePair<string, object> value4 in values)
+			foreach (KeyValuePair<string, object> item in values)
 			{
-				value4.Deconstruct(out var key, out var value2);
-				string text = key;
-				object obj = value2;
-				if (ScalarDefaults.ContainsKey(text))
+				item.Deconstruct(out var key, out var value2);
+				if (ScalarDefaults.ContainsKey(key))
 				{
-					dictionary2[text] = NormalizeScalar(text, obj);
+					dictionary2[key] = NormalizeScalar(key, value2);
+				}
+				else if (key is not "performance_metric_enabled_map" and not "panel_free_mode_map" and not "panel_geometry" and not "panel_appearance")
+				{
+					throw new ZzzConfigValidationException(Descriptor.Scope, key, "未知配置 key。");
+				}
+			}
+
+			bool globalPanelLockChanged = values.ContainsKey("panel_lock_to_game_window");
+			bool lockedToGameWindow = dictionary2.TryGetValue("panel_lock_to_game_window", out object? lockValue)
+				? Convert.ToBoolean(lockValue, CultureInfo.InvariantCulture)
+				: Convert.ToBoolean(ScalarDefaults["panel_lock_to_game_window"], CultureInfo.InvariantCulture);
+			foreach (KeyValuePair<string, object> item2 in values)
+			{
+				item2.Deconstruct(out var key2, out var value3);
+				if (ScalarDefaults.ContainsKey(key2))
+				{
 					continue;
 				}
-				Dictionary<string, object> dictionary3 = dictionary2;
-				string key2 = text;
-				if (1 == 0)
+
+				switch (key2)
 				{
+					case "performance_metric_enabled_map":
+						dictionary2[key2] = MergePerformanceMetrics(dictionary2.TryGetValue(key2, out object? existingMetrics) ? existingMetrics : null, value3);
+						break;
+					case "panel_free_mode_map":
+						if (!globalPanelLockChanged)
+						{
+							dictionary2[key2] = MergePanelFreeModes(dictionary2.TryGetValue(key2, out object? existingModes) ? existingModes : null, value3, lockedToGameWindow);
+						}
+						break;
+					case "panel_geometry":
+						dictionary2[key2] = MergePanelGeometry(dictionary2.TryGetValue(key2, out object? existingGeometry) ? existingGeometry : null, value3);
+						break;
+					case "panel_appearance":
+						dictionary2[key2] = NormalizePanelAppearance(value3);
+						break;
 				}
-				value2 = text switch
-				{
-					"performance_metric_enabled_map" => MergePerformanceMetrics(dictionary2.TryGetValue(text, out var value3) ? value3 : null, obj), 
-					"panel_free_mode_map" => NormalizePanelFreeModes(obj, lockedToGameWindow: true), 
-					"panel_geometry" => NormalizePanelGeometry(obj), 
-					"panel_appearance" => NormalizePanelAppearance(obj), 
-					_ => throw new ZzzConfigValidationException(Descriptor.Scope, text, "未知配置 key。"), 
-				};
-				if (1 == 0)
-				{
-				}
-				dictionary3[key2] = value2;
+			}
+			if (globalPanelLockChanged)
+			{
+				dictionary2["panel_free_mode_map"] = CreatePanelFreeModes(!lockedToGameWindow);
+			}
+			else if (values.ContainsKey("panel_free_mode_map"))
+			{
+				Dictionary<string, bool> panelFreeModes = NormalizePanelFreeModes(
+					dictionary2.TryGetValue("panel_free_mode_map", out object? storedModes) ? storedModes : null,
+					lockedToGameWindow);
+				dictionary2["panel_lock_to_game_window"] = AreAllPanelsLocked(panelFreeModes);
 			}
 			dictionary["overlay"] = dictionary2;
 			WriteRaw(path, dictionary);
@@ -234,6 +273,12 @@ internal sealed class ZzzConfigScopeService
 				case "vision_scale_x":
 				case "vision_scale_y":
 					result = Math.Clamp(Convert.ToDouble(value, CultureInfo.InvariantCulture), 0.5, 1.5);
+					break;
+				case "vision_yolo_dedup_iou_threshold":
+					double yoloDedupIouThreshold = Convert.ToDouble(value, CultureInfo.InvariantCulture);
+					result = double.IsFinite(yoloDedupIouThreshold)
+						? Math.Clamp(yoloDedupIouThreshold, 0.01d, 1d)
+						: ZzzOverlayDisplayOptionsDto.DefaultYoloDedupIouThreshold;
 					break;
 				case "font_size":
 					result = Math.Clamp(Convert.ToInt32(value, CultureInfo.InvariantCulture), 10, 28);
@@ -397,6 +442,31 @@ internal sealed class ZzzConfigScopeService
 			return PanelNames.ToDictionary<string, string, bool>((string panel) => panel, (string panel) => source.TryGetValue(panel, out object value2) ? Convert.ToBoolean(value2, CultureInfo.InvariantCulture) : (!lockedToGameWindow), StringComparer.Ordinal);
 		}
 
+		private static Dictionary<string, bool> CreatePanelFreeModes(bool isFreeMode)
+		{
+			return PanelNames.ToDictionary<string, string, bool>((string panel) => panel, (string _) => isFreeMode, StringComparer.Ordinal);
+		}
+
+		private static bool AreAllPanelsLocked(IReadOnlyDictionary<string, bool> panelFreeModes)
+		{
+			return PanelNames.All((string panel) => !panelFreeModes.TryGetValue(panel, out bool isFreeMode) || !isFreeMode);
+		}
+
+		private static Dictionary<string, bool> MergePanelFreeModes(object? existing, object? update, bool lockedToGameWindow)
+		{
+			Dictionary<string, bool> merged = NormalizePanelFreeModes(existing, lockedToGameWindow);
+			Dictionary<string, object?> source = ConvertMap(update);
+			foreach (string panel in PanelNames)
+			{
+				if (source.TryGetValue(panel, out object? value))
+				{
+					merged[panel] = Convert.ToBoolean(value, CultureInfo.InvariantCulture);
+				}
+			}
+
+			return merged;
+		}
+
 		private static Dictionary<string, object?> NormalizePanelGeometry(object? value)
 		{
 			Dictionary<string, object> dictionary = ConvertMap(value);
@@ -407,17 +477,202 @@ internal sealed class ZzzConfigScopeService
 				Dictionary<string, object> dictionary3 = ConvertMap(dictionary2[key]);
 				object value2;
 				Dictionary<string, object> dictionary4 = (dictionary.TryGetValue(key, out value2) ? ConvertMap(value2) : new Dictionary<string, object>());
-				string[] array = new string[4] { "x", "y", "w", "h" };
-				foreach (string key2 in array)
+				foreach (string key2 in PanelPhysicalGeometryKeys)
 				{
 					if (dictionary4.TryGetValue(key2, out var value3))
 					{
-						dictionary3[key2] = Convert.ToInt32(value3, CultureInfo.InvariantCulture);
+						dictionary3[key2] = NormalizePhysicalCoordinate(key2, value3, Convert.ToDouble(dictionary3[key2], CultureInfo.InvariantCulture));
 					}
+				}
+
+				bool hasAdvancedLayoutField = false;
+				foreach (string key3 in PanelLockedGeometryKeys)
+				{
+					if (dictionary4.TryGetValue(key3, out object? value4))
+					{
+						dictionary3[key3] = NormalizeFiniteDouble(value4, Convert.ToDouble(dictionary3[key3], CultureInfo.InvariantCulture));
+						hasAdvancedLayoutField = true;
+					}
+				}
+
+				foreach (string key4 in PanelFreeGeometryKeys)
+				{
+					if (dictionary4.TryGetValue(key4, out object? value5))
+					{
+						dictionary3[key4] = NormalizePhysicalCoordinate(key4, value5, Convert.ToDouble(dictionary3[key4], CultureInfo.InvariantCulture));
+						hasAdvancedLayoutField = true;
+					}
+				}
+
+				if (dictionary4.TryGetValue("free_dpi", out object? value6))
+				{
+					dictionary3["free_dpi"] = NormalizeDpi(value6);
+					hasAdvancedLayoutField = true;
+				}
+
+				if (dictionary4.TryGetValue("free_display_name", out object? displayName))
+				{
+					string? normalizedDisplayName = Convert.ToString(displayName, CultureInfo.InvariantCulture)?.Trim();
+					if (string.IsNullOrWhiteSpace(normalizedDisplayName))
+					{
+						dictionary3.Remove("free_display_name");
+					}
+					else
+					{
+						dictionary3["free_display_name"] = normalizedDisplayName;
+						hasAdvancedLayoutField = true;
+					}
+				}
+
+
+				foreach (string key5 in PanelFreeWorkAreaKeys)
+				{
+					if (dictionary4.TryGetValue(key5, out object? workAreaValue) &&
+						TryNormalizeFreeWorkAreaCoordinate(key5, workAreaValue, out double normalizedWorkAreaCoordinate))
+					{
+						dictionary3[key5] = normalizedWorkAreaCoordinate;
+						hasAdvancedLayoutField = true;
+					}
+					else if (dictionary4.ContainsKey(key5))
+					{
+						dictionary3.Remove(key5);
+					}
+				}
+
+				NormalizeFreeWorkAreaAnchor(dictionary3);
+
+				if (dictionary4.TryGetValue("layout_version", out object? value7))
+				{
+					dictionary3["layout_version"] = NormalizeLayoutVersion(value7);
+				}
+				else if (hasAdvancedLayoutField)
+				{
+					dictionary3["layout_version"] = HasCompleteFreeWorkAreaAnchor(dictionary3) ? 3 : 2;
+				}
+
+				if (dictionary4.TryGetValue("pending_source_free_mode", out object? pendingSourceMode) && pendingSourceMode is not null)
+				{
+					dictionary3["pending_source_free_mode"] = Convert.ToBoolean(pendingSourceMode, CultureInfo.InvariantCulture);
+				}
+				else
+				{
+					dictionary3.Remove("pending_source_free_mode");
+				}
+
+				if (!dictionary4.ContainsKey("free_x"))
+				{
+					dictionary3["free_x"] = dictionary3["x"];
+				}
+				if (!dictionary4.ContainsKey("free_y"))
+				{
+					dictionary3["free_y"] = dictionary3["y"];
+				}
+				if (!dictionary4.ContainsKey("free_w"))
+				{
+					dictionary3["free_w"] = dictionary3["w"];
+				}
+				if (!dictionary4.ContainsKey("free_h"))
+				{
+					dictionary3["free_h"] = dictionary3["h"];
 				}
 				dictionary2[key] = dictionary3;
 			}
 			return dictionary2;
+		}
+
+		private static Dictionary<string, object?> MergePanelGeometry(object? existing, object? update)
+		{
+			Dictionary<string, object?> merged = NormalizePanelGeometry(existing);
+			Dictionary<string, object?> source = ConvertMap(update);
+			foreach (string panel in PanelNames)
+			{
+				if (!source.TryGetValue(panel, out object? value))
+				{
+					continue;
+				}
+
+				Dictionary<string, object?> target = ConvertMap(merged[panel]);
+				foreach (KeyValuePair<string, object> item in ConvertMap(value))
+				{
+					if (item.Key is "x" or "y" or "w" or "h" or "layout_version" or "locked_x" or "locked_y" or "locked_w" or "locked_h" or "free_x" or "free_y" or "free_w" or "free_h" or "free_dpi" or "free_display_name" or "free_work_area_x" or "free_work_area_y" or "free_work_area_w" or "free_work_area_h" or "pending_source_free_mode")
+					{
+						target[item.Key] = item.Value;
+					}
+				}
+
+				merged[panel] = target;
+			}
+
+			return NormalizePanelGeometry(merged);
+		}
+
+		private static double NormalizePhysicalCoordinate(string key, object? value, double fallback)
+		{
+			double result = NormalizeFiniteDouble(value, fallback);
+			return key is "w" or "h" or "free_w" or "free_h" or "free_work_area_w" or "free_work_area_h"
+				? Math.Max(1d, result)
+				: result;
+		}
+
+		private static double NormalizeFiniteDouble(object? value, double fallback)
+		{
+			double result = Convert.ToDouble(value, CultureInfo.InvariantCulture);
+			return double.IsFinite(result) ? result : fallback;
+		}
+
+		private static bool TryNormalizeFreeWorkAreaCoordinate(string key, object? value, out double normalized)
+		{
+			try
+			{
+				normalized = Convert.ToDouble(value, CultureInfo.InvariantCulture);
+				return double.IsFinite(normalized) &&
+					(key is not "free_work_area_w" and not "free_work_area_h" || normalized > 0d);
+			}
+			catch (Exception ex) when (ex is FormatException or InvalidCastException or OverflowException)
+			{
+				normalized = 0d;
+				return false;
+			}
+		}
+
+		private static void NormalizeFreeWorkAreaAnchor(IDictionary<string, object> geometry)
+		{
+			if (HasCompleteFreeWorkAreaAnchor(geometry))
+			{
+				return;
+			}
+
+			foreach (string key in PanelFreeWorkAreaKeys)
+			{
+				geometry.Remove(key);
+			}
+		}
+
+		private static bool HasCompleteFreeWorkAreaAnchor(IReadOnlyDictionary<string, object> geometry)
+		{
+			return TryReadFiniteCoordinate(geometry, "free_work_area_x", out _) &&
+				TryReadFiniteCoordinate(geometry, "free_work_area_y", out _) &&
+				TryReadFiniteCoordinate(geometry, "free_work_area_w", out double width) && width > 0d &&
+				TryReadFiniteCoordinate(geometry, "free_work_area_h", out double height) && height > 0d;
+		}
+
+		private static bool TryReadFiniteCoordinate(IReadOnlyDictionary<string, object> geometry, string key, out double coordinate)
+		{
+			if (!geometry.TryGetValue(key, out object? raw))
+			{
+				coordinate = 0d;
+				return false;
+			}
+
+			return TryNormalizeFreeWorkAreaCoordinate(key, raw, out coordinate);
+		}
+
+		private static int NormalizeLayoutVersion(object? value) => Math.Max(1, Convert.ToInt32(value, CultureInfo.InvariantCulture));
+
+		private static uint NormalizeDpi(object? value)
+		{
+			uint result = Convert.ToUInt32(value, CultureInfo.InvariantCulture);
+			return result == 0 ? 96u : result;
 		}
 
 		private static Dictionary<string, object?> NormalizePanelAppearance(object? value)
@@ -447,41 +702,32 @@ internal sealed class ZzzConfigScopeService
 		{
 			return new Dictionary<string, object>(StringComparer.Ordinal)
 			{
-				["log_panel"] = new Dictionary<string, object>
-				{
-					["x"] = 100,
-					["y"] = 100,
-					["w"] = 480,
-					["h"] = 200
-				},
-				["state_panel"] = new Dictionary<string, object>
-				{
-					["x"] = 0,
-					["y"] = 0,
-					["w"] = 300,
-					["h"] = 120
-				},
-				["decision_panel"] = new Dictionary<string, object>
-				{
-					["x"] = 0,
-					["y"] = 0,
-					["w"] = 300,
-					["h"] = 140
-				},
-				["timeline_panel"] = new Dictionary<string, object>
-				{
-					["x"] = 0,
-					["y"] = 0,
-					["w"] = 300,
-					["h"] = 170
-				},
-				["performance_panel"] = new Dictionary<string, object>
-				{
-					["x"] = 0,
-					["y"] = 0,
-					["w"] = 300,
-					["h"] = 110
-				}
+				["log_panel"] = CreatePanelGeometry(100d, 100d, 480d, 200d),
+				["state_panel"] = CreatePanelGeometry(0d, 0d, 300d, 120d),
+				["decision_panel"] = CreatePanelGeometry(0d, 0d, 300d, 140d),
+				["timeline_panel"] = CreatePanelGeometry(0d, 0d, 300d, 170d),
+				["performance_panel"] = CreatePanelGeometry(0d, 0d, 300d, 110d)
+			};
+		}
+
+		private static Dictionary<string, object> CreatePanelGeometry(double x, double y, double width, double height)
+		{
+			return new Dictionary<string, object>(StringComparer.Ordinal)
+			{
+				["x"] = x,
+				["y"] = y,
+				["w"] = width,
+				["h"] = height,
+				["layout_version"] = 1,
+				["locked_x"] = 0d,
+				["locked_y"] = 0d,
+				["locked_w"] = 0d,
+				["locked_h"] = 0d,
+				["free_x"] = x,
+				["free_y"] = y,
+				["free_w"] = width,
+				["free_h"] = height,
+				["free_dpi"] = 96u
 			};
 		}
 

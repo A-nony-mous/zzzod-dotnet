@@ -2,6 +2,7 @@ using Avalonia;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using OneDragon.Core.Screening;
 using ZzzOd.Api;
 using ZzzOd.AppHost;
 using ZzzOd.AppHost.Backend;
@@ -46,6 +47,8 @@ internal static class Program
                 services.AddZzzAppHost(runRoot, ZzzHostMode.Gui);
                 services.AddZzzGuiApiServer();
                 services.AddSingleton<ZzzOverlayController>();
+                services.AddSingleton<ZzzAvaloniaOverlayCapturer>();
+                services.AddSingleton<IOverlayCapturer>(provider => provider.GetRequiredService<ZzzAvaloniaOverlayCapturer>());
                 services.AddSingleton<ZzzWindowBackdropService>();
                 services.AddSingleton<ZzzGuiShellPresetService>();
                 services.AddSingleton<ZzzShellWindowFactory>();

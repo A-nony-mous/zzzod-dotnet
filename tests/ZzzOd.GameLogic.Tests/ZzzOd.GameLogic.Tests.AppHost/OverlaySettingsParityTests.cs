@@ -80,7 +80,8 @@ public sealed class OverlaySettingsParityTests
 		Assert.Contains("TextBox", text, StringComparison.Ordinal);
 		Assert.Contains("fa:InfoBar", text, StringComparison.Ordinal);
 		Assert.Contains("显示决策链路面板", text, StringComparison.Ordinal);
-		Assert.Contains("开启后可拖拽调整位置，并可在日志窗调整字体/透明度", text, StringComparison.Ordinal);
+		Assert.Contains("<ToggleSwitch x:Name=\"PanelLockToGameWindowToggle\" Tag=\"panel_lock_to_game_window\" Click=\"OnToggleChanged\" />", text, StringComparison.Ordinal);
+		Assert.Contains("<fa:NumberBox x:Name=\"InputPollIntervalNumber\" Tag=\"input_poll_interval_ms\" Width=\"180\" Minimum=\"20\" SmallChange=\"10\" ValueChanged=\"OnNumberChanged\" />", text, StringComparison.Ordinal);
 		Assert.Contains("系统版本低于 Windows 10 2004，Overlay 已禁用", text, StringComparison.Ordinal);
 		Assert.Contains("OperatingSystem.IsWindowsVersionAtLeast(10, 0, 19041)", actualString, StringComparison.Ordinal);
 		Assert.Contains("GetConfigScope(ScopeName)", actualString, StringComparison.Ordinal);
@@ -90,6 +91,8 @@ public sealed class OverlaySettingsParityTests
 		Assert.DoesNotContain("Content=\"保存\"", text, StringComparison.Ordinal);
 		Assert.DoesNotContain("Content=\"显示\"", text, StringComparison.Ordinal);
 		Assert.DoesNotContain("Content=\"隐藏\"", text, StringComparison.Ordinal);
+		Assert.DoesNotContain("开启后可拖拽调整位置", text, StringComparison.Ordinal);
+		Assert.DoesNotContain("使用 WDA_EXCLUDEFROMCAPTURE", text, StringComparison.Ordinal);
 		Assert.DoesNotContain("new StackPanel", actualString, StringComparison.Ordinal);
 		Assert.DoesNotContain("ZzzSettingCard", actualString, StringComparison.Ordinal);
 	}
@@ -233,6 +236,18 @@ public sealed class OverlaySettingsParityTests
 			ZzzBackendResult<ZzzConfigScopeValuesDto> zzzBackendResult2 = zzzOverlayController.ResetPanelGeometry();
 			Assert.True(zzzBackendResult2.Success, zzzBackendResult2.Error);
 			Assert.Equal(100.0, zzzOverlayController.Settings.Panels.Single((ZzzOverlayPanelSettings panel) => panel.Id == "log").X);
+			IReadOnlyDictionary<string, object?> resetGeometry = Assert.IsAssignableFrom<IReadOnlyDictionary<string, object?>>(zzzBackendResult2.Value.Values["panel_geometry"]);
+			IReadOnlyDictionary<string, object?> resetLogPanel = Assert.IsAssignableFrom<IReadOnlyDictionary<string, object?>>(resetGeometry["log_panel"]);
+			Assert.Equal(2, Convert.ToInt32(resetLogPanel["layout_version"]));
+			Assert.Equal(0d, Convert.ToDouble(resetLogPanel["locked_x"]));
+			Assert.Equal(0d, Convert.ToDouble(resetLogPanel["locked_y"]));
+			Assert.Equal(0d, Convert.ToDouble(resetLogPanel["locked_w"]));
+			Assert.Equal(0d, Convert.ToDouble(resetLogPanel["locked_h"]));
+			Assert.Equal(100d, Convert.ToDouble(resetLogPanel["free_x"]));
+			Assert.Equal(100d, Convert.ToDouble(resetLogPanel["free_y"]));
+			Assert.Equal(480d, Convert.ToDouble(resetLogPanel["free_w"]));
+			Assert.Equal(200d, Convert.ToDouble(resetLogPanel["free_h"]));
+			Assert.Equal(96u, Convert.ToUInt32(resetLogPanel["free_dpi"]));
 			string actualString = File.ReadAllText(path);
 			Assert.Contains("root_marker: keep", actualString, StringComparison.Ordinal);
 			Assert.Contains("unknown_key: keep", actualString, StringComparison.Ordinal);
@@ -241,6 +256,82 @@ public sealed class OverlaySettingsParityTests
 		finally
 		{
 			Directory.Delete(text, recursive: true);
+		}
+	}
+
+	/// <summary>
+	/// 无有效游戏窗口时，全局模式切换只保存目标模式和延迟转换标记，不能用默认屏幕坐标猜测锁定布局。
+	/// </summary>
+	[Fact]
+	public void OverlayControllerDefersGlobalPanelModeConversionUntilGameGeometryIsAvailable()
+	{
+		string root = CreateTempRoot();
+		try
+		{
+			ZzzOverlayController controller = new ZzzOverlayController(
+				new ZzzOverlayService(),
+				CreateBackend(new ZzzConfigScopeService(root)));
+
+			ZzzBackendResult<ZzzConfigScopeValuesDto> saved = controller.SaveConfiguration(new Dictionary<string, object?>
+			{
+				["panel_lock_to_game_window"] = false,
+			});
+
+			Assert.True(saved.Success, saved.Error);
+			Assert.False(controller.Settings.PanelLockToGameWindow);
+			Assert.All(controller.Settings.Panels, panel =>
+			{
+				Assert.True(panel.IsFreeMode);
+				Assert.False(panel.PendingSourceIsFreeMode ?? true);
+			});
+			IReadOnlyDictionary<string, object?> geometry = Assert.IsAssignableFrom<IReadOnlyDictionary<string, object?>>(saved.Value.Values["panel_geometry"]);
+			IReadOnlyDictionary<string, object?> logPanel = Assert.IsAssignableFrom<IReadOnlyDictionary<string, object?>>(geometry["log_panel"]);
+			Assert.False(Convert.ToBoolean(logPanel["pending_source_free_mode"]));
+		}
+		finally
+		{
+			Directory.Delete(root, recursive: true);
+		}
+	}
+
+	/// <summary>
+	/// 保存 Overlay scope 后，当前运行时快照应立即按同一份配置过滤，不需要重启 GUI。
+	/// </summary>
+	[Fact]
+	public void SavingOverlayDisplaySettingsReloadsTheLiveSnapshot()
+	{
+		string root = CreateTempRoot();
+		try
+		{
+			ZContext context = new(new OneDragonEnvironment(root));
+			using ZzzRuntimeManager runtime = new(root, NullLogger<ZzzRuntimeManager>.Instance, _ => context);
+			using ZzzOverlayService service = new(runtime);
+			runtime.EnsureContext();
+			service.GetSnapshot();
+			context.OverlayDebugBus.PublishVision(new VisionDrawItem("yolo", "target", 10, 20, 60, 80)
+			{
+				TtlSeconds = 20d,
+			});
+
+			ZzzConfigScopeService scopes = new(root);
+			ZzzOverlayController controller = new(service, CreateBackend(scopes));
+			Assert.NotNull(service.GetSnapshot().VisionFrame);
+
+			ZzzBackendResult<ZzzConfigScopeValuesDto> saved = controller.SaveConfiguration(new Dictionary<string, object>
+			{
+				["vision_yolo_enabled"] = false,
+			});
+
+			Assert.True(saved.Success, saved.Error);
+			Assert.False(controller.Settings.Visual.ShowYolo);
+			Assert.Null(service.GetSnapshot().VisionFrame);
+			ZzzBackendResult<ZzzConfigScopeValuesDto> reread = scopes.Read("overlay", null, null);
+			Assert.True(reread.Success, reread.Error);
+			Assert.False(Assert.IsType<bool>(reread.Value.Values["vision_yolo_enabled"]));
+		}
+		finally
+		{
+			Directory.Delete(root, recursive: true);
 		}
 	}
 
@@ -261,13 +352,51 @@ public sealed class OverlaySettingsParityTests
 	}
 
 	/// <summary>
+	/// Overlay 可见字符串不得带入迁移、实现或测试说明。
+	/// </summary>
+	[Fact]
+	public void OverlaySourcesDoNotContainExplanationPlaceholders()
+	{
+		string guiRoot = Path.Combine(RepoRoot, "src", "ZzzOd.Gui");
+		string[] files = Directory
+			.EnumerateFiles(guiRoot, "*.*", SearchOption.AllDirectories)
+			.Where(path => path.EndsWith(".axaml", StringComparison.OrdinalIgnoreCase) ||
+				path.EndsWith(".cs", StringComparison.OrdinalIgnoreCase) ||
+				path.EndsWith(".resx", StringComparison.OrdinalIgnoreCase))
+			.Where(path => path.Contains($"{Path.DirectorySeparatorChar}Overlay{Path.DirectorySeparatorChar}", StringComparison.OrdinalIgnoreCase) ||
+				path.EndsWith($"{Path.DirectorySeparatorChar}ZzzOverlaySettingsPage.axaml", StringComparison.OrdinalIgnoreCase) ||
+				path.EndsWith($"{Path.DirectorySeparatorChar}ZzzOverlaySettingsPage.cs", StringComparison.OrdinalIgnoreCase))
+			.ToArray();
+		string[] prohibited =
+		[
+			"显示运行日志和最近事件",
+			"显示当前任务",
+			"对应 Python 的",
+			"后端尚未实现",
+			"当前使用 fallback",
+			"用于截图验证",
+			"已通过测试",
+		];
+
+		Assert.NotEmpty(files);
+		foreach (string file in files)
+		{
+			string source = File.ReadAllText(file);
+			foreach (string text in prohibited)
+			{
+				Assert.DoesNotContain(text, source, StringComparison.Ordinal);
+			}
+		}
+	}
+
+	/// <summary>
 	/// GUI 宿主应启动真实 Overlay 生命周期、周期刷新和 Ctrl+Alt 配置热键。
 	/// </summary>
 	[Fact]
 	public void GuiHostWiresOverlayLifecycleRefreshAndConfiguredHotkey()
 	{
 		string path = Path.Combine(RepoRoot, "src", "ZzzOd.Gui");
-		string actualString = File.ReadAllText(Path.Combine(path, "Views", "MainWindow.cs"));
+		string actualString = File.ReadAllText(Path.Combine(path, "Shell", "ZzzShellWindowRuntime.cs"));
 		string actualString2 = File.ReadAllText(Path.Combine(path, "Overlay", "ZzzOverlayController.cs"));
 		string actualString3 = File.ReadAllText(Path.Combine(path, "Overlay", "ZzzOverlayTechnicalWindow.cs"));
 		Assert.Contains("_overlayController.Start()", actualString, StringComparison.Ordinal);
@@ -277,7 +406,8 @@ public sealed class OverlaySettingsParityTests
 		Assert.Contains("GetAsyncKeyState", actualString2, StringComparison.Ordinal);
 		Assert.Contains("Refresh(null)", actualString2, StringComparison.Ordinal);
 		Assert.Contains("overlay_refresh_ms", actualString2, StringComparison.Ordinal);
-		Assert.Contains("GetPerformanceSamples()", actualString2, StringComparison.Ordinal);
+		Assert.Contains("GetSnapshot()", actualString2, StringComparison.Ordinal);
+		Assert.Contains("ConfigureDisplay", actualString2, StringComparison.Ordinal);
 		Assert.DoesNotContain("显示识别耗时、操作耗时和刷新间隔。", actualString3, StringComparison.Ordinal);
 	}
 

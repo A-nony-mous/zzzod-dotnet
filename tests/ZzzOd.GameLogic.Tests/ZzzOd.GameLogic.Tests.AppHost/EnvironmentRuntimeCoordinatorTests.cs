@@ -7,11 +7,14 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging.Abstractions;
 using OneDragon.Core.Runtime;
+using OneDragon.Core.Screening;
+using OpenCvSharp;
 using Xunit;
 using ZzzOd.AppHost.Backend;
 using ZzzOd.GameLogic.Context;
 using ZzzOd.Gui.Services.RunIntent;
 using ZzzOd.Gui.Services.Windows;
+using GeometryRect = OneDragon.Core.Abstractions.Geometry.Rect;
 
 namespace ZzzOd.GameLogic.Tests.AppHost;
 
@@ -43,12 +46,13 @@ public sealed class EnvironmentRuntimeCoordinatorTests
 			Coordinator = coordinator;
 		}
 
-		public static TestHarness Create(bool copyScreenshot = false)
+		public static TestHarness Create(bool copyScreenshot = false, bool patchedCaptureEnabled = false, IOverlayCapturer? overlayCapturer = null)
 		{
 			string runRoot = CreateRunRoot();
 			IZzzAppBackend zzzAppBackend = DispatchProxy.Create<IZzzAppBackend, RecordingBackendProxy>();
 			RecordingBackendProxy proxy = (RecordingBackendProxy)zzzAppBackend;
 			proxy.CopyScreenshot = copyScreenshot;
+			proxy.PatchedCaptureEnabled = patchedCaptureEnabled;
 			ZzzGlobalInputMonitor zzzGlobalInputMonitor = new ZzzGlobalInputMonitor();
 			ZzzGuiRunIntentService runIntent = new ZzzGuiRunIntentService();
 			RecordingClipboard clipboard = new RecordingClipboard();
@@ -57,7 +61,7 @@ public sealed class EnvironmentRuntimeCoordinatorTests
 			{
 				harness.ReinitializeCalls++;
 				return ZzzBackendResult<bool>.Ok(value: true);
-			}, () => ZzzBackendResult<byte[]>.Ok(proxy.ScreenshotBytes), NullLogger<ZzzEnvironmentRuntimeCoordinator>.Instance);
+			}, () => ZzzBackendResult<byte[]>.Ok(proxy.ScreenshotBytes), NullLogger<ZzzEnvironmentRuntimeCoordinator>.Instance, overlayCapturer);
 			harness = new TestHarness(runRoot, zzzGlobalInputMonitor, proxy, runIntent, clipboard, coordinator);
 			return harness;
 		}
@@ -74,11 +78,15 @@ public sealed class EnvironmentRuntimeCoordinatorTests
 	{
 		private static readonly ZzzConfigScopeDescriptorDto Descriptor = new ZzzConfigScopeDescriptorDto("env", "脚本环境", InstanceBound: false, GroupBound: false, Writable: true, Array.Empty<ZzzConfigSettingDescriptorDto>());
 
+		private static readonly ZzzConfigScopeDescriptorDto OverlayDescriptor = new ZzzConfigScopeDescriptorDto("overlay", "Overlay", InstanceBound: false, GroupBound: false, Writable: true, Array.Empty<ZzzConfigSettingDescriptorDto>());
+
 		public ZzzRunState State { get; set; } = ZzzRunState.Idle;
 
 		public bool CopyScreenshot { get; set; }
 
-		public byte[] ScreenshotBytes { get; } = new byte[8] { 137, 80, 78, 71, 13, 10, 26, 10 };
+		public bool PatchedCaptureEnabled { get; set; }
+
+		public byte[] ScreenshotBytes { get; set; } = new byte[8] { 137, 80, 78, 71, 13, 10, 26, 10 };
 
 		public int StartCalls { get; private set; }
 
@@ -97,14 +105,7 @@ public sealed class EnvironmentRuntimeCoordinatorTests
 			}
 			object result = name switch
 			{
-				"GetConfigScope" => ZzzBackendResult<ZzzConfigScopeValuesDto>.Ok(new ZzzConfigScopeValuesDto(Descriptor, null, null, new Dictionary<string, object>(StringComparer.Ordinal)
-				{
-					["key_start_running"] = "f9",
-					["key_stop_running"] = "f10",
-					["key_screenshot"] = "f11",
-					["key_debug"] = "f12",
-					["copy_screenshot"] = CopyScreenshot
-				})), 
+				"GetConfigScope" => GetConfigScope((string)args![0]!),
 				"GetCurrentRun" => ZzzBackendResult<ZzzRunStatusDto>.Ok(new ZzzRunStatusDto(State)), 
 				"PauseRun" => Pause(), 
 				"ResumeRun" => Resume(), 
@@ -117,6 +118,27 @@ public sealed class EnvironmentRuntimeCoordinatorTests
 			{
 			}
 			return result;
+		}
+
+		private ZzzBackendResult<ZzzConfigScopeValuesDto> GetConfigScope(string scope)
+		{
+			if (string.Equals(scope, "overlay", StringComparison.Ordinal))
+			{
+				return ZzzBackendResult<ZzzConfigScopeValuesDto>.Ok(new ZzzConfigScopeValuesDto(OverlayDescriptor, null, null, new Dictionary<string, object>(StringComparer.Ordinal)
+				{
+					["patched_capture_enabled"] = PatchedCaptureEnabled,
+					["patched_capture_suffix"] = "_overlay",
+				}));
+			}
+
+			return ZzzBackendResult<ZzzConfigScopeValuesDto>.Ok(new ZzzConfigScopeValuesDto(Descriptor, null, null, new Dictionary<string, object>(StringComparer.Ordinal)
+			{
+				["key_start_running"] = "f9",
+				["key_stop_running"] = "f10",
+				["key_screenshot"] = "f11",
+				["key_debug"] = "f12",
+				["copy_screenshot"] = CopyScreenshot
+			}));
 		}
 
 		private ZzzBackendResult<ZzzRunStatusDto> Pause()
@@ -155,6 +177,15 @@ public sealed class EnvironmentRuntimeCoordinatorTests
 		{
 			LastPngBytes = pngBytes.ToArray();
 			return Task.CompletedTask;
+		}
+	}
+
+	private sealed class StaticOverlayCapturer : IOverlayCapturer
+	{
+		public IReadOnlyList<OverlayCaptureFrame> CaptureFrames()
+		{
+			Mat image = new(new Size(1, 1), MatType.CV_8UC4, new Scalar(0, 0, 255, 255));
+			return [new OverlayCaptureFrame(image, new GeometryRect(1, 1, 2, 2))];
 		}
 	}
 
@@ -203,6 +234,28 @@ public sealed class EnvironmentRuntimeCoordinatorTests
 		byte[] screenshotBytes = harness.BackendProxy.ScreenshotBytes;
 		Assert.Equal(screenshotBytes, await File.ReadAllBytesAsync(file));
 		Assert.Equal(harness.BackendProxy.ScreenshotBytes, harness.Clipboard.LastPngBytes);
+	}
+
+	[Fact]
+	public async Task ScreenshotHotkeyKeepsOriginalAndWritesConfiguredPatchedOverlayImage()
+	{
+		using TestHarness harness = TestHarness.Create(patchedCaptureEnabled: true, overlayCapturer: new StaticOverlayCapturer());
+		using (Mat original = new Mat(new Size(3, 3), MatType.CV_8UC3, Scalar.Black))
+		{
+			Cv2.ImEncode(".png", original, out byte[] png);
+			harness.BackendProxy.ScreenshotBytes = png;
+		}
+
+		await harness.Coordinator.HandleInputPressedForTestAsync("f11");
+
+		string[] files = Directory.GetFiles(Path.Combine(harness.RunRoot, ".debug", "images"), "*.png");
+		Assert.Equal(2, files.Length);
+		string originalPath = Assert.Single(files, path => !Path.GetFileNameWithoutExtension(path).EndsWith("_overlay", StringComparison.Ordinal));
+		string patchedPath = Assert.Single(files, path => Path.GetFileNameWithoutExtension(path).EndsWith("_overlay", StringComparison.Ordinal));
+		Assert.Equal(harness.BackendProxy.ScreenshotBytes, await File.ReadAllBytesAsync(originalPath));
+		using Mat patched = Cv2.ImRead(patchedPath, ImreadModes.Unchanged);
+		Assert.Equal(new Vec3b(0, 0, 0), patched.At<Vec3b>(0, 0));
+		Assert.Equal(new Vec3b(0, 0, 255), patched.At<Vec3b>(1, 1));
 	}
 
 	[Fact]

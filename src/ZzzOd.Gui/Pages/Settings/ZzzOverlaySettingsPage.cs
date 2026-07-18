@@ -20,7 +20,6 @@ internal sealed partial class ZzzOverlaySettingsAxamlPage : UserControl, IZzzPag
     private readonly InfoBar _unsupportedBar;
     private readonly InfoBar _errorBar;
     private readonly InfoBar _resultBar;
-    private readonly SettingsExpanderItem _enabledItem;
     private readonly Button _resetGeometryButton;
     private readonly IReadOnlyDictionary<string, ToggleSwitch> _toggles;
     private readonly IReadOnlyDictionary<string, NumberBox> _numbers;
@@ -39,13 +38,13 @@ internal sealed partial class ZzzOverlaySettingsAxamlPage : UserControl, IZzzPag
         _unsupportedBar = Required<InfoBar>("UnsupportedBar");
         _errorBar = Required<InfoBar>("ErrorBar");
         _resultBar = Required<InfoBar>("ResultBar");
-        _enabledItem = Required<SettingsExpanderItem>("EnabledItem");
         _resetGeometryButton = Required<Button>("ResetGeometryButton");
         _toggles = new Dictionary<string, ToggleSwitch>(StringComparer.Ordinal)
         {
             ["enabled"] = Required<ToggleSwitch>("EnabledToggle"),
             ["visible"] = Required<ToggleSwitch>("VisibleToggle"),
             ["anti_capture"] = Required<ToggleSwitch>("AntiCaptureToggle"),
+            ["panel_lock_to_game_window"] = Required<ToggleSwitch>("PanelLockToGameWindowToggle"),
             ["vision_layer_enabled"] = Required<ToggleSwitch>("VisionLayerToggle"),
             ["vision_yolo_enabled"] = Required<ToggleSwitch>("VisionYoloToggle"),
             ["vision_ocr_enabled"] = Required<ToggleSwitch>("VisionOcrToggle"),
@@ -70,6 +69,7 @@ internal sealed partial class ZzzOverlaySettingsAxamlPage : UserControl, IZzzPag
             ["log_fade_seconds"] = Required<NumberBox>("LogFadeSecondsNumber"),
             ["follow_interval_ms"] = Required<NumberBox>("FollowIntervalNumber"),
             ["state_poll_interval_ms"] = Required<NumberBox>("StatePollIntervalNumber"),
+            ["input_poll_interval_ms"] = Required<NumberBox>("InputPollIntervalNumber"),
             ["panel_opacity"] = Required<NumberBox>("PanelOpacityNumber"),
         };
         _texts = new Dictionary<string, TextBox>(StringComparer.Ordinal)
@@ -190,7 +190,28 @@ internal sealed partial class ZzzOverlaySettingsAxamlPage : UserControl, IZzzPag
     private void Save(IReadOnlyDictionary<string, object?> values)
     {
         _resultBar.IsOpen = false;
-        ApplySaveResult(_overlayController.SaveConfiguration(values));
+        Dictionary<string, object?> requested = new(values, StringComparer.Ordinal);
+        if (requested.ContainsKey("font_size") || requested.ContainsKey("panel_opacity"))
+        {
+            bool fontSizeChanged = requested.TryGetValue("font_size", out object? rawFontSize);
+            bool opacityChanged = requested.TryGetValue("panel_opacity", out object? rawOpacity);
+            double fontSize = fontSizeChanged
+                ? Convert.ToDouble(rawFontSize, CultureInfo.InvariantCulture)
+                : 0d;
+            double opacity = opacityChanged
+                ? Convert.ToDouble(rawOpacity, CultureInfo.InvariantCulture)
+                : 0d;
+            requested["panel_appearance"] = _overlayController.Settings.Panels.ToDictionary(
+                panel => $"{panel.Id}_panel",
+                panel => (object?)new Dictionary<string, object>
+                {
+                    ["font_size"] = (int)Math.Round(Math.Clamp(fontSizeChanged ? fontSize : panel.FontSize, 10d, 28d)),
+                    ["opacity"] = (int)Math.Round(Math.Clamp(opacityChanged ? opacity : panel.Opacity, 5d, 100d)),
+                },
+                StringComparer.Ordinal);
+        }
+
+        ApplySaveResult(_overlayController.SaveConfiguration(requested));
     }
 
     private void ApplySaveResult(ZzzBackendResult<ZzzConfigScopeValuesDto> result)
@@ -230,7 +251,6 @@ internal sealed partial class ZzzOverlaySettingsAxamlPage : UserControl, IZzzPag
                 toggle.IsChecked = _performanceMetrics.TryGetValue(metric, out bool enabled) && enabled;
             }
 
-            _enabledItem.Description = $"启用后可通过 Ctrl+Alt+{FormatHotkey(ReadString(values, "toggle_hotkey"))} 切换显隐";
             _errorBar.IsOpen = false;
             SetInputsEnabled(true);
             _overlayController.ReloadConfiguration(ZzzOverlaySettingsMapper.Create(values));
@@ -283,15 +303,8 @@ internal sealed partial class ZzzOverlaySettingsAxamlPage : UserControl, IZzzPag
         _errorBar.IsOpen = true;
     }
 
-    private static string FormatHotkey(string value) => string.IsNullOrWhiteSpace(value)
-        ? "O"
-        : value.Trim().ToUpperInvariant();
-
     private static bool ReadBool(IReadOnlyDictionary<string, object?> values, string key) =>
         Convert.ToBoolean(RequiredValue(values, key), CultureInfo.InvariantCulture);
-
-    private static int ReadInt(IReadOnlyDictionary<string, object?> values, string key) =>
-        Convert.ToInt32(RequiredValue(values, key), CultureInfo.InvariantCulture);
 
     private static double ReadDouble(IReadOnlyDictionary<string, object?> values, string key) =>
         Convert.ToDouble(RequiredValue(values, key), CultureInfo.InvariantCulture);

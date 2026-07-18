@@ -2,6 +2,8 @@ using System.Globalization;
 using System.Threading.Channels;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using OneDragon.Core.Screening;
+using OpenCvSharp;
 using ZzzOd.AppHost.Backend;
 using ZzzOd.Gui.Services.RunIntent;
 
@@ -25,6 +27,7 @@ internal sealed class ZzzEnvironmentRuntimeCoordinator : IHostedService, IZzzEnv
     private readonly ILogger<ZzzEnvironmentRuntimeCoordinator> _logger;
     private readonly Func<ZzzBackendResult<bool>> _reinitializeContext;
     private readonly Func<ZzzBackendResult<byte[]>> _captureDebugScreenshot;
+    private readonly IOverlayCapturer? _overlayCapturer;
     private readonly string _runRoot;
     private readonly SemaphoreSlim _actionGate = new(1, 1);
     private CancellationTokenSource _shutdown = new();
@@ -41,6 +44,7 @@ internal sealed class ZzzEnvironmentRuntimeCoordinator : IHostedService, IZzzEnv
         ZzzGuiRunIntentService runIntent,
         IZzzImageClipboardService clipboard,
         ZzzRuntimeManager runtime,
+        IOverlayCapturer overlayCapturer,
         ILogger<ZzzEnvironmentRuntimeCoordinator> logger)
         : this(
             backend,
@@ -50,7 +54,8 @@ internal sealed class ZzzEnvironmentRuntimeCoordinator : IHostedService, IZzzEnv
             runtime.RunRoot,
             runtime.ReinitializeContext,
             runtime.CaptureDebugScreenshot,
-            logger)
+            logger,
+            overlayCapturer)
     {
     }
 
@@ -62,7 +67,8 @@ internal sealed class ZzzEnvironmentRuntimeCoordinator : IHostedService, IZzzEnv
         string runRoot,
         Func<ZzzBackendResult<bool>> reinitializeContext,
         Func<ZzzBackendResult<byte[]>> captureDebugScreenshot,
-        ILogger<ZzzEnvironmentRuntimeCoordinator> logger)
+        ILogger<ZzzEnvironmentRuntimeCoordinator> logger,
+        IOverlayCapturer? overlayCapturer = null)
     {
         _backend = backend;
         _inputMonitor = inputMonitor;
@@ -71,6 +77,7 @@ internal sealed class ZzzEnvironmentRuntimeCoordinator : IHostedService, IZzzEnv
         _runRoot = Path.GetFullPath(runRoot);
         _reinitializeContext = reinitializeContext;
         _captureDebugScreenshot = captureDebugScreenshot;
+        _overlayCapturer = overlayCapturer;
         _logger = logger;
     }
 
@@ -279,10 +286,123 @@ internal sealed class ZzzEnvironmentRuntimeCoordinator : IHostedService, IZzzEnv
         await File.WriteAllBytesAsync(path, result.Value, cancellationToken).ConfigureAwait(false);
 		_logger.LogInformation("游戏截图已保存 {Path}", path);
 
+        byte[] clipboardBytes = result.Value;
+        if (TryGetPatchedCaptureSettings(out string suffix))
+        {
+            try
+            {
+                byte[]? patchedBytes = TryComposePatchedScreenshot(result.Value);
+                if (patchedBytes is not null)
+                {
+                    string patchedPath = CreatePatchedScreenshotPath(path, suffix);
+                    await File.WriteAllBytesAsync(patchedPath, patchedBytes, cancellationToken).ConfigureAwait(false);
+                    clipboardBytes = patchedBytes;
+                    _logger.LogInformation("Overlay 合成截图已保存 {Path}", patchedPath);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Overlay 合成截图失败，已保留原始游戏截图 {Path}", path);
+            }
+        }
+
         if (copyScreenshot)
         {
-            await _clipboard.CopyPngAsync(result.Value, cancellationToken).ConfigureAwait(false);
+            await _clipboard.CopyPngAsync(clipboardBytes, cancellationToken).ConfigureAwait(false);
         }
+    }
+
+    private bool TryGetPatchedCaptureSettings(out string suffix)
+    {
+        suffix = "_patched";
+        if (_overlayCapturer is null)
+        {
+            return false;
+        }
+
+        ZzzBackendResult<ZzzConfigScopeValuesDto> result = _backend.GetConfigScope("overlay");
+        if (!result.Success || result.Value is null)
+        {
+            _logger.LogWarning("读取 Overlay 截图设置失败：{Error}", result.Error);
+            return false;
+        }
+
+		IReadOnlyDictionary<string, object?> values = result.Value.Values;
+		if (!values.TryGetValue("patched_capture_enabled", out object? enabledValue))
+		{
+			return false;
+		}
+
+		try
+		{
+			if (!Convert.ToBoolean(enabledValue, CultureInfo.InvariantCulture))
+			{
+				return false;
+			}
+		}
+		catch (FormatException)
+		{
+			_logger.LogWarning("Overlay 截图开关格式无效。");
+			return false;
+		}
+		catch (InvalidCastException)
+		{
+			_logger.LogWarning("Overlay 截图开关格式无效。");
+			return false;
+		}
+
+		if (values.TryGetValue("patched_capture_suffix", out object? suffixValue))
+		{
+			string? configuredSuffix = Convert.ToString(suffixValue, CultureInfo.InvariantCulture);
+			if (!string.IsNullOrWhiteSpace(configuredSuffix))
+			{
+				suffix = configuredSuffix;
+			}
+		}
+
+		return true;
+    }
+
+    private byte[]? TryComposePatchedScreenshot(byte[] gameScreenshotBytes)
+    {
+        if (_overlayCapturer is null)
+        {
+            return null;
+        }
+
+        IReadOnlyList<OverlayCaptureFrame> frames = _overlayCapturer.CaptureFrames();
+        try
+        {
+            if (frames.Count == 0)
+            {
+                return null;
+            }
+
+            using Mat gameScreenshot = Cv2.ImDecode(gameScreenshotBytes, ImreadModes.Unchanged);
+            if (gameScreenshot.Empty())
+            {
+                throw new InvalidDataException("游戏截图不是有效 PNG 图像。");
+            }
+
+            using Mat patchedScreenshot = OverlayImageComposer.Compose(gameScreenshot, frames);
+            Cv2.ImEncode(".png", patchedScreenshot, out byte[] patchedBytes);
+            return patchedBytes;
+        }
+        finally
+        {
+            foreach (OverlayCaptureFrame frame in frames)
+            {
+                frame.Dispose();
+            }
+        }
+    }
+
+    private static string CreatePatchedScreenshotPath(string originalPath, string suffix)
+    {
+        string directory = Path.GetDirectoryName(originalPath) ?? throw new InvalidOperationException("截图目录不存在。");
+        return Path.Combine(
+            directory,
+            Path.GetFileNameWithoutExtension(originalPath) + suffix + Path.GetExtension(originalPath));
     }
 
     private static string CreateUniqueScreenshotPath(string directory)
