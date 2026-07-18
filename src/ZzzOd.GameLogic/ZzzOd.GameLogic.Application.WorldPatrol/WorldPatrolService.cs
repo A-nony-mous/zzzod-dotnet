@@ -401,7 +401,16 @@ public sealed class WorldPatrolService
 		List<(string, OneDragon.Core.Abstractions.Geometry.Point)> list2 = new List<(string, OneDragon.Core.Abstractions.Geometry.Point)>();
 		foreach (string item3 in list.Select((WorldPatrolLargeMapIcon icon) => icon.TemplateId).Distinct<string>(StringComparer.Ordinal))
 		{
-			MatchResultList matchResultList = context.TemplateMatcher.MatchTemplate(miniMap.Rgb, "map", item3, "raw", 0.7, null, ignoreTemplateMask: false, onlyBest: false);
+			MatchResultList matchResultList = context.TemplateMatcher.MatchTemplate(
+				miniMap.Rgb,
+				"map",
+				item3,
+				"raw",
+				0.7,
+				null,
+				ignoreTemplateMask: false,
+				onlyBest: false,
+				publishVision: false);
 			foreach (MatchResult item4 in matchResultList.Items)
 			{
 				list2.Add((item3, item4.Center));

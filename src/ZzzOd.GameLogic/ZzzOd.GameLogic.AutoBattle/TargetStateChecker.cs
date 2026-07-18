@@ -46,7 +46,7 @@ public sealed class TargetStateChecker : IAutoBattleTargetStateChecker
 			}
 			finally
 			{
-				_ctx.EventBus.Publish("Overlay.Performance", new PerformanceMetricEventPayload(new PerformanceMetricSample("cv_pipeline_ms", Stopwatch.GetElapsedTime(timestamp).TotalMilliseconds, "ms", DateTimeOffset.UtcNow, 20.0, new Dictionary<string, object> { ["pipeline"] = task.PipelineName })));
+				_ctx.EventBus.Publish(PerformanceMetricEventIds.Sample, new PerformanceMetricEventPayload(new PerformanceMetricSample("cv_pipeline_ms", Stopwatch.GetElapsedTime(timestamp).TotalMilliseconds, "ms", DateTimeOffset.UtcNow, 20.0, new Dictionary<string, object> { ["pipeline"] = task.PipelineName })));
 			}
 		}
 		return RunTask(new TargetStateCheckFrame
@@ -247,7 +247,7 @@ public sealed class TargetStateChecker : IAutoBattleTargetStateChecker
 
 	private TargetStateCheckFrame BuildOcrAbnormalFrame(Mat screen)
 	{
-		Mat mat = CropByTemplate(screen, "locked_target_info");
+		Mat mat = CropByTemplate(screen, "locked_target_info", out OneDragon.Core.Abstractions.Geometry.Rect cropRect);
 		if (mat == null)
 		{
 			return new TargetStateCheckFrame
@@ -258,7 +258,12 @@ public sealed class TargetStateChecker : IAutoBattleTargetStateChecker
 		using Mat mat2 = mat;
 		long timestamp = Stopwatch.GetTimestamp();
 		_ctx.Logger.Information("自动战斗目标OCR开始: Pipeline=ocr-abnormal, Width={Width}, Height={Height}", mat2.Width, mat2.Height);
-		string text = string.Concat(from result in _ctx.OcrService.GetOcrResultList(mat2)
+		string text = string.Concat(from result in _ctx.OcrService.GetOcrResultListForCrop(
+			mat2,
+			screen.Width,
+			screen.Height,
+			cropRect.X1,
+			cropRect.Y1)
 			select result.Text);
 		_ctx.Logger.Information("自动战斗目标OCR结束: Pipeline=ocr-abnormal, ElapsedMilliseconds={ElapsedMilliseconds:F2}, Text={Text}", Stopwatch.GetElapsedTime(timestamp).TotalMilliseconds, text);
 		return new TargetStateCheckFrame
@@ -289,6 +294,12 @@ public sealed class TargetStateChecker : IAutoBattleTargetStateChecker
 
 	private Mat? CropByTemplate(Mat screen, string templateId)
 	{
+		return CropByTemplate(screen, templateId, out _);
+	}
+
+	private Mat? CropByTemplate(Mat screen, string templateId, out OneDragon.Core.Abstractions.Geometry.Rect cropRect)
+	{
+		cropRect = default(OneDragon.Core.Abstractions.Geometry.Rect);
 		TemplateInfo template = _ctx.TemplateLoader.GetTemplate("target_state", templateId);
 		if (template != null)
 		{
@@ -310,6 +321,7 @@ public sealed class TargetStateChecker : IAutoBattleTargetStateChecker
 				{
 					return null;
 				}
+				cropRect = valueOrDefault;
 				return CvImageUtils.Crop(screen, valueOrDefault);
 			}
 		}

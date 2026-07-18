@@ -10,6 +10,7 @@ using System.Threading.Tasks;
 using OneDragon.Core.Abstractions.Geometry;
 using OneDragon.Core.Abstractions.Operations;
 using OneDragon.Core.Controller;
+using OneDragon.Core.Events;
 using OneDragon.Core.Matcher;
 using OneDragon.Core.Ocr;
 using OneDragon.Core.Runtime;
@@ -1221,7 +1222,7 @@ public sealed class ShiyuDefenseAppTests
 	}
 
 	[Fact]
-	public void ImageAnalysisPipelineRunner_CountdownUsesExactlyFourContoursAndAbsoluteCoordinates()
+	public async Task ImageAnalysisPipelineRunner_CountdownUsesExactlyFourContoursAndAbsoluteCoordinates()
 	{
 		string text = CreateTempRoot();
 		try
@@ -1229,6 +1230,16 @@ public sealed class ShiyuDefenseAppTests
 			WriteShiyuDefenseScreenYaml(text);
 			using ZContext zContext = new ZContext(new OneDragonEnvironment(text, text));
 			zContext.ScreenContext.Reload();
+			TaskCompletionSource<PerformanceMetricSample> received = new(TaskCreationOptions.RunContinuationsAsynchronously);
+			using IDisposable subscription = zContext.EventBus.Subscribe<PerformanceMetricEventPayload>(
+				PerformanceMetricEventIds.Sample,
+				envelope =>
+				{
+					if (envelope.Payload.Sample.Metric == "cv_pipeline_ms")
+					{
+						received.TrySetResult(envelope.Payload.Sample);
+					}
+				});
 			using Mat mat = new Mat(new Size(160, 90), MatType.CV_8UC3, Scalar.Black);
 			for (int i = 0; i < 4; i++)
 			{
@@ -1241,6 +1252,14 @@ public sealed class ShiyuDefenseAppTests
 			{
 				Assert.InRange(contour.Rect.Y, 45, 54);
 			});
+			PerformanceMetricSample sample = await received.Task.WaitAsync(TimeSpan.FromSeconds(2));
+			Assert.Equal("cv_pipeline_ms", sample.Metric);
+			Assert.True(sample.Value >= 0d);
+			Assert.Equal("防卫战倒计时", sample.Metadata!["pipeline"]);
+			Assert.Equal(imageAnalysisPipelineRunResult.PipelinePath, sample.Metadata["pipeline_path"]);
+			OverlayDebugSnapshot overlaySnapshot = zContext.OverlayDebugBus.Snapshot();
+			Assert.Equal(4, overlaySnapshot.VisionItems.Count(item => item.Source == "cv" && item.Label == "防卫战倒计时"));
+			Assert.All(overlaySnapshot.VisionItems.Where(item => item.Source == "cv"), item => Assert.Equal(VisionCoordinateSpace.StandardGame, item.CoordinateSpace));
 		}
 		finally
 		{

@@ -1,8 +1,10 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using OneDragon.Core.Events;
 using OneDragon.Core.Runtime;
 using OneDragon.Core.Screen;
 using OpenCvSharp;
@@ -52,6 +54,7 @@ public sealed class ImageAnalysisPipelineRunner
 		{
 			return ImageAnalysisPipelineRunResult.Fail("图像分析流水线为空 " + pipelinePath, pipelinePath);
 		}
+		long startedAt = Stopwatch.GetTimestamp();
 		Mat mat = screen.Clone();
 		Mat mat2 = null;
 		Point[][] contours = Array.Empty<Point[]>();
@@ -181,6 +184,7 @@ public sealed class ImageAnalysisPipelineRunner
 				Rect rect = Cv2.BoundingRect(contour);
 				return new ImageAnalysisContour(contour, new Rect(rect.X + offsetX, rect.Y + offsetY, rect.Width, rect.Height), Cv2.ContourArea(contour));
 			}).ToArray();
+			PublishContourVision(context, pipelineName, pipelinePath, screen, contours2);
 			return ImageAnalysisPipelineRunResult.Success(pipelinePath, contours2);
 		}
 		catch (Exception ex2)
@@ -191,6 +195,19 @@ public sealed class ImageAnalysisPipelineRunner
 		{
 			mat2?.Dispose();
 			mat.Dispose();
+			context.EventBus.Publish(
+				PerformanceMetricEventIds.Sample,
+				new PerformanceMetricEventPayload(
+					new PerformanceMetricSample(
+						"cv_pipeline_ms",
+						Stopwatch.GetElapsedTime(startedAt).TotalMilliseconds,
+						"ms",
+						DateTimeOffset.UtcNow,
+						Metadata: new Dictionary<string, object?>
+						{
+							["pipeline"] = pipelineName,
+							["pipeline_path"] = pipelinePath,
+						})));
 		}
 	}
 
@@ -200,6 +217,32 @@ public sealed class ImageAnalysisPipelineRunner
 	public static string GetPipelinePath(OneDragonEnvironment environment, string pipelineName)
 	{
 		return environment.GetResourcePath("assets", "image_analysis_pipelines", pipelineName + ".yml");
+	}
+
+	private static void PublishContourVision(
+		ZContext context,
+		string pipelineName,
+		string pipelinePath,
+		Mat screen,
+		IReadOnlyList<ImageAnalysisContour> contours)
+	{
+		foreach (ImageAnalysisContour contour in contours.Take(50))
+		{
+			Rect rect = contour.Rect;
+			context.OverlayDebugBus.PublishVision(new VisionDrawItem("cv", pipelineName, rect.X, rect.Y, rect.X + rect.Width, rect.Y + rect.Height)
+			{
+				Color = "#d472ff",
+				TtlSeconds = 1.6d,
+				CoordinateSpace = VisionCoordinateSpace.CaptureFrame,
+				InputWidth = screen.Width,
+				InputHeight = screen.Height,
+				Metadata = new Dictionary<string, object?>
+				{
+					["pipeline_path"] = pipelinePath,
+					["area"] = contour.Area,
+				},
+			});
+		}
 	}
 
 	private static string String(ImageAnalysisPipelineStep step, string key, string? defaultValue = null)

@@ -446,7 +446,12 @@ public sealed class ChargePlanOperation : ZOperation
 			return null;
 		}
 		using Mat image = CvImageUtils.Crop(screen, area.Rect);
-		string value = context.OcrService.Matcher.RunOcrSingleLine(image);
+		string value = context.OcrService.RunOcrSingleLineForCrop(
+			image,
+			screen.Width,
+			screen.Height,
+			area.X1,
+			area.Y1);
 		return StringUtils.GetPositiveDigits(value);
 	}
 

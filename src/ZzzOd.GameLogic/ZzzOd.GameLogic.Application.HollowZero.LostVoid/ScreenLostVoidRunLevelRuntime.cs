@@ -577,7 +577,12 @@ public sealed class ScreenLostVoidRunLevelRuntime : ILostVoidRunLevelRuntime
 		Cv2.Dilate(mat2, mat4, mat3);
 		using Mat mat5 = new Mat();
 		Cv2.BitwiseAnd(mat, mat, mat5, mat4);
-		return context.OcrService.GetOcrResultList(mat5);
+		return context.OcrService.GetOcrResultListForCrop(
+			mat5,
+			screen.Width,
+			screen.Height,
+			area.X1,
+			area.Y1);
 	}
 
 	private static bool TryFindAndClickArea(ZContext context, Mat? screen, string screenName, string areaName)

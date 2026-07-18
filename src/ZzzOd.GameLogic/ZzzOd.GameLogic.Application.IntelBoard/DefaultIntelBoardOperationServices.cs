@@ -477,7 +477,12 @@ public sealed class DefaultIntelBoardOperationServices : IIntelBoardOperationSer
 			return Task.FromResult(new OperationResult(IsSuccess: false, "区域未配置 进度文本"));
 		}
 		using Mat image = CvImageUtils.Crop(screen, area.Rect);
-		string text = context.OcrService.Matcher.RunOcrSingleLine(image);
+		string text = context.OcrService.RunOcrSingleLineForCrop(
+			image,
+			screen.Width,
+			screen.Height,
+			area.X1,
+			area.Y1);
 		context.Logger.Information("情报板进度 OCR: {ProgressText}", text);
 		string source = text.Replace('／', '/');
 		string text2 = new string(source.Where((char ch) => char.IsDigit(ch) || ch == '/').ToArray());

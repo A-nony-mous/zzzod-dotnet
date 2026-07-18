@@ -28,6 +28,7 @@ public static class AgentTemplateMatcher
 		ArgumentNullException.ThrowIfNull(screen, "screen");
 		HashSet<string> hashSet = agentIdFilter?.ToHashSet<string>(StringComparer.Ordinal);
 		using Mat source = CvImageUtils.Crop(screen, rect);
+		TemplateMatchVisionContext visionContext = TemplateMatchVisionContext.ForCrop(screen.Width, screen.Height, rect.X1, rect.Y1);
 		List<MatchResult> list = new List<MatchResult>();
 		foreach (AgentEnum value2 in AgentEnum.Values)
 		{
@@ -38,7 +39,13 @@ public static class AgentTemplateMatcher
 			}
 			foreach (string templateId in value.TemplateIdList)
 			{
-				MatchResult matchResult = context.TemplateMatcher.MatchOneByFeature(source, "predefined_team", "avatar_" + templateId, null, 0.5);
+				MatchResult matchResult = context.TemplateMatcher.MatchOneByFeature(
+					source,
+					"predefined_team",
+					"avatar_" + templateId,
+					null,
+					0.5,
+					visionContext: visionContext);
 				if (matchResult != null)
 				{
 					list.Add(new MatchResult(matchResult.Confidence, matchResult.X + rect.X1, matchResult.Y + rect.Y1, matchResult.Width, matchResult.Height, matchResult.TemplateScale, value));

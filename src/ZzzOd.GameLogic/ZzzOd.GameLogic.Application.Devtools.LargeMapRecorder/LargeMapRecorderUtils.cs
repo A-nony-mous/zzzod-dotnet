@@ -75,7 +75,16 @@ public static class LargeMapRecorderUtils
 			{
 				break;
 			}
-			MatchResultList matchResultList2 = templateMatcher.MatchTemplate(rgb, "map", templateId, "raw", iconThreshold, null, ignoreTemplateMask: false, onlyBest: false);
+			MatchResultList matchResultList2 = templateMatcher.MatchTemplate(
+				rgb,
+				"map",
+				templateId,
+				"raw",
+				iconThreshold,
+				null,
+				ignoreTemplateMask: false,
+				onlyBest: false,
+				publishVision: false);
 			foreach (MatchResult item in matchResultList2.Items)
 			{
 				matchResultList.Append(new MatchResult(item.Confidence, item.X, item.Y, item.Width, item.Height, item.TemplateScale, template.TemplateId));

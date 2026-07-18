@@ -49,7 +49,8 @@ public sealed class HollowEventDetector
 		KeepResultSeconds = 2.0;
 		CoreDetector = new YoloDetector(CreateCoreConfig())
 		{
-			EventBus = context.EventBus
+			EventBus = context.EventBus,
+			OverlayDebugBus = context.OverlayDebugBus,
 		};
 	}
 

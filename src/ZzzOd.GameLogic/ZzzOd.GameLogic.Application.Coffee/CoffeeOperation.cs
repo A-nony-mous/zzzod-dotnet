@@ -529,7 +529,13 @@ public sealed class CoffeeOperation : ZOperation
 	private IReadOnlyList<OcrMatchResult> GetCoffeeListOcrResults(Mat screen, OneDragon.Core.Screen.ScreenArea area)
 	{
 		using Mat image = CreateCoffeeListOcrImage(screen, area);
-		return base.ZContext.OcrService.Matcher.Ocr(image).Select(delegate(OcrMatchResult result)
+		IReadOnlyList<OcrMatchResult> results = base.ZContext.OcrService.GetOcrResultListForCrop(
+			image,
+			screen.Width,
+			screen.Height,
+			area.X1,
+			area.Y1);
+		return results.Select(delegate(OcrMatchResult result)
 		{
 			result.AddOffset(area.LeftTop);
 			return result;
@@ -662,7 +668,7 @@ public sealed class CoffeeOperation : ZOperation
 			MiniMapAngle = GetMiniMapAngle(context, screen),
 			PointOrderResult = (operationRoundResult.Status ?? string.Empty),
 			PointOrderVisible = operationRoundResult.IsSuccess,
-			OcrTexts = (from result in context.OcrService.Matcher.Ocr(screen)
+			OcrTexts = (from result in context.OcrService.GetOcrResultList(screen)
 				orderby result.Y, result.X
 				select result.Text).ToArray(),
 			FailureReason = (operationRoundResult.IsSuccess ? null : operationRoundResult.Status)

@@ -343,7 +343,14 @@ public class HollowRunner : IDisposable
 			if (area != null)
 			{
 				using Mat image = CvImageUtils.Crop(screen, area.Rect);
-				levelInfo.Level = StringUtils.GetPositiveDigits(_ctx.OcrService.Matcher.RunOcrSingleLine(image), -1) ?? (-1);
+				levelInfo.Level = StringUtils.GetPositiveDigits(
+					_ctx.OcrService.RunOcrSingleLineForCrop(
+						image,
+						screen.Width,
+						screen.Height,
+						area.X1,
+						area.Y1),
+					-1) ?? (-1);
 			}
 		}
 		if (levelInfo.Phase == -1)

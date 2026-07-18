@@ -169,7 +169,12 @@ public sealed class LostVoidBangbooStoreOperation(ZContext context) : ZOperation
 		Cv2.Dilate(mat2, mat3, mat4);
 		using Mat mat5 = new Mat();
 		Cv2.BitwiseAnd(mat, mat, mat5, mat3);
-		IReadOnlyList<OcrMatchResult> ocrResultList = base.ZContext.OcrService.GetOcrResultList(mat5);
+		IReadOnlyList<OcrMatchResult> ocrResultList = base.ZContext.OcrService.GetOcrResultListForCrop(
+			mat5,
+			screen.Width,
+			screen.Height,
+			area.X1,
+			area.Y1);
 		foreach (OcrMatchResult item in ocrResultList)
 		{
 			int num = valueSelector(item);

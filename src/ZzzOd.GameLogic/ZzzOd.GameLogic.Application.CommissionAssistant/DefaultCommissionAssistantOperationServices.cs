@@ -177,7 +177,12 @@ public sealed class DefaultCommissionAssistantOperationServices : ICommissionAss
 		Cv2.InRange(mat, new Scalar(230.0, 230.0, 230.0), new Scalar(255.0, 255.0, 255.0), mat2);
 		Cv2.Dilate(mat2, mat3, mat4, null, 5);
 		Cv2.BitwiseAnd(mat, mat, mat5, mat3);
-		OcrMatchResult ocrMatchResult = (from result in context.OcrService.GetOcrResultList(mat5)
+		OcrMatchResult ocrMatchResult = (from result in context.OcrService.GetOcrResultListForCrop(
+			mat5,
+			screen.Width,
+			screen.Height,
+			area.X1,
+			area.Y1)
 			where result.Text.Trim().Length > 1
 			orderby result.Center.Y descending
 			select result).FirstOrDefault();

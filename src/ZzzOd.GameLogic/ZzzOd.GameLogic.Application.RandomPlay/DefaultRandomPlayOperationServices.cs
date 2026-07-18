@@ -183,7 +183,7 @@ public sealed class DefaultRandomPlayOperationServices : IRandomPlayOperationSer
 			YesterdayLedgerVisible = operationResult2.IsSuccess,
 			RightOptionsResult = (operationResult3.Status ?? string.Empty),
 			RightOptionsVisible = operationResult3.IsSuccess,
-			OcrTexts = (from result in context.OcrService.Matcher.Ocr(screen)
+			OcrTexts = (from result in context.OcrService.GetOcrResultList(screen)
 				orderby result.Y, result.X
 				select result.Text).ToArray(),
 			FailureReason = ((operationResult.IsSuccess || operationResult2.IsSuccess || operationResult3.IsSuccess) ? null : operationResult.Status)
@@ -410,7 +410,12 @@ public sealed class DefaultRandomPlayOperationServices : IRandomPlayOperationSer
 				continue;
 			}
 			using Mat image = CvImageUtils.Crop(screen, area.Rect);
-			string ocrText = context.OcrService.Matcher.RunOcrSingleLine(image);
+			string ocrText = context.OcrService.RunOcrSingleLineForCrop(
+				image,
+				screen.Width,
+				screen.Height,
+				area.X1,
+				area.Y1);
 			string text = FindThemeByGameText(context, ocrText);
 			if (text != null)
 			{
@@ -492,7 +497,11 @@ public sealed class DefaultRandomPlayOperationServices : IRandomPlayOperationSer
 			if (enumerator.MoveNext())
 			{
 				string current = enumerator.Current;
-				MatchResult matchResult = context.TemplateMatcher.MatchOneByFeature(source, "predefined_team", "avatar_" + current);
+				MatchResult matchResult = context.TemplateMatcher.MatchOneByFeature(
+					source,
+					"predefined_team",
+					"avatar_" + current,
+					visionContext: TemplateMatchVisionContext.ForCrop(screen.Width, screen.Height, area.X1, area.Y1));
 				if (matchResult == null)
 				{
 					return null;

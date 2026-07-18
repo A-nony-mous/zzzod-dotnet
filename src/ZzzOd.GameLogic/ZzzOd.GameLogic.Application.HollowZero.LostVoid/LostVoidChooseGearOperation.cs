@@ -118,7 +118,7 @@ public sealed class LostVoidChooseGearOperation : ZOperation
 			}
 			using Mat mat2 = new Mat();
 			Cv2.VConcat(list, mat2);
-			IReadOnlyList<OcrMatchResult> ocrResultList = base.ZContext.OcrService.GetOcrResultList(mat2);
+			IReadOnlyList<OcrMatchResult> ocrResultList = base.ZContext.OcrService.GetOcrResultListWithoutOverlayVision(mat2);
 			IReadOnlyList<string> readOnlyList = LostVoidInteractService.Instance.ExtractNamesFromStitchedOcr(ocrResultList, gearRects.Count, nameArea.Height);
 			List<(LostVoidArtifactPos, bool)> list2 = new List<(LostVoidArtifactPos, bool)>();
 			int index;

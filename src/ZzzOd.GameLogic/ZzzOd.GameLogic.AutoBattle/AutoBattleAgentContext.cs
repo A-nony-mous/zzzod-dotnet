@@ -413,7 +413,11 @@ public class AutoBattleAgentContext
 				if (area != null)
 				{
 					using Mat image = CvImageUtils.Crop(screen, area.Rect);
-					var (item3, item4) = MatchAgentIn(image, index == 0, possibleAgents);
+					var (item3, item4) = MatchAgentIn(
+						image,
+						index == 0,
+						possibleAgents,
+						TemplateMatchVisionContext.ForCrop(screen.Width, screen.Height, area.X1, area.Y1));
 					return (index: index, item3, item4);
 				}
 				return ((int index, Agent, string))(index: index, null, null);
@@ -450,7 +454,11 @@ public class AutoBattleAgentContext
 		return new (Agent, string)[] { array2[0] };
 	}
 
-	private (Agent? Agent, string? MatchedTemplateId) MatchAgentIn(Mat image, bool isFront, IReadOnlyList<(Agent Agent, string? MatchedTemplateId)> possibleAgents)
+	private (Agent? Agent, string? MatchedTemplateId) MatchAgentIn(
+		Mat image,
+		bool isFront,
+		IReadOnlyList<(Agent Agent, string? MatchedTemplateId)> possibleAgents,
+		TemplateMatchVisionContext visionContext)
 	{
 		Agent agent = null;
 		string item = null;
@@ -482,7 +490,13 @@ public class AutoBattleAgentContext
 			{
 				Agent item2 = item4.Item1;
 				string item3 = item4.Item2;
-				MatchResultList matchResultList = _ctx.TemplateMatcher.MatchTemplate(image, "battle", text + item3, "raw", 0.8);
+				MatchResultList matchResultList = _ctx.TemplateMatcher.MatchTemplate(
+					image,
+					"battle",
+					text + item3,
+					"raw",
+					0.8,
+					visionContext: visionContext);
 				if (matchResultList.Max != null && !(matchResultList.Max.Confidence < num))
 				{
 					agent = item2;

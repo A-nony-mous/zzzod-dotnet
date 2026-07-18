@@ -52,7 +52,12 @@ public sealed class LostVoidUpdatePriorityOperation : ZOperation
 		Cv2.CvtColor(mat, mat2, ColorConversionCodes.BGR2HSV);
 		using Mat mat3 = new Mat();
 		Cv2.InRange(mat2, new Scalar(0.0, 0.0, 55.0), new Scalar(180.0, 255.0, 255.0), mat3);
-		IReadOnlyList<OcrMatchResult> ocrResultList = base.ZContext.OcrService.GetOcrResultList(mat3);
+		IReadOnlyList<OcrMatchResult> ocrResultList = base.ZContext.OcrService.GetOcrResultListForCrop(
+			mat3,
+			base.LastScreenshot.Width,
+			base.LastScreenshot.Height,
+			area.X1,
+			area.Y1);
 		IReadOnlyList<string> readOnlyList = LostVoidPriorityUpdater.ExtractDynamicPriorities(LostVoidPriorityUpdater.FromOcrResults(ocrResultList));
 		LostVoidPriorityUpdater.AppendDynamicPriorities(base.ZContext.LostVoid, readOnlyList);
 		base.ZContext.Logger.Information("迷失之地动态优先级识别: Ocr={Ocr}, Added={Added}, Current={Current}", string.Join(" | ", ocrResultList.Select((OcrMatchResult result) => result.Text)), string.Join(", ", readOnlyList), string.Join(", ", base.ZContext.LostVoid.DynamicPriorityList));

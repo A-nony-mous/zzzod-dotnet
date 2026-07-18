@@ -435,6 +435,11 @@ public sealed class NotoriousHunt : CompendiumChallengeOperationBase
 	private string RunOcrSingleLineInArea(Mat screen, OneDragon.Core.Screen.ScreenArea area)
 	{
 		using Mat image = new Mat(screen, new OpenCvSharp.Rect(area.X1, area.Y1, area.Width, area.Height));
-		return base.ZContext.OcrService.Matcher.RunOcrSingleLine(image);
+		return base.ZContext.OcrService.RunOcrSingleLineForCrop(
+			image,
+			screen.Width,
+			screen.Height,
+			area.X1,
+			area.Y1);
 	}
 }

@@ -157,7 +157,7 @@ public sealed class Transport : ZOperation
 		List<string> targetWords2 = base.ZContext.MapService.AreaList.SelectMany((MapArea area) => area.TpList).ToList();
 		int num = 0;
 		int num2 = 0;
-		IReadOnlyList<OcrMatchResult> source = (from result in base.ZContext.OcrService.Matcher.Ocr(screen)
+		IReadOnlyList<OcrMatchResult> source = (from result in base.ZContext.OcrService.GetOcrResultList(screen)
 			orderby result.Y, result.X
 			select result).ToArray();
 		string[] array = source.Select((OcrMatchResult result) => result.Text).Distinct<string>(StringComparer.Ordinal).ToArray();

@@ -403,7 +403,7 @@ public sealed class BackToNormalWorld : ZOperation
 		IReadOnlyList<string> ocr_texts;
 		try
 		{
-			ocr_texts = (from result in base.ZContext.OcrService.Matcher.Ocr(screen)
+			ocr_texts = (from result in base.ZContext.OcrService.GetOcrResultList(screen)
 				orderby result.Y, result.X
 				select result.Text).Take(30).ToArray();
 		}

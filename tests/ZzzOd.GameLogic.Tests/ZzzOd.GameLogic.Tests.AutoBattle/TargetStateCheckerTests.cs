@@ -209,7 +209,7 @@ public sealed class TargetStateCheckerTests
 		using ZContext ctx = new ZContext(new OneDragonEnvironment(repoRoot));
 		TargetStateChecker checker = new TargetStateChecker(ctx);
 		TaskCompletionSource<PerformanceMetricSample> received = new TaskCompletionSource<PerformanceMetricSample>(TaskCreationOptions.RunContinuationsAsynchronously);
-		using (ctx.EventBus.Subscribe("Overlay.Performance", delegate(ContextEvent<PerformanceMetricEventPayload> envelope)
+		using (ctx.EventBus.Subscribe(PerformanceMetricEventIds.Sample, delegate(ContextEvent<PerformanceMetricEventPayload> envelope)
 		{
 			if (envelope.Payload.Sample.Metric == "cv_pipeline_ms")
 			{
@@ -244,6 +244,7 @@ public sealed class TargetStateCheckerTests
 			Assert.Equal("cv_pipeline_ms", sample.Metric);
 			Assert.Equal("boss_stun_line", sample.Metadata["pipeline"]);
 			Assert.True(sample.Value >= 0.0);
+			Assert.True(SpinWait.SpinUntil(() => ctx.OverlayDebugBus.Snapshot().PerformanceItems.Any(item => item.Metric == "cv_pipeline_ms"), TimeSpan.FromSeconds(2L)));
 		}
 	}
 

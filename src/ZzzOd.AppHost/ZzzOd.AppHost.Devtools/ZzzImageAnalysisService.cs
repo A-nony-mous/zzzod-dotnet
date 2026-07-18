@@ -397,7 +397,7 @@ public sealed class ZzzImageAnalysisService : IZzzImageAnalysisService
 			break;
 		case "OCR识别":
 		{
-			IReadOnlyList<OcrMatchResult> ocrResultList = runtime.OcrService.GetOcrResultList(display);
+			IReadOnlyList<OcrMatchResult> ocrResultList = runtime.OcrService.GetOcrResultListWithoutOverlayVision(display);
 			results.Add($"OCR 识别到 {ocrResultList.Count} 个文本项：");
 			{
 				foreach (OcrMatchResult item3 in ocrResultList)

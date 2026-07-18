@@ -701,7 +701,12 @@ internal static class WitheredDomainEventOperations
 		using Mat mat5 = Cv2.GetStructuringElement(MorphShapes.Rect, new Size(dilateSize, dilateSize));
 		Cv2.Dilate(mat2, mat3, mat5);
 		Cv2.BitwiseAnd(mat, mat, mat4, mat3);
-		return (from result in context.OcrService.GetOcrResultList(mat4)
+		return (from result in context.OcrService.GetOcrResultListForCrop(
+			mat4,
+			screen.Width,
+			screen.Height,
+			area.X1,
+			area.Y1)
 			select new OcrMatchResult(result.Confidence, result.X + area.Rect.X1, result.Y + area.Rect.Y1, result.Width, result.Height, result.Text)).ToArray();
 	}
 
@@ -1054,7 +1059,12 @@ internal static class WitheredDomainEventOperations
 		Cv2.Dilate(mat2, mat3, mat4);
 		using Mat mat5 = new Mat();
 		Cv2.BitwiseAnd(mat, mat, mat5, mat3);
-		OcrMatchResult[] array = (from item in context.OcrService.GetOcrResultList(mat5)
+		OcrMatchResult[] array = (from item in context.OcrService.GetOcrResultListForCrop(
+			mat5,
+			screen.Width,
+			screen.Height,
+			area.X1,
+			area.Y1)
 			where StringUtils.GetPositiveDigits(item.Text).HasValue
 			select new OcrMatchResult(item.Confidence, item.X + area.Rect.X1, item.Y + area.Rect.Y1, item.Width, item.Height, item.Text)).ToArray();
 		if (array.Length != 0)
@@ -1078,7 +1088,12 @@ internal static class WitheredDomainEventOperations
 				Cv2.Dilate(mat7, mat8, mat4);
 				using Mat mat9 = new Mat();
 				Cv2.CvtColor(mat8, mat9, ColorConversionCodes.GRAY2BGR);
-				int? num3 = ParseMerchantFallbackPrice(context.OcrService.Matcher.RunOcrSingleLine(mat9));
+				int? num3 = ParseMerchantFallbackPrice(context.OcrService.RunOcrSingleLineForCrop(
+					mat9,
+					screen.Width,
+					screen.Height,
+					area2.X1,
+					area2.Y1));
 				if (num3.HasValue)
 				{
 					list.Add(new OcrMatchResult(1.0, area2.Rect.X1, area2.Rect.Y1, area2.Rect.Width, area2.Rect.Height, num3.Value.ToString()));

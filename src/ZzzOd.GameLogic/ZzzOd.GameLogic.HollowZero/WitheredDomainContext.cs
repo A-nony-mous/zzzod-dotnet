@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using OneDragon.Core.Matcher;
 using OneDragon.Core.Screen;
 using OneDragon.Core.Utils;
 using OpenCvSharp;
@@ -392,12 +393,19 @@ public class WitheredDomainContext
 				return null;
 			}
 			Mat image = CvImageUtils.Crop(screen, area.Rect);
+			TemplateMatchVisionContext visionContext = TemplateMatchVisionContext.ForCrop(screen.Width, screen.Height, area.X1, area.Y1);
 			try
 			{
 				Agent item = null;
 				foreach (Agent item2 in AgentEnum.Values.Select((AgentEnum agentEnum) => agentEnum.Value))
 				{
-					if ((hashSet == null || hashSet.Contains(item2.AgentId)) && item2.TemplateIdList.Any((string templateId) => _ctx.TemplateMatcher.MatchOneByFeature(image, "hollow", "avatar_" + templateId, null, 0.8) != null))
+					if ((hashSet == null || hashSet.Contains(item2.AgentId)) && item2.TemplateIdList.Any((string templateId) => _ctx.TemplateMatcher.MatchOneByFeature(
+						image,
+						"hollow",
+						"avatar_" + templateId,
+						null,
+						0.8,
+						visionContext: visionContext) != null))
 					{
 						item = item2;
 						flag = true;

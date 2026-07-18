@@ -284,8 +284,14 @@ public sealed class RestoreCharge : ZOperation
 		{
 			return null;
 		}
-		using Mat image = CvImageUtils.Crop(base.LastScreenshot, area.Rect);
-		string value = base.ZContext.OcrService.Matcher.RunOcrSingleLine(image);
+		Mat screen = base.LastScreenshot!;
+		using Mat image = CvImageUtils.Crop(screen, area.Rect);
+		string value = base.ZContext.OcrService.RunOcrSingleLineForCrop(
+			image,
+			screen.Width,
+			screen.Height,
+			area.X1,
+			area.Y1);
 		return StringUtils.GetPositiveDigits(value);
 	}
 }
