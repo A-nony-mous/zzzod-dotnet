@@ -392,6 +392,28 @@ public sealed class GuiStaticAuditTests
 	}
 
 	/// <summary>
+	/// 战斗助手模式切换由 AXAML TabView 和代码中的同一控件状态驱动。
+	/// </summary>
+	[Fact]
+	public void BattleAssistantModeUsesTabViewBinding()
+	{
+		string path = FindGuiRoot();
+		string axaml = File.ReadAllText(Path.Combine(path, "Pages", "GameAssistant", "ZzzBattleAssistantSettings.axaml"));
+		string source = File.ReadAllText(Path.Combine(path, "Pages", "GameAssistant", "ZzzGameAssistantPages.cs"));
+		Assert.Contains("<fa:TabView x:Name=\"ModeTabs\"", axaml, StringComparison.Ordinal);
+		Assert.Contains("FindControl<TabView>(\"ModeTabs\")", source, StringComparison.Ordinal);
+		Assert.Contains("_modeTabs.SelectionChanged += OnModeSelectionChanged", source, StringComparison.Ordinal);
+		Assert.Contains("_modeTabs.SelectedIndex != 1", source, StringComparison.Ordinal);
+		Assert.DoesNotContain("AutoBattleModeButton", source, StringComparison.Ordinal);
+		Assert.DoesNotContain("DodgeAssistantModeButton", source, StringComparison.Ordinal);
+		Assert.DoesNotContain("AutoBattleModeContent", source, StringComparison.Ordinal);
+		Assert.DoesNotContain("DodgeAssistantModeContent", source, StringComparison.Ordinal);
+		Assert.DoesNotContain("AutoUltimateToggleLabel", source, StringComparison.Ordinal);
+		Assert.DoesNotContain("MergedFileToggleLabel", source, StringComparison.Ordinal);
+		Assert.DoesNotContain("GpuToggleLabel", source, StringComparison.Ordinal);
+	}
+
+	/// <summary>
 	/// 委托助手使用 AXAML 两列设置区、真实配置 scope 和 BaselineParity 原文。
 	/// </summary>
 	[Fact]
