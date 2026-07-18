@@ -635,7 +635,7 @@ internal sealed class ZzzConfigScopeService
 			}
 		}
 
-		private static void NormalizeFreeWorkAreaAnchor(IDictionary<string, object> geometry)
+		private static void NormalizeFreeWorkAreaAnchor(Dictionary<string, object> geometry)
 		{
 			if (HasCompleteFreeWorkAreaAnchor(geometry))
 			{
