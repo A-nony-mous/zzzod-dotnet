@@ -129,6 +129,20 @@ public class AutoBattleContext
 
 	public bool AutoUltimateEnabled { get; set; }
 
+	/// <summary>
+	/// 读取 Overlay 状态面板所需的自动战斗真实运行数据。
+	/// </summary>
+	public AutoBattleOverlayStatusSnapshot GetOverlayStatusSnapshot(DateTimeOffset? now = null)
+	{
+		AutoBattleOperator? autoOp = AutoOp;
+		return AutoBattleOverlayStatusSnapshotFactory.Create(
+			autoOp?.GetRuntimeSnapshot().IsRunning ?? false,
+			AgentContext.Team.Snapshot(),
+			StateRecordService.GetSnapshot(),
+			LastCheckDistance,
+			now ?? DateTimeOffset.UtcNow);
+	}
+
 	public string? LastCheckEndResult
 	{
 		get
@@ -498,7 +512,9 @@ public class AutoBattleContext
 			}
 			_lastCheckQuickTime = screenshotTime;
 			using Mat image = CvImageUtils.Crop(screen, SwitchArea.Rect);
-			Agent agent = MatchQuickAssistAgentIn(image);
+			Agent agent = MatchQuickAssistAgentIn(
+				image,
+				TemplateMatchVisionContext.ForCrop(screen.Width, screen.Height, SwitchArea.X1, SwitchArea.Y1));
 			if (agent == null)
 			{
 				return Array.Empty<StateRecord>();
@@ -980,14 +996,18 @@ public class AutoBattleContext
 
 	private IReadOnlyList<StateRecord> CheckChainAttackCore(Mat screen, double screenshotTime, bool updateState)
 	{
-		Mat chain1 = CvImageUtils.Crop(screen, ChainLeftArea.Rect);
+		OneDragon.Core.Screen.ScreenArea chainLeftArea = ChainLeftArea;
+		OneDragon.Core.Screen.ScreenArea chainRightArea = ChainRightArea;
+		Mat chain1 = CvImageUtils.Crop(screen, chainLeftArea.Rect);
 		try
 		{
-			Mat chain2 = CvImageUtils.Crop(screen, ChainRightArea.Rect);
+			Mat chain2 = CvImageUtils.Crop(screen, chainRightArea.Rect);
 			try
 			{
-				Task<Agent> task = QueueBattleStateCheck(() => MatchChainAgentIn(chain1));
-				Task<Agent> task2 = QueueBattleStateCheck(() => MatchChainAgentIn(chain2));
+				TemplateMatchVisionContext leftVisionContext = TemplateMatchVisionContext.ForCrop(screen.Width, screen.Height, chainLeftArea.X1, chainLeftArea.Y1);
+				TemplateMatchVisionContext rightVisionContext = TemplateMatchVisionContext.ForCrop(screen.Width, screen.Height, chainRightArea.X1, chainRightArea.Y1);
+				Task<Agent> task = QueueBattleStateCheck(() => MatchChainAgentIn(chain1, leftVisionContext));
+				Task<Agent> task2 = QueueBattleStateCheck(() => MatchChainAgentIn(chain2, rightVisionContext));
 				Mat chainBarScreen = screen.Clone();
 				Task task3 = QueueBattleStateCheck(delegate
 				{
@@ -1077,23 +1097,29 @@ public class AutoBattleContext
 		}
 	}
 
-	private Agent? MatchQuickAssistAgentIn(Mat image)
+	private Agent? MatchQuickAssistAgentIn(Mat image, TemplateMatchVisionContext visionContext)
 	{
-		return MatchAgentByBattleAvatar(image, "avatar_quick_");
+		return MatchAgentByBattleAvatar(image, "avatar_quick_", visionContext);
 	}
 
-	private Agent? MatchChainAgentIn(Mat image)
+	private Agent? MatchChainAgentIn(Mat image, TemplateMatchVisionContext visionContext)
 	{
-		return MatchAgentByBattleAvatar(image, "avatar_chain_");
+		return MatchAgentByBattleAvatar(image, "avatar_chain_", visionContext);
 	}
 
-	private Agent? MatchAgentByBattleAvatar(Mat image, string prefix)
+	private Agent? MatchAgentByBattleAvatar(Mat image, string prefix, TemplateMatchVisionContext visionContext)
 	{
 		foreach (var (agent, text) in AgentContext.GetPossibleAgentList())
 		{
 			if (!string.IsNullOrWhiteSpace(text))
 			{
-				MatchResultList matchResultList = _ctx.TemplateMatcher.MatchTemplate(image, "battle", prefix + text, "raw", 0.8);
+				MatchResultList matchResultList = _ctx.TemplateMatcher.MatchTemplate(
+					image,
+					"battle",
+					prefix + text,
+					"raw",
+					0.8,
+					visionContext: visionContext);
 				if (matchResultList.Max != null)
 				{
 					return agent;
@@ -1103,7 +1129,13 @@ public class AutoBattleContext
 			{
 				if (!string.Equals(templateId, text, StringComparison.Ordinal))
 				{
-					MatchResultList matchResultList2 = _ctx.TemplateMatcher.MatchTemplate(image, "battle", prefix + templateId, "raw", 0.8);
+					MatchResultList matchResultList2 = _ctx.TemplateMatcher.MatchTemplate(
+						image,
+						"battle",
+						prefix + templateId,
+						"raw",
+						0.8,
+						visionContext: visionContext);
 					if (matchResultList2.Max != null)
 					{
 						return agent;

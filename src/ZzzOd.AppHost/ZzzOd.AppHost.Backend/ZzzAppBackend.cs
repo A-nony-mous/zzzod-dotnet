@@ -2250,7 +2250,17 @@ public sealed class ZzzAppBackend : IZzzAppBackend, IZzzIntelBoardProgressBacken
 		try
 		{
 			WindowStatus windowStatus = _runtime.EnsureContext().Backend.CheckWindow();
-			ZzzWindowStatusDto zzzWindowStatusDto = new ZzzWindowStatusDto(windowStatus.WinTitle, windowStatus.IsWinValid, windowStatus.IsWinActive, windowStatus.IsWinScale);
+			ZzzWindowStatusDto zzzWindowStatusDto = new ZzzWindowStatusDto(
+				windowStatus.WinTitle,
+				windowStatus.IsWinValid,
+				windowStatus.IsWinActive,
+				windowStatus.IsWinScale,
+				windowStatus.X,
+				windowStatus.Y,
+				windowStatus.Width,
+				windowStatus.Height,
+				windowStatus.IsWinMinimized,
+				windowStatus.Dpi);
 			PublishWindowChangedIfNeeded(zzzWindowStatusDto);
 			return ZzzBackendResult<ZzzWindowStatusDto>.Ok(zzzWindowStatusDto);
 		}

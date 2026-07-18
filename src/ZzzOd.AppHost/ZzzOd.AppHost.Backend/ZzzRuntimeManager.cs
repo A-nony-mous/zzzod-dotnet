@@ -33,6 +33,11 @@ public sealed class ZzzRuntimeManager : IDisposable
 	private bool _disposed;
 
 	/// <summary>
+	/// 当前运行时上下文创建、替换或释放后通知订阅方。
+	/// </summary>
+	public event Action<ZContext?, ZContext?>? ContextChanged;
+
+	/// <summary>
 	/// 运行根目录。
 	/// </summary>
 	public string RunRoot { get; }
@@ -95,15 +100,25 @@ public sealed class ZzzRuntimeManager : IDisposable
 	/// <returns>当前上下文。</returns>
 	public ZContext EnsureContext()
 	{
+		ZContext context;
+		bool contextChanged = false;
 		using (_lock.EnterScope())
 		{
 			ObjectDisposedException.ThrowIf(_disposed, this);
 			if (_context == null)
 			{
 				_context = CreateContext(ActiveInstanceIndex);
+				contextChanged = true;
 			}
-			return _context;
+			context = _context;
 		}
+
+		if (contextChanged)
+		{
+			NotifyContextChanged(null, context);
+		}
+
+		return context;
 	}
 
 	/// <summary>
@@ -124,6 +139,9 @@ public sealed class ZzzRuntimeManager : IDisposable
 	/// <returns>重新初始化结果。</returns>
 	public ZzzBackendResult<bool> ReinitializeContext()
 	{
+		ZContext? previous = null;
+		ZContext? current = null;
+		ZzzBackendResult<bool> result;
 		using (_lock.EnterScope())
 		{
 			ObjectDisposedException.ThrowIf(_disposed, this);
@@ -133,17 +151,22 @@ public sealed class ZzzRuntimeManager : IDisposable
 			}
 			try
 			{
-				_context?.Dispose();
+				previous = _context;
 				_context = null;
+				previous?.Dispose();
 				_context = CreateContext(ActiveInstanceIndex);
-				return ZzzBackendResult<bool>.Ok(value: true);
+				current = _context;
+				result = ZzzBackendResult<bool>.Ok(value: true);
 			}
 			catch (Exception ex)
 			{
 				_context = null;
-				return ZzzBackendResult<bool>.Fail(ZzzBackendErrorCode.NotReady, ex.Message);
+				result = ZzzBackendResult<bool>.Fail(ZzzBackendErrorCode.NotReady, ex.Message);
 			}
 		}
+
+		NotifyContextChanged(previous, current);
+		return result;
 	}
 
 	/// <summary>
@@ -184,29 +207,40 @@ public sealed class ZzzRuntimeManager : IDisposable
 	/// <returns>切换结果。</returns>
 	public ZzzBackendResult<IReadOnlyList<ZzzInstanceDto>> ActivateInstance(int instanceIndex)
 	{
-		using (_lock.EnterScope())
+		ZContext? previous = null;
+		ZContext? current = null;
+		try
 		{
-			ObjectDisposedException.ThrowIf(_disposed, this);
-			if (HasActiveRunUnsafe())
+			using (_lock.EnterScope())
 			{
-				return ZzzBackendResult<IReadOnlyList<ZzzInstanceDto>>.Fail(ZzzBackendErrorCode.Conflict, "运行中不能切换实例。");
-			}
-			if (ReadInstanceMetadata().All((OneDragonInstanceConfigItem item) => item.Idx != instanceIndex))
-			{
-				return ZzzBackendResult<IReadOnlyList<ZzzInstanceDto>>.Fail(ZzzBackendErrorCode.NotFound, $"实例不存在 {instanceIndex:00}");
-			}
-			if (_context != null && _context.InstanceIndex == instanceIndex)
-			{
+				ObjectDisposedException.ThrowIf(_disposed, this);
+				if (HasActiveRunUnsafe())
+				{
+					return ZzzBackendResult<IReadOnlyList<ZzzInstanceDto>>.Fail(ZzzBackendErrorCode.Conflict, "运行中不能切换实例。");
+				}
+				if (ReadInstanceMetadata().All((OneDragonInstanceConfigItem item) => item.Idx != instanceIndex))
+				{
+					return ZzzBackendResult<IReadOnlyList<ZzzInstanceDto>>.Fail(ZzzBackendErrorCode.NotFound, $"实例不存在 {instanceIndex:00}");
+				}
+				if (_context != null && _context.InstanceIndex == instanceIndex)
+				{
+					ActiveInstanceIndex = instanceIndex;
+					SaveActiveInstance(instanceIndex);
+					return ZzzBackendResult<IReadOnlyList<ZzzInstanceDto>>.Ok(ListInstances());
+				}
+				previous = _context;
+				_context = null;
+				previous?.Dispose();
 				ActiveInstanceIndex = instanceIndex;
+				_context = CreateContext(instanceIndex);
+				current = _context;
 				SaveActiveInstance(instanceIndex);
 				return ZzzBackendResult<IReadOnlyList<ZzzInstanceDto>>.Ok(ListInstances());
 			}
-			_context?.Dispose();
-			_context = null;
-			ActiveInstanceIndex = instanceIndex;
-			_context = CreateContext(instanceIndex);
-			SaveActiveInstance(instanceIndex);
-			return ZzzBackendResult<IReadOnlyList<ZzzInstanceDto>>.Ok(ListInstances());
+		}
+		finally
+		{
+			NotifyContextChanged(previous, current);
 		}
 	}
 
@@ -353,14 +387,26 @@ public sealed class ZzzRuntimeManager : IDisposable
 	/// <inheritdoc />
 	public void Dispose()
 	{
+		ZContext? previous = null;
 		using (_lock.EnterScope())
 		{
-			if (!_disposed)
+			if (_disposed)
 			{
-				_disposed = true;
-				_context?.Dispose();
-				_context = null;
+				return;
 			}
+
+			_disposed = true;
+			previous = _context;
+			_context = null;
+		}
+
+		try
+		{
+			previous?.Dispose();
+		}
+		finally
+		{
+			NotifyContextChanged(previous, null);
 		}
 	}
 
@@ -442,6 +488,33 @@ public sealed class ZzzRuntimeManager : IDisposable
 	private bool HasActiveRunUnsafe()
 	{
 		return _context != null && !_context.RunContext.IsContextStop;
+	}
+
+	private void NotifyContextChanged(ZContext? previous, ZContext? current)
+	{
+		if (ReferenceEquals(previous, current))
+		{
+			return;
+		}
+
+		Action<ZContext?, ZContext?>? handlers = ContextChanged;
+		if (handlers is null)
+		{
+			return;
+		}
+
+		foreach (Delegate subscriber in handlers.GetInvocationList())
+		{
+			try
+			{
+				Action<ZContext?, ZContext?> handler = (Action<ZContext?, ZContext?>)subscriber;
+				handler(previous, current);
+			}
+			catch (Exception ex)
+			{
+				_logger.LogWarning(ex, "运行时上下文变更通知失败。");
+			}
+		}
 	}
 
 	private static ZzzBackendResult<IReadOnlyList<ZzzInstanceDto>> InstanceMutationBlocked()

@@ -112,7 +112,8 @@ public sealed class ZzzDebugDataItem
 		Dictionary<string, object> dictionary = new Dictionary<string, object>(StringComparer.Ordinal)
 		{
 			["metric"] = metric,
-			["unit"] = unit
+			["unit"] = unit,
+			["value"] = value,
 		};
 		MergeMetadata(dictionary, metadata);
 		double? elapsedMilliseconds = (string.Equals(unit, "ms", StringComparison.OrdinalIgnoreCase) ? new double?(value) : ((double?)null));

@@ -10,9 +10,11 @@ namespace ZzzOd.AppHost.Backend;
 /// </summary>
 public sealed class ZzzBackendEventBus
 {
+	private sealed record Subscription(Channel<ZzzBackendEvent> Channel, string? EventType);
+
 	private readonly Lock _lock = new Lock();
 
-	private readonly List<Channel<ZzzBackendEvent>> _subscribers = new List<Channel<ZzzBackendEvent>>();
+	private readonly List<Subscription> _subscribers = new List<Subscription>();
 
 	private bool _completed;
 
@@ -24,33 +26,62 @@ public sealed class ZzzBackendEventBus
 	public void Publish(string type, object data)
 	{
 		ZzzBackendEvent item = new ZzzBackendEvent(type, DateTimeOffset.UtcNow, data);
-		Channel<ZzzBackendEvent>[] array;
+		Subscription[] subscribers;
 		using (_lock.EnterScope())
 		{
 			if (_completed)
 			{
 				return;
 			}
-			array = _subscribers.ToArray();
+			subscribers = _subscribers.ToArray();
 		}
-		Channel<ZzzBackendEvent>[] array2 = array;
-		foreach (Channel<ZzzBackendEvent> channel in array2)
+		foreach (Subscription subscription in subscribers)
 		{
-			channel.Writer.TryWrite(item);
+			if (subscription.EventType is null || string.Equals(subscription.EventType, type, StringComparison.Ordinal))
+			{
+				subscription.Channel.Writer.TryWrite(item);
+			}
 		}
 	}
 
 	/// <summary>
-	/// 订阅事件。
+	/// 订阅全部事件。
 	/// </summary>
+	/// <param name="capacity">指定正数时使用有界队列并丢弃最旧事件。</param>
 	/// <returns>事件读取器。</returns>
-	public ChannelReader<ZzzBackendEvent> Subscribe()
+	public ChannelReader<ZzzBackendEvent> Subscribe(int? capacity = null) => SubscribeCore(null, capacity);
+
+	/// <summary>
+	/// 订阅指定类型的事件。
+	/// </summary>
+	/// <param name="eventType">事件类型。</param>
+	/// <param name="capacity">有界队列容量。</param>
+	/// <returns>事件读取器。</returns>
+	public ChannelReader<ZzzBackendEvent> Subscribe(string eventType, int capacity)
 	{
-		Channel<ZzzBackendEvent> channel = Channel.CreateUnbounded<ZzzBackendEvent>(new UnboundedChannelOptions
+		ArgumentException.ThrowIfNullOrWhiteSpace(eventType);
+		if (capacity <= 0)
 		{
-			SingleReader = true,
-			SingleWriter = false
-		});
+			throw new ArgumentOutOfRangeException(nameof(capacity));
+		}
+
+		return SubscribeCore(eventType, capacity);
+	}
+
+	private ChannelReader<ZzzBackendEvent> SubscribeCore(string? eventType, int? capacity)
+	{
+		Channel<ZzzBackendEvent> channel = capacity is > 0
+			? Channel.CreateBounded<ZzzBackendEvent>(new BoundedChannelOptions(capacity.Value)
+			{
+				SingleReader = true,
+				SingleWriter = false,
+				FullMode = BoundedChannelFullMode.DropOldest,
+			})
+			: Channel.CreateUnbounded<ZzzBackendEvent>(new UnboundedChannelOptions
+			{
+				SingleReader = true,
+				SingleWriter = false,
+			});
 		using (_lock.EnterScope())
 		{
 			if (_completed)
@@ -58,7 +89,7 @@ public sealed class ZzzBackendEventBus
 				channel.Writer.TryComplete();
 				return channel.Reader;
 			}
-			_subscribers.Add(channel);
+			_subscribers.Add(new Subscription(channel, eventType));
 		}
 		return channel.Reader;
 	}
@@ -73,9 +104,9 @@ public sealed class ZzzBackendEventBus
 		{
 			for (int num = _subscribers.Count - 1; num >= 0; num--)
 			{
-				if (_subscribers[num].Reader == reader)
+				if (_subscribers[num].Channel.Reader == reader)
 				{
-					_subscribers[num].Writer.TryComplete();
+					_subscribers[num].Channel.Writer.TryComplete();
 					_subscribers.RemoveAt(num);
 					break;
 				}
@@ -88,7 +119,7 @@ public sealed class ZzzBackendEventBus
 	/// </summary>
 	public void Complete()
 	{
-		Channel<ZzzBackendEvent>[] array;
+		Subscription[] subscribers;
 		using (_lock.EnterScope())
 		{
 			if (_completed)
@@ -96,13 +127,12 @@ public sealed class ZzzBackendEventBus
 				return;
 			}
 			_completed = true;
-			array = _subscribers.ToArray();
+			subscribers = _subscribers.ToArray();
 			_subscribers.Clear();
 		}
-		Channel<ZzzBackendEvent>[] array2 = array;
-		foreach (Channel<ZzzBackendEvent> channel in array2)
+		foreach (Subscription subscription in subscribers)
 		{
-			channel.Writer.TryComplete();
+			subscription.Channel.Writer.TryComplete();
 		}
 	}
 }

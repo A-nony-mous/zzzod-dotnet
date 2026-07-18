@@ -20,10 +20,18 @@ public interface IZzzOverlayService
 	void SetEnabled(bool enabled);
 
 	/// <summary>
-	/// 提交绘制帧。
+	/// 配置快照展示筛选。
 	/// </summary>
-	/// <param name="frame">绘制帧。</param>
-	void SubmitFrame(ZzzOverlayFrameDto frame);
+	/// <param name="options">展示筛选。</param>
+	void ConfigureDisplay(ZzzOverlayDisplayOptionsDto options)
+	{
+	}
+
+	/// <summary>
+	/// 获取同一时刻的 Overlay 运行期快照。
+	/// </summary>
+	/// <returns>不可变快照。</returns>
+	ZzzOverlaySnapshotDto GetSnapshot() => ZzzOverlaySnapshotDto.FromLegacy(GetStatus(), GetLastFrame(), GetPerformanceSamples());
 
 	/// <summary>
 	/// 获取最后绘制帧。

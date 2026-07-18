@@ -9,6 +9,7 @@ using OneDragon.Core.Windows.Input;
 using OpenCvSharp;
 using Serilog;
 using ZzzOd.GameLogic.Config;
+using ZzzOd.GameLogic.Backend;
 using ZzzOd.GameLogic.Const;
 using ZzzOd.GameLogic.ScreenArea;
 
@@ -17,7 +18,7 @@ namespace ZzzOd.GameLogic.Controller;
 /// <summary>
 /// ZZZ PC 游戏控制器，提供特定业务按键逻辑。
 /// </summary>
-public sealed class ZPcController : WindowsGameController, IZzzControllerActions
+public sealed class ZPcController : WindowsGameController, IZzzControllerActions, IBackendWindowStatusProvider
 {
 	private readonly GameConfig _gameConfig;
 
@@ -83,6 +84,24 @@ public sealed class ZPcController : WindowsGameController, IZzzControllerActions
 	{
 		ApplyRuntimeControlMode();
 		return base.InitBeforeContextRun();
+	}
+
+	/// <inheritdoc />
+	public WindowStatus GetWindowStatus()
+	{
+		GameWindowGeometry geometry = GetWindowGeometry();
+		OneDragon.Core.Abstractions.Geometry.Rect? rect = geometry.ClientRect;
+		return new WindowStatus(
+			GameWindowTitle,
+			geometry.IsValid,
+			geometry.IsActive,
+			IsGameWindowScaled,
+			rect?.X1,
+			rect?.Y1,
+			rect?.Width,
+			rect?.Height,
+			geometry.IsMinimized,
+			geometry.Dpi);
 	}
 
 	internal void ApplyRuntimeControlMode()

@@ -191,6 +191,8 @@ public sealed class AutoBattleOperatorTests
 		Assert.True(completed);
 		Assert.Contains((IEnumerable<AutoBattleExecutionRecord>)op.ExecutionRecords, (Predicate<AutoBattleExecutionRecord>)((AutoBattleExecutionRecord record) => record.Event == "started" && record.Trigger == "主循环"));
 		Assert.Contains((IEnumerable<AutoBattleExecutionRecord>)op.ExecutionRecords, (Predicate<AutoBattleExecutionRecord>)((AutoBattleExecutionRecord record) => record.Event == "finished" && record.Completed));
+		Assert.Contains(zctx.OverlayDebugBus.Snapshot().DecisionItems, item => item.Trigger == "主循环" && item.Operation == "first" && item.Status == "accepted");
+		Assert.Contains(zctx.OverlayDebugBus.Snapshot().DecisionItems, item => item.Trigger == "主循环" && item.Operation == "first" && item.Status == "completed");
 	}
 
 	[Fact]
@@ -217,6 +219,12 @@ public sealed class AutoBattleOperatorTests
 		await op.GetRunningExecutionTask().WaitAsync(TimeSpan.FromSeconds(1L));
 		Assert.False(accepted);
 		Assert.Contains((IEnumerable<AutoBattleExecutionRecord>)op.ExecutionRecords, (Predicate<AutoBattleExecutionRecord>)((AutoBattleExecutionRecord record) => record.Event == "rejected" && record.ErrorMessage == "priority-blocked"));
+		Assert.Contains(zctx.OverlayDebugBus.Snapshot().DecisionItems, item =>
+			item.Trigger == "lower" &&
+			item.Operation == "lower" &&
+			item.Status == "priority-blocked" &&
+			Equals(item.Metadata!["current_priority"], 5) &&
+			Equals(item.Metadata["candidate_priority"], 1));
 	}
 
 	[Fact]
@@ -309,6 +317,15 @@ public sealed class AutoBattleOperatorTests
 			op.StopRunning();
 			Assert.Contains((IEnumerable<AutoBattleExecutionRecord>)op.ExecutionRecords, (Predicate<AutoBattleExecutionRecord>)((AutoBattleExecutionRecord record) => record.Event == "started" && record.Trigger == "自定义-触发"));
 			Assert.Contains((IEnumerable<AutoBattleExecutionRecord>)op.ExecutionRecords, (Predicate<AutoBattleExecutionRecord>)((AutoBattleExecutionRecord record) => record.Event == "finished" && record.Completed));
+			Assert.Contains(zctx.OverlayDebugBus.Snapshot().DecisionItems, item =>
+				item.Trigger == "自定义-触发" &&
+				item.Expression == "模板命中" &&
+				item.Operation == "设置状态 自定义-命中" &&
+				item.Status == "matched");
+			Assert.Contains(zctx.OverlayDebugBus.Snapshot().DecisionItems, item =>
+				item.Trigger == "自定义-触发" &&
+				item.Operation == "设置状态 自定义-命中" &&
+				item.Status == "accepted");
 		}
 		finally
 		{
@@ -334,6 +351,11 @@ public sealed class AutoBattleOperatorTests
 			Assert.DoesNotContain((IEnumerable<AutoBattleExecutionRecord>)op.ExecutionRecords, (Predicate<AutoBattleExecutionRecord>)((AutoBattleExecutionRecord record) => record.Trigger == "自定义-延迟截图触发"));
 			Assert.Equal(-1.0, zctx.AutoBattleContext.StateRecordService.GetStateRecorder("自定义-延迟截图命中").LastRecordTime);
 			Assert.Equal(captureTime, zctx.AutoBattleContext.StateRecordService.GetStateRecorder("自定义-延迟截图触发").LastRecordTime);
+			Assert.Contains(zctx.OverlayDebugBus.Snapshot().DecisionItems, item =>
+				item.Trigger == "自定义-延迟截图触发" &&
+				item.Expression == "[自定义-延迟截图触发, 0, 0.3]" &&
+				item.Operation == string.Empty &&
+				item.Status == "not-matched");
 		}
 		finally
 		{

@@ -6,6 +6,7 @@ using System.Reflection;
 using System.Threading.Tasks;
 using OneDragon.Core.Abstractions.Events;
 using OneDragon.Core.Abstractions.Geometry;
+using OneDragon.Core.Events;
 using OneDragon.Core.Runtime;
 using Xunit;
 using ZzzOd.GameLogic.Context;
@@ -60,6 +61,13 @@ public sealed class DebugDataTests
 				Assert.Contains((IEnumerable<ZzzDebugDataItem>)payload.Items, (Predicate<ZzzDebugDataItem>)((ZzzDebugDataItem item) => item.Kind == ZzzDebugDataKind.Path && item.PathPoints.Count == 2 && item.State == "selected"));
 				Assert.Contains((IEnumerable<ZzzDebugDataItem>)payload.Items, (Predicate<ZzzDebugDataItem>)((ZzzDebugDataItem item) => item.Kind == ZzzDebugDataKind.ActionDecision && object.Equals(item.Metadata["trigger"], "连携技-准备")));
 				Assert.Contains((IEnumerable<ZzzDebugDataItem>)payload.Items, (Predicate<ZzzDebugDataItem>)((ZzzDebugDataItem item) => item.Kind == ZzzDebugDataKind.Performance && item.ElapsedMilliseconds.GetValueOrDefault() == 18.5));
+				OverlayDebugSnapshot overlaySnapshot = context.OverlayDebugBus.Snapshot();
+				Assert.Contains((IEnumerable<VisionDrawItem>)overlaySnapshot.VisionItems, (Predicate<VisionDrawItem>)((VisionDrawItem item) => item.Source == "ocr" && item.Label == "[强攻]割草除根"));
+				Assert.Contains((IEnumerable<VisionDrawItem>)overlaySnapshot.VisionItems, (Predicate<VisionDrawItem>)((VisionDrawItem item) => item.Source == "yolo" && item.Label == "event_battle"));
+				Assert.Contains((IEnumerable<VisionDrawItem>)overlaySnapshot.VisionItems, (Predicate<VisionDrawItem>)((VisionDrawItem item) => item.Source == "path" && item.Metadata != null && item.Metadata.ContainsKey("path_points")));
+				Assert.Equal("连携技-准备", Assert.Single(overlaySnapshot.DecisionItems).Trigger);
+				Assert.Equal("yolo_ms", Assert.Single(overlaySnapshot.PerformanceItems).Metric);
+				Assert.Equal("boss_route", Assert.Single(overlaySnapshot.TimelineItems).Title);
 			}
 		}
 		finally

@@ -99,6 +99,17 @@ public class ZContext : OneDragonContext
 	/// <summary>自动战斗上下文</summary>
 	public AutoBattleContext AutoBattleContext => _autoBattleContext.Value;
 
+	/// <summary>
+	/// 获取已初始化自动战斗上下文的 Overlay 状态，不会触发上下文初始化。
+	/// </summary>
+	public AutoBattleOverlayStatusSnapshot? TryGetAutoBattleOverlayStatus()
+	{
+		Lazy<AutoBattleContext> autoBattleContext = _autoBattleContext;
+		return autoBattleContext.IsValueCreated
+			? autoBattleContext.Value.GetOverlayStatusSnapshot()
+			: null;
+	}
+
 	/// <summary>迷失之地上下文</summary>
 	public LostVoidContext LostVoid => _lostVoidContext.Value;
 
@@ -184,7 +195,7 @@ public class ZContext : OneDragonContext
 		_flashClassifier = new Lazy<FlashClassifier>(() => new FlashClassifier(this));
 		_hollowEventDetector = new Lazy<HollowEventDetector>(() => new HollowEventDetector(this));
 		_zzzOcrService = new Lazy<ZzzOcrService>(() => new ZzzOcrService(this));
-		_debugDataPublisher = new Lazy<ZzzDebugDataPublisher>(() => new ZzzDebugDataPublisher(base.EventBus));
+		_debugDataPublisher = new Lazy<ZzzDebugDataPublisher>(() => new ZzzDebugDataPublisher(base.EventBus, base.OverlayDebugBus));
 		_applicationFactoryRegistry = new Lazy<ApplicationFactoryRegistry>(() => new ApplicationFactoryRegistry(this));
 		_operationNotificationService = new Lazy<OperationNotificationService>(() => new OperationNotificationService(this));
 		base.GameTextResolver = (string sourceText) => GameTextTranslator.Translate(base.Environment, GameAccountConfig.GameLanguage, sourceText);
@@ -265,7 +276,7 @@ public class ZContext : OneDragonContext
 		_flashClassifier = new Lazy<FlashClassifier>(() => new FlashClassifier(this));
 		_hollowEventDetector = new Lazy<HollowEventDetector>(() => new HollowEventDetector(this));
 		_zzzOcrService = new Lazy<ZzzOcrService>(() => new ZzzOcrService(this));
-		_debugDataPublisher = new Lazy<ZzzDebugDataPublisher>(() => new ZzzDebugDataPublisher(base.EventBus));
+		_debugDataPublisher = new Lazy<ZzzDebugDataPublisher>(() => new ZzzDebugDataPublisher(base.EventBus, base.OverlayDebugBus));
 		_applicationFactoryRegistry = new Lazy<ApplicationFactoryRegistry>(() => new ApplicationFactoryRegistry(this));
 		_operationNotificationService = new Lazy<OperationNotificationService>(() => new OperationNotificationService(this));
 	}

@@ -7,6 +7,7 @@ using System.Linq;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
+using OneDragon.Core.Events;
 using OneDragon.Core.Operation;
 using OneDragon.Core.Utils;
 using Serilog;
@@ -194,6 +195,15 @@ public class AutoBattleOperator : IStateRecordUpdateListener
 			if (runningExecutor != null && runningExecutor.Running && !CanInterrupt(CurrentExecutionInfo, executionInfo))
 			{
 				AddExecutionRecordLocked("rejected", trigger ?? executionInfo.TriggerDisplay, executionInfo, completed: false, "priority-blocked");
+				PublishExecutionDecision(
+					executionInfo,
+					trigger ?? executionInfo.TriggerDisplay,
+					"priority-blocked",
+					new Dictionary<string, object?>
+					{
+						["current_priority"] = CurrentExecutionInfo?.Priority,
+						["candidate_priority"] = executionInfo.Priority,
+					});
 				return false;
 			}
 			_runningExecutorCount++;
@@ -208,6 +218,14 @@ public class AutoBattleOperator : IStateRecordUpdateListener
 			_runningExecutionTask = RunningExecutor.RunAsync();
 			OperationExecutor executor = RunningExecutor;
 			AddExecutionRecordLocked("started", executionInfo.TriggerDisplay, executionInfo, completed: false);
+			PublishExecutionDecision(
+				executionInfo,
+				executionInfo.TriggerDisplay,
+				"accepted",
+				new Dictionary<string, object?>
+				{
+					["trigger_time"] = triggerTime ?? executor.TriggerTime,
+				});
 			_ctx.ZContext.Logger.Information("自动战斗执行开始: Template={Template}, Trigger={Trigger}, Operations={Operations}", _templateName, executionInfo.TriggerDisplay, string.Join(" | ", executionInfo.OpList.Select((OneDragon.Core.Operation.AtomicOp operation) => operation.OpName)));
 			_runningExecutionTask.ContinueWith(delegate(Task<bool> task)
 			{
@@ -563,6 +581,11 @@ public class AutoBattleOperator : IStateRecordUpdateListener
 			if (executionInfo != null)
 			{
 				executionInfo.Priority = scene.Priority;
+				PublishExecutionDecision(
+					executionInfo,
+					executionInfo.TriggerDisplay,
+					"matched",
+					CreateSceneDecisionMetadata(scene, triggerTime));
 				_lastTriggerTime[sceneId] = triggerTime;
 				SubmitExecution(executionInfo, null, triggerTime);
 			}
@@ -588,11 +611,22 @@ public class AutoBattleOperator : IStateRecordUpdateListener
 			ExecutionInfo executionInfo = scene.MatchExecution(num);
 			if (executionInfo == null)
 			{
+				PublishSceneDecision(
+					triggerState,
+					scene,
+					"not-matched",
+					stateMatchTime,
+					num2);
 				_ctx.ZContext.Logger.Information("自动战斗条件未匹配: TriggerState={TriggerState}, StateAgeMilliseconds={StateAgeMilliseconds:F0}, StateMatchTime={StateMatchTime}, Expression={Expression}", triggerState, num2, stateMatchTime, GetSceneExpressionDisplay(scene));
 				return;
 			}
 			_ctx.ZContext.Logger.Information("自动战斗条件命中: TriggerState={TriggerState}, StateAgeMilliseconds={StateAgeMilliseconds:F0}, StateMatchTime={StateMatchTime}, Expression={Expression}", triggerState, num2, stateMatchTime, executionInfo.ExprDisplay);
 			executionInfo.Priority = scene.Priority;
+			PublishExecutionDecision(
+				executionInfo,
+				triggerState,
+				"matched",
+				CreateSceneDecisionMetadata(scene, stateMatchTime, num2));
 			if (SubmitExecution(executionInfo, triggerState, num))
 			{
 				_lastTriggerTime[hashCode] = num;
@@ -738,6 +772,14 @@ public class AutoBattleOperator : IStateRecordUpdateListener
 			if (currentExecutionInfo != null)
 			{
 				AddExecutionRecordLocked(reason, currentExecutionInfo.TriggerDisplay, currentExecutionInfo, flag);
+				PublishExecutionDecision(
+					currentExecutionInfo,
+					currentExecutionInfo.TriggerDisplay,
+					reason,
+					new Dictionary<string, object?>
+					{
+						["completed"] = flag,
+					});
 			}
 			RunningExecutor = null;
 			CurrentExecutionInfo = null;
@@ -766,6 +808,15 @@ public class AutoBattleOperator : IStateRecordUpdateListener
 			if (RunningExecutor == executor)
 			{
 				AddExecutionRecordLocked((text == null) ? "finished" : "error", executionInfo.TriggerDisplay, executionInfo, flag, text);
+				PublishExecutionDecision(
+					executionInfo,
+					executionInfo.TriggerDisplay,
+					text is null ? (flag ? "completed" : "stopped") : "error",
+					new Dictionary<string, object?>
+					{
+						["completed"] = flag,
+						["error"] = text,
+					});
 				_ctx.ZContext.Logger.Information("自动战斗执行结束: Template={Template}, Trigger={Trigger}, Completed={Completed}, Error={Error}", _templateName, executionInfo.TriggerDisplay, flag, text ?? "无");
 				RunningExecutor = null;
 				CurrentExecutionInfo = null;
@@ -782,6 +833,73 @@ public class AutoBattleOperator : IStateRecordUpdateListener
 			text += " | ...";
 		}
 		_executionRecords.Add(new AutoBattleExecutionRecord(@event, trigger, text, completed, errorMessage, DateTimeOffset.UtcNow));
+	}
+
+	private void PublishExecutionDecision(
+		ExecutionInfo executionInfo,
+		string trigger,
+		string status,
+		IReadOnlyDictionary<string, object?>? additionalMetadata = null)
+	{
+		Dictionary<string, object?> metadata = new Dictionary<string, object?>(StringComparer.Ordinal)
+		{
+			["template"] = _templateName,
+			["priority"] = executionInfo.Priority,
+			["operation_count"] = executionInfo.OpList.Count,
+		};
+		if (additionalMetadata != null)
+		{
+			foreach (KeyValuePair<string, object?> pair in additionalMetadata)
+			{
+				metadata[pair.Key] = pair.Value;
+			}
+		}
+
+		_ctx.ZContext.OverlayDebugBus.PublishDecision(new DecisionTraceItem(
+			"auto_battle",
+			trigger,
+			executionInfo.ExprDisplay,
+			string.Join(" | ", executionInfo.OpList.Select(operation => operation.OpName)),
+			status,
+			DateTimeOffset.UtcNow,
+			Metadata: metadata));
+	}
+
+	private void PublishSceneDecision(
+		string trigger,
+		AutoBattleCondOpScene scene,
+		string status,
+		double stateMatchTime,
+		double stateAgeMilliseconds)
+	{
+		_ctx.ZContext.OverlayDebugBus.PublishDecision(new DecisionTraceItem(
+			"auto_battle",
+			trigger,
+			GetSceneExpressionDisplay(scene),
+			string.Empty,
+			status,
+			DateTimeOffset.UtcNow,
+			Metadata: CreateSceneDecisionMetadata(scene, stateMatchTime, stateAgeMilliseconds)));
+	}
+
+	private Dictionary<string, object?> CreateSceneDecisionMetadata(
+		AutoBattleCondOpScene scene,
+		double stateMatchTime,
+		double? stateAgeMilliseconds = null)
+	{
+		Dictionary<string, object?> metadata = new Dictionary<string, object?>(StringComparer.Ordinal)
+		{
+			["template"] = _templateName,
+			["scene_priority"] = scene.Priority,
+			["scene_interval_seconds"] = scene.IntervalSeconds,
+			["state_match_time"] = stateMatchTime,
+		};
+		if (stateAgeMilliseconds.HasValue)
+		{
+			metadata["state_age_ms"] = stateAgeMilliseconds.Value;
+		}
+
+		return metadata;
 	}
 
 	private static double Now()

@@ -117,7 +117,7 @@ public sealed class BackendTests
 	[Fact]
 	public void WindowStatusSchema_MapsAllFields()
 	{
-		WindowStatus windowStatus = new WindowStatus("绝区零", IsWinValid: true, IsWinActive: false, IsWinScale: true, 10, 20, 1600, 900);
+		WindowStatus windowStatus = new WindowStatus("绝区零", IsWinValid: true, IsWinActive: false, IsWinScale: true, 10, 20, 1600, 900, IsWinMinimized: true, Dpi: 144);
 		Assert.Equal("绝区零", windowStatus.WinTitle);
 		Assert.True(windowStatus.IsWinValid);
 		Assert.False(windowStatus.IsWinActive);
@@ -126,6 +126,8 @@ public sealed class BackendTests
 		Assert.Equal(20, windowStatus.Y);
 		Assert.Equal(1600, windowStatus.Width);
 		Assert.Equal(900, windowStatus.Height);
+		Assert.True(windowStatus.IsWinMinimized);
+		Assert.Equal(144u, windowStatus.Dpi);
 	}
 
 	[Fact]

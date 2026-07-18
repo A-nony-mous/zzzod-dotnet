@@ -11,4 +11,16 @@ namespace ZzzOd.GameLogic.Backend;
 /// <param name="Y">左上角 Y。</param>
 /// <param name="Width">宽度。</param>
 /// <param name="Height">高度。</param>
-public sealed record WindowStatus(string? WinTitle, bool IsWinValid, bool IsWinActive, bool IsWinScale, int? X = null, int? Y = null, int? Width = null, int? Height = null);
+/// <param name="IsWinMinimized">窗口是否最小化。</param>
+/// <param name="Dpi">窗口当前 DPI。</param>
+public sealed record WindowStatus(
+    string? WinTitle,
+    bool IsWinValid,
+    bool IsWinActive,
+    bool IsWinScale,
+    int? X = null,
+    int? Y = null,
+    int? Width = null,
+    int? Height = null,
+    bool IsWinMinimized = false,
+    uint Dpi = 96);
