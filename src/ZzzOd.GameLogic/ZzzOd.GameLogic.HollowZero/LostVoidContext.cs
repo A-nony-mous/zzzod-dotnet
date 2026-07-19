@@ -99,6 +99,15 @@ public class LostVoidContext
 		}
 	}
 
+	/// <summary>
+	/// 创建并加载迷失之地检测模型。
+	/// </summary>
+	public bool LoadLostVoidDetectorModel()
+	{
+		InitLostVoidDetectorModel();
+		return Detector!.InitModel();
+	}
+
 	public void LoadChallengeConfig()
 	{
 		ChallengeConfig = LostVoidChallengeConfig.Load(_ctx.Environment, ChallengeConfigName);

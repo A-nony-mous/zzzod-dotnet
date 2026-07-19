@@ -78,15 +78,7 @@ public sealed class NotoriousHuntMove : ZOperation
 		return Task.CompletedTask;
 	}
 
-	[OperationNode("初始化模型", IsStartNode = true)]
-	private OperationRoundResult InitModel()
-	{
-		_detector.Initialize();
-		return RoundSuccess();
-	}
-
-	[NodeFrom("初始化模型")]
-	[OperationNode("移动靠近交互", NodeMaxRetryTimes = 10)]
+	[OperationNode("移动靠近交互", IsStartNode = true, NodeMaxRetryTimes = 10)]
 	private OperationRoundResult MoveClose()
 	{
 		OperationRoundResult operationRoundResult = MoveByHint();

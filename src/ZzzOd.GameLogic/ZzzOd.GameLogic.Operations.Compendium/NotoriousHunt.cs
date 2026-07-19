@@ -84,7 +84,25 @@ public sealed class NotoriousHunt : CompendiumChallengeOperationBase
 		_preClickDelay = preClickDelay ?? TimeSpan.FromMilliseconds(300L);
 	}
 
+	/// <summary>
+	/// 加载迷失之地检测模型。
+	/// </summary>
+	[OperationNode("初始化加载", IsStartNode = true)]
+	private OperationRoundResult InitForNotoriousHunt()
+	{
+		try
+		{
+			return base.ZContext.LostVoid.LoadLostVoidDetectorModel() ? RoundSuccess() : RoundFail("初始化失败");
+		}
+		catch (Exception)
+		{
+			return RoundFail("初始化失败");
+		}
+	}
+
 	/// <inheritdoc />
+	[NodeFrom("初始化加载")]
+	[OperationNode("等待入口加载", NodeMaxRetryTimes = 60)]
 	protected override OperationRoundResult WaitEntryLoad()
 	{
 		OperationRoundResult operationRoundResult = RoundByFindArea(base.LastScreenshot, "恶名狩猎", "当期剩余奖励次数", _retryDelay, _retryDelay);

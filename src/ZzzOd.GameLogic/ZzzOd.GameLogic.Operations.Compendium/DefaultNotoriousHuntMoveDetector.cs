@@ -18,8 +18,6 @@ public sealed class DefaultNotoriousHuntMoveDetector : INotoriousHuntMoveDetecto
 
 	private readonly ZContext _context;
 
-	private bool _initialized;
-
 	/// <summary>底层 YOLO 检测器。</summary>
 	public YoloDetector CoreDetector => SharedDetector.CoreDetector;
 
@@ -34,23 +32,9 @@ public sealed class DefaultNotoriousHuntMoveDetector : INotoriousHuntMoveDetecto
 	}
 
 	/// <inheritdoc />
-	public void Initialize()
-	{
-		if (!_initialized)
-		{
-			_context.LostVoid.InitLostVoidDetectorModel();
-			_initialized = SharedDetector.InitModel();
-		}
-	}
-
-	/// <inheritdoc />
 	public NotoriousHuntDistanceHint? DetectDistanceHint(Mat screen)
 	{
 		ArgumentNullException.ThrowIfNull(screen, "screen");
-		if (!_initialized)
-		{
-			Initialize();
-		}
 		YoloDetector coreDetector = CoreDetector;
 		IReadOnlyList<string> labelList = new string[] { "0001-距离" };
 		YoloDetectObjectResult yoloDetectObjectResult = coreDetector.Run(screen, 0.6f, 0.5f, null, labelList).Results.FirstOrDefault();

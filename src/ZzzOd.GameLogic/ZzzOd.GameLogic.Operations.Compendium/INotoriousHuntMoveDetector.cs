@@ -7,9 +7,6 @@ namespace ZzzOd.GameLogic.Operations.Compendium;
 /// </summary>
 public interface INotoriousHuntMoveDetector
 {
-	/// <summary>初始化检测模型或检测资源。</summary>
-	void Initialize();
-
 	/// <summary>检测距离提示白点。</summary>
 	NotoriousHuntDistanceHint? DetectDistanceHint(Mat screen);
 }

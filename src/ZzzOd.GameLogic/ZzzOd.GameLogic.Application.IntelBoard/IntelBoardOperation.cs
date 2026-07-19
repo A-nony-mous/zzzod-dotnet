@@ -95,9 +95,26 @@ public sealed class IntelBoardOperation : ZOperation
 	}
 
 	/// <summary>
+	/// 加载迷失之地检测模型。
+	/// </summary>
+	[OperationNode("初始化加载", IsStartNode = true)]
+	public OperationRoundResult InitForIntelBoard()
+	{
+		try
+		{
+			return base.ZContext.LostVoid.LoadLostVoidDetectorModel() ? RoundSuccess() : RoundFail("初始化失败");
+		}
+		catch (Exception)
+		{
+			return RoundFail("初始化失败");
+		}
+	}
+
+	/// <summary>
 	/// 返回录像店。
 	/// </summary>
-	[OperationNode("返回录像店", IsStartNode = true)]
+	[NodeFrom("初始化加载")]
+	[OperationNode("返回录像店")]
 	public async Task<OperationRoundResult> BackToWorld()
 	{
 		return RoundByOperationResult(await _services.BackToVideoStoreAsync(base.ZContext).ConfigureAwait(continueOnCapturedContext: false));
