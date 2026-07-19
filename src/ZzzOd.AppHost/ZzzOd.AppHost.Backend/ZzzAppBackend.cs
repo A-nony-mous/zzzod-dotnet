@@ -14,6 +14,7 @@ using OneDragon.Core.Configuration;
 using OneDragon.Core.Controller;
 using OneDragon.Core.Matcher;
 using OneDragon.Core.Operation;
+using OneDragon.Core.Ocr;
 using OneDragon.Core.Runtime;
 using OneDragon.Core.Template;
 using OpenCvSharp;
@@ -2233,7 +2234,25 @@ public sealed class ZzzAppBackend : IZzzAppBackend, IZzzIntelBoardProgressBacken
 			zContext.ReloadInstanceConfig();
 			if (string.Equals(request.Scope, "model", StringComparison.Ordinal) && request.Values.ContainsKey("ocr_use_gpu"))
 			{
-				zContext.OcrService.Matcher.UpdateUseGpu(zContext.ModelConfig.OcrUseGpu);
+				if (zContext.OcrService.Matcher is OnnxOcrMatcher)
+				{
+					OcrModelResolution resolution = zContext.ModelConfig.ResolveOcrProfile();
+					double detLimitSideLen = Math.Max(
+						zContext.ProjectConfig.ScreenStandardWidth,
+						zContext.ProjectConfig.ScreenStandardHeight);
+					if (!zContext.UseOcrProfile(
+						resolution.Profile.Id,
+						zContext.ModelConfig.OcrUseGpu,
+						null,
+						detLimitSideLen))
+					{
+						zContext.Logger.Warning("保存 OCR GPU 配置后重新初始化 OCR 失败，保留当前 matcher");
+					}
+				}
+				else
+				{
+					zContext.OcrService.Matcher.UpdateUseGpu(zContext.ModelConfig.OcrUseGpu);
+				}
 			}
 			bool flag = string.Equals(request.Scope, "instance", StringComparison.Ordinal) && request.Values.Keys.Any((string key) => string.Equals(key, "game_region", StringComparison.Ordinal) || string.Equals(key, "use_custom_win_title", StringComparison.Ordinal) || string.Equals(key, "custom_win_title", StringComparison.Ordinal));
 			bool flag2 = string.Equals(request.Scope, "env", StringComparison.Ordinal) && request.Values.ContainsKey("screenshot_method");

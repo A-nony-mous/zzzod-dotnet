@@ -189,10 +189,23 @@ public class ZApplicationLauncher
 		double value = Math.Max(context.ProjectConfig.ScreenStandardWidth, context.ProjectConfig.ScreenStandardHeight);
 		string id = ocrModelResolution.Profile.Id;
 		double? detLimitSideLen = value;
-		if (!context.UseOcrProfile(id, useGpu: false, null, detLimitSideLen))
+		if (!UseOcrProfile(context, id, context.ModelConfig.OcrUseGpu, detLimitSideLen))
 		{
 			throw new InvalidOperationException("OCR profile 初始化失败：" + ocrModelResolution.Profile.Id);
 		}
+	}
+
+	/// <summary>
+	/// 创建 OCR profile。测试和平台启动器可以覆盖该入口观察配置传递。
+	/// </summary>
+	/// <param name="context">业务上下文。</param>
+	/// <param name="profileId">OCR profile id。</param>
+	/// <param name="useGpu">是否使用 GPU。</param>
+	/// <param name="detLimitSideLen">检测长边限制。</param>
+	/// <returns>是否初始化成功。</returns>
+	protected virtual bool UseOcrProfile(ZContext context, string profileId, bool useGpu, double? detLimitSideLen)
+	{
+		return context.UseOcrProfile(profileId, useGpu, null, detLimitSideLen);
 	}
 
 	/// <summary>

@@ -3,6 +3,7 @@ using System.IO;
 using OneDragon.Core.Runtime;
 using OneDragon.Core.Yolo;
 using Xunit;
+using ZzzOd.GameLogic.Application.HollowZero.LostVoid;
 using ZzzOd.GameLogic.Context;
 using ZzzOd.GameLogic.Yolo;
 
@@ -27,6 +28,7 @@ public sealed class YoloBusinessWrapperTests
 			Assert.Equal("https://github.com/OneDragon-Anything/OneDragon-YOLO/releases/download/zzz_model", flashClassifier.ModelDownloadUrl);
 			Assert.Equal(2.0, flashClassifier.KeepResultSeconds);
 			Assert.True(flashClassifier.UseGpu);
+			Assert.True(coreClassifier.Config.UseGpu);
 			Assert.False(coreClassifier.Config.RequireLabelsFile);
 			Assert.Equal(flashClassifier.ModelName, coreClassifier.Config.ModelName);
 			Assert.Equal(flashClassifier.BackupModelName, coreClassifier.Config.BackupModelName);
@@ -55,10 +57,36 @@ public sealed class YoloBusinessWrapperTests
 			Assert.Equal("https://github.com/OneDragon-Anything/OneDragon-YOLO/releases/download/zzz_model", hollowEventDetector.ModelDownloadUrl);
 			Assert.Equal(2.0, hollowEventDetector.KeepResultSeconds);
 			Assert.True(hollowEventDetector.UseGpu);
+			Assert.True(coreDetector.Config.UseGpu);
 			Assert.True(coreDetector.Config.RequireLabelsFile);
 			Assert.Equal(hollowEventDetector.ModelName, coreDetector.Config.ModelName);
 			Assert.Equal(hollowEventDetector.BackupModelName, coreDetector.Config.BackupModelName);
 			Assert.Equal(hollowEventDetector.ModelDirectoryPath, coreDetector.Config.ModelDirectory);
+		}
+		finally
+		{
+			Directory.Delete(text, recursive: true);
+		}
+	}
+
+	[Fact]
+	public void LostVoidDetector_BuildsCoreDetectorConfigFromZzzModelConfig()
+	{
+		string text = CreateTempRoot();
+		try
+		{
+			Directory.CreateDirectory(Path.Combine(text, "config"));
+			File.WriteAllText(Path.Combine(text, "config", "model.yml"), "lost_void_det: yolov26n-736-lost-void-det-20260630\nlost_void_det_gpu: true");
+			using ZContext zContext = new ZContext(new OneDragonEnvironment(text));
+			using LostVoidDetector lostVoidDetector = new(zContext);
+			YoloDetector coreDetector = lostVoidDetector.CoreDetector;
+			Assert.Equal("lost_void_det", LostVoidDetector.ModelCategory);
+			Assert.Equal("yolov26n-736-lost-void-det-20260630", lostVoidDetector.ModelName);
+			Assert.Equal(2.0, lostVoidDetector.KeepResultSeconds);
+			Assert.True(lostVoidDetector.UseGpu);
+			Assert.True(coreDetector.Config.UseGpu);
+			Assert.Equal(lostVoidDetector.ModelName, coreDetector.Config.ModelName);
+			Assert.Equal(lostVoidDetector.ModelDirectoryPath, coreDetector.Config.ModelDirectory);
 		}
 		finally
 		{

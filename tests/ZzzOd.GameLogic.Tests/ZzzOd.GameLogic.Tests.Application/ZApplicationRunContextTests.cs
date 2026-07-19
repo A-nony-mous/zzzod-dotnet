@@ -229,6 +229,30 @@ public sealed class ZApplicationRunContextTests
 		}
 	}
 
+	private sealed class RecordingOcrProfileLauncher : ZApplicationLauncher
+	{
+		public RecordingOcrProfileLauncher()
+			: base(initializeContext: false, initializeOcrProfile: false, validateAssets: false)
+		{
+		}
+
+		public bool? RequestedGpu { get; private set; }
+
+		public string? RequestedProfileId { get; private set; }
+
+		public void InvokeInitializeOcrProfile(ZContext context)
+		{
+			InitializeOcrProfile(context);
+		}
+
+		protected override bool UseOcrProfile(ZContext context, string profileId, bool useGpu, double? detLimitSideLen)
+		{
+			RequestedProfileId = profileId;
+			RequestedGpu = useGpu;
+			return true;
+		}
+	}
+
 	private sealed class OrderingLauncher(Func<ZContext> contextFactory, List<string> order) : ZApplicationLauncher(contextFactory, initializeContext: true, initializeOcrProfile: true, validateAssets: false)
 	{
 		protected override void RegisterBuiltInApplications(ZContext context)
@@ -328,6 +352,28 @@ public sealed class ZApplicationRunContextTests
 					((IDisposable)context).Dispose();
 				}
 			}
+		}
+		finally
+		{
+			Directory.Delete(rootDirectory, recursive: true);
+		}
+	}
+
+	[Fact]
+	public void Launcher_InitializeOcrProfileUsesPersistedGpuSetting()
+	{
+		string rootDirectory = CreateTempRoot();
+		try
+		{
+			Directory.CreateDirectory(Path.Combine(rootDirectory, "config"));
+			File.WriteAllText(Path.Combine(rootDirectory, "config", "model.yml"), "ocr: ppocrv6\nocr_use_gpu: true\n");
+			using ZContext context = new(new OneDragonEnvironment(rootDirectory));
+			RecordingOcrProfileLauncher launcher = new();
+
+			launcher.InvokeInitializeOcrProfile(context);
+
+			Assert.Equal("v6-small", launcher.RequestedProfileId);
+			Assert.True(launcher.RequestedGpu);
 		}
 		finally
 		{

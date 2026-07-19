@@ -104,16 +104,18 @@ public sealed class ConfigTests : IDisposable
 	{
 		string text = Path.Combine(_rootDirectory, "config");
 		Directory.CreateDirectory(text);
-		string contents = "\nflash_classifier_gpu: true\nlost_void_det: yolov8n-736-lost-void-det-20250622\n";
+		string contents = "\nocr_use_gpu: true\nflash_classifier_gpu: true\nhollow_zero_event_gpu: true\nlost_void_det_gpu: true\nlost_void_det: yolov8n-736-lost-void-det-20250622\n";
 		File.WriteAllText(Path.Combine(text, "model.yml"), contents);
 		OneDragonEnvironment environment = new OneDragonEnvironment(_rootDirectory);
 		YamlConfig<ZzzOd.GameLogic.Config.ModelConfig> yamlConfig = new YamlConfig<ZzzOd.GameLogic.Config.ModelConfig>(environment, "model");
 		Assert.True(yamlConfig.Current.FlashClassifierGpu);
+		Assert.True(yamlConfig.Current.OcrUseGpu);
+		Assert.True(yamlConfig.Current.HollowZeroEventGpu);
+		Assert.True(yamlConfig.Current.LostVoidDetGpu);
 		Assert.Equal("yolov8n-640-flash-20250906", yamlConfig.Current.FlashClassifierBackup);
 		Assert.Equal("yolov8n-736-lost-void-det-20250622", yamlConfig.Current.LostVoidDet);
 		Assert.Equal("yolov8n-736-lost-void-det-20250921", yamlConfig.Current.LostVoidDetBackup);
 		Assert.Equal("yolov8s-736-hollow-zero-event-1130", yamlConfig.Current.HollowZeroEventBackup);
-		Assert.False(yamlConfig.Current.LostVoidDetGpu);
 	}
 
 	[Fact]
