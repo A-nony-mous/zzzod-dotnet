@@ -28,6 +28,7 @@ internal sealed partial class FrontierMainView : UserControl, IDisposable
     private readonly IZzzShellWindowRuntime _windowRuntime;
     private readonly Window _window;
     private readonly ZzzFrontierPageFactory _pageFactory;
+    private readonly ZzzFrontierRoute _rootRoute;
     private readonly FANavigationView _navigation;
     private readonly FAFrame _frame;
     private readonly Border _paneTitleSpacer;
@@ -38,6 +39,7 @@ internal sealed partial class FrontierMainView : UserControl, IDisposable
     private Bitmap? _windowIconBitmap;
     private string? _activeRoute;
     private string? _pendingPivotHeader;
+    private CancellationTokenSource? _navigationIconAnimation;
     private bool _navigating;
     private bool _disposed;
 
@@ -57,6 +59,7 @@ internal sealed partial class FrontierMainView : UserControl, IDisposable
         _windowRuntime = windowRuntime;
         _window = window;
         _pageFactory = new ZzzFrontierPageFactory(services, navigationRegistry);
+        _rootRoute = _pageFactory.FindRoute("home") ?? _pageFactory.Routes[0];
 
         DataContext = shellViewModel;
         AvaloniaXamlLoader.Load(this);
@@ -78,8 +81,7 @@ internal sealed partial class FrontierMainView : UserControl, IDisposable
 
         string initialRoute = ZzzGuiEvidenceSelection.FromEnvironment().Page;
         ZzzFrontierRoute initial = _pageFactory.FindRoute(initialRoute)
-            ?? _pageFactory.FindRoute("home")
-            ?? _pageFactory.Routes[0];
+            ?? _rootRoute;
         NavigateRoute(initial);
     }
 
@@ -91,7 +93,8 @@ internal sealed partial class FrontierMainView : UserControl, IDisposable
 
     internal int CreatedPageCount => _pageFactory.CreatedPages.Count;
 
-    internal bool CanGoBack => _backNavigationHost?.CanGoBack == true || _frame.CanGoBack;
+    internal bool CanGoBack =>
+        _backNavigationHost?.CanGoBack == true || _frame.CanGoBack || CanReturnToRoot;
 
     internal IReadOnlyDictionary<string, FANavigationViewItem> NavigationItems => _navigationItems;
 
@@ -184,6 +187,9 @@ internal sealed partial class FrontierMainView : UserControl, IDisposable
         _navigating = true;
         try
         {
+
+
+
             if (!_frame.NavigateFromObject(route))
             {
                 _pendingPivotHeader = null;
@@ -237,7 +243,7 @@ internal sealed partial class FrontierMainView : UserControl, IDisposable
             && _navigationIcons.TryGetValue(route.Key, out FAFontIcon? icon)
             && TopLevel.GetTopLevel(icon) is not null)
         {
-            _ = AnimateSelectedIconAsync(icon);
+            StartSelectedIconAnimation(icon);
         }
 
         ApplyPendingPivot();
@@ -258,6 +264,11 @@ internal sealed partial class FrontierMainView : UserControl, IDisposable
         else if (_frame.CanGoBack)
         {
             _frame.GoBack();
+        }
+        else if (CanReturnToRoot)
+        {
+            NavigateRoute(_rootRoute);
+            _frame.BackStack.Clear();
         }
 
         UpdateBackState();
@@ -311,7 +322,7 @@ internal sealed partial class FrontierMainView : UserControl, IDisposable
 
     private void UpdateBackState()
     {
-        bool canGoBack = _backNavigationHost?.CanGoBack == true || _frame.CanGoBack;
+        bool canGoBack = CanGoBack;
         // FANavigationView recalculates its pane rows synchronously when the back button
         // visibility changes. Update the replacement title spacer first so the pane keeps
         // exactly one 48 DIP title-bar row in both states.
@@ -323,41 +334,89 @@ internal sealed partial class FrontierMainView : UserControl, IDisposable
             : new Thickness(12, 4);
     }
 
-    private static async Task AnimateSelectedIconAsync(FAFontIcon icon)
-    {
-        ScaleTransform scale = new(1, 1);
-        icon.RenderTransform = scale;
+    private bool CanReturnToRoot =>
+        _activeRoute is not null
+        && !string.Equals(_activeRoute, _rootRoute.Key, StringComparison.Ordinal);
 
-        Animation opacity = new()
+    private async void StartSelectedIconAnimation(FAFontIcon icon)
+    {
+        _navigationIconAnimation?.Cancel();
+        CancellationTokenSource animation = new();
+        _navigationIconAnimation = animation;
+
+        try
+        {
+            await AnimateSelectedIconAsync(icon, animation.Token).ConfigureAwait(true);
+        }
+        catch (OperationCanceledException) when (animation.IsCancellationRequested)
+        {
+        }
+        catch (Exception exception)
+        {
+            Trace.TraceError("前卫导航图标动画失败: {0}", exception);
+        }
+        finally
+        {
+            icon.Opacity = 1;
+            if (icon.RenderTransform is ScaleTransform scale)
+            {
+                scale.ScaleX = 1;
+                scale.ScaleY = 1;
+            }
+
+            if (ReferenceEquals(_navigationIconAnimation, animation))
+            {
+                _navigationIconAnimation = null;
+            }
+
+            animation.Dispose();
+        }
+    }
+
+    private static async Task AnimateSelectedIconAsync(FAFontIcon icon, CancellationToken cancellationToken)
+    {
+        icon.RenderTransform = new ScaleTransform(1, 1);
+        Animation animation = new()
         {
             Duration = TimeSpan.FromMilliseconds(180),
             FillMode = FillMode.Forward,
             Children =
             {
-                new KeyFrame { Cue = new Cue(0), Setters = { new Setter(OpacityProperty, 0.35d) } },
-                new KeyFrame { Cue = new Cue(1), Setters = { new Setter(OpacityProperty, 1d) } },
+                new KeyFrame
+                {
+                    Cue = new Cue(0),
+                    Setters =
+                    {
+                        new Setter(OpacityProperty, 0.35d),
+                        new Setter(ScaleTransform.ScaleXProperty, 0.82d),
+                        new Setter(ScaleTransform.ScaleYProperty, 0.82d),
+                    },
+                },
+                new KeyFrame
+                {
+                    Cue = new Cue(0.65d),
+                    Setters =
+                    {
+                        new Setter(OpacityProperty, 1d),
+                        new Setter(ScaleTransform.ScaleXProperty, 1.08d),
+                        new Setter(ScaleTransform.ScaleYProperty, 1.08d),
+                    },
+                },
+                new KeyFrame
+                {
+                    Cue = new Cue(1),
+                    Setters =
+                    {
+                        new Setter(OpacityProperty, 1d),
+                        new Setter(ScaleTransform.ScaleXProperty, 1d),
+                        new Setter(ScaleTransform.ScaleYProperty, 1d),
+                    },
+                },
             },
         };
-        Animation scaleX = CreateScaleAnimation(ScaleTransform.ScaleXProperty);
-        Animation scaleY = CreateScaleAnimation(ScaleTransform.ScaleYProperty);
 
-        await Task.WhenAll(
-            opacity.RunAsync(icon),
-            scaleX.RunAsync(scale),
-            scaleY.RunAsync(scale)).ConfigureAwait(true);
+        await animation.RunAsync(icon, cancellationToken).ConfigureAwait(true);
     }
-
-    private static Animation CreateScaleAnimation(AvaloniaProperty property) => new()
-    {
-        Duration = TimeSpan.FromMilliseconds(180),
-        FillMode = FillMode.Forward,
-        Children =
-        {
-            new KeyFrame { Cue = new Cue(0), Setters = { new Setter(property, 0.82d) } },
-            new KeyFrame { Cue = new Cue(0.65d), Setters = { new Setter(property, 1.08d) } },
-            new KeyFrame { Cue = new Cue(1), Setters = { new Setter(property, 1d) } },
-        },
-    };
 
     private void OnIssueClicked(object? sender, RoutedEventArgs args)
     {
@@ -456,6 +515,7 @@ internal sealed partial class FrontierMainView : UserControl, IDisposable
         _navigation.ItemInvoked -= OnNavigationItemInvoked;
         _navigation.BackRequested -= OnNavigationBackRequested;
         _navigationService.NavigationRequested -= OnNavigationRequested;
+        _navigationIconAnimation?.Cancel();
         BindBackNavigationHost(null);
 
         Control? current = _frame.Content as Control;

@@ -330,6 +330,16 @@ public sealed class FrontierShellTests
                 Assert.Equal(12, windowIcon.Margin.Left);
                 Assert.False(view.NavigationView.IsBackButtonVisible);
                 Assert.True(paneTitleSpacer.IsVisible);
+
+                Assert.True(view.NavigateForTesting("test-settings"));
+                view.NavigationFrame.BackStack.Clear();
+                Assert.True(view.CanGoBack);
+                Assert.True(view.NavigationView.IsBackButtonVisible);
+
+                view.GoBackForTesting();
+                Assert.Equal("test-home", view.ActiveRoute);
+                Assert.False(view.CanGoBack);
+                Assert.False(view.NavigationView.IsBackButtonVisible);
             }
             finally
             {

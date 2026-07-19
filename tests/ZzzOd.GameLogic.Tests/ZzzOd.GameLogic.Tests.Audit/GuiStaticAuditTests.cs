@@ -72,6 +72,7 @@ public sealed class GuiStaticAuditTests
 		string path = FindGuiRoot();
 		string window = File.ReadAllText(Path.Combine(path, "Views", "FrontierShellWindow.axaml"));
 		string mainView = File.ReadAllText(Path.Combine(path, "Views", "FrontierMainView.axaml"));
+		string mainViewCode = File.ReadAllText(Path.Combine(path, "Views", "FrontierMainView.cs"));
 		string navigationResources = File.ReadAllText(Path.Combine(path, "Theme", "FrontierNavigationResources.axaml"));
 		string text = window + Environment.NewLine + mainView;
 		Assert.Contains("x:Name=\"MainViewHost\"", window, StringComparison.Ordinal);
@@ -98,6 +99,8 @@ public sealed class GuiStaticAuditTests
 		Assert.Contains("Text=\"{Binding FrontierWindowTitle}\"", mainView, StringComparison.Ordinal);
 		Assert.Contains("ExtendClientAreaTitleBarHeightHint=\"48\"", window, StringComparison.Ordinal);
 		Assert.Contains("ThicknessTransition Property=\"Margin\" Duration=\"0:0:0.25\"", mainView, StringComparison.Ordinal);
+		Assert.Contains("animation.RunAsync(icon, cancellationToken)", mainViewCode, StringComparison.Ordinal);
+		Assert.DoesNotContain("RunAsync(scale)", mainViewCode, StringComparison.Ordinal);
 		Assert.DoesNotContain("SearchBox", mainView, StringComparison.Ordinal);
 		Assert.DoesNotContain("对应 Python", text, StringComparison.Ordinal);
 		Assert.DoesNotContain("后端尚未", text, StringComparison.Ordinal);
