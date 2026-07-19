@@ -3,110 +3,112 @@
              xmlns:fa="using:FluentAvalonia.UI.Controls"
              x:Class="ZzzOd.Gui.Pages.ApplicationSettings.ZzzWitheredDomainAppSettingPage">
   <Grid>
-    <fa:TabView TabWidthMode="SizeToContent">
-      <fa:TabViewItem Header="枯萎之都配置" IsClosable="False">
+    <fa:FATabView TabWidthMode="SizeToContent">
+      <fa:FATabViewItem Header="枯萎之都配置" IsClosable="False">
         <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
-          <StackPanel Margin="11" Spacing="6">
-            <fa:InfoBar x:Name="BaseErrorBar" IsOpen="False" IsClosable="True" Severity="Error" />
+          <StackPanel Margin="{DynamicResource SampleAppPageMargin}"
+                      Spacing="{DynamicResource SampleAppSectionSpacing}">
+            <fa:FAInfoBar x:Name="BaseErrorBar" IsOpen="False" IsClosable="True" Severity="Error" />
             <Grid ColumnDefinitions="*,6,*">
               <StackPanel Spacing="6">
-                <fa:SettingsExpanderItem Content="使用说明">
-                  <fa:SettingsExpanderItem.Footer>
+                <fa:FASettingsExpanderItem Content="使用说明">
+                  <fa:FASettingsExpanderItem.Footer>
                     <Button Content="打开说明" Click="OnHelpClicked" />
-                  </fa:SettingsExpanderItem.Footer>
-                </fa:SettingsExpanderItem>
-                <fa:SettingsExpanderItem Content="挑战副本" Description="选择空洞及难度等级">
-                  <fa:SettingsExpanderItem.Footer>
+                  </fa:FASettingsExpanderItem.Footer>
+                </fa:FASettingsExpanderItem>
+                <fa:FASettingsExpanderItem Content="挑战副本" Description="选择空洞及难度等级">
+                  <fa:FASettingsExpanderItem.Footer>
                     <fa:FAComboBox x:Name="MissionCombo" Width="220" SelectionChanged="OnBaseComboChanged" Tag="mission_name" />
-                  </fa:SettingsExpanderItem.Footer>
-                </fa:SettingsExpanderItem>
-                <fa:SettingsExpanderItem Content="每周基础次数" Description="完整通关，用于完成委托任务">
-                  <fa:SettingsExpanderItem.Footer>
-                    <fa:NumberBox x:Name="WeeklyTimesNumber" Minimum="0" Maximum="99" SmallChange="1" ValueChanged="OnBaseNumberChanged" Tag="weekly_plan_times" />
-                  </fa:SettingsExpanderItem.Footer>
-                </fa:SettingsExpanderItem>
-                <fa:SettingsExpanderItem Content="额外刷取" Description="完成基础次数后，继续刷取">
-                  <fa:SettingsExpanderItem.Footer>
+                  </fa:FASettingsExpanderItem.Footer>
+                </fa:FASettingsExpanderItem>
+                <fa:FASettingsExpanderItem Content="每周基础次数" Description="完整通关，用于完成委托任务">
+                  <fa:FASettingsExpanderItem.Footer>
+                    <fa:FANumberBox x:Name="WeeklyTimesNumber" Minimum="0" Maximum="99" SmallChange="1" ValueChanged="OnBaseNumberChanged" Tag="weekly_plan_times" />
+                  </fa:FASettingsExpanderItem.Footer>
+                </fa:FASettingsExpanderItem>
+                <fa:FASettingsExpanderItem Content="额外刷取" Description="完成基础次数后，继续刷取">
+                  <fa:FASettingsExpanderItem.Footer>
                     <fa:FAComboBox x:Name="ExtraTaskCombo" Width="180" SelectionChanged="OnBaseComboChanged" Tag="extra_task" />
-                  </fa:SettingsExpanderItem.Footer>
-                </fa:SettingsExpanderItem>
+                  </fa:FASettingsExpanderItem.Footer>
+                </fa:FASettingsExpanderItem>
               </StackPanel>
               <StackPanel Grid.Column="2" Spacing="6">
-                <fa:SettingsExpanderItem x:Name="RunRecordItem" Content="运行记录">
-                  <fa:SettingsExpanderItem.Footer>
+                <fa:FASettingsExpanderItem x:Name="RunRecordItem" Content="运行记录">
+                  <fa:FASettingsExpanderItem.Footer>
                     <Button Content="重置记录" Click="OnResetRecordClicked" />
-                  </fa:SettingsExpanderItem.Footer>
-                </fa:SettingsExpanderItem>
-                <fa:SettingsExpanderItem Content="挑战配置" Description="选择角色、鸣徽和事件">
-                  <fa:SettingsExpanderItem.Footer>
+                  </fa:FASettingsExpanderItem.Footer>
+                </fa:FASettingsExpanderItem>
+                <fa:FASettingsExpanderItem Content="挑战配置" Description="选择角色、鸣徽和事件">
+                  <fa:FASettingsExpanderItem.Footer>
                     <fa:FAComboBox x:Name="BaseChallengeCombo" Width="220" SelectionChanged="OnBaseComboChanged" Tag="challenge_config" />
-                  </fa:SettingsExpanderItem.Footer>
-                </fa:SettingsExpanderItem>
-                <fa:SettingsExpanderItem Content="每天进入次数" Description="将空洞分摊到每天运行">
-                  <fa:SettingsExpanderItem.Footer>
-                    <fa:NumberBox x:Name="DailyTimesNumber" Minimum="0" Maximum="99" SmallChange="1" ValueChanged="OnBaseNumberChanged" Tag="daily_plan_times" />
-                  </fa:SettingsExpanderItem.Footer>
-                </fa:SettingsExpanderItem>
-                <fa:SettingsExpanderItem Content="额外刷取方式" Description="额外刷取时，选择何时退出">
-                  <fa:SettingsExpanderItem.Footer>
+                  </fa:FASettingsExpanderItem.Footer>
+                </fa:FASettingsExpanderItem>
+                <fa:FASettingsExpanderItem Content="每天进入次数" Description="将空洞分摊到每天运行">
+                  <fa:FASettingsExpanderItem.Footer>
+                    <fa:FANumberBox x:Name="DailyTimesNumber" Minimum="0" Maximum="99" SmallChange="1" ValueChanged="OnBaseNumberChanged" Tag="daily_plan_times" />
+                  </fa:FASettingsExpanderItem.Footer>
+                </fa:FASettingsExpanderItem>
+                <fa:FASettingsExpanderItem Content="额外刷取方式" Description="额外刷取时，选择何时退出">
+                  <fa:FASettingsExpanderItem.Footer>
                     <fa:FAComboBox x:Name="ExtraExitCombo" Width="180" SelectionChanged="OnBaseComboChanged" Tag="extra_exit" />
-                  </fa:SettingsExpanderItem.Footer>
-                </fa:SettingsExpanderItem>
+                  </fa:FASettingsExpanderItem.Footer>
+                </fa:FASettingsExpanderItem>
               </StackPanel>
             </Grid>
           </StackPanel>
         </ScrollViewer>
-      </fa:TabViewItem>
+      </fa:FATabViewItem>
 
-      <fa:TabViewItem Header="挑战配置-枯" IsClosable="False">
+      <fa:FATabViewItem Header="挑战配置-枯" IsClosable="False">
         <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto">
-          <StackPanel Margin="11" Spacing="6">
-            <fa:InfoBar x:Name="ChallengeErrorBar" IsOpen="False" IsClosable="True" Severity="Error" />
-            <fa:CommandBar DefaultLabelPosition="Right">
-              <fa:CommandBar.PrimaryCommands>
-                <fa:CommandBarElementContainer>
+          <StackPanel Margin="{DynamicResource SampleAppPageMargin}"
+                      Spacing="{DynamicResource SampleAppSectionSpacing}">
+            <fa:FAInfoBar x:Name="ChallengeErrorBar" IsOpen="False" IsClosable="True" Severity="Error" />
+            <fa:FACommandBar DefaultLabelPosition="Right">
+              <fa:FACommandBar.PrimaryCommands>
+                <fa:FACommandBarElementContainer>
                   <fa:FAComboBox x:Name="ExistingChallengeCombo"
                                  Width="220"
                                  PlaceholderText="选择已有"
                                  SelectionChanged="OnExistingChallengeChanged" />
-                </fa:CommandBarElementContainer>
-                <fa:CommandBarButton x:Name="CreateButton" Label="新建" Click="OnCreateClicked" />
-                <fa:CommandBarButton x:Name="CopyButton" Label="复制" Click="OnCopyClicked" />
-                <fa:CommandBarButton x:Name="DeleteButton" Label="删除" Click="OnDeleteClicked" />
-                <fa:CommandBarButton x:Name="CloseButton" Label="关闭" Click="OnCloseEditorClicked" />
-              </fa:CommandBar.PrimaryCommands>
-            </fa:CommandBar>
+                </fa:FACommandBarElementContainer>
+                <fa:FACommandBarButton x:Name="CreateButton" Label="新建" Click="OnCreateClicked" />
+                <fa:FACommandBarButton x:Name="CopyButton" Label="复制" Click="OnCopyClicked" />
+                <fa:FACommandBarButton x:Name="DeleteButton" Label="删除" Click="OnDeleteClicked" />
+                <fa:FACommandBarButton x:Name="CloseButton" Label="关闭" Click="OnCloseEditorClicked" />
+              </fa:FACommandBar.PrimaryCommands>
+            </fa:FACommandBar>
             <Grid ColumnDefinitions="*,8,*">
               <StackPanel Spacing="6">
-                <fa:SettingsExpanderItem Content="配置名称" Description="默认配置复制后可修改">
-                  <fa:SettingsExpanderItem.Footer>
+                <fa:FASettingsExpanderItem Content="配置名称" Description="默认配置复制后可修改">
+                  <fa:FASettingsExpanderItem.Footer>
                     <TextBox x:Name="ChallengeNameText" Width="220" LostFocus="OnChallengeEditorLostFocus" />
-                  </fa:SettingsExpanderItem.Footer>
-                </fa:SettingsExpanderItem>
-                <fa:SettingsExpanderItem Content="目标配队" Description="按照自动战斗配置 选择角色位置">
-                  <fa:SettingsExpanderItem.Footer>
+                  </fa:FASettingsExpanderItem.Footer>
+                </fa:FASettingsExpanderItem>
+                <fa:FASettingsExpanderItem Content="目标配队" Description="按照自动战斗配置 选择角色位置">
+                  <fa:FASettingsExpanderItem.Footer>
                     <StackPanel Orientation="Horizontal" Spacing="6">
                       <fa:FAComboBox x:Name="Agent1Combo" Width="150" IsEditable="True" LostFocus="OnChallengeEditorLostFocus" />
                       <fa:FAComboBox x:Name="Agent2Combo" Width="150" IsEditable="True" LostFocus="OnChallengeEditorLostFocus" />
                       <fa:FAComboBox x:Name="Agent3Combo" Width="150" IsEditable="True" LostFocus="OnChallengeEditorLostFocus" />
                     </StackPanel>
-                  </fa:SettingsExpanderItem.Footer>
-                </fa:SettingsExpanderItem>
-                <fa:SettingsExpanderItem Content="仅购买优先级" Description="邦布商人购买时只购买符合优先级的">
-                  <fa:SettingsExpanderItem.Footer>
+                  </fa:FASettingsExpanderItem.Footer>
+                </fa:FASettingsExpanderItem>
+                <fa:FASettingsExpanderItem Content="仅购买优先级" Description="邦布商人购买时只购买符合优先级的">
+                  <fa:FASettingsExpanderItem.Footer>
                     <ToggleSwitch x:Name="BuyOnlyPriorityToggle" Click="OnChallengeEditorChanged" />
-                  </fa:SettingsExpanderItem.Footer>
-                </fa:SettingsExpanderItem>
-                <fa:SettingsExpanderItem Content="自动战斗">
-                  <fa:SettingsExpanderItem.Footer>
+                  </fa:FASettingsExpanderItem.Footer>
+                </fa:FASettingsExpanderItem>
+                <fa:FASettingsExpanderItem Content="自动战斗">
+                  <fa:FASettingsExpanderItem.Footer>
                     <fa:FAComboBox x:Name="AutoBattleCombo" Width="220" SelectionChanged="OnChallengeEditorChanged" />
-                  </fa:SettingsExpanderItem.Footer>
-                </fa:SettingsExpanderItem>
-                <fa:SettingsExpanderItem Content="寻路方式">
-                  <fa:SettingsExpanderItem.Footer>
+                  </fa:FASettingsExpanderItem.Footer>
+                </fa:FASettingsExpanderItem>
+                <fa:FASettingsExpanderItem Content="寻路方式">
+                  <fa:FASettingsExpanderItem.Footer>
                     <fa:FAComboBox x:Name="PathFindingCombo" Width="180" SelectionChanged="OnPathFindingChanged" />
-                  </fa:SettingsExpanderItem.Footer>
-                </fa:SettingsExpanderItem>
+                  </fa:FASettingsExpanderItem.Footer>
+                </fa:FASettingsExpanderItem>
                 <Grid x:Name="CustomPathGrid" ColumnDefinitions="*,6,*,6,*">
                   <StackPanel>
                     <TextBlock Text="一步可达时前往" FontSize="16" FontWeight="SemiBold" />
@@ -129,15 +131,15 @@
             </Grid>
           </StackPanel>
         </ScrollViewer>
-      </fa:TabViewItem>
-    </fa:TabView>
+      </fa:FATabViewItem>
+    </fa:FATabView>
 
-    <fa:ContentDialog x:Name="DeleteDialog"
+    <fa:FAContentDialog x:Name="DeleteDialog"
                       Title="删除确认"
                       PrimaryButtonText="确定"
                       CloseButtonText="取消"
                       DefaultButton="Primary">
       <TextBlock Text="即将删除该配置" />
-    </fa:ContentDialog>
+    </fa:FAContentDialog>
   </Grid>
 </UserControl>

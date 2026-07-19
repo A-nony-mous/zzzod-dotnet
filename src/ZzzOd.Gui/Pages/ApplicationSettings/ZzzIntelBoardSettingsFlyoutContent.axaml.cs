@@ -22,8 +22,8 @@ internal sealed partial class ZzzIntelBoardSettingsFlyoutContent : UserControl, 
     private readonly IZzzIntelBoardProgressBackend _progressBackend;
     private readonly int _instanceIndex;
     private readonly string _groupId;
-    private readonly InfoBar _errorBar;
-    private readonly SettingsExpanderItem _autoBattleItem;
+    private readonly FAInfoBar _errorBar;
+    private readonly FASettingsExpanderItem _autoBattleItem;
     private readonly FAComboBox _predefinedTeamCombo;
     private readonly FAComboBox _autoBattleCombo;
     private readonly ToggleSwitch _expGrindToggle;
@@ -41,8 +41,8 @@ internal sealed partial class ZzzIntelBoardSettingsFlyoutContent : UserControl, 
         _instanceIndex = instanceIndex;
         _groupId = groupId;
         AvaloniaXamlLoader.Load(this);
-        _errorBar = Required<InfoBar>("ErrorBar");
-        _autoBattleItem = Required<SettingsExpanderItem>("AutoBattleItem");
+        _errorBar = Required<FAInfoBar>("ErrorBar");
+        _autoBattleItem = Required<FASettingsExpanderItem>("AutoBattleItem");
         _predefinedTeamCombo = Required<FAComboBox>("PredefinedTeamCombo");
         _autoBattleCombo = Required<FAComboBox>("AutoBattleCombo");
         _expGrindToggle = Required<ToggleSwitch>("ExpGrindToggle");

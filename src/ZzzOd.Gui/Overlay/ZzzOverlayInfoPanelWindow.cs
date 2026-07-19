@@ -42,7 +42,7 @@ internal sealed class ZzzOverlayInfoPanelWindow : Window
         ShowActivated = false;
         ShowInTaskbar = false;
         Topmost = true;
-        SystemDecorations = SystemDecorations.None;
+        WindowDecorations = WindowDecorations.None;
         TransparencyLevelHint = [WindowTransparencyLevel.Transparent];
         Background = Brushes.Transparent;
 
@@ -104,28 +104,15 @@ internal sealed class ZzzOverlayInfoPanelWindow : Window
         Content = _panelBorder;
 
         _geometryCommitTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(180) };
-        _geometryCommitTimer.Tick += (_, _) => CommitUserGeometry();
-        PositionChanged += (_, _) => OnWindowGeometryChanged();
-        Resized += (_, _) => OnWindowGeometryChanged();
-        ScalingChanged += (_, _) => QueueScalingRefresh();
-        Closed += (_, _) =>
-        {
-            _closed = true;
-            _geometryCommitTimer.Stop();
-            _userManipulating = false;
-            _scalingRefreshQueued = false;
-        };
+        _geometryCommitTimer.Tick += OnGeometryCommitTimerTick;
+        PositionChanged += OnWindowGeometryChanged;
+        Resized += OnWindowGeometryChanged;
+        ScalingChanged += OnScalingChanged;
+        Closed += OnClosed;
         _panelBorder.PointerPressed += OnPanelPointerPressed;
         _panelBorder.PointerReleased += OnPanelPointerReleased;
         _panelBorder.PointerCaptureLost += OnPanelPointerCaptureLost;
-        Opened += (_, _) =>
-        {
-            ApplyNativeStyle();
-            if (_panel is not null && _settings is not null && _gameWindow is not null)
-            {
-                ApplyConfiguration(_panel, _settings, _gameWindow, forceGeometry: true);
-            }
-        };
+        Opened += OnOpened;
     }
 
     public event Action<ZzzOverlayInfoPanelWindow>? GeometryCommitted;
@@ -137,6 +124,13 @@ internal sealed class ZzzOverlayInfoPanelWindow : Window
     public event Action<ZzzOverlayInfoPanelWindow>? EditModeExitRequested;
 
     public ZzzOverlayPanelSettings? Panel => _panel;
+
+    internal bool ResourcesReleased =>
+        _closed &&
+        !_geometryCommitTimer.IsEnabled &&
+        _panel is null &&
+        _settings is null &&
+        _gameWindow is null;
 
     internal bool TryGetCurrentPhysicalBounds(
         out ZzzOverlayPhysicalRect bounds,
@@ -238,10 +232,12 @@ internal sealed class ZzzOverlayInfoPanelWindow : Window
             HorizontalContentAlignment = HorizontalAlignment.Center,
             VerticalContentAlignment = VerticalAlignment.Center,
         };
-        button.PointerPressed += (_, args) => args.Handled = true;
+        button.PointerPressed += OnEditButtonPointerPressed;
         button.Click += handler;
         return button;
     }
+
+    private static void OnEditButtonPointerPressed(object? sender, PointerPressedEventArgs args) => args.Handled = true;
 
     private void OnPanelPointerPressed(object? sender, PointerPressedEventArgs args)
     {
@@ -319,6 +315,59 @@ internal sealed class ZzzOverlayInfoPanelWindow : Window
             _geometryCommitTimer.Stop();
             _geometryCommitTimer.Start();
         }
+    }
+
+    private void OnWindowGeometryChanged(object? sender, EventArgs args) => OnWindowGeometryChanged();
+
+    private void OnGeometryCommitTimerTick(object? sender, EventArgs args) => CommitUserGeometry();
+
+    private void OnScalingChanged(object? sender, EventArgs args) => QueueScalingRefresh();
+
+    private void OnOpened(object? sender, EventArgs args)
+    {
+        ApplyNativeStyle();
+        if (_panel is not null && _settings is not null && _gameWindow is not null)
+        {
+            ApplyConfiguration(_panel, _settings, _gameWindow, forceGeometry: true);
+        }
+    }
+
+    private void OnClosed(object? sender, EventArgs args)
+    {
+        _closed = true;
+        _geometryCommitTimer.Stop();
+        _userManipulating = false;
+        _scalingRefreshQueued = false;
+
+        _geometryCommitTimer.Tick -= OnGeometryCommitTimerTick;
+        PositionChanged -= OnWindowGeometryChanged;
+        Resized -= OnWindowGeometryChanged;
+        ScalingChanged -= OnScalingChanged;
+        Opened -= OnOpened;
+        Closed -= OnClosed;
+        _panelBorder.PointerPressed -= OnPanelPointerPressed;
+        _panelBorder.PointerReleased -= OnPanelPointerReleased;
+        _panelBorder.PointerCaptureLost -= OnPanelPointerCaptureLost;
+        DetachEditButton(_fontDecreaseButton, OnFontDecrease);
+        DetachEditButton(_fontIncreaseButton, OnFontIncrease);
+        DetachEditButton(_opacityDecreaseButton, OnOpacityDecrease);
+        DetachEditButton(_opacityIncreaseButton, OnOpacityIncrease);
+        DetachEditButton(_modeButton, OnToggleMode);
+        DetachEditButton(_closeEditButton, OnExitEditMode);
+
+        GeometryCommitted = null;
+        FreeModeChanged = null;
+        AppearanceChanged = null;
+        EditModeExitRequested = null;
+        _panel = null;
+        _settings = null;
+        _gameWindow = null;
+    }
+
+    private static void DetachEditButton(Button button, EventHandler<RoutedEventArgs> handler)
+    {
+        button.PointerPressed -= OnEditButtonPointerPressed;
+        button.Click -= handler;
     }
 
     private void CommitUserGeometry()

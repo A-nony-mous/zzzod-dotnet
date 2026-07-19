@@ -74,14 +74,14 @@ public sealed class OverlaySettingsParityTests
 		string text = File.ReadAllText(Path.Combine(path, "ZzzOverlaySettingsPage.axaml"));
 		string actualString = File.ReadAllText(Path.Combine(path, "ZzzOverlaySettingsPage.cs"));
 		AssertOrder(text, "Header=\"Overlay 基础\"", "Header=\"视觉绘制\"", "Header=\"面板与刷新\"", "Header=\"性能指标\"", "Header=\"截图\"");
-		Assert.Contains("fa:SettingsExpanderItem", text, StringComparison.Ordinal);
-		Assert.Contains("fa:NumberBox", text, StringComparison.Ordinal);
+		Assert.Contains("fa:FASettingsExpanderItem", text, StringComparison.Ordinal);
+		Assert.Contains("fa:FANumberBox", text, StringComparison.Ordinal);
 		Assert.Contains("ToggleSwitch", text, StringComparison.Ordinal);
 		Assert.Contains("TextBox", text, StringComparison.Ordinal);
-		Assert.Contains("fa:InfoBar", text, StringComparison.Ordinal);
+		Assert.Contains("fa:FAInfoBar", text, StringComparison.Ordinal);
 		Assert.Contains("显示决策链路面板", text, StringComparison.Ordinal);
 		Assert.Contains("<ToggleSwitch x:Name=\"PanelLockToGameWindowToggle\" Tag=\"panel_lock_to_game_window\" Click=\"OnToggleChanged\" />", text, StringComparison.Ordinal);
-		Assert.Contains("<fa:NumberBox x:Name=\"InputPollIntervalNumber\" Tag=\"input_poll_interval_ms\" Width=\"180\" Minimum=\"20\" SmallChange=\"10\" ValueChanged=\"OnNumberChanged\" />", text, StringComparison.Ordinal);
+		Assert.Contains("<fa:FANumberBox x:Name=\"InputPollIntervalNumber\" Tag=\"input_poll_interval_ms\" Width=\"180\" Minimum=\"20\" SmallChange=\"10\" ValueChanged=\"OnNumberChanged\" />", text, StringComparison.Ordinal);
 		Assert.Contains("系统版本低于 Windows 10 2004，Overlay 已禁用", text, StringComparison.Ordinal);
 		Assert.Contains("OperatingSystem.IsWindowsVersionAtLeast(10, 0, 19041)", actualString, StringComparison.Ordinal);
 		Assert.Contains("GetConfigScope(ScopeName)", actualString, StringComparison.Ordinal);

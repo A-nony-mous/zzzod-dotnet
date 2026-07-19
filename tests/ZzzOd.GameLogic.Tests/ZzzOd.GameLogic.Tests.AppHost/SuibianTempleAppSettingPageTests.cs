@@ -20,9 +20,9 @@ public sealed class SuibianTempleAppSettingPageTests
 		string text = File.ReadAllText(Path.Combine(path, "ZzzSuibianTempleAppSettingPage.axaml"));
 		string actualString = File.ReadAllText(Path.Combine(path, "ZzzSuibianTempleAppSettingPage.axaml.cs"));
 		AssertOrder(text, "自动托管", "饮茶仙", "饮茶仙-委托刷新", "派遣-时长", "派遣-副本优先级", "制造坊-最大下拉次数", "好物铺购买", "邦巢-购买", "邦巢-最低购买价格");
-		Assert.Contains("fa:SettingsExpanderItem", text, StringComparison.Ordinal);
+		Assert.Contains("fa:FASettingsExpanderItem", text, StringComparison.Ordinal);
 		Assert.Contains("fa:FAComboBox", text, StringComparison.Ordinal);
-		Assert.Contains("fa:NumberBox", text, StringComparison.Ordinal);
+		Assert.Contains("fa:FANumberBox", text, StringComparison.Ordinal);
 		Assert.Contains("ToggleSwitch", text, StringComparison.Ordinal);
 		Assert.Contains("UpdateManualVisibility(autoManage)", actualString, StringComparison.Ordinal);
 		Assert.Contains("item.IsVisible = !autoManage", actualString, StringComparison.Ordinal);

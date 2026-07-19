@@ -4,93 +4,93 @@
              x:Class="ZzzOd.Gui.Pages.Devtools.ZzzScreenshotHelperAxamlPage">
   <ScrollViewer HorizontalScrollBarVisibility="Disabled"
                 VerticalScrollBarVisibility="Auto">
-    <StackPanel Margin="11"
+    <StackPanel Margin="{DynamicResource SampleAppPageMargin}"
                 Spacing="8">
-      <fa:InfoBar x:Name="ConfigErrorBar"
+      <fa:FAInfoBar x:Name="ConfigErrorBar"
                   IsOpen="False"
                   IsClosable="True"
                   Severity="Error" />
 
-      <fa:SettingsExpanderItem Content="截图间隔(秒)">
-        <fa:SettingsExpanderItem.IconSource>
-          <fa:SymbolIconSource Symbol="Play" />
-        </fa:SettingsExpanderItem.IconSource>
-        <fa:SettingsExpanderItem.Footer>
-          <fa:NumberBox x:Name="FrequencyBox"
+      <fa:FASettingsExpanderItem Content="截图间隔(秒)">
+        <fa:FASettingsExpanderItem.IconSource>
+          <fa:FASymbolIconSource Symbol="Play" />
+        </fa:FASettingsExpanderItem.IconSource>
+        <fa:FASettingsExpanderItem.Footer>
+          <fa:FANumberBox x:Name="FrequencyBox"
                         Width="160"
                         Minimum="0.01"
                         Maximum="60"
                         SmallChange="0.01"
                         SpinButtonPlacementMode="Compact"
                         ValueChanged="OnFrequencyChanged" />
-        </fa:SettingsExpanderItem.Footer>
-      </fa:SettingsExpanderItem>
+        </fa:FASettingsExpanderItem.Footer>
+      </fa:FASettingsExpanderItem>
 
-      <fa:SettingsExpanderItem Content="持续时间(秒)">
-        <fa:SettingsExpanderItem.IconSource>
-          <fa:SymbolIconSource Symbol="Play" />
-        </fa:SettingsExpanderItem.IconSource>
-        <fa:SettingsExpanderItem.Footer>
-          <fa:NumberBox x:Name="LengthBox"
+      <fa:FASettingsExpanderItem Content="持续时间(秒)">
+        <fa:FASettingsExpanderItem.IconSource>
+          <fa:FASymbolIconSource Symbol="Play" />
+        </fa:FASettingsExpanderItem.IconSource>
+        <fa:FASettingsExpanderItem.Footer>
+          <fa:FANumberBox x:Name="LengthBox"
                         Width="160"
                         Minimum="0.01"
                         Maximum="3600"
                         SmallChange="0.1"
                         SpinButtonPlacementMode="Compact"
                         ValueChanged="OnLengthChanged" />
-        </fa:SettingsExpanderItem.Footer>
-      </fa:SettingsExpanderItem>
+        </fa:FASettingsExpanderItem.Footer>
+      </fa:FASettingsExpanderItem>
 
-      <fa:SettingsExpanderItem Content="保存截图按键"
+      <fa:FASettingsExpanderItem Content="保存截图按键"
                                Description="按下后，保存 持续时间(秒) 内的截图，用于捕捉漏判">
-        <fa:SettingsExpanderItem.IconSource>
-          <fa:SymbolIconSource Symbol="Play" />
-        </fa:SettingsExpanderItem.IconSource>
-        <fa:SettingsExpanderItem.Footer>
+        <fa:FASettingsExpanderItem.IconSource>
+          <fa:FASymbolIconSource Symbol="Play" />
+        </fa:FASettingsExpanderItem.IconSource>
+        <fa:FASettingsExpanderItem.Footer>
           <Button x:Name="SaveKeyButton"
                   Width="160"
                   Click="OnSaveKeyClicked" />
-        </fa:SettingsExpanderItem.Footer>
-      </fa:SettingsExpanderItem>
+        </fa:FASettingsExpanderItem.Footer>
+      </fa:FASettingsExpanderItem>
 
-      <fa:SettingsExpanderItem Content="闪避检测"
+      <fa:FASettingsExpanderItem Content="闪避检测"
                                Description="脚本识别黄光红光时，自动截图，用于捕捉误判">
-        <fa:SettingsExpanderItem.IconSource>
-          <fa:SymbolIconSource Symbol="Play" />
-        </fa:SettingsExpanderItem.IconSource>
-        <fa:SettingsExpanderItem.Footer>
+        <fa:FASettingsExpanderItem.IconSource>
+          <fa:FASymbolIconSource Symbol="Play" />
+        </fa:FASettingsExpanderItem.IconSource>
+        <fa:FASettingsExpanderItem.Footer>
           <ToggleSwitch x:Name="DodgeDetectToggle"
                         OnContent=""
                         OffContent=""
                         Click="OnDodgeDetectChanged" />
-        </fa:SettingsExpanderItem.Footer>
-      </fa:SettingsExpanderItem>
+        </fa:FASettingsExpanderItem.Footer>
+      </fa:FASettingsExpanderItem>
 
-      <fa:SettingsExpanderItem Content="按键前截图"
+      <fa:FASettingsExpanderItem Content="按键前截图"
                                Description="开启时截图按键之前的画面，关闭时截图按键之后的画面">
-        <fa:SettingsExpanderItem.IconSource>
-          <fa:SymbolIconSource Symbol="Play" />
-        </fa:SettingsExpanderItem.IconSource>
-        <fa:SettingsExpanderItem.Footer>
+        <fa:FASettingsExpanderItem.IconSource>
+          <fa:FASymbolIconSource Symbol="Play" />
+        </fa:FASettingsExpanderItem.IconSource>
+        <fa:FASettingsExpanderItem.Footer>
           <ToggleSwitch x:Name="ScreenshotBeforeKeyToggle"
                         OnContent=""
                         OffContent=""
                         Click="OnScreenshotBeforeKeyChanged" />
-        </fa:SettingsExpanderItem.Footer>
-      </fa:SettingsExpanderItem>
+        </fa:FASettingsExpanderItem.Footer>
+      </fa:FASettingsExpanderItem>
 
-      <fa:SettingsExpanderItem Content="小地图朝向检测"
+      <fa:FASettingsExpanderItem Content="小地图朝向检测"
                                Description="无法计算朝向时截图">
-        <fa:SettingsExpanderItem.IconSource>
-          <fa:SymbolIconSource Symbol="Play" />
-        </fa:SettingsExpanderItem.IconSource>
-        <fa:SettingsExpanderItem.Footer>
+        <fa:FASettingsExpanderItem.IconSource>
+          <fa:FASymbolIconSource Symbol="Play" />
+        </fa:FASettingsExpanderItem.IconSource>
+        <fa:FASettingsExpanderItem.Footer>
           <ToggleSwitch x:Name="MiniMapAngleDetectToggle"
                         OnContent=""
                         OffContent=""
                         Click="OnMiniMapAngleDetectChanged" />
-        </fa:SettingsExpanderItem.Footer>
-      </fa:SettingsExpanderItem>
+        </fa:FASettingsExpanderItem.Footer>
+      </fa:FASettingsExpanderItem>
 
       <ContentControl x:Name="RunHost"
                       HorizontalContentAlignment="Stretch"

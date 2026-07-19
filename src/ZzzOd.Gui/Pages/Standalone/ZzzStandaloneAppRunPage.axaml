@@ -3,11 +3,11 @@
              xmlns:fa="using:FluentAvalonia.UI.Controls"
              xmlns:local="using:ZzzOd.Gui.Pages.Standalone"
              x:Class="ZzzOd.Gui.Pages.Standalone.ZzzStandaloneAppRunPage">
-  <Grid Margin="11,11,11,0"
+  <Grid Margin="{DynamicResource SampleAppPageMargin}"
         ColumnDefinitions="*,10,*">
     <Grid Grid.Column="0"
           RowDefinitions="Auto,*,Auto">
-      <fa:InfoBar x:Name="ActionInfoBar"
+      <fa:FAInfoBar x:Name="ActionInfoBar"
                   IsOpen="False"
                   IsClosable="True"
                   Severity="Error" />
@@ -18,7 +18,7 @@
         <ItemsControl x:Name="AppList">
           <ItemsControl.ItemTemplate>
             <DataTemplate x:DataType="local:ZzzStandaloneAppRowModel">
-              <fa:SettingsExpanderItem Content="{Binding Name}"
+              <fa:FASettingsExpanderItem Content="{Binding Name}"
                                        Margin="0,0,0,1"
                                        Opacity="{Binding Opacity}"
                                        Tag="{Binding}"
@@ -27,10 +27,10 @@
                                        PointerMoved="OnAppPointerMoved"
                                        DragDrop.DragOver="OnAppDragOver"
                                        DragDrop.Drop="OnAppDrop">
-                <fa:SettingsExpanderItem.IconSource>
-                  <fa:FontIconSource Glyph="&#xE7FC;" />
-                </fa:SettingsExpanderItem.IconSource>
-                <fa:SettingsExpanderItem.Footer>
+                <fa:FASettingsExpanderItem.IconSource>
+                  <fa:FAFontIconSource Glyph="&#xE7FC;" />
+                </fa:FASettingsExpanderItem.IconSource>
+                <fa:FASettingsExpanderItem.Footer>
                   <StackPanel Orientation="Horizontal"
                               Spacing="4">
                     <Button Width="36"
@@ -40,7 +40,7 @@
                             IsVisible="{Binding SettingVisible}"
                             Tag="{Binding}"
                             Click="OnAppSettingClicked">
-                      <fa:FontIcon Glyph="&#xE713;" />
+                      <fa:FAFontIcon Glyph="&#xE713;" />
                     </Button>
                     <Button Width="36"
                             Height="32"
@@ -48,11 +48,11 @@
                             ToolTip.Tip="移除"
                             Tag="{Binding}"
                             Click="OnRemoveClicked">
-                      <fa:SymbolIcon Symbol="Cancel" />
+                      <fa:FASymbolIcon Symbol="Cancel" />
                     </Button>
                   </StackPanel>
-                </fa:SettingsExpanderItem.Footer>
-              </fa:SettingsExpanderItem>
+                </fa:FASettingsExpanderItem.Footer>
+              </fa:FASettingsExpanderItem>
             </DataTemplate>
           </ItemsControl.ItemTemplate>
         </ItemsControl>
@@ -67,7 +67,7 @@
               Click="OnAddAppClicked">
         <StackPanel Orientation="Horizontal"
                     Spacing="8">
-          <fa:SymbolIcon Symbol="Add" />
+          <fa:FASymbolIcon Symbol="Add" />
           <TextBlock Text="添加应用" />
         </StackPanel>
       </Button>
@@ -75,16 +75,16 @@
 
     <Grid Grid.Column="2"
           RowDefinitions="Auto,*">
-      <fa:SettingsExpanderItem Content="应用运行说明"
+      <fa:FASettingsExpanderItem Content="应用运行说明"
                                Description="从应用列表中选择单个功能模块独立运行，无需跑完整的一条龙流程">
-        <fa:SettingsExpanderItem.IconSource>
-          <fa:SymbolIconSource Symbol="Message" />
-        </fa:SettingsExpanderItem.IconSource>
-        <fa:SettingsExpanderItem.Footer>
+        <fa:FASettingsExpanderItem.IconSource>
+          <fa:FASymbolIconSource Symbol="Message" />
+        </fa:FASettingsExpanderItem.IconSource>
+        <fa:FASettingsExpanderItem.Footer>
           <Button Content="点此查看指南"
                   Click="OnHelpClicked" />
-        </fa:SettingsExpanderItem.Footer>
-      </fa:SettingsExpanderItem>
+        </fa:FASettingsExpanderItem.Footer>
+      </fa:FASettingsExpanderItem>
       <ContentControl x:Name="RunHost"
                       Grid.Row="1"
                       Margin="0,8,0,11"

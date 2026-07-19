@@ -5,7 +5,7 @@
              x:Class="ZzzOd.Gui.Pages.Home.ZzzHomePage"
              ClipToBounds="True">
   <UserControl.Resources>
-    <fa:ContentDialog x:Key="PreFlightDialog"
+    <fa:FAContentDialog x:Key="PreFlightDialog"
                       Title="运行前检查"
                       PrimaryButtonText="前往配置"
                       CloseButtonText="仍然继续"
@@ -23,7 +23,7 @@
           </ItemsControl.ItemTemplate>
         </ItemsControl>
       </StackPanel>
-    </fa:ContentDialog>
+    </fa:FAContentDialog>
   </UserControl.Resources>
   <Grid x:Name="HomeRoot"
         PointerEntered="OnHomePointerEntered"
@@ -54,7 +54,7 @@
               Click="OnStartButtonClicked">
         <StackPanel Orientation="Horizontal"
                     Spacing="10">
-          <fa:SymbolIcon x:Name="StartButtonIcon"
+          <fa:FASymbolIcon x:Name="StartButtonIcon"
                          Symbol="PlayFilled"
                          FontSize="20" />
           <TextBlock x:Name="StartButtonText"
@@ -76,7 +76,7 @@
                 Click="OnQuickLinkClicked"
                 PointerEntered="OnQuickLinkPointerEntered"
                 PointerExited="OnQuickLinkPointerExited">
-          <fa:SymbolIcon Symbol="Home"
+          <fa:FASymbolIcon Symbol="Home"
                          FontSize="30" />
         </Button>
         <Button x:Name="GithubLinkButton"
@@ -100,7 +100,7 @@
                 Click="OnQuickLinkClicked"
                 PointerEntered="OnQuickLinkPointerEntered"
                 PointerExited="OnQuickLinkPointerExited">
-          <fa:SymbolIcon Symbol="Library"
+          <fa:FASymbolIcon Symbol="Library"
                          FontSize="30" />
         </Button>
         <Button x:Name="ChannelLinkButton"
@@ -111,7 +111,7 @@
                 Click="OnQuickLinkClicked"
                 PointerEntered="OnQuickLinkPointerEntered"
                 PointerExited="OnQuickLinkPointerExited">
-          <fa:SymbolIcon Symbol="Message"
+          <fa:FASymbolIcon Symbol="Message"
                          FontSize="30" />
         </Button>
       </StackPanel>
@@ -124,7 +124,7 @@
                Foreground="White"
                IsVisible="False" />
 
-    <fa:TeachingTip x:Name="QuickLinkTeachingTip"
+    <fa:FATeachingTip x:Name="QuickLinkTeachingTip"
                     IsLightDismissEnabled="True"
                     PreferredPlacement="Left"
                     TailVisibility="Visible" />

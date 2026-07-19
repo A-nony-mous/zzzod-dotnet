@@ -111,7 +111,7 @@ public sealed class PredefinedTeamPageParityTests
 		buffer[4] = "OneDragon";
 		buffer[5] = "ZzzPredefinedTeamPage.axaml";
 		string actualString = File.ReadAllText(Path.Combine(buffer));
-		Assert.Contains("fa:SettingsExpanderItem", actualString, StringComparison.Ordinal);
+		Assert.Contains("fa:FASettingsExpanderItem", actualString, StringComparison.Ordinal);
 		Assert.Contains("fa:FAComboBox", actualString, StringComparison.Ordinal);
 		Assert.Contains("战斗配置", actualString, StringComparison.Ordinal);
 		Assert.DoesNotContain("代理人 1", actualString, StringComparison.Ordinal);

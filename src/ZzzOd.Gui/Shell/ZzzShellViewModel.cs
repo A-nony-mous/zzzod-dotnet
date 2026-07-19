@@ -17,6 +17,7 @@ public sealed class ZzzShellViewModel : INotifyPropertyChanged, IDisposable
     private string _launcherVersion = string.Empty;
     private string _codeVersion = string.Empty;
     private string _issueUrl = string.Empty;
+    private string? _startupError;
 
     public ZzzShellViewModel(IZzzAppBackend backend, IZzzUiDispatcher dispatcher)
     {
@@ -34,6 +35,8 @@ public sealed class ZzzShellViewModel : INotifyPropertyChanged, IDisposable
     public string ActiveInstanceName => _activeInstanceName;
 
     public string WindowTitle => string.Join(' ', new[] { _projectName, _activeInstanceName }.Where(value => !string.IsNullOrWhiteSpace(value)));
+
+    public string FrontierWindowTitle => string.Join(" × ", new[] { _activeInstanceName, _projectName }.Where(value => !string.IsNullOrWhiteSpace(value)));
 
     public string LauncherVersionText => string.IsNullOrWhiteSpace(_launcherVersion)
         ? string.Empty
@@ -54,6 +57,15 @@ public sealed class ZzzShellViewModel : INotifyPropertyChanged, IDisposable
     public bool HasIssueUrl => !string.IsNullOrWhiteSpace(_issueUrl);
 
     public string IssueUrl => _issueUrl;
+
+    internal void ReportStartupError(string error) => _startupError = error;
+
+    internal string? ConsumeStartupError()
+    {
+        string? error = _startupError;
+        _startupError = null;
+        return error;
+    }
 
     public void Refresh()
     {
@@ -151,6 +163,7 @@ public sealed class ZzzShellViewModel : INotifyPropertyChanged, IDisposable
         OnPropertyChanged(nameof(ProjectName));
         OnPropertyChanged(nameof(ActiveInstanceName));
         OnPropertyChanged(nameof(WindowTitle));
+        OnPropertyChanged(nameof(FrontierWindowTitle));
         OnPropertyChanged(nameof(LauncherVersionText));
         OnPropertyChanged(nameof(CodeVersionText));
         OnPropertyChanged(nameof(HasLauncherVersion));

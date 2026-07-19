@@ -387,7 +387,6 @@ internal static class ZzzGuiControlTreeEvidence
                 {
                     schema = "zzzod-avalonia-visual-tree.v1",
                     capturedAt = DateTimeOffset.UtcNow,
-                    actualTransparencyLevel = (root as TopLevel)?.ActualTransparencyLevel.ToString(),
                     root = CreateNode(root),
                 }, new JsonSerializerOptions { WriteIndented = true });
             }

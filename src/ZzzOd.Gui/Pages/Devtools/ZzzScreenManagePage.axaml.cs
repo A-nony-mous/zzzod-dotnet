@@ -35,7 +35,7 @@ internal sealed partial class ZzzScreenManagePage : UserControl, IZzzPageLifecyc
 {
     private readonly IZzzScreenManageService _service;
     private readonly ObservableCollection<ZzzScreenAreaRow> _areas = [];
-    private readonly InfoBar _statusBar;
+    private readonly FAInfoBar _statusBar;
     private readonly FAComboBox _screenSelector;
     private readonly TextBox _screenIdBox;
     private readonly TextBox _screenNameBox;
@@ -59,7 +59,7 @@ internal sealed partial class ZzzScreenManagePage : UserControl, IZzzPageLifecyc
     {
         _service = service;
         AvaloniaXamlLoader.Load(this);
-        _statusBar = Required<InfoBar>("StatusBar");
+        _statusBar = Required<FAInfoBar>("StatusBar");
         _screenSelector = Required<FAComboBox>("ScreenSelector");
         _screenIdBox = Required<TextBox>("ScreenIdBox");
         _screenNameBox = Required<TextBox>("ScreenNameBox");
@@ -95,11 +95,11 @@ internal sealed partial class ZzzScreenManagePage : UserControl, IZzzPageLifecyc
         {
             _loading = true;
             _screenSelector.ItemsSource = _service.ListScreenNames();
-            ShowStatus("画面配置已加载。", InfoBarSeverity.Success);
+            ShowStatus("画面配置已加载。", FAInfoBarSeverity.Success);
         }
         catch (Exception exception)
         {
-            ShowStatus(exception.Message, InfoBarSeverity.Error);
+            ShowStatus(exception.Message, FAInfoBarSeverity.Error);
         }
         finally
         {
@@ -120,7 +120,7 @@ internal sealed partial class ZzzScreenManagePage : UserControl, IZzzPageLifecyc
         }
         catch (Exception exception)
         {
-            ShowStatus(exception.Message, InfoBarSeverity.Error);
+            ShowStatus(exception.Message, FAInfoBarSeverity.Error);
         }
     }
 
@@ -136,7 +136,7 @@ internal sealed partial class ZzzScreenManagePage : UserControl, IZzzPageLifecyc
     private void OnCreateClicked(object? sender, RoutedEventArgs args)
     {
         ApplyDocument(new ZzzScreenDocument(string.Empty, string.Empty, string.Empty, string.Empty, false, []));
-        ShowStatus("已新建画面。", InfoBarSeverity.Informational);
+        ShowStatus("已新建画面。", FAInfoBarSeverity.Informational);
     }
 
     private void OnSaveClicked(object? sender, RoutedEventArgs args)
@@ -162,15 +162,15 @@ internal sealed partial class ZzzScreenManagePage : UserControl, IZzzPageLifecyc
             return;
         }
 
-        ContentDialog dialog = new()
+        FAContentDialog dialog = new()
         {
             Title = "删除画面",
             Content = _screenNameBox.Text,
             PrimaryButtonText = "删除",
             CloseButtonText = "取消",
-            DefaultButton = ContentDialogButton.Close,
+            DefaultButton = FAContentDialogButton.Close,
         };
-        if (await dialog.ShowAsync(TopLevel.GetTopLevel(this)).ConfigureAwait(true) != ContentDialogResult.Primary)
+        if (await dialog.ShowAsync(TopLevel.GetTopLevel(this)).ConfigureAwait(true) != FAContentDialogResult.Primary)
         {
             return;
         }
@@ -294,6 +294,11 @@ internal sealed partial class ZzzScreenManagePage : UserControl, IZzzPageLifecyc
 
     private void OnPopupTableClicked(object? sender, RoutedEventArgs args)
     {
+        if (TopLevel.GetTopLevel(this) is not Window owner)
+        {
+            return;
+        }
+
         ZzzScreenAreaTable table = new() { DataContext = _areas };
         table.RowSelected += OnAreaSelected;
         Window window = new()
@@ -304,14 +309,7 @@ internal sealed partial class ZzzScreenManagePage : UserControl, IZzzPageLifecyc
             Content = table,
         };
         window.Closed += (_, _) => table.RowSelected -= OnAreaSelected;
-        if (TopLevel.GetTopLevel(this) is Window owner)
-        {
-            window.Show(owner);
-        }
-        else
-        {
-            window.Show();
-        }
+        window.Show(owner);
     }
 
     private void OnAreaSelected(object? sender, ZzzScreenAreaRow row) => _selectedArea = row;
@@ -477,17 +475,17 @@ internal sealed partial class ZzzScreenManagePage : UserControl, IZzzPageLifecyc
         try
         {
             action();
-            ShowStatus(success, InfoBarSeverity.Success);
+            ShowStatus(success, FAInfoBarSeverity.Success);
         }
         catch (Exception exception)
         {
-            ShowStatus(exception.Message, InfoBarSeverity.Error);
+            ShowStatus(exception.Message, FAInfoBarSeverity.Error);
         }
     }
 
-    private void ShowStatus(string message, InfoBarSeverity severity)
+    private void ShowStatus(string message, FAInfoBarSeverity severity)
     {
-        _statusBar.Title = severity == InfoBarSeverity.Error ? "画面管理错误" : string.Empty;
+        _statusBar.Title = severity == FAInfoBarSeverity.Error ? "画面管理错误" : string.Empty;
         _statusBar.Message = message;
         _statusBar.Severity = severity;
         _statusBar.IsOpen = true;

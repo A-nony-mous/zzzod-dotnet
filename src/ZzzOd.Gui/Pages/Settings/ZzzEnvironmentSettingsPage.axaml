@@ -5,20 +5,20 @@
              x:Class="ZzzOd.Gui.Pages.Settings.ZzzEnvironmentSettingsAxamlPage">
   <ScrollViewer HorizontalScrollBarVisibility="Disabled"
                 VerticalScrollBarVisibility="Auto">
-    <StackPanel Margin="11"
+    <StackPanel Margin="{DynamicResource SampleAppPageMargin}"
                 Spacing="8">
-      <fa:InfoBar x:Name="ActionBar"
+      <fa:FAInfoBar x:Name="ActionBar"
                   IsOpen="False"
                   IsClosable="True"
                   Severity="Error" />
 
-      <fa:SettingsExpander Header="基础"
+      <fa:FASettingsExpander Header="基础"
                            IsExpanded="True">
-        <fa:SettingsExpanderItem Content="截图方法">
-          <fa:SettingsExpanderItem.IconSource>
-            <fa:FontIconSource Glyph="&#xE722;" />
-          </fa:SettingsExpanderItem.IconSource>
-          <fa:SettingsExpanderItem.Footer>
+        <fa:FASettingsExpanderItem Content="截图方法">
+          <fa:FASettingsExpanderItem.IconSource>
+            <fa:FAFontIconSource Glyph="&#xE722;" />
+          </fa:FASettingsExpanderItem.IconSource>
+          <fa:FASettingsExpanderItem.Footer>
             <fa:FAComboBox x:Name="ScreenshotMethodCombo"
                            Width="180"
                            SelectionChanged="OnScreenshotMethodChanged">
@@ -28,43 +28,43 @@
                 </DataTemplate>
               </fa:FAComboBox.ItemTemplate>
             </fa:FAComboBox>
-          </fa:SettingsExpanderItem.Footer>
-        </fa:SettingsExpanderItem>
+          </fa:FASettingsExpanderItem.Footer>
+        </fa:FASettingsExpanderItem>
 
-        <fa:SettingsExpanderItem Content="调试模式"
+        <fa:FASettingsExpanderItem Content="调试模式"
                                  Description="正常无需开启">
-          <fa:SettingsExpanderItem.IconSource>
-            <fa:FontIconSource Glyph="&#xE721;" />
-          </fa:SettingsExpanderItem.IconSource>
-          <fa:SettingsExpanderItem.Footer>
+          <fa:FASettingsExpanderItem.IconSource>
+            <fa:FAFontIconSource Glyph="&#xE721;" />
+          </fa:FASettingsExpanderItem.IconSource>
+          <fa:FASettingsExpanderItem.Footer>
             <ToggleSwitch x:Name="DebugToggle"
                           OnContent=""
                           OffContent=""
                           Click="OnDebugChanged" />
-          </fa:SettingsExpanderItem.Footer>
-        </fa:SettingsExpanderItem>
+          </fa:FASettingsExpanderItem.Footer>
+        </fa:FASettingsExpanderItem>
 
-        <fa:SettingsExpanderItem Content="复制截图到剪贴板"
+        <fa:FASettingsExpanderItem Content="复制截图到剪贴板"
                                  Description="按下截图按键时，自动将截图复制到剪贴板">
-          <fa:SettingsExpanderItem.IconSource>
-            <fa:FontIconSource Glyph="&#xE722;" />
-          </fa:SettingsExpanderItem.IconSource>
-          <fa:SettingsExpanderItem.Footer>
+          <fa:FASettingsExpanderItem.IconSource>
+            <fa:FAFontIconSource Glyph="&#xE722;" />
+          </fa:FASettingsExpanderItem.IconSource>
+          <fa:FASettingsExpanderItem.Footer>
             <ToggleSwitch x:Name="CopyScreenshotToggle"
                           OnContent=""
                           OffContent=""
                           Click="OnCopyScreenshotChanged" />
-          </fa:SettingsExpanderItem.Footer>
-        </fa:SettingsExpanderItem>
-      </fa:SettingsExpander>
+          </fa:FASettingsExpanderItem.Footer>
+        </fa:FASettingsExpanderItem>
+      </fa:FASettingsExpander>
 
-      <fa:SettingsExpander Header="网络相关"
+      <fa:FASettingsExpander Header="网络相关"
                            IsExpanded="True">
-        <fa:SettingsExpanderItem Content="网络代理">
-          <fa:SettingsExpanderItem.IconSource>
-            <fa:FontIconSource Glyph="&#xE774;" />
-          </fa:SettingsExpanderItem.IconSource>
-          <fa:SettingsExpanderItem.Footer>
+        <fa:FASettingsExpanderItem Content="网络代理">
+          <fa:FASettingsExpanderItem.IconSource>
+            <fa:FAFontIconSource Glyph="&#xE774;" />
+          </fa:FASettingsExpanderItem.IconSource>
+          <fa:FASettingsExpanderItem.Footer>
             <fa:FAComboBox x:Name="ProxyTypeCombo"
                            Width="180"
                            SelectionChanged="OnProxyTypeChanged">
@@ -74,82 +74,82 @@
                 </DataTemplate>
               </fa:FAComboBox.ItemTemplate>
             </fa:FAComboBox>
-          </fa:SettingsExpanderItem.Footer>
-        </fa:SettingsExpanderItem>
+          </fa:FASettingsExpanderItem.Footer>
+        </fa:FASettingsExpanderItem>
 
-        <fa:SettingsExpanderItem x:Name="PersonalProxyItem"
+        <fa:FASettingsExpanderItem x:Name="PersonalProxyItem"
                                  Content="个人代理"
                                  IsVisible="False">
-          <fa:SettingsExpanderItem.IconSource>
-            <fa:FontIconSource Glyph="&#xE701;" />
-          </fa:SettingsExpanderItem.IconSource>
-          <fa:SettingsExpanderItem.Footer>
+          <fa:FASettingsExpanderItem.IconSource>
+            <fa:FAFontIconSource Glyph="&#xE701;" />
+          </fa:FASettingsExpanderItem.IconSource>
+          <fa:FASettingsExpanderItem.Footer>
             <TextBox x:Name="PersonalProxyInput"
                      Width="300"
-                     Watermark="http://127.0.0.1:8080"
+                     PlaceholderText="http://127.0.0.1:8080"
                      LostFocus="OnPersonalProxyLostFocus" />
-          </fa:SettingsExpanderItem.Footer>
-        </fa:SettingsExpanderItem>
-      </fa:SettingsExpander>
+          </fa:FASettingsExpanderItem.Footer>
+        </fa:FASettingsExpanderItem>
+      </fa:FASettingsExpander>
 
-      <fa:SettingsExpander Header="脚本按键"
+      <fa:FASettingsExpander Header="脚本按键"
                            IsExpanded="True">
-        <fa:SettingsExpanderItem Content="开始运行"
+        <fa:FASettingsExpanderItem Content="开始运行"
                                  Description="开始、暂停、恢复某个应用">
-          <fa:SettingsExpanderItem.IconSource>
-            <fa:SymbolIconSource Symbol="Play" />
-          </fa:SettingsExpanderItem.IconSource>
-          <fa:SettingsExpanderItem.Footer>
+          <fa:FASettingsExpanderItem.IconSource>
+            <fa:FASymbolIconSource Symbol="Play" />
+          </fa:FASettingsExpanderItem.IconSource>
+          <fa:FASettingsExpanderItem.Footer>
             <Button x:Name="StartRunningKeyButton"
                     Tag="key_start_running"
                     MinWidth="120"
                     Click="OnHotkeyCaptureClicked"
                     KeyDown="OnHotkeyKeyDown" />
-          </fa:SettingsExpanderItem.Footer>
-        </fa:SettingsExpanderItem>
+          </fa:FASettingsExpanderItem.Footer>
+        </fa:FASettingsExpanderItem>
 
-        <fa:SettingsExpanderItem Content="停止运行"
+        <fa:FASettingsExpanderItem Content="停止运行"
                                  Description="停止正在运行的应用，不能恢复">
-          <fa:SettingsExpanderItem.IconSource>
-            <fa:SymbolIconSource Symbol="Cancel" />
-          </fa:SettingsExpanderItem.IconSource>
-          <fa:SettingsExpanderItem.Footer>
+          <fa:FASettingsExpanderItem.IconSource>
+            <fa:FASymbolIconSource Symbol="Cancel" />
+          </fa:FASettingsExpanderItem.IconSource>
+          <fa:FASettingsExpanderItem.Footer>
             <Button x:Name="StopRunningKeyButton"
                     Tag="key_stop_running"
                     MinWidth="120"
                     Click="OnHotkeyCaptureClicked"
                     KeyDown="OnHotkeyKeyDown" />
-          </fa:SettingsExpanderItem.Footer>
-        </fa:SettingsExpanderItem>
+          </fa:FASettingsExpanderItem.Footer>
+        </fa:FASettingsExpanderItem>
 
-        <fa:SettingsExpanderItem Content="游戏截图"
+        <fa:FASettingsExpanderItem Content="游戏截图"
                                  Description="用于开发、提交bug。会自动对UID打码，保存在 .debug/images/ 文件夹中">
-          <fa:SettingsExpanderItem.IconSource>
-            <fa:FontIconSource Glyph="&#xE722;" />
-          </fa:SettingsExpanderItem.IconSource>
-          <fa:SettingsExpanderItem.Footer>
+          <fa:FASettingsExpanderItem.IconSource>
+            <fa:FAFontIconSource Glyph="&#xE722;" />
+          </fa:FASettingsExpanderItem.IconSource>
+          <fa:FASettingsExpanderItem.Footer>
             <Button x:Name="ScreenshotKeyButton"
                     Tag="key_screenshot"
                     MinWidth="120"
                     Click="OnHotkeyCaptureClicked"
                     KeyDown="OnHotkeyKeyDown" />
-          </fa:SettingsExpanderItem.Footer>
-        </fa:SettingsExpanderItem>
+          </fa:FASettingsExpanderItem.Footer>
+        </fa:FASettingsExpanderItem>
 
-        <fa:SettingsExpanderItem Content="调试按钮"
+        <fa:FASettingsExpanderItem Content="调试按钮"
                                  Description="用于开发，部分应用开始调试">
-          <fa:SettingsExpanderItem.IconSource>
-            <fa:FontIconSource Glyph="&#xE7C2;" />
-          </fa:SettingsExpanderItem.IconSource>
-          <fa:SettingsExpanderItem.Footer>
+          <fa:FASettingsExpanderItem.IconSource>
+            <fa:FAFontIconSource Glyph="&#xE7C2;" />
+          </fa:FASettingsExpanderItem.IconSource>
+          <fa:FASettingsExpanderItem.Footer>
             <Button x:Name="DebugKeyButton"
                     Tag="key_debug"
                     MinWidth="120"
                     Click="OnHotkeyCaptureClicked"
                     KeyDown="OnHotkeyKeyDown" />
-          </fa:SettingsExpanderItem.Footer>
-        </fa:SettingsExpanderItem>
-      </fa:SettingsExpander>
+          </fa:FASettingsExpanderItem.Footer>
+        </fa:FASettingsExpanderItem>
+      </fa:FASettingsExpander>
     </StackPanel>
   </ScrollViewer>
 </UserControl>

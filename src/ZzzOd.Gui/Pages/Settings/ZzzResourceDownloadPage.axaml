@@ -5,8 +5,9 @@
              x:Class="ZzzOd.Gui.Pages.Settings.ZzzResourceDownloadSettingsAxamlPage">
   <ScrollViewer HorizontalScrollBarVisibility="Disabled"
                 VerticalScrollBarVisibility="Auto">
-    <StackPanel Margin="11" Spacing="8">
-      <fa:InfoBar x:Name="ConfigErrorBar"
+    <StackPanel Margin="{DynamicResource SampleAppPageMargin}"
+                Spacing="{DynamicResource SampleAppSectionSpacing}">
+      <fa:FAInfoBar x:Name="ConfigErrorBar"
                   IsOpen="False"
                   IsClosable="True"
                   Severity="Error" />
@@ -15,18 +16,18 @@
                  FontSize="18"
                  FontWeight="SemiBold" />
 
-      <fa:SettingsExpanderItem Content="下载说明"
+      <fa:FASettingsExpanderItem Content="下载说明"
                                Description="下载失败时 请尝试到「脚本环境」更改网络代理">
-        <fa:SettingsExpanderItem.IconSource>
-          <fa:SymbolIconSource Symbol="Help" />
-        </fa:SettingsExpanderItem.IconSource>
-      </fa:SettingsExpanderItem>
+        <fa:FASettingsExpanderItem.IconSource>
+          <fa:FASymbolIconSource Symbol="Help" />
+        </fa:FASettingsExpanderItem.IconSource>
+      </fa:FASettingsExpanderItem>
 
-      <fa:SettingsExpanderItem x:Name="OcrItem" Content="OCR识别">
-        <fa:SettingsExpanderItem.IconSource>
-          <fa:SymbolIconSource Symbol="Globe" />
-        </fa:SettingsExpanderItem.IconSource>
-        <fa:SettingsExpanderItem.Footer>
+      <fa:FASettingsExpanderItem x:Name="OcrItem" Content="OCR识别">
+        <fa:FASettingsExpanderItem.IconSource>
+          <fa:FASymbolIconSource Symbol="Globe" />
+        </fa:FASettingsExpanderItem.IconSource>
+        <fa:FASettingsExpanderItem.Footer>
           <StackPanel Orientation="Horizontal" Spacing="8">
             <fa:FAComboBox x:Name="OcrProfileCombo"
                            Width="230"
@@ -45,14 +46,14 @@
                           OffContent="CPU"
                           Click="OnGpuChanged" />
           </StackPanel>
-        </fa:SettingsExpanderItem.Footer>
-      </fa:SettingsExpanderItem>
+        </fa:FASettingsExpanderItem.Footer>
+      </fa:FASettingsExpanderItem>
 
-      <fa:SettingsExpanderItem x:Name="FlashClassifierItem" Content="闪光识别">
-        <fa:SettingsExpanderItem.IconSource>
-          <fa:SymbolIconSource Symbol="Globe" />
-        </fa:SettingsExpanderItem.IconSource>
-        <fa:SettingsExpanderItem.Footer>
+      <fa:FASettingsExpanderItem x:Name="FlashClassifierItem" Content="闪光识别">
+        <fa:FASettingsExpanderItem.IconSource>
+          <fa:FASymbolIconSource Symbol="Globe" />
+        </fa:FASettingsExpanderItem.IconSource>
+        <fa:FASettingsExpanderItem.Footer>
           <StackPanel Orientation="Horizontal" Spacing="8">
             <fa:FAComboBox x:Name="FlashClassifierCombo"
                            Width="270"
@@ -71,14 +72,14 @@
                           OffContent="CPU"
                           Click="OnGpuChanged" />
           </StackPanel>
-        </fa:SettingsExpanderItem.Footer>
-      </fa:SettingsExpanderItem>
+        </fa:FASettingsExpanderItem.Footer>
+      </fa:FASettingsExpanderItem>
 
-      <fa:SettingsExpanderItem x:Name="HollowZeroEventItem" Content="空洞格子识别">
-        <fa:SettingsExpanderItem.IconSource>
-          <fa:SymbolIconSource Symbol="Globe" />
-        </fa:SettingsExpanderItem.IconSource>
-        <fa:SettingsExpanderItem.Footer>
+      <fa:FASettingsExpanderItem x:Name="HollowZeroEventItem" Content="空洞格子识别">
+        <fa:FASettingsExpanderItem.IconSource>
+          <fa:FASymbolIconSource Symbol="Globe" />
+        </fa:FASettingsExpanderItem.IconSource>
+        <fa:FASettingsExpanderItem.Footer>
           <StackPanel Orientation="Horizontal" Spacing="8">
             <fa:FAComboBox x:Name="HollowZeroEventCombo"
                            Width="270"
@@ -97,14 +98,14 @@
                           OffContent="CPU"
                           Click="OnGpuChanged" />
           </StackPanel>
-        </fa:SettingsExpanderItem.Footer>
-      </fa:SettingsExpanderItem>
+        </fa:FASettingsExpanderItem.Footer>
+      </fa:FASettingsExpanderItem>
 
-      <fa:SettingsExpanderItem x:Name="LostVoidDetectorItem" Content="迷失之地识别">
-        <fa:SettingsExpanderItem.IconSource>
-          <fa:SymbolIconSource Symbol="Globe" />
-        </fa:SettingsExpanderItem.IconSource>
-        <fa:SettingsExpanderItem.Footer>
+      <fa:FASettingsExpanderItem x:Name="LostVoidDetectorItem" Content="迷失之地识别">
+        <fa:FASettingsExpanderItem.IconSource>
+          <fa:FASymbolIconSource Symbol="Globe" />
+        </fa:FASettingsExpanderItem.IconSource>
+        <fa:FASettingsExpanderItem.Footer>
           <StackPanel Orientation="Horizontal" Spacing="8">
             <fa:FAComboBox x:Name="LostVoidDetectorCombo"
                            Width="270"
@@ -123,8 +124,8 @@
                           OffContent="CPU"
                           Click="OnGpuChanged" />
           </StackPanel>
-        </fa:SettingsExpanderItem.Footer>
-      </fa:SettingsExpanderItem>
+        </fa:FASettingsExpanderItem.Footer>
+      </fa:FASettingsExpanderItem>
 
       <TextBlock Text="日志显示"
                  Margin="0,8,0,0"

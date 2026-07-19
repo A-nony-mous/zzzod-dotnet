@@ -31,6 +31,8 @@ public sealed class ApiEndpointTests
 	{
 		private readonly ZzzBackendEventBus _eventBus = new ZzzBackendEventBus();
 
+		public int StopRunCalls { get; private set; }
+
 		public ZzzBackendResult<ZzzHealthDto> GetHealth()
 		{
 			return ZzzBackendResult<ZzzHealthDto>.Ok(new ZzzHealthDto(ZzzHostMode.ApiOnly, "test", "test-root", ApiEnabled: true, ContextReady: true, 0));
@@ -176,6 +178,7 @@ public sealed class ApiEndpointTests
 
 		public Task<ZzzBackendResult<ZzzRunStatusDto>> StopRunAsync()
 		{
+			StopRunCalls++;
 			return Task.FromResult(ZzzBackendResult<ZzzRunStatusDto>.Ok(new ZzzRunStatusDto(ZzzRunState.Cancelled)));
 		}
 
@@ -239,6 +242,26 @@ public sealed class ApiEndpointTests
 		string json = await response.Content.ReadAsStringAsync();
 		Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 		Assert.Contains("\"state\"", json, StringComparison.Ordinal);
+	}
+
+	/// <summary>
+	/// REST 停止端点必须进入共享后端停止入口。
+	/// </summary>
+	[Fact]
+	public async Task RestApiStopUsesSharedBackendEntry()
+	{
+		ZzzApiOptions options;
+		FakeBackend backend;
+		await using WebApplication app = BuildApp(out options, out backend);
+		await app.StartAsync();
+		Uri baseAddress = GetBaseAddress(app);
+		using HttpClient client = new HttpClient { BaseAddress = baseAddress };
+		client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", options.Token);
+
+		HttpResponseMessage response = await client.PostAsync("/api/runs/current/stop", null);
+
+		Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+		Assert.Equal(1, backend.StopRunCalls);
 	}
 
 	/// <summary>
@@ -355,7 +378,9 @@ public sealed class ApiEndpointTests
 		Assert.Equal(restState, webSocketState);
 	}
 
-	private static WebApplication BuildApp(out ZzzApiOptions options)
+	private static WebApplication BuildApp(out ZzzApiOptions options) => BuildApp(out options, out _);
+
+	private static WebApplication BuildApp(out ZzzApiOptions options, out FakeBackend backend)
 	{
 		options = new ZzzApiOptions
 		{
@@ -363,7 +388,8 @@ public sealed class ApiEndpointTests
 		};
 		WebApplicationBuilder webApplicationBuilder = WebApplication.CreateBuilder();
 		webApplicationBuilder.WebHost.UseUrls("http://127.0.0.1:0");
-		webApplicationBuilder.Services.AddSingleton((IZzzAppBackend)new FakeBackend());
+		backend = new FakeBackend();
+		webApplicationBuilder.Services.AddSingleton((IZzzAppBackend)backend);
 		webApplicationBuilder.Services.AddSingleton(options);
 		webApplicationBuilder.Services.AddZzzApiServices();
 		WebApplication webApplication = webApplicationBuilder.Build();

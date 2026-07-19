@@ -373,7 +373,7 @@ internal sealed partial class ZzzChargePlanPage : UserControl, IZzzPageLifecycle
         DataFormat.CreateStringApplicationFormat("zzzod.charge-plan-index");
 
     private readonly ZzzChargePlanState _state;
-    private readonly InfoBar _errorBar;
+    private readonly FAInfoBar _errorBar;
     private readonly ToggleSwitch _loopToggle;
     private readonly ToggleSwitch _skipPlanToggle;
     private readonly ToggleSwitch _dailyResetToggle;
@@ -384,14 +384,15 @@ internal sealed partial class ZzzChargePlanPage : UserControl, IZzzPageLifecycle
     private readonly FAComboBox _doubleMissionCombo;
     private readonly FAComboBox _doubleTeamCombo;
     private readonly FAComboBox _doubleAutoBattleCombo;
-    private readonly CommandBarButton _undoButton;
+    private readonly FACommandBarButton _undoButton;
     private readonly ItemsControl _planList;
-    private readonly ContentDialog _addPlanDialog;
+    private readonly FAContentDialog _addPlanDialog;
     private readonly ContentControl _dialogPlanHost;
-    private readonly ContentDialog _confirmDialog;
+    private readonly FAContentDialog _confirmDialog;
     private readonly TextBlock _confirmMessage;
     private ZzzChargePlanRowModel? _dragCandidate;
     private Point _dragStart;
+    private PointerPressedEventArgs? _dragPointerPressedArgs;
     private bool _loading;
     private int _loadVersion;
 
@@ -399,7 +400,7 @@ internal sealed partial class ZzzChargePlanPage : UserControl, IZzzPageLifecycle
     {
         _state = new ZzzChargePlanState(backend);
         AvaloniaXamlLoader.Load(this);
-        _errorBar = Required<InfoBar>("ErrorBar");
+        _errorBar = Required<FAInfoBar>("ErrorBar");
         _loopToggle = Required<ToggleSwitch>("LoopToggle");
         _skipPlanToggle = Required<ToggleSwitch>("SkipPlanToggle");
         _dailyResetToggle = Required<ToggleSwitch>("DailyResetToggle");
@@ -410,11 +411,11 @@ internal sealed partial class ZzzChargePlanPage : UserControl, IZzzPageLifecycle
         _doubleMissionCombo = Required<FAComboBox>("DoubleMissionCombo");
         _doubleTeamCombo = Required<FAComboBox>("DoubleTeamCombo");
         _doubleAutoBattleCombo = Required<FAComboBox>("DoubleAutoBattleCombo");
-        _undoButton = Required<CommandBarButton>("UndoButton");
+        _undoButton = Required<FACommandBarButton>("UndoButton");
         _planList = Required<ItemsControl>("PlanList");
-        _addPlanDialog = (ContentDialog)Resources["AddPlanDialog"]!;
+        _addPlanDialog = (FAContentDialog)Resources["AddPlanDialog"]!;
         _dialogPlanHost = (ContentControl)_addPlanDialog.Content!;
-        _confirmDialog = (ContentDialog)Resources["ConfirmDialog"]!;
+        _confirmDialog = (FAContentDialog)Resources["ConfirmDialog"]!;
         _confirmMessage = (TextBlock)_confirmDialog.Content!;
     }
 
@@ -776,12 +777,12 @@ internal sealed partial class ZzzChargePlanPage : UserControl, IZzzPageLifecycle
         _dialogPlanHost.Content = row;
         if (TopLevel.GetTopLevel(this) is not Window owner)
         {
-			ShowError("当前窗口不可用。", InfoBarSeverity.Error);
+			ShowError("当前窗口不可用。", FAInfoBarSeverity.Error);
             return;
         }
 
-        ContentDialogResult result = await _addPlanDialog.ShowAsync(owner).ConfigureAwait(true);
-        if (result == ContentDialogResult.Primary)
+        FAContentDialogResult result = await _addPlanDialog.ShowAsync(owner).ConfigureAwait(true);
+        if (result == FAContentDialogResult.Primary)
         {
             _state.AddPlan(row.Plan);
             RefreshPlans();
@@ -819,12 +820,12 @@ internal sealed partial class ZzzChargePlanPage : UserControl, IZzzPageLifecycle
     {
         if (TopLevel.GetTopLevel(this) is not Window owner)
         {
-			ShowError("当前窗口不可用。", InfoBarSeverity.Error);
+			ShowError("当前窗口不可用。", FAInfoBarSeverity.Error);
             return false;
         }
 
         _confirmMessage.Text = message;
-        return await _confirmDialog.ShowAsync(owner).ConfigureAwait(true) == ContentDialogResult.Primary;
+        return await _confirmDialog.ShowAsync(owner).ConfigureAwait(true) == FAContentDialogResult.Primary;
     }
 
     private void OnPlanPointerPressed(object? sender, PointerPressedEventArgs args)
@@ -833,16 +834,18 @@ internal sealed partial class ZzzChargePlanPage : UserControl, IZzzPageLifecycle
             || !args.GetCurrentPoint(control).Properties.IsLeftButtonPressed || IsInteractiveSource(args.Source))
         {
             _dragCandidate = null;
+            _dragPointerPressedArgs = null;
             return;
         }
 
         _dragCandidate = row;
         _dragStart = args.GetPosition(control);
+        _dragPointerPressedArgs = args;
     }
 
     private async void OnPlanPointerMoved(object? sender, PointerEventArgs args)
     {
-        if (sender is not Control control || _dragCandidate is not { } row
+        if (sender is not Control control || _dragCandidate is not { } row || _dragPointerPressedArgs is not { } pressedArgs
             || !args.GetCurrentPoint(control).Properties.IsLeftButtonPressed)
         {
             return;
@@ -855,9 +858,10 @@ internal sealed partial class ZzzChargePlanPage : UserControl, IZzzPageLifecycle
         }
 
         _dragCandidate = null;
+        _dragPointerPressedArgs = null;
         DataTransfer transfer = new();
         transfer.Add(DataTransferItem.Create(PlanIndexFormat, row.Index.ToString()));
-        await DragDrop.DoDragDropAsync(args, transfer, DragDropEffects.Move).ConfigureAwait(true);
+        await DragDrop.DoDragDropAsync(pressedArgs, transfer, DragDropEffects.Move).ConfigureAwait(true);
     }
 
     private void OnPlanDragOver(object? sender, DragEventArgs args)
@@ -916,7 +920,7 @@ internal sealed partial class ZzzChargePlanPage : UserControl, IZzzPageLifecycle
     {
         if (!string.IsNullOrWhiteSpace(_state.LastError))
         {
-            ShowError(_state.LastError, InfoBarSeverity.Error);
+            ShowError(_state.LastError, FAInfoBarSeverity.Error);
         }
         else
         {
@@ -924,7 +928,7 @@ internal sealed partial class ZzzChargePlanPage : UserControl, IZzzPageLifecycle
         }
     }
 
-    private void ShowError(string message, InfoBarSeverity severity)
+    private void ShowError(string message, FAInfoBarSeverity severity)
     {
         _errorBar.Message = message;
         _errorBar.Severity = severity;

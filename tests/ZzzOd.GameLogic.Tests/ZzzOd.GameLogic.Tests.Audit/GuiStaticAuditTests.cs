@@ -2,6 +2,8 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Xml;
+using System.Xml.Linq;
 using Avalonia;
 using Xunit;
 using ZzzOd.Gui.Shell;
@@ -65,30 +67,55 @@ public sealed class GuiStaticAuditTests
 	}
 
 	[Fact]
-	public void MultiShellWindowsUseOfficialFluentControlsWithoutExplanatoryCopy()
+	public void FrontierShellUsesIndependentSampleMainViewWithoutExplanatoryCopy()
 	{
 		string path = FindGuiRoot();
-		foreach (string fileName in new[] { "MixedShellWindow.axaml", "FrontierShellWindow.axaml" })
+		string window = File.ReadAllText(Path.Combine(path, "Views", "FrontierShellWindow.axaml"));
+		string mainView = File.ReadAllText(Path.Combine(path, "Views", "FrontierMainView.axaml"));
+		string navigationResources = File.ReadAllText(Path.Combine(path, "Theme", "FrontierNavigationResources.axaml"));
+		string text = window + Environment.NewLine + mainView;
+		Assert.Contains("x:Name=\"MainViewHost\"", window, StringComparison.Ordinal);
+		Assert.Contains("<fa:FANavigationView", mainView, StringComparison.Ordinal);
+		Assert.Contains("<fa:FAFrame", mainView, StringComparison.Ordinal);
+		Assert.Contains("<fa:FAInfoBar", mainView, StringComparison.Ordinal);
+		Assert.Contains("Grid.RowSpan=\"2\"", mainView, StringComparison.Ordinal);
+		Assert.Contains("OpenPaneLength=\"108\"", mainView, StringComparison.Ordinal);
+		Assert.DoesNotContain("frontier-selection-indicator", mainView, StringComparison.Ordinal);
+		Assert.Contains("uip|FANavigationViewItemPresenter", mainView, StringComparison.Ordinal);
+		Assert.DoesNotContain("<ControlTemplate>", mainView, StringComparison.Ordinal);
+		Assert.Contains("/template/ Border#LayoutRoot", mainView, StringComparison.Ordinal);
+		Assert.Contains("/template/ ContentPresenter#ContentPresenter", mainView, StringComparison.Ordinal);
+		Assert.Contains("Setter Property=\"Width\" Value=\"72\"", mainView, StringComparison.Ordinal);
+		Assert.Contains("NavigationViewSelectionIndicatorWidth", navigationResources, StringComparison.Ordinal);
+		Assert.Contains("Thickness x:Key=\"NavigationViewContentMargin\">0,48,0,0", mainView, StringComparison.Ordinal);
+		Assert.Contains("x:Name=\"PaneTitleSpacer\"", mainView, StringComparison.Ordinal);
+		Assert.Contains("Height=\"40\"", mainView, StringComparison.Ordinal);
+		Assert.DoesNotContain("ZIndex=\"10\"", mainView, StringComparison.Ordinal);
+		Assert.DoesNotContain("FANavigationViewItemPresenter:selected /template/ Border#SelectionIndicator", mainView, StringComparison.Ordinal);
+		Assert.Contains("FocusAdorner\" Value=\"{x:Null}\"", mainView, StringComparison.Ordinal);
+		Assert.Contains("Height=\"48\"", mainView, StringComparison.Ordinal);
+		Assert.Contains("Width=\"18\"", mainView, StringComparison.Ordinal);
+		Assert.Contains("Text=\"{Binding FrontierWindowTitle}\"", mainView, StringComparison.Ordinal);
+		Assert.Contains("ExtendClientAreaTitleBarHeightHint=\"48\"", window, StringComparison.Ordinal);
+		Assert.Contains("ThicknessTransition Property=\"Margin\" Duration=\"0:0:0.25\"", mainView, StringComparison.Ordinal);
+		Assert.DoesNotContain("SearchBox", mainView, StringComparison.Ordinal);
+		Assert.DoesNotContain("对应 Python", text, StringComparison.Ordinal);
+		Assert.DoesNotContain("后端尚未", text, StringComparison.Ordinal);
+		Assert.DoesNotContain("fallback", text, StringComparison.OrdinalIgnoreCase);
+		Assert.False(File.Exists(Path.Combine(path, "Views", "MixedShellWindow.axaml")));
+		Assert.False(File.Exists(Path.Combine(path, "Theme", "MixedShellResources.axaml")));
+
+		foreach (string fileName in new[] { "FrontierShellResources.axaml", "FrontierNavigationResources.axaml", "FrontierPageResources.axaml" })
 		{
-			string text = File.ReadAllText(Path.Combine(path, "Views", fileName));
-			Assert.Contains("<fa:NavigationView", text, StringComparison.Ordinal);
-			Assert.Contains("<fa:NavigationViewItem", text, StringComparison.Ordinal);
-			Assert.Contains("<fa:Frame", text, StringComparison.Ordinal);
-			Assert.Contains("<fa:FontIconSource", text, StringComparison.Ordinal);
-			Assert.DoesNotContain("对应 Python", text, StringComparison.Ordinal);
-			Assert.DoesNotContain("后端尚未", text, StringComparison.Ordinal);
-			Assert.DoesNotContain("fallback", text, StringComparison.OrdinalIgnoreCase);
+			Assert.True(File.Exists(Path.Combine(path, "Theme", fileName)));
 		}
-		string mixedResources = File.ReadAllText(Path.Combine(path, "Theme", "MixedShellResources.axaml"));
-		string frontierResources = File.ReadAllText(Path.Combine(path, "Theme", "FrontierShellResources.axaml"));
-		string mixed = File.ReadAllText(Path.Combine(path, "Views", "MixedShellWindow.axaml"));
-		string frontier = File.ReadAllText(Path.Combine(path, "Views", "FrontierShellWindow.axaml"));
-		Assert.Contains("ZzzMixedContentSurfaceBrush", mixedResources, StringComparison.Ordinal);
-		Assert.Contains("ZzzMixedContentBorderBrush", mixedResources, StringComparison.Ordinal);
-		Assert.Contains("ZzzMixedContentPadding", mixed, StringComparison.Ordinal);
-		Assert.Contains("ZzzFrontierContentSurfaceBrush", frontierResources, StringComparison.Ordinal);
-		Assert.Contains("ZzzFrontierContentBorderBrush", frontierResources, StringComparison.Ordinal);
-		Assert.Contains("ZzzFrontierContentPadding", frontier, StringComparison.Ordinal);
+
+		string pageHost = File.ReadAllText(Path.Combine(path, "Views", "FrontierPageHost.axaml"));
+		Assert.Contains("<ScrollViewer x:Name=\"PageScrollViewer\"", pageHost, StringComparison.Ordinal);
+		Assert.Contains("Padding=\"{DynamicResource SampleAppPageMargin}\"", pageHost, StringComparison.Ordinal);
+		Assert.Contains("<StackPanel x:Name=\"StandardContentStack\"", pageHost, StringComparison.Ordinal);
+		Assert.Contains("Spacing=\"{DynamicResource SampleAppSectionSpacing}\"", pageHost, StringComparison.Ordinal);
+		Assert.Contains("<ContentControl x:Name=\"StandardContent\"", pageHost, StringComparison.Ordinal);
 	}
 
 	[Fact]
@@ -106,6 +133,301 @@ public sealed class GuiStaticAuditTests
 		}
 	}
 
+	[Fact]
+	public void Avalonia12TopLevelsKeepOwnerTransparencyAndDialogOwnerBoundaries()
+	{
+		string path = FindGuiRoot();
+		string overlay = File.ReadAllText(Path.Combine(path, "Overlay", "ZzzOverlayTechnicalWindow.cs"))
+			+ File.ReadAllText(Path.Combine(path, "Overlay", "ZzzOverlayInfoPanelWindow.cs"))
+			+ File.ReadAllText(Path.Combine(path, "Overlay", "ZzzOverlayNativeWindow.cs"))
+			+ File.ReadAllText(Path.Combine(path, "Overlay", "ZzzOverlayController.cs"))
+			+ File.ReadAllText(Path.Combine(path, "Shell", "ZzzShellWindowRuntime.cs"));
+		Assert.Contains("TransparencyLevelHint", overlay, StringComparison.Ordinal);
+		Assert.Contains("WindowDecorations.None", overlay, StringComparison.Ordinal);
+		Assert.Contains("AttachOwner", overlay, StringComparison.Ordinal);
+		Assert.Contains("Show(_ownerWindow)", overlay, StringComparison.Ordinal);
+		Assert.Contains("SetWindowDisplayAffinity", overlay, StringComparison.Ordinal);
+
+		string[] guiSources = Directory.EnumerateFiles(path, "*.cs", SearchOption.AllDirectories).ToArray();
+		foreach (string sourcePath in guiSources)
+		{
+			string source = File.ReadAllText(sourcePath);
+			Assert.DoesNotContain("ShowAsync()", source, StringComparison.Ordinal);
+		}
+
+		string editor = File.ReadAllText(Path.Combine(path, "Pages", "ApplicationSettings", "ZzzWorldPatrolLargeMapIconEditorWindow.axaml.cs"));
+		Assert.Contains("ShowAsync(this)", editor, StringComparison.Ordinal);
+		string dialog = File.ReadAllText(Path.Combine(path, "Services", "Dialogs", "ZzzDialogService.cs"));
+		string shellRuntime = File.ReadAllText(Path.Combine(path, "Shell", "ZzzShellWindowRuntime.cs"));
+		Assert.Contains("FATeachingTip", dialog, StringComparison.Ordinal);
+		Assert.Contains("FAContentDialog", dialog, StringComparison.Ordinal);
+		Assert.Contains("FAInfoBar", shellRuntime, StringComparison.Ordinal);
+		Assert.Contains("ShowToast", shellRuntime, StringComparison.Ordinal);
+	}
+
+	[Fact]
+	public void FrontierPageFactoryUsesDedicatedRouteViewsAndSampleContainers()
+	{
+		string path = FindGuiRoot();
+		string factory = File.ReadAllText(Path.Combine(path, "Shell", "ZzzFrontierPageFactory.cs"));
+		string views = File.ReadAllText(Path.Combine(path, "Views", "ZzzFrontierPageViews.cs"));
+		string host = File.ReadAllText(Path.Combine(path, "Views", "FrontierPageHost.axaml"));
+		foreach (string viewType in new[]
+		{
+			"FrontierHomePage", "FrontierGameAssistantPage", "FrontierOneDragonPage",
+			"FrontierStandalonePage", "FrontierDevtoolsPage", "FrontierAccountsPage",
+			"FrontierSettingsPage",
+		})
+		{
+			Assert.Contains(viewType, factory + views, StringComparison.Ordinal);
+		}
+
+		Assert.Contains("ScrollViewer x:Name=\"PageScrollViewer\"", host, StringComparison.Ordinal);
+		Assert.Contains("ContentControl x:Name=\"StandardContent\"", host, StringComparison.Ordinal);
+		Assert.Contains("FASettingsExpander", host, StringComparison.Ordinal);
+		Assert.Contains("FATabView", host, StringComparison.Ordinal);
+		Assert.Contains("FACommandBar", host, StringComparison.Ordinal);
+		Assert.Contains("FAInfoBar", host, StringComparison.Ordinal);
+		Assert.DoesNotContain("BackgroundVideoHost", factory + views + host, StringComparison.Ordinal);
+		Assert.DoesNotContain("LibVLC", factory + views + host, StringComparison.Ordinal);
+
+		string worldPatrol = File.ReadAllText(Path.Combine(path, "Pages", "ApplicationSettings", "ZzzWorldPatrolAppSettingPage.axaml"));
+		foreach (string action in new[] { "保存", "回退", "合并", "移除", "移动", "应用", "运行" })
+		{
+			Assert.Contains(action, worldPatrol, StringComparison.Ordinal);
+		}
+	}
+
+	[Fact]
+	public void FrontierDedicatedPagesUseIndependentSampleVisualTrees()
+	{
+		string path = FindGuiRoot();
+		string account = File.ReadAllText(Path.Combine(path, "Views", "FrontierPages", "Accounts", "ZzzFrontierAccountsPage.axaml"));
+		string oneDragon = File.ReadAllText(Path.Combine(path, "Views", "FrontierPages", "OneDragon", "FrontierOneDragonPage.axaml"));
+		string oneDragonChildren = string.Join(Environment.NewLine,
+			Directory.EnumerateFiles(Path.Combine(path, "Views", "FrontierPages", "OneDragon"), "*.axaml")
+				.Select(File.ReadAllText));
+		string devtools = File.ReadAllText(Path.Combine(path, "Views", "FrontierPages", "DevTools", "FrontierDevtoolsPage.axaml"));
+		string worldPatrol = File.ReadAllText(Path.Combine(path, "Views", "FrontierPages", "WorldPatrol", "FrontierWorldPatrolPage.axaml"));
+		string home = File.ReadAllText(Path.Combine(path, "Views", "FrontierPages", "Home", "FrontierHomePage.axaml"));
+		string gameAssistant = File.ReadAllText(Path.Combine(path, "Views", "FrontierPages", "GameAssistant", "FrontierGameAssistantPage.axaml"));
+		string gameAssistantPages = string.Join(Environment.NewLine,
+			Directory.EnumerateFiles(Path.Combine(path, "Views", "FrontierPages", "GameAssistant"), "*.axaml")
+				.Select(File.ReadAllText));
+		string standalone = File.ReadAllText(Path.Combine(path, "Views", "FrontierPages", "Standalone", "FrontierStandalonePage.axaml"));
+		string standaloneRun = File.ReadAllText(Path.Combine(path, "Views", "FrontierPages", "Standalone", "FrontierStandaloneAppRunPage.axaml"));
+		string settings = File.ReadAllText(Path.Combine(path, "Views", "FrontierPages", "Settings", "FrontierSettingsPage.axaml"));
+		string homeCode = File.ReadAllText(Path.Combine(path, "Views", "FrontierPages", "Home", "FrontierHomePage.axaml.cs"));
+		string factory = File.ReadAllText(Path.Combine(path, "Shell", "ZzzFrontierPageFactory.cs"));
+
+		Assert.Contains("ScrollViewer Padding=\"{DynamicResource SampleAppPageMargin}\"", account, StringComparison.Ordinal);
+		Assert.Contains("StackPanel Spacing=\"{DynamicResource SampleAppSectionSpacing}\"", account, StringComparison.Ordinal);
+		Assert.Contains("FASettingsExpander", account, StringComparison.Ordinal);
+		Assert.Contains("FASettingsExpanderItem", account, StringComparison.Ordinal);
+		Assert.Contains("FASettingsExpander.Footer", account, StringComparison.Ordinal);
+		Assert.Contains("HeaderGrid", account, StringComparison.Ordinal);
+		Assert.Contains("AddInstanceButton", account, StringComparison.Ordinal);
+		Assert.Contains("StartButton", home, StringComparison.Ordinal);
+		Assert.Contains("NoticeCard", home, StringComparison.Ordinal);
+		Assert.Contains("HomeLinkButton", home, StringComparison.Ordinal);
+		Assert.Contains("GetDashboardMediaAsync", homeCode, StringComparison.Ordinal);
+		Assert.Contains("ApplyThemeColor", homeCode, StringComparison.Ordinal);
+		Assert.Contains("LoadVideoRepresentativeFrame", homeCode, StringComparison.Ordinal);
+		Assert.DoesNotContain("_videoTimer", homeCode, StringComparison.Ordinal);
+		Assert.DoesNotContain("RenderNextVideoFrame", homeCode, StringComparison.Ordinal);
+		Assert.DoesNotContain("BackgroundVideoHost", home + homeCode, StringComparison.Ordinal);
+		Assert.Contains("FATabView", oneDragon, StringComparison.Ordinal);
+		Assert.Contains("FAFrame", oneDragonChildren, StringComparison.Ordinal);
+		Assert.Contains("ScrollViewer", oneDragonChildren, StringComparison.Ordinal);
+		Assert.Contains("FACommandBar", oneDragonChildren, StringComparison.Ordinal);
+		Assert.Contains("FATabView", devtools, StringComparison.Ordinal);
+		Assert.Contains("FAFrame", devtools, StringComparison.Ordinal);
+		Assert.Contains("FACommandBar", string.Join(Environment.NewLine,
+			Directory.EnumerateFiles(Path.Combine(path, "Views", "FrontierPages", "DevTools"), "*.axaml")
+				.Select(File.ReadAllText)), StringComparison.Ordinal);
+		Assert.Contains("FATabView", worldPatrol, StringComparison.Ordinal);
+		Assert.Contains("FASettingsExpander", worldPatrol, StringComparison.Ordinal);
+		Assert.Contains("FACommandBar", worldPatrol, StringComparison.Ordinal);
+		Assert.Contains("BattleFrame", gameAssistant, StringComparison.Ordinal);
+		Assert.Contains("CommissionFrame", gameAssistant, StringComparison.Ordinal);
+		Assert.Contains("FrontierBattleAssistantPage", gameAssistantPages, StringComparison.Ordinal);
+		Assert.Contains("FrontierCommissionAssistantPage", gameAssistantPages, StringComparison.Ordinal);
+		Assert.Contains("ContentHost", standalone, StringComparison.Ordinal);
+		Assert.Contains("AppList", standaloneRun, StringComparison.Ordinal);
+		Assert.Contains("RunHost", standaloneRun, StringComparison.Ordinal);
+		Assert.Contains("GameFrame", settings, StringComparison.Ordinal);
+		Assert.Contains("OverlayFrame", settings, StringComparison.Ordinal);
+		Assert.Contains("ResourceDownloadFrame", settings, StringComparison.Ordinal);
+		Assert.Contains("EnvironmentFrame", settings, StringComparison.Ordinal);
+		Assert.Contains("PushFrame", settings, StringComparison.Ordinal);
+		Assert.Contains("CustomFrame", settings, StringComparison.Ordinal);
+		Assert.Contains("FrontierHomeVisual", factory, StringComparison.Ordinal);
+		Assert.Contains("FrontierGameAssistantVisual", factory, StringComparison.Ordinal);
+		Assert.Contains("FrontierStandaloneVisual", factory, StringComparison.Ordinal);
+		Assert.Contains("FrontierSettingsVisual", factory, StringComparison.Ordinal);
+		Assert.Contains("RowDefinitions=\"Auto,*\"", standalone, StringComparison.Ordinal);
+		Assert.Contains("ZzzFrontierAccountsPage", factory, StringComparison.Ordinal);
+		Assert.Contains("FrontierOneDragonVisual", factory, StringComparison.Ordinal);
+		Assert.Contains("FrontierDevtoolsVisual", factory, StringComparison.Ordinal);
+	}
+
+	[Fact]
+	public void FrontierApplicationSettingsFactoryMapsEveryRegisteredProvider()
+	{
+		string path = FindGuiRoot();
+		string factory = File.ReadAllText(Path.Combine(path, "Views", "FrontierPages", "ApplicationSettings", "FrontierAppSettingPageFactory.cs"));
+		string[] targets =
+		[
+			"world-patrol-settings", "withered-domain-settings", "one-dragon-charge-plan",
+			"drive-disc-dismantle-flyout", "redemption-code-settings", "lost-void-settings",
+			"suibian-temple-settings", "coffee-settings", "notorious-hunt-settings",
+			"random-play-flyout", "life-on-line-flyout", "intel-board-flyout", "shiyu-defense-settings",
+		];
+		foreach (string target in targets)
+		{
+			Assert.Contains($"\"{target}\"", factory, StringComparison.Ordinal);
+		}
+
+		foreach (string pageType in new[]
+		{
+			"FrontierWorldPatrolPage", "FrontierWitheredDomainAppSettingPage", "FrontierChargePlanPage",
+			"FrontierDriveDiscDismantleSettingsFlyoutContent", "FrontierRedemptionCodeAppSettingPage",
+			"FrontierLostVoidAppSettingPage", "FrontierSuibianTempleAppSettingPage", "FrontierCoffeeAppSettingPage",
+			"FrontierNotoriousHuntAppSettingPage", "FrontierRandomPlaySettingsFlyoutContent",
+			"FrontierLifeOnLineSettingsFlyoutContent", "FrontierIntelBoardSettingsFlyoutContent",
+			"FrontierShiyuDefenseAppSettingPage",
+		})
+		{
+			Assert.Contains(pageType, factory, StringComparison.Ordinal);
+		}
+	}
+
+	[Fact]
+	public void FrontierPagesRetainBaselineNamesAndEventHandlers()
+	{
+		string guiRoot = FindGuiRoot();
+		string frontierRoot = Path.Combine(guiRoot, "Views", "FrontierPages");
+		string classicRoot = Path.Combine(guiRoot, "Pages");
+		HashSet<string> eventAttributes = new(StringComparer.Ordinal)
+		{
+			"Click", "SelectionChanged", "LostFocus", "ValueChanged", "KeyDown", "PointerPressed",
+			"PointerReleased", "PointerMoved", "DragOver", "Drop", "TextChanged", "Checked", "Unchecked",
+		};
+		HashSet<string> intentionallyMovedNames = new(StringComparer.Ordinal)
+		{
+			"BackgroundActionList", "KeyboardKeyList", "GamepadKeyList",
+		};
+
+		foreach (string frontierPath in Directory.EnumerateFiles(frontierRoot, "*.axaml", SearchOption.AllDirectories))
+		{
+			string relative = Path.GetRelativePath(frontierRoot, frontierPath);
+			string directory = Path.GetDirectoryName(relative) ?? string.Empty;
+			if (string.Equals(directory, "DevTools", StringComparison.Ordinal))
+			{
+				directory = "Devtools";
+			}
+
+			string name = Path.GetFileNameWithoutExtension(relative);
+			string classicName = name.Replace("Frontier", "Zzz", StringComparison.Ordinal);
+			if (string.Equals(name, "FrontierWorldPatrolPage", StringComparison.Ordinal))
+			{
+				classicName = "ZzzWorldPatrolAppSettingPage";
+			}
+
+			string classicPath = Path.Combine(classicRoot, directory, classicName + ".axaml");
+			if (!File.Exists(classicPath))
+			{
+				continue;
+			}
+
+			XDocument frontier = XDocument.Load(frontierPath);
+			XDocument classic = XDocument.Load(classicPath);
+			HashSet<string> frontierNames = frontier.Descendants()
+				.SelectMany(element => element.Attributes())
+				.Where(attribute => attribute.Name.LocalName == "Name")
+				.Select(attribute => attribute.Value)
+				.ToHashSet(StringComparer.Ordinal);
+			foreach (string expectedName in classic.Descendants()
+				.SelectMany(element => element.Attributes())
+				.Where(attribute => attribute.Name.LocalName == "Name")
+				.Select(attribute => attribute.Value)
+				.Distinct(StringComparer.Ordinal)
+				.Where(expected => !intentionallyMovedNames.Contains(expected)))
+			{
+				Assert.Contains(expectedName, frontierNames);
+			}
+
+			HashSet<string> frontierHandlers = frontier.Descendants()
+				.SelectMany(element => element.Attributes())
+				.Where(attribute => eventAttributes.Contains(attribute.Name.LocalName))
+				.Select(attribute => attribute.Value)
+				.ToHashSet(StringComparer.Ordinal);
+			foreach (string expectedHandler in classic.Descendants()
+				.SelectMany(element => element.Attributes())
+				.Where(attribute => eventAttributes.Contains(attribute.Name.LocalName))
+				.Select(attribute => attribute.Value)
+				.Distinct(StringComparer.Ordinal))
+			{
+				Assert.Contains(expectedHandler, frontierHandlers);
+			}
+		}
+	}
+
+	[Fact]
+	public void FrontierSettingsExpanderItemsUseSampleParentRelationship()
+	{
+		string root = Path.Combine(FindGuiRoot(), "Views", "FrontierPages");
+		foreach (string file in Directory.EnumerateFiles(root, "*.axaml", SearchOption.AllDirectories))
+		{
+			XDocument document = XDocument.Load(file, LoadOptions.SetLineInfo);
+			XNamespace x = "http://schemas.microsoft.com/winfx/2006/xaml";
+			foreach (XElement expander in document.Descendants().Where(element => element.Name.LocalName == "FASettingsExpander"))
+			{
+				Assert.Null(expander.Attribute("Content"));
+				Assert.DoesNotContain(expander.Ancestors(), ancestor => ancestor.Name.LocalName == "FASettingsExpander");
+			}
+
+			foreach (XElement item in document.Descendants().Where(element => element.Name.LocalName == "FASettingsExpanderItem"))
+			{
+				bool directItem = item.Parent?.Name.LocalName == "FASettingsExpander";
+				bool itemTemplate = item.Parent?.Name.LocalName == "DataTemplate"
+					&& item.Parent.Parent?.Name.LocalName == "FASettingsExpander.ItemTemplate";
+				string? resourceKey = item.Parent?.Attribute(x + "Key")?.Value;
+				bool resourceTemplate = !string.IsNullOrWhiteSpace(resourceKey)
+					&& document.Descendants()
+						.Where(element => element.Name.LocalName == "FASettingsExpander")
+						.Any(element => string.Equals(
+							element.Attribute("ItemTemplate")?.Value,
+							$"{{StaticResource {resourceKey}}}",
+							StringComparison.Ordinal));
+				Assert.True(
+					directItem || itemTemplate || resourceTemplate,
+					$"{Path.GetRelativePath(root, file)} 的 SettingsExpanderItem 必须直接放在 SettingsExpander 或其 ItemTemplate 下。行 {((IXmlLineInfo)item).LineNumber}");
+			}
+		}
+	}
+
+	[Fact]
+	public void FrontierLargeEditorsKeepFixedActionsAndOneContentScrollBoundary()
+	{
+		string root = Path.Combine(FindGuiRoot(), "Views", "FrontierPages");
+		string imageAnalysis = File.ReadAllText(Path.Combine(root, "DevTools", "FrontierImageAnalysisPage.axaml"));
+		string screenTable = File.ReadAllText(Path.Combine(root, "DevTools", "FrontierScreenAreaTable.axaml"));
+		string screenManage = File.ReadAllText(Path.Combine(root, "DevTools", "FrontierScreenManagePage.axaml"));
+		string templateHelper = File.ReadAllText(Path.Combine(root, "DevTools", "FrontierTemplateHelperPage.axaml"));
+		string agentGenerator = File.ReadAllText(Path.Combine(root, "DevTools", "FrontierAgentTemplateGeneratorPage.axaml"));
+		string oneDragonRun = File.ReadAllText(Path.Combine(root, "OneDragon", "FrontierOneDragonRunPage.axaml"));
+		string worldPatrol = File.ReadAllText(Path.Combine(root, "WorldPatrol", "FrontierWorldPatrolPage.axaml"));
+
+		Assert.Contains("RowDefinitions=\"Auto,*\"", imageAnalysis, StringComparison.Ordinal);
+		Assert.Contains("RowDefinitions=\"Auto,*\"", screenTable, StringComparison.Ordinal);
+		Assert.Contains("RowDefinitions=\"Auto,*\"", screenManage, StringComparison.Ordinal);
+		Assert.Contains("RowDefinitions=\"Auto,Auto,Auto,*\"", templateHelper, StringComparison.Ordinal);
+		Assert.Contains("RowDefinitions=\"Auto,*\"", agentGenerator, StringComparison.Ordinal);
+		Assert.Contains("RowDefinitions=\"Auto,*\"", oneDragonRun, StringComparison.Ordinal);
+		Assert.Contains("RowDefinitions=\"Auto,*,Auto,*\"", worldPatrol, StringComparison.Ordinal);
+	}
+
 	/// <summary>
 	/// 游戏助手容器使用 AXAML FluentAvalonia TabView，并固定 BaselineParity 子页顺序。
 	/// </summary>
@@ -116,8 +438,8 @@ public sealed class GuiStaticAuditTests
 		string text = File.ReadAllText(Path.Combine(path, "Pages", "GameAssistant", "ZzzGameAssistantPage.axaml"));
 		string actualString = File.ReadAllText(Path.Combine(path, "Pages", "GameAssistant", "ZzzGameAssistantPage.cs"));
 		string text2 = File.ReadAllText(Path.Combine(path, "Pages", "ZzzPageFactory.cs"));
-		Assert.Contains("<fa:TabView", text, StringComparison.Ordinal);
-		Assert.Contains("<fa:TabViewItem", text, StringComparison.Ordinal);
+		Assert.Contains("<fa:FATabView", text, StringComparison.Ordinal);
+		Assert.Contains("<fa:FATabViewItem", text, StringComparison.Ordinal);
 		Assert.Contains("Header=\"战斗助手\"", text, StringComparison.Ordinal);
 		Assert.Contains("Header=\"委托助手\"", text, StringComparison.Ordinal);
 		Assert.True(text.IndexOf("Header=\"战斗助手\"", StringComparison.Ordinal) < text.IndexOf("Header=\"委托助手\"", StringComparison.Ordinal));
@@ -142,7 +464,7 @@ public sealed class GuiStaticAuditTests
 		string text = File.ReadAllText(Path.Combine(path, "Pages", "OneDragon", "ZzzOneDragonPage.axaml"));
 		string actualString = File.ReadAllText(Path.Combine(path, "Pages", "OneDragon", "ZzzOneDragonPage.cs"));
 		string text2 = File.ReadAllText(Path.Combine(path, "Pages", "ZzzPageFactory.cs"));
-		Assert.Contains("<fa:TabView", text, StringComparison.Ordinal);
+		Assert.Contains("<fa:FATabView", text, StringComparison.Ordinal);
 		Assert.Contains("Header=\"一条龙运行\"", text, StringComparison.Ordinal);
 		Assert.Contains("Header=\"体力计划\"", text, StringComparison.Ordinal);
 		Assert.Contains("Header=\"预备编队\"", text, StringComparison.Ordinal);
@@ -175,7 +497,7 @@ public sealed class GuiStaticAuditTests
 		Assert.Contains("ColumnDefinitions=\"*,10,*\"", actualString, StringComparison.Ordinal);
 		Assert.Contains("x:Name=\"AppList\"", actualString, StringComparison.Ordinal);
 		Assert.Contains("<ItemsControl.ItemTemplate>", actualString, StringComparison.Ordinal);
-		Assert.Contains("<fa:SettingsExpanderItem", actualString, StringComparison.Ordinal);
+		Assert.Contains("<fa:FASettingsExpanderItem", actualString, StringComparison.Ordinal);
 		Assert.Contains("Glyph=\"{Binding StatusGlyph}\"", actualString, StringComparison.Ordinal);
 		Assert.Contains("Description=\"{Binding LastRunText}\"", actualString, StringComparison.Ordinal);
 		Assert.Contains("ToolTip.Tip=\"应用设置\"", actualString, StringComparison.Ordinal);
@@ -234,8 +556,8 @@ public sealed class GuiStaticAuditTests
 		Assert.Contains("Content=\"体力计划说明\"", actualString, StringComparison.Ordinal);
 		Assert.Contains("Description=\"合理安排每日体力消耗，支持自定义优先级和循环执行\"", actualString, StringComparison.Ordinal);
 		Assert.Contains("Content=\"点此查看指南\"", actualString, StringComparison.Ordinal);
-		Assert.Contains("<fa:SettingsExpander Header=\"双倍活动\"", actualString, StringComparison.Ordinal);
-		Assert.Contains("<fa:CommandBar", actualString, StringComparison.Ordinal);
+		Assert.Contains("<fa:FASettingsExpander Header=\"双倍活动\"", actualString, StringComparison.Ordinal);
+		Assert.Contains("<fa:FACommandBar", actualString, StringComparison.Ordinal);
 		Assert.Contains("Label=\"撤销\"", actualString, StringComparison.Ordinal);
 		Assert.Contains("Label=\"删除已完成\"", actualString, StringComparison.Ordinal);
 		Assert.Contains("Label=\"删除所有\"", actualString, StringComparison.Ordinal);
@@ -292,7 +614,9 @@ public sealed class GuiStaticAuditTests
 		string path = FindGuiRoot();
 		string actualString = File.ReadAllText(Path.Combine(path, "Pages", "GameAssistant", "ZzzBattleAssistantPage.axaml"));
 		string actualString2 = File.ReadAllText(Path.Combine(path, "Pages", "GameAssistant", "ZzzGameAssistantPages.cs"));
-		Assert.Contains("Margin=\"11\"", actualString, StringComparison.Ordinal);
+		string spacing = File.ReadAllText(Path.Combine(path, "Theme", "ZzzSpacing.axaml"));
+		Assert.Contains("Margin=\"{DynamicResource SampleAppPageMargin}\"", actualString, StringComparison.Ordinal);
+		Assert.Contains("<Thickness x:Key=\"SampleAppPageMargin\">11</Thickness>", spacing, StringComparison.Ordinal);
 		Assert.Contains("ColumnDefinitions=\"*,12,Auto\"", actualString, StringComparison.Ordinal);
 		Assert.Contains("Width=\"350\"", actualString, StringComparison.Ordinal);
 		Assert.Contains("MinWidth=\"350\"", actualString, StringComparison.Ordinal);
@@ -304,7 +628,7 @@ public sealed class GuiStaticAuditTests
 		Assert.Contains("Text=\"[触发器]\"", actualString, StringComparison.Ordinal);
 		Assert.Contains("Text=\"[条件集]\"", actualString, StringComparison.Ordinal);
 		Assert.Contains("Text=\"[持续时间]\"", actualString, StringComparison.Ordinal);
-		Assert.Contains("Watermark=\"输入状态关键词过滤...\"", actualString, StringComparison.Ordinal);
+		Assert.Contains("PlaceholderText=\"输入状态关键词过滤...\"", actualString, StringComparison.Ordinal);
 		Assert.Contains("Text=\"触发秒数\"", actualString, StringComparison.Ordinal);
 		Assert.Contains("Text=\"状态值\"", actualString, StringComparison.Ordinal);
 		Assert.Contains("x:Name=\"TaskTriggerValue\"", actualString, StringComparison.Ordinal);
@@ -331,11 +655,11 @@ public sealed class GuiStaticAuditTests
 		string path = FindGuiRoot();
 		string actualString = File.ReadAllText(Path.Combine(path, "Pages", "GameAssistant", "ZzzBattleAssistantSettings.axaml"));
 		string text = File.ReadAllText(Path.Combine(path, "Pages", "GameAssistant", "ZzzGameAssistantPages.cs"));
-		Assert.Contains("<fa:CommandBar", actualString, StringComparison.Ordinal);
-		Assert.Contains("<fa:CommandBarButton Label=\"如何让AI打得更好？\"", actualString, StringComparison.Ordinal);
-		Assert.Contains("<fa:CommandBarButton Label=\"查看指南\"", actualString, StringComparison.Ordinal);
-		Assert.Contains("<fa:CommandBarButton Label=\"前往社区\"", actualString, StringComparison.Ordinal);
-		Assert.Contains("<fa:ContentDialog", actualString, StringComparison.Ordinal);
+		Assert.Contains("<fa:FACommandBar", actualString, StringComparison.Ordinal);
+		Assert.Contains("<fa:FACommandBarButton Label=\"如何让AI打得更好？\"", actualString, StringComparison.Ordinal);
+		Assert.Contains("<fa:FACommandBarButton Label=\"查看指南\"", actualString, StringComparison.Ordinal);
+		Assert.Contains("<fa:FACommandBarButton Label=\"前往社区\"", actualString, StringComparison.Ordinal);
+		Assert.Contains("<fa:FAContentDialog", actualString, StringComparison.Ordinal);
 		Assert.Contains("Title=\"使用说明\"", actualString, StringComparison.Ordinal);
 		Assert.Contains("CloseButtonText=\"确认\"", actualString, StringComparison.Ordinal);
 		Assert.Contains("为了让您的自动战斗体验更加顺畅", actualString, StringComparison.Ordinal);
@@ -357,7 +681,7 @@ public sealed class GuiStaticAuditTests
 		string actualString2 = File.ReadAllText(Path.Combine(path, "Pages", "GameAssistant", "ZzzGameAssistantPages.cs"));
 		Assert.Contains("x:Name=\"DeleteAutoBattleConfigButton\"", actualString, StringComparison.Ordinal);
 		Assert.Contains("x:Name=\"DeleteDodgeConfigButton\"", actualString, StringComparison.Ordinal);
-		Assert.Contains("<fa:CommandBarButton", actualString, StringComparison.Ordinal);
+		Assert.Contains("<fa:FACommandBarButton", actualString, StringComparison.Ordinal);
 		Assert.Contains("GetBattleAssistantConfigCatalog()", actualString2, StringComparison.Ordinal);
 		Assert.Contains("DeleteBattleAssistantConfig", actualString2, StringComparison.Ordinal);
 		Assert.DoesNotContain("values.Add(currentValue)", actualString2, StringComparison.Ordinal);
@@ -375,10 +699,10 @@ public sealed class GuiStaticAuditTests
 		string text = File.ReadAllText(Path.Combine(path, "Pages", "GameAssistant", "ZzzGameAssistantPages.cs"));
 		int num = text.IndexOf("internal sealed partial class ZzzBattleAssistantSettings", StringComparison.Ordinal);
 		string actualString2 = text.Substring(num, text.IndexOf("internal sealed partial class ZzzCommissionAssistantSettings", StringComparison.Ordinal) - num);
-		Assert.Contains("<fa:SettingsExpanderItem Content=\"终结技一好就放\"", actualString, StringComparison.Ordinal);
-		Assert.Contains("<fa:SettingsExpanderItem Content=\"使用合并配置文件\"", actualString, StringComparison.Ordinal);
-		Assert.Contains("<fa:SettingsExpanderItem Content=\"GPU运算\"", actualString, StringComparison.Ordinal);
-		Assert.Contains("<fa:NumberBox x:Name=\"ScreenshotIntervalNumber\"", actualString, StringComparison.Ordinal);
+		Assert.Contains("<fa:FASettingsExpanderItem Content=\"终结技一好就放\"", actualString, StringComparison.Ordinal);
+		Assert.Contains("<fa:FASettingsExpanderItem Content=\"使用合并配置文件\"", actualString, StringComparison.Ordinal);
+		Assert.Contains("<fa:FASettingsExpanderItem Content=\"GPU运算\"", actualString, StringComparison.Ordinal);
+		Assert.Contains("<fa:FANumberBox x:Name=\"ScreenshotIntervalNumber\"", actualString, StringComparison.Ordinal);
 		Assert.Contains("Minimum=\"0.02\"", actualString, StringComparison.Ordinal);
 		Assert.Contains("Maximum=\"0.1\"", actualString, StringComparison.Ordinal);
 		Assert.Contains("<fa:FAComboBox x:Name=\"ControlMethodCombo\"", actualString, StringComparison.Ordinal);
@@ -400,8 +724,8 @@ public sealed class GuiStaticAuditTests
 		string path = FindGuiRoot();
 		string axaml = File.ReadAllText(Path.Combine(path, "Pages", "GameAssistant", "ZzzBattleAssistantSettings.axaml"));
 		string source = File.ReadAllText(Path.Combine(path, "Pages", "GameAssistant", "ZzzGameAssistantPages.cs"));
-		Assert.Contains("<fa:TabView x:Name=\"ModeTabs\"", axaml, StringComparison.Ordinal);
-		Assert.Contains("FindControl<TabView>(\"ModeTabs\")", source, StringComparison.Ordinal);
+		Assert.Contains("<fa:FATabView x:Name=\"ModeTabs\"", axaml, StringComparison.Ordinal);
+		Assert.Contains("FindControl<FATabView>(\"ModeTabs\")", source, StringComparison.Ordinal);
 		Assert.Contains("_modeTabs.SelectionChanged += OnModeSelectionChanged", source, StringComparison.Ordinal);
 		Assert.Contains("_modeTabs.SelectedIndex != 1", source, StringComparison.Ordinal);
 		Assert.DoesNotContain("AutoBattleModeButton", source, StringComparison.Ordinal);
@@ -487,16 +811,16 @@ public sealed class GuiStaticAuditTests
 		string path = FindGuiRoot();
 		string actualString = File.ReadAllText(Path.Combine(path, "Views", "MainWindow.axaml"));
 		string actualString2 = File.ReadAllText(Path.Combine(path, "Views", "MainWindow.cs"));
-		Assert.Contains("<fa:NavigationView", actualString, StringComparison.Ordinal);
-		Assert.Contains("<fa:NavigationViewItem", actualString, StringComparison.Ordinal);
-		Assert.Contains("<fa:NavigationView.MenuItemTemplate>", actualString, StringComparison.Ordinal);
+		Assert.Contains("<fa:FANavigationView", actualString, StringComparison.Ordinal);
+		Assert.Contains("<fa:FANavigationViewItem", actualString, StringComparison.Ordinal);
+		Assert.Contains("<fa:FANavigationView.MenuItemTemplate>", actualString, StringComparison.Ordinal);
 		Assert.Contains("PaneDisplayMode=\"Left\"", actualString, StringComparison.Ordinal);
 		Assert.Contains("OpenPaneLength=\"{DynamicResource ZzzNavigationPaneWidth}\"", actualString, StringComparison.Ordinal);
 		Assert.Contains("Classes=\"zzz-navigation-item\"", actualString, StringComparison.Ordinal);
 		Assert.Contains("Text=\"{Binding Text}\"", actualString, StringComparison.Ordinal);
 		Assert.Contains("Margin=\"-4,0,0,0\"", actualString, StringComparison.Ordinal);
 		Assert.Contains("<DataTemplate", actualString, StringComparison.Ordinal);
-		Assert.Contains("<fa:Frame", actualString, StringComparison.Ordinal);
+		Assert.Contains("<fa:FAFrame", actualString, StringComparison.Ordinal);
 		Assert.Contains("HorizontalContentAlignment=\"Stretch\"", actualString, StringComparison.Ordinal);
 		Assert.Contains("VerticalContentAlignment=\"Stretch\"", actualString, StringComparison.Ordinal);
 		Assert.Contains("x:Name=\"TitleBar\"", actualString, StringComparison.Ordinal);
@@ -515,7 +839,7 @@ public sealed class GuiStaticAuditTests
 		Assert.Contains("IZzzShellWindowRuntime", actualString2, StringComparison.Ordinal);
 		Assert.Contains("_windowRuntime.Attach(this, _toastBar)", actualString2, StringComparison.Ordinal);
 		string actualString4 = File.ReadAllText(Path.Combine(path, "Shell", "ZzzShellWindowRuntime.cs"));
-		Assert.Contains("ZzzWindowBackdropService", actualString4, StringComparison.Ordinal);
+		Assert.DoesNotContain("ZzzWindowBackdropService", actualString4, StringComparison.Ordinal);
 		Assert.Contains("_overlayController.Start();", actualString4, StringComparison.Ordinal);
 		Assert.Contains("_globalInputMonitor.InputPressed += OnGlobalInputPressed", actualString4, StringComparison.Ordinal);
 		Assert.Contains("if (!IsActive)", actualString2, StringComparison.Ordinal);
@@ -631,15 +955,15 @@ public sealed class GuiStaticAuditTests
 		string text2 = File.ReadAllText(Path.Combine(path, "Controls", "Home", "ZzzNoticeCard.axaml"));
 		string actualString3 = File.ReadAllText(Path.Combine(path, "Controls", "Home", "ZzzNoticeCard.axaml.cs"));
 		Assert.Contains("<home:ZzzNoticeCard", text, StringComparison.Ordinal);
-		Assert.Contains("<fa:SymbolIcon Symbol=\"Home\"", text, StringComparison.Ordinal);
+		Assert.Contains("<fa:FASymbolIcon Symbol=\"Home\"", text, StringComparison.Ordinal);
 		Assert.Contains("<fa:FAPathIcon", text, StringComparison.Ordinal);
-		Assert.Contains("<fa:SymbolIcon Symbol=\"Library\"", text, StringComparison.Ordinal);
-		Assert.Contains("<fa:SymbolIcon Symbol=\"Message\"", text, StringComparison.Ordinal);
+		Assert.Contains("<fa:FASymbolIcon Symbol=\"Library\"", text, StringComparison.Ordinal);
+		Assert.Contains("<fa:FASymbolIcon Symbol=\"Message\"", text, StringComparison.Ordinal);
 		Assert.True(text.IndexOf("x:Name=\"HomeLinkButton\"", StringComparison.Ordinal) < text.IndexOf("x:Name=\"GithubLinkButton\"", StringComparison.Ordinal));
 		Assert.True(text.IndexOf("x:Name=\"GithubLinkButton\"", StringComparison.Ordinal) < text.IndexOf("x:Name=\"DocsLinkButton\"", StringComparison.Ordinal));
 		Assert.True(text.IndexOf("x:Name=\"DocsLinkButton\"", StringComparison.Ordinal) < text.IndexOf("x:Name=\"ChannelLinkButton\"", StringComparison.Ordinal));
-		Assert.Contains("<fa:TeachingTip", text, StringComparison.Ordinal);
-		Assert.Contains("<fa:ContentDialog", text, StringComparison.Ordinal);
+		Assert.Contains("<fa:FATeachingTip", text, StringComparison.Ordinal);
+		Assert.Contains("<fa:FAContentDialog", text, StringComparison.Ordinal);
 		Assert.Contains("Title=\"运行前检查\"", text, StringComparison.Ordinal);
 		Assert.Contains("PrimaryButtonText=\"前往配置\"", text, StringComparison.Ordinal);
 		Assert.Contains("CloseButtonText=\"仍然继续\"", text, StringComparison.Ordinal);
@@ -655,10 +979,10 @@ public sealed class GuiStaticAuditTests
 		Assert.Contains("ZzzHomeStartForegroundBrush", actualString2, StringComparison.Ordinal);
 		Assert.Contains("ButtonBackgroundPointerOver", actualString, StringComparison.Ordinal);
 		Assert.Contains("ButtonForegroundPointerOver", actualString, StringComparison.Ordinal);
-		Assert.Contains("Symbol.PlayFilled : Symbol.Settings", actualString, StringComparison.Ordinal);
+		Assert.Contains("FASymbol.PlayFilled : FASymbol.Settings", actualString, StringComparison.Ordinal);
 		Assert.Contains("Width=\"589\"", text2, StringComparison.Ordinal);
 		Assert.Contains("Width=\"225\"", text2, StringComparison.Ordinal);
-		Assert.Contains("<fa:TabView", text2, StringComparison.Ordinal);
+		Assert.Contains("<fa:FATabView", text2, StringComparison.Ordinal);
 		Assert.Contains("SelectedIndex=\"2\"", text2, StringComparison.Ordinal);
 		Assert.Contains("IsAddTabButtonVisible=\"False\"", text2, StringComparison.Ordinal);
 		Assert.Equal(4, text2.Split("IsClosable=\"False\"").Length - 1);
@@ -695,7 +1019,7 @@ public sealed class GuiStaticAuditTests
 		string actualString = File.ReadAllText(Path.Combine(path, "Controls", "ZzzPivotPage.cs"));
 		string actualString2 = File.ReadAllText(Path.Combine(path, "Controls", "ZzzPageStackHost.axaml"));
 		string actualString3 = File.ReadAllText(Path.Combine(path, "Views", "MainWindow.axaml"));
-		Assert.Contains("StyleKeyOverride => typeof(TabView)", actualString, StringComparison.Ordinal);
+		Assert.Contains("StyleKeyOverride => typeof(FATabView)", actualString, StringComparison.Ordinal);
 		Assert.Contains("((IList)TabItems).Add(tabItem)", actualString, StringComparison.Ordinal);
 		Assert.DoesNotContain("_compatibilityFrame", actualString, StringComparison.Ordinal);
 		Assert.Contains("HorizontalContentAlignment=\"Stretch\"", actualString2, StringComparison.Ordinal);
@@ -713,7 +1037,7 @@ public sealed class GuiStaticAuditTests
 		string path = FindGuiRoot();
 		string actualString = File.ReadAllText(Path.Combine(path, "Controls", "ZzzPageStackHost.axaml"));
 		string actualString2 = File.ReadAllText(Path.Combine(path, "Controls", "ZzzPageStackHost.axaml.cs"));
-		Assert.Contains("<fa:Frame", actualString, StringComparison.Ordinal);
+		Assert.Contains("<fa:FAFrame", actualString, StringComparison.Ordinal);
 		Assert.Contains("HorizontalContentAlignment=\"Stretch\"", actualString, StringComparison.Ordinal);
 		Assert.Contains("VerticalContentAlignment=\"Stretch\"", actualString, StringComparison.Ordinal);
 		Assert.DoesNotContain("new Frame", actualString2, StringComparison.Ordinal);

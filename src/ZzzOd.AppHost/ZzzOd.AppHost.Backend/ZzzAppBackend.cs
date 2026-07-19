@@ -1053,7 +1053,7 @@ public sealed class ZzzAppBackend : IZzzAppBackend, IZzzIntelBoardProgressBacken
 			}
 			finally
 			{
-				await context.RunContext.StopRunningAsync(TimeSpan.FromSeconds(1L)).ConfigureAwait(continueOnCapturedContext: false);
+				await context.RunContext.StopRunningAsync().ConfigureAwait(continueOnCapturedContext: false);
 			}
 			ZzzAppBackend zzzAppBackend = this;
 			int state = (result.IsSuccess ? 5 : 6);
@@ -2398,16 +2398,24 @@ public sealed class ZzzAppBackend : IZzzAppBackend, IZzzIntelBoardProgressBacken
 			_terminalState = ZzzRunState.Stopping;
 			PublishRunEvents(GetCurrentRunCore());
 		}
-		await context.RunContext.StopRunningAsync(TimeSpan.FromSeconds(3L)).ConfigureAwait(continueOnCapturedContext: false);
+		await context.RunContext.StopRunningAsync().ConfigureAwait(continueOnCapturedContext: false);
 		ZzzRunStatusDto status;
+		bool publishCancelled;
 		using (_lock.EnterScope())
 		{
-			_terminalState = ZzzRunState.Cancelled;
-			_finishedAt = DateTimeOffset.UtcNow;
-			_lastStatus = "人工结束";
+			publishCancelled = _terminalState != ZzzRunState.Cancelled;
+			if (publishCancelled)
+			{
+				_terminalState = ZzzRunState.Cancelled;
+				_finishedAt = DateTimeOffset.UtcNow;
+				_lastStatus = "人工结束";
+			}
 			status = GetCurrentRunCore();
 		}
-		PublishRunEvents(status);
+		if (publishCancelled)
+		{
+			PublishRunEvents(status);
+		}
 		return ZzzBackendResult<ZzzRunStatusDto>.Ok(status);
 	}
 

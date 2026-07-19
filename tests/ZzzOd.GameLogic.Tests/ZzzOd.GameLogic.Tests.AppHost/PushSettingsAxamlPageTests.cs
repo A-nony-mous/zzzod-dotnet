@@ -81,10 +81,10 @@ public sealed class PushSettingsAxamlPageTests
 		string text = File.ReadAllText(Path.Combine(path, "ZzzPushSettingsPage.axaml"));
 		string actualString = File.ReadAllText(Path.Combine(path, "ZzzPushSettingsPage.cs"));
 		AssertOrder(text, "设置说明", "自定义通知标题", "通知中附带图片", "代理设置", "测试通知方式", "通知方式");
-		Assert.Contains("fa:SettingsExpander", text, StringComparison.Ordinal);
-		Assert.Contains("fa:SettingsExpanderItem", text, StringComparison.Ordinal);
+		Assert.Contains("fa:FASettingsExpander", text, StringComparison.Ordinal);
+		Assert.Contains("fa:FASettingsExpanderItem", text, StringComparison.Ordinal);
 		Assert.Contains("fa:FAComboBox", text, StringComparison.Ordinal);
-		Assert.Contains("fa:InfoBar", text, StringComparison.Ordinal);
+		Assert.Contains("fa:FAInfoBar", text, StringComparison.Ordinal);
 		Assert.Contains("Content=\"测试当前方式\"", text, StringComparison.Ordinal);
 		Assert.Contains("Content=\"测试全部\"", text, StringComparison.Ordinal);
 		Assert.Contains("x:Name=\"TestCurrentButton\"", text, StringComparison.Ordinal);

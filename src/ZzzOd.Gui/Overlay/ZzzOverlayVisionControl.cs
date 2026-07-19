@@ -170,8 +170,9 @@ internal sealed class ZzzOverlayVisionControl : Control
         double y = bounds.Y * standardScaleY;
         double width = Math.Max(1d, bounds.Width * standardScaleX);
         double height = Math.Max(1d, bounds.Height * standardScaleY);
-        x = x * visual.ScaleX + visual.OffsetX;
-        y = y * visual.ScaleY + visual.OffsetY;
+        double scaling = Math.Max(0.5d, desktopScaling);
+        x = x * visual.ScaleX + visual.OffsetX / scaling;
+        y = y * visual.ScaleY + visual.OffsetY / scaling;
         width *= visual.ScaleX;
         height *= visual.ScaleY;
         return new Rect(x, y, width, height);

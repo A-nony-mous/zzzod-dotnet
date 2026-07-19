@@ -55,7 +55,7 @@ public sealed class ShiyuDefenseAppSettingPageTests
 		string text = File.ReadAllText(Path.Combine(path, "ZzzShiyuDefenseAppSettingPage.axaml"));
 		string actualString = File.ReadAllText(Path.Combine(path, "ZzzShiyuDefenseAppSettingPage.axaml.cs"));
 		AssertOrder(text, "剧变节点 重置运行记录", "Text=\"预备配队\"", "Text=\"剧变节点\"", "Text=\"电属性\"", "Text=\"以太属性\"", "Text=\"物理属性\"", "Text=\"火属性\"", "Text=\"冰属性\"", "Text=\"风属性\"");
-		Assert.Contains("fa:SettingsExpanderItem", text, StringComparison.Ordinal);
+		Assert.Contains("fa:FASettingsExpanderItem", text, StringComparison.Ordinal);
 		Assert.Contains("<ListBox", text, StringComparison.Ordinal);
 		Assert.Contains("<CheckBox", text, StringComparison.Ordinal);
 		Assert.Contains("MinHeight=\"500\"", text, StringComparison.Ordinal);

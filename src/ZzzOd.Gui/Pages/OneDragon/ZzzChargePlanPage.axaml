@@ -6,16 +6,16 @@
   <UserControl.Resources>
     <DataTemplate x:Key="ChargePlanRowTemplate"
                   x:DataType="local:ZzzChargePlanRowModel">
-      <fa:SettingsExpanderItem Margin="0,0,0,6"
+      <fa:FASettingsExpanderItem Margin="0,0,0,6"
                                DragDrop.AllowDrop="True"
                                PointerPressed="OnPlanPointerPressed"
                                PointerMoved="OnPlanPointerMoved"
                                DragDrop.DragOver="OnPlanDragOver"
                                DragDrop.Drop="OnPlanDrop">
-        <fa:SettingsExpanderItem.IconSource>
-          <fa:FontIconSource Glyph="&#xE787;" />
-        </fa:SettingsExpanderItem.IconSource>
-        <fa:SettingsExpanderItem.Footer>
+        <fa:FASettingsExpanderItem.IconSource>
+          <fa:FAFontIconSource Glyph="&#xE787;" />
+        </fa:FASettingsExpanderItem.IconSource>
+        <fa:FASettingsExpanderItem.Footer>
           <StackPanel Spacing="6">
             <WrapPanel Orientation="Horizontal">
               <fa:FAComboBox Width="132"
@@ -119,7 +119,7 @@
                       ToolTip.Tip="置顶"
                       IsVisible="{Binding ShowCommands}"
                       Click="OnMovePlanTopClicked">
-                <fa:FontIcon Glyph="&#xE74A;" />
+                <fa:FAFontIcon Glyph="&#xE74A;" />
               </Button>
               <Button Width="36"
                       Height="32"
@@ -127,109 +127,109 @@
                       ToolTip.Tip="删除"
                       IsVisible="{Binding ShowCommands}"
                       Click="OnDeletePlanClicked">
-                <fa:SymbolIcon Symbol="Delete" />
+                <fa:FASymbolIcon Symbol="Delete" />
               </Button>
             </StackPanel>
           </StackPanel>
-        </fa:SettingsExpanderItem.Footer>
-      </fa:SettingsExpanderItem>
+        </fa:FASettingsExpanderItem.Footer>
+      </fa:FASettingsExpanderItem>
     </DataTemplate>
-    <fa:ContentDialog x:Key="AddPlanDialog"
+    <fa:FAContentDialog x:Key="AddPlanDialog"
                       Title="新增体力计划"
                       PrimaryButtonText="确定"
                       CloseButtonText="取消"
                       DefaultButton="Primary">
       <ContentControl x:Name="DialogPlanHost"
                       ContentTemplate="{StaticResource ChargePlanRowTemplate}" />
-    </fa:ContentDialog>
-    <fa:ContentDialog x:Key="ConfirmDialog"
+    </fa:FAContentDialog>
+    <fa:FAContentDialog x:Key="ConfirmDialog"
                       Title="警告"
                       PrimaryButtonText="确定"
                       CloseButtonText="取消"
                       DefaultButton="Primary">
       <TextBlock x:Name="ConfirmMessage"
                  TextWrapping="Wrap" />
-    </fa:ContentDialog>
+    </fa:FAContentDialog>
   </UserControl.Resources>
 
   <Grid RowDefinitions="*,Auto">
     <ScrollViewer Grid.Row="0"
                   HorizontalScrollBarVisibility="Disabled"
                   VerticalScrollBarVisibility="Auto">
-      <StackPanel Margin="11"
+      <StackPanel Margin="{DynamicResource SampleAppPageMargin}"
                   Spacing="6">
-        <fa:InfoBar x:Name="ErrorBar"
+        <fa:FAInfoBar x:Name="ErrorBar"
                     IsOpen="False"
                     IsClosable="True"
                     Severity="Error" />
-        <fa:SettingsExpanderItem Content="体力计划说明"
+        <fa:FASettingsExpanderItem Content="体力计划说明"
                                  Description="合理安排每日体力消耗，支持自定义优先级和循环执行">
-          <fa:SettingsExpanderItem.IconSource>
-            <fa:SymbolIconSource Symbol="Message" />
-          </fa:SettingsExpanderItem.IconSource>
-          <fa:SettingsExpanderItem.Footer>
+          <fa:FASettingsExpanderItem.IconSource>
+            <fa:FASymbolIconSource Symbol="Message" />
+          </fa:FASettingsExpanderItem.IconSource>
+          <fa:FASettingsExpanderItem.Footer>
             <Button Content="点此查看指南"
                     Click="OnHelpClicked" />
-          </fa:SettingsExpanderItem.Footer>
-        </fa:SettingsExpanderItem>
+          </fa:FASettingsExpanderItem.Footer>
+        </fa:FASettingsExpanderItem>
 
         <Grid ColumnDefinitions="*,6,*">
-          <fa:SettingsExpanderItem Content="循环执行"
+          <fa:FASettingsExpanderItem Content="循环执行"
                                    Description="开启后，全部计划均达到计划次数后，已运行次数会清零并开始下一轮">
-            <fa:SettingsExpanderItem.Footer>
+            <fa:FASettingsExpanderItem.Footer>
               <ToggleSwitch x:Name="LoopToggle"
                             OnContent=""
                             OffContent=""
                             Click="OnLoopChanged" />
-            </fa:SettingsExpanderItem.Footer>
-          </fa:SettingsExpanderItem>
-          <fa:SettingsExpanderItem Grid.Column="2"
+            </fa:FASettingsExpanderItem.Footer>
+          </fa:FASettingsExpanderItem>
+          <fa:FASettingsExpanderItem Grid.Column="2"
                                    Content="跳过计划"
                                    Description="开启后，某项计划因电量不足且无法恢复达标时，会依次尝试后续计划">
-            <fa:SettingsExpanderItem.Footer>
+            <fa:FASettingsExpanderItem.Footer>
               <ToggleSwitch x:Name="SkipPlanToggle"
                             OnContent=""
                             OffContent=""
                             Click="OnSkipPlanChanged" />
-            </fa:SettingsExpanderItem.Footer>
-          </fa:SettingsExpanderItem>
+            </fa:FASettingsExpanderItem.Footer>
+          </fa:FASettingsExpanderItem>
         </Grid>
 
         <Grid ColumnDefinitions="*,6,*">
-          <fa:SettingsExpanderItem Content="每日重置"
+          <fa:FASettingsExpanderItem Content="每日重置"
                                    Description="开启后，每天首次运行体力计划前，会将所有体力计划已运行次数清零">
-            <fa:SettingsExpanderItem.Footer>
+            <fa:FASettingsExpanderItem.Footer>
               <ToggleSwitch x:Name="DailyResetToggle"
                             OnContent=""
                             OffContent=""
                             Click="OnDailyResetChanged" />
-            </fa:SettingsExpanderItem.Footer>
-          </fa:SettingsExpanderItem>
-          <fa:SettingsExpanderItem Grid.Column="2"
+            </fa:FASettingsExpanderItem.Footer>
+          </fa:FASettingsExpanderItem>
+          <fa:FASettingsExpanderItem Grid.Column="2"
                                    Content="恢复电量"
                                    Description="体力不足时按所选方式恢复。若提取后仍不足以触发挑战则会跳过提取">
-            <fa:SettingsExpanderItem.Footer>
+            <fa:FASettingsExpanderItem.Footer>
               <fa:FAComboBox x:Name="RestoreChargeCombo"
                              Width="210"
                              SelectionChanged="OnRestoreChargeChanged" />
-            </fa:SettingsExpanderItem.Footer>
-          </fa:SettingsExpanderItem>
+            </fa:FASettingsExpanderItem.Footer>
+          </fa:FASettingsExpanderItem>
         </Grid>
 
-        <fa:SettingsExpander Header="双倍活动"
+        <fa:FASettingsExpander Header="双倍活动"
                              Description="有活动时自动添加对应任务"
                              IsExpanded="True">
-          <fa:SettingsExpander.IconSource>
-            <fa:FontIconSource Glyph="&#xE7C1;" />
-          </fa:SettingsExpander.IconSource>
-          <fa:SettingsExpander.Footer>
+          <fa:FASettingsExpander.IconSource>
+            <fa:FAFontIconSource Glyph="&#xE7C1;" />
+          </fa:FASettingsExpander.IconSource>
+          <fa:FASettingsExpander.Footer>
             <ToggleSwitch x:Name="DoubleRewardToggle"
                           OnContent=""
                           OffContent=""
                           Click="OnDoubleRewardChanged" />
-          </fa:SettingsExpander.Footer>
-          <fa:SettingsExpanderItem Content="实战模拟室">
-            <fa:SettingsExpanderItem.Footer>
+          </fa:FASettingsExpander.Footer>
+          <fa:FASettingsExpanderItem Content="实战模拟室">
+            <fa:FASettingsExpanderItem.Footer>
               <WrapPanel Orientation="Horizontal">
                 <fa:FAComboBox x:Name="DoubleCategoryCombo"
                                Width="132"
@@ -252,29 +252,29 @@
                                Margin="0,0,6,6"
                                SelectionChanged="OnDoubleAutoBattleChanged" />
               </WrapPanel>
-            </fa:SettingsExpanderItem.Footer>
-          </fa:SettingsExpanderItem>
-        </fa:SettingsExpander>
+            </fa:FASettingsExpanderItem.Footer>
+          </fa:FASettingsExpanderItem>
+        </fa:FASettingsExpander>
 
-        <fa:SettingsExpanderItem Content="删除体力计划">
-          <fa:SettingsExpanderItem.IconSource>
-            <fa:SymbolIconSource Symbol="Delete" />
-          </fa:SettingsExpanderItem.IconSource>
-          <fa:SettingsExpanderItem.Footer>
-            <fa:CommandBar DefaultLabelPosition="Right">
-              <fa:CommandBar.PrimaryCommands>
-                <fa:CommandBarButton x:Name="UndoButton"
+        <fa:FASettingsExpanderItem Content="删除体力计划">
+          <fa:FASettingsExpanderItem.IconSource>
+            <fa:FASymbolIconSource Symbol="Delete" />
+          </fa:FASettingsExpanderItem.IconSource>
+          <fa:FASettingsExpanderItem.Footer>
+            <fa:FACommandBar DefaultLabelPosition="Right">
+              <fa:FACommandBar.PrimaryCommands>
+                <fa:FACommandBarButton x:Name="UndoButton"
                                      Label="撤销"
                                      IsEnabled="False"
                                      Click="OnUndoClicked" />
-                <fa:CommandBarButton Label="删除已完成"
+                <fa:FACommandBarButton Label="删除已完成"
                                      Click="OnDeleteCompletedClicked" />
-                <fa:CommandBarButton Label="删除所有"
+                <fa:FACommandBarButton Label="删除所有"
                                      Click="OnDeleteAllClicked" />
-              </fa:CommandBar.PrimaryCommands>
-            </fa:CommandBar>
-          </fa:SettingsExpanderItem.Footer>
-        </fa:SettingsExpanderItem>
+              </fa:FACommandBar.PrimaryCommands>
+            </fa:FACommandBar>
+          </fa:FASettingsExpanderItem.Footer>
+        </fa:FASettingsExpanderItem>
 
         <ItemsControl x:Name="PlanList"
                       ItemTemplate="{StaticResource ChargePlanRowTemplate}" />

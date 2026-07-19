@@ -19,8 +19,8 @@ internal sealed partial class ZzzSettingsPage : UserControl, IZzzPageLifecycle, 
     private readonly ZzzGlobalInputMonitor _inputMonitor;
     private readonly ZzzGuiOperationTracker _operations;
     private readonly bool _ownsInputMonitor;
-    private readonly TabViewItem[] _tabs;
-    private readonly TabView _pivot;
+    private readonly FATabViewItem[] _tabs;
+    private readonly FATabView _pivot;
     private Control? _activePage;
     private bool _activePageIsShown;
     private bool _isShown;
@@ -50,23 +50,23 @@ internal sealed partial class ZzzSettingsPage : UserControl, IZzzPageLifecycle, 
         ];
 
         AvaloniaXamlLoader.Load(this);
-        _pivot = Required<TabView>("SettingsPivot");
+        _pivot = Required<FATabView>("SettingsPivot");
         _tabs =
         [
-            Required<TabViewItem>("GameTab"),
-            Required<TabViewItem>("OverlayTab"),
-            Required<TabViewItem>("ResourceDownloadTab"),
-            Required<TabViewItem>("EnvironmentTab"),
-            Required<TabViewItem>("PushTab"),
-            Required<TabViewItem>("CustomTab"),
+            Required<FATabViewItem>("GameTab"),
+            Required<FATabViewItem>("OverlayTab"),
+            Required<FATabViewItem>("ResourceDownloadTab"),
+            Required<FATabViewItem>("EnvironmentTab"),
+            Required<FATabViewItem>("PushTab"),
+            Required<FATabViewItem>("CustomTab"),
         ];
 
-        Required<Frame>("GameFrame").Content = _pages[0];
-        Required<Frame>("OverlayFrame").Content = _pages[1];
-        Required<Frame>("ResourceDownloadFrame").Content = _pages[2];
-        Required<Frame>("EnvironmentFrame").Content = _pages[3];
-        Required<Frame>("PushFrame").Content = _pages[4];
-        Required<Frame>("CustomFrame").Content = _pages[5];
+        Required<FAFrame>("GameFrame").Content = _pages[0];
+        Required<FAFrame>("OverlayFrame").Content = _pages[1];
+        Required<FAFrame>("ResourceDownloadFrame").Content = _pages[2];
+        Required<FAFrame>("EnvironmentFrame").Content = _pages[3];
+        Required<FAFrame>("PushFrame").Content = _pages[4];
+        Required<FAFrame>("CustomFrame").Content = _pages[5];
 
         string? evidenceTab = ZzzGuiEvidenceSelection.FromEnvironment().Tab;
         int selectedIndex = Array.FindIndex(Headers, header => string.Equals(header, evidenceTab, StringComparison.Ordinal));
@@ -78,7 +78,7 @@ internal sealed partial class ZzzSettingsPage : UserControl, IZzzPageLifecycle, 
 
     public string SelectedHeader => Headers[SelectedIndex];
 
-    public string NavigationTargetKind => nameof(TabView);
+    public string NavigationTargetKind => nameof(FATabView);
 
     internal bool ActiveChildIsShown => _activePageIsShown;
 

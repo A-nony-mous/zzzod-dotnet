@@ -24,16 +24,16 @@
 
   <ScrollViewer HorizontalScrollBarVisibility="Disabled"
                 VerticalScrollBarVisibility="Auto">
-    <StackPanel Margin="11,11,11,11"
+    <StackPanel Margin="{DynamicResource SampleAppPageMargin}"
                 Spacing="8">
-      <fa:SettingsExpanderItem x:Name="HelpCard"
+      <fa:FASettingsExpanderItem x:Name="HelpCard"
                                Height="50"
                                Content="使用说明"
                                Description="点击「开始」后将自动校准鼠标/手柄的转向灵敏度，用于视角转动">
-        <fa:SettingsExpanderItem.IconSource>
-          <fa:SymbolIconSource Symbol="Help" />
-        </fa:SettingsExpanderItem.IconSource>
-      </fa:SettingsExpanderItem>
+        <fa:FASettingsExpanderItem.IconSource>
+          <fa:FASymbolIconSource Symbol="Help" />
+        </fa:FASettingsExpanderItem.IconSource>
+      </fa:FASettingsExpanderItem>
 
       <ContentControl x:Name="SensitivityRunHost"
                       HorizontalContentAlignment="Stretch"

@@ -31,9 +31,9 @@ internal sealed partial class ZzzOperationDebugAxamlPage : UserControl, IZzzPage
     ];
 
     private readonly IZzzAppBackend _backend;
-    private readonly InfoBar _actionBar;
+    private readonly FAInfoBar _actionBar;
     private readonly FAComboBox _operationTemplateCombo;
-    private readonly CommandBarButton _deleteTemplateButton;
+    private readonly FACommandBarButton _deleteTemplateButton;
     private readonly ToggleSwitch _repeatToggle;
     private readonly FAComboBox _controlMethodCombo;
     private bool _loading;
@@ -46,9 +46,9 @@ internal sealed partial class ZzzOperationDebugAxamlPage : UserControl, IZzzPage
         _backend = backend;
         AvaloniaXamlLoader.Load(this);
 
-        _actionBar = Required<InfoBar>("ActionBar");
+        _actionBar = Required<FAInfoBar>("ActionBar");
         _operationTemplateCombo = Required<FAComboBox>("OperationTemplateCombo");
-        _deleteTemplateButton = Required<CommandBarButton>("DeleteTemplateButton");
+        _deleteTemplateButton = Required<FACommandBarButton>("DeleteTemplateButton");
         _repeatToggle = Required<ToggleSwitch>("RepeatToggle");
         _controlMethodCombo = Required<FAComboBox>("ControlMethodCombo");
         _controlMethodCombo.ItemsSource = ControlMethods;
@@ -304,7 +304,7 @@ internal sealed partial class ZzzOperationDebugAxamlPage : UserControl, IZzzPage
     {
 		_actionBar.Title = "指令调试不可用";
         _actionBar.Message = message;
-        _actionBar.Severity = InfoBarSeverity.Error;
+        _actionBar.Severity = FAInfoBarSeverity.Error;
         _actionBar.IsOpen = true;
     }
 

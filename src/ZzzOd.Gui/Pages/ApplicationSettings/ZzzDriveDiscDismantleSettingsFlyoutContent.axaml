@@ -4,19 +4,19 @@
              x:Class="ZzzOd.Gui.Pages.ApplicationSettings.ZzzDriveDiscDismantleSettingsFlyoutContent"
              MinWidth="420">
   <StackPanel Margin="8" Spacing="1">
-    <fa:InfoBar x:Name="ErrorBar" IsOpen="False" IsClosable="True" Severity="Error" />
-    <fa:SettingsExpanderItem Content="拆解等级">
-      <fa:SettingsExpanderItem.Footer>
+    <fa:FAInfoBar x:Name="ErrorBar" IsOpen="False" IsClosable="True" Severity="Error" />
+    <fa:FASettingsExpanderItem Content="拆解等级">
+      <fa:FASettingsExpanderItem.Footer>
         <fa:FAComboBox x:Name="LevelCombo"
                        Width="180"
                        SelectionChanged="OnLevelChanged" />
-      </fa:SettingsExpanderItem.Footer>
-    </fa:SettingsExpanderItem>
-    <fa:SettingsExpanderItem Content="全部已弃置">
-      <fa:SettingsExpanderItem.Footer>
+      </fa:FASettingsExpanderItem.Footer>
+    </fa:FASettingsExpanderItem>
+    <fa:FASettingsExpanderItem Content="全部已弃置">
+      <fa:FASettingsExpanderItem.Footer>
         <ToggleSwitch x:Name="AbandonToggle"
                       Click="OnAbandonChanged" />
-      </fa:SettingsExpanderItem.Footer>
-    </fa:SettingsExpanderItem>
+      </fa:FASettingsExpanderItem.Footer>
+    </fa:FASettingsExpanderItem>
   </StackPanel>
 </UserControl>

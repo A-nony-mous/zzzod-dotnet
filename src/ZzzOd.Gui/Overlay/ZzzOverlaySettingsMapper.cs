@@ -273,7 +273,8 @@ internal static class ZzzOverlaySettingsMapper
         ["y"] = y,
         ["w"] = width,
         ["h"] = height,
-        ["layout_version"] = 1,
+        // Reset geometry contains the v2 locked/free coordinate fields.
+        ["layout_version"] = 2,
         ["locked_x"] = 0d,
         ["locked_y"] = 0d,
         ["locked_w"] = 0d,

@@ -20,7 +20,7 @@ internal sealed partial class ZzzDriveDiscDismantleSettingsFlyoutContent : UserC
     private readonly IZzzAppBackend _backend;
     private readonly int _instanceIndex;
     private readonly string _groupId;
-    private readonly InfoBar _errorBar;
+    private readonly FAInfoBar _errorBar;
     private readonly FAComboBox _levelCombo;
     private readonly ToggleSwitch _abandonToggle;
     private bool _loading;
@@ -34,7 +34,7 @@ internal sealed partial class ZzzDriveDiscDismantleSettingsFlyoutContent : UserC
         _instanceIndex = instanceIndex;
         _groupId = groupId;
         AvaloniaXamlLoader.Load(this);
-        _errorBar = Required<InfoBar>("ErrorBar");
+        _errorBar = Required<FAInfoBar>("ErrorBar");
         _levelCombo = Required<FAComboBox>("LevelCombo");
         _abandonToggle = Required<ToggleSwitch>("AbandonToggle");
         _levelCombo.ItemsSource = new[]

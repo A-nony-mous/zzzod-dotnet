@@ -22,8 +22,8 @@ public sealed class ZzzShellPageHost : IZzzShellPageHost
     private readonly ZzzNavigationRegistry _navigationRegistry;
     private readonly ZzzPageLifecycleService _pageLifecycle;
     private readonly ZzzShellNavigationService _navigationService;
-    private readonly Frame _contentFrame;
-    private readonly NavigationView _navigation;
+    private readonly FAFrame _contentFrame;
+    private readonly FANavigationView _navigation;
     private readonly Dictionary<string, Control> _pageCache = [];
     private IZzzShellBackNavigationHost? _backNavigationHost;
     private string? _activeRoute;
@@ -35,8 +35,8 @@ public sealed class ZzzShellPageHost : IZzzShellPageHost
         ZzzNavigationRegistry navigationRegistry,
         ZzzPageLifecycleService pageLifecycle,
         ZzzShellNavigationService navigationService,
-        Frame contentFrame,
-        NavigationView navigation)
+        FAFrame contentFrame,
+        FANavigationView navigation)
     {
         _services = services;
         _navigationRegistry = navigationRegistry;

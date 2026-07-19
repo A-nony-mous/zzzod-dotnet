@@ -5,8 +5,9 @@
              x:Class="ZzzOd.Gui.Pages.ApplicationSettings.ZzzRedemptionCodeAppSettingPage">
   <ScrollViewer HorizontalScrollBarVisibility="Disabled"
                 VerticalScrollBarVisibility="Auto">
-    <StackPanel Margin="11" Spacing="8">
-      <fa:InfoBar x:Name="MessageBar"
+    <StackPanel Margin="{DynamicResource SampleAppPageMargin}"
+                Spacing="{DynamicResource SampleAppSectionSpacing}">
+      <fa:FAInfoBar x:Name="MessageBar"
                   IsOpen="False"
                   IsClosable="True"
                   Severity="Warning" />
@@ -14,11 +15,11 @@
       <ItemsControl x:Name="CodeList">
         <ItemsControl.ItemTemplate>
           <DataTemplate x:DataType="local:ZzzRedemptionCodeRowModel">
-            <fa:SettingsExpanderItem Content="">
-              <fa:SettingsExpanderItem.IconSource>
-                <fa:SymbolIconSource Symbol="Play" />
-              </fa:SettingsExpanderItem.IconSource>
-              <fa:SettingsExpanderItem.Footer>
+            <fa:FASettingsExpanderItem Content="">
+              <fa:FASettingsExpanderItem.IconSource>
+                <fa:FASymbolIconSource Symbol="Play" />
+              </fa:FASettingsExpanderItem.IconSource>
+              <fa:FASettingsExpanderItem.Footer>
                 <Grid ColumnDefinitions="Auto,*,Auto,110,Auto"
                       ColumnSpacing="12">
                   <TextBlock Grid.Column="0"
@@ -27,7 +28,7 @@
                   <TextBox Grid.Column="1"
                            MinWidth="150"
                            Text="{Binding Code, Mode=TwoWay}"
-                           Watermark="{Binding Watermark}"
+                           PlaceholderText="{Binding Watermark}"
                            IsReadOnly="{Binding IsReadOnly}"
                            LostFocus="OnEditorLostFocus" />
                   <TextBlock Grid.Column="2"
@@ -43,11 +44,11 @@
                   <Button Grid.Column="4"
                           IsVisible="{Binding CanDelete}"
                           Click="OnDeleteClicked">
-                    <fa:SymbolIcon Symbol="Delete" />
+                    <fa:FASymbolIcon Symbol="Delete" />
                   </Button>
                 </Grid>
-              </fa:SettingsExpanderItem.Footer>
-            </fa:SettingsExpanderItem>
+              </fa:FASettingsExpanderItem.Footer>
+            </fa:FASettingsExpanderItem>
           </DataTemplate>
         </ItemsControl.ItemTemplate>
       </ItemsControl>

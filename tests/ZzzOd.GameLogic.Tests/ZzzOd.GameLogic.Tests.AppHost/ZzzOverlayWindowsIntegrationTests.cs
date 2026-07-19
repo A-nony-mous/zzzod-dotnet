@@ -1,4 +1,5 @@
 using System.Collections.Concurrent;
+using System.Reflection;
 using System.Runtime.ExceptionServices;
 using System.Runtime.InteropServices;
 using System.Text.Json;
@@ -6,16 +7,19 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Media;
 using Avalonia.Threading;
+using FluentAvalonia.Styling;
 using OpenCvSharp;
 using Xunit;
 using ZzzOd.AppHost.Backend;
 using ZzzOd.AppHost.Overlay;
 using ZzzOd.Gui.Overlay;
+using ZzzOd.Gui.Pages.ApplicationSettings;
+using ZzzOd.Gui.Views.FrontierPages.WorldPatrol;
+using AvaloniaWindow = Avalonia.Controls.Window;
 using DrawingBitmap = System.Drawing.Bitmap;
 using DrawingColor = System.Drawing.Color;
 using DrawingGraphics = System.Drawing.Graphics;
 using DrawingImageFormat = System.Drawing.Imaging.ImageFormat;
-using DrawingSize = System.Drawing.Size;
 
 namespace ZzzOd.GameLogic.Tests.AppHost;
 
@@ -34,6 +38,7 @@ public sealed class ZzzOverlayWindowsIntegrationTests
     {
         RunOnStaThread(() =>
         {
+            EnsureFluentTheme();
             using ControlledWin32Window target = ControlledWin32Window.Create();
             target.Show();
             WindowsIntegrationEvidence? evidence = WindowsIntegrationEvidence.CreateFromEnvironment();
@@ -43,6 +48,17 @@ public sealed class ZzzOverlayWindowsIntegrationTests
             Assert.True(target.Activate());
             Assert.True(WaitFor(() => target.IsForeground));
             initial = target.Snapshot();
+            AvaloniaWindow owner = new()
+            {
+                Width = 8,
+                Height = 8,
+                Position = new PixelPoint(8, 8),
+                ShowActivated = false,
+                ShowInTaskbar = false,
+                WindowDecorations = WindowDecorations.None,
+            };
+            owner.Show();
+            Assert.True(WaitFor(() => owner.IsVisible));
             ZzzOverlayGuiSettings settings = new()
             {
                 ClickThrough = true,
@@ -50,14 +66,17 @@ public sealed class ZzzOverlayWindowsIntegrationTests
             };
             ZzzOverlayTechnicalWindow overlay = new();
             ZzzOverlayInfoPanelWindow panel = new();
+            ZzzWorldPatrolLargeMapIconEditorWindow classicEditor = new([]);
+            FrontierWorldPatrolLargeMapIconEditorWindow frontierEditor = new([]);
             Exception? testFailure = null;
             try
             {
                 overlay.ApplySettings(settings);
-                overlay.Show();
+                overlay.Show(owner);
                 overlay.FollowGameWindow(initial);
                 NativeRect initialOverlayBounds = AssertOverlayMatchesClient(overlay, initial);
                 evidence?.RecordGeometry("initial-follow", initial, initialOverlayBounds);
+                Assert.Contains(overlay, owner.OwnedWindows);
 
                 bool overlayClickThrough = ZzzOverlayNativeWindow.HasClickThroughStyle(overlay);
                 Assert.True(overlayClickThrough);
@@ -93,12 +112,15 @@ public sealed class ZzzOverlayWindowsIntegrationTests
                     Color: "#ff00ff");
                 overlay.Render(new ZzzOverlayFrameDto(DateTimeOffset.UtcNow, [probe]));
                 NativeRect overlayBounds = GetWindowBounds(overlay);
-                int probeX = overlayBounds.Left + (int)Math.Round(overlayBounds.Width * 0.1d);
+                int probeX = overlayBounds.Left + (int)Math.Round(overlayBounds.Width * 0.2d);
                 int probeY = overlayBounds.Top + (int)Math.Round(overlayBounds.Height * 0.1d);
-                Dispatcher.UIThread.RunJobs();
-                Thread.Sleep(50);
+                DrawingColor visibleOverlayProbeColor = default;
+                bool overlayProbeBecameVisible = WaitFor(() =>
+                {
+                    visibleOverlayProbeColor = CaptureSystemPixel(probeX, probeY);
+                    return IsProbeColor(visibleOverlayProbeColor);
+                });
                 evidence?.SaveSystemCapture("system-overlay-before-prevent-capture.png", GetClientBounds(initial));
-                DrawingColor visibleOverlayProbeColor = CaptureSystemPixel(probeX, probeY);
                 evidence?.RecordSystemCaptureProbe(
                     "system-overlay-probe-visible",
                     "system-overlay-before-prevent-capture.png",
@@ -108,7 +130,7 @@ public sealed class ZzzOverlayWindowsIntegrationTests
                     visibleOverlayProbeColor,
                     IsProbeColor(visibleOverlayProbeColor));
                 Assert.True(
-                    IsProbeColor(visibleOverlayProbeColor),
+                    overlayProbeBecameVisible,
                     "系统截图没有显示未启用防截图的 Overlay 绘制框，当前桌面无法验证 WDA 行为。");
                 AssertSystemCaptureExcludesAffinityProbe(initial, evidence);
 
@@ -131,8 +153,13 @@ public sealed class ZzzOverlayWindowsIntegrationTests
                     excludedAffinityRead,
                     $"GetWindowDisplayAffinity failed with Win32 error {excludedAffinityError}.");
                 Assert.Equal(ZzzOverlayNativeWindow.WdaExcludeFromCapture, excludedAffinity);
+                DrawingColor excludedOverlayProbeColor = visibleOverlayProbeColor;
+                bool overlayProbeBecameExcluded = WaitFor(() =>
+                {
+                    excludedOverlayProbeColor = CaptureSystemPixel(probeX, probeY);
+                    return !IsProbeColor(excludedOverlayProbeColor);
+                });
                 evidence?.SaveSystemCapture("system-overlay-after-prevent-capture.png", GetClientBounds(initial));
-                DrawingColor excludedOverlayProbeColor = CaptureSystemPixel(probeX, probeY);
                 evidence?.RecordSystemCaptureProbe(
                     "system-overlay-probe-excluded",
                     "system-overlay-after-prevent-capture.png",
@@ -141,8 +168,8 @@ public sealed class ZzzOverlayWindowsIntegrationTests
                     probeY,
                     excludedOverlayProbeColor,
                     IsProbeColor(excludedOverlayProbeColor));
-                Assert.False(
-                    IsProbeColor(excludedOverlayProbeColor),
+                Assert.True(
+                    overlayProbeBecameExcluded,
                     "启用 WDA_EXCLUDEFROMCAPTURE 后系统截图仍显示 Overlay 绘制框。");
 
                 using Mat captured = ZzzAvaloniaOverlayCapturer.RenderWindowToBgra(
@@ -169,14 +196,30 @@ public sealed class ZzzOverlayWindowsIntegrationTests
                 ZzzOverlayPanelSettings panelSettings = new("state", "状态面板", true, 0, 0, 300, 120);
                 settings.LayoutEditMode = true;
                 panel.ApplyConfiguration(panelSettings, settings, initial, forceGeometry: true);
-                panel.Show();
+                panel.Show(owner);
                 bool panelClickThrough = ZzzOverlayNativeWindow.HasClickThroughStyle(panel);
                 evidence?.RecordClickThrough("layout-edit-panel", "state-panel", panelClickThrough, null, null, null);
                 Assert.False(panelClickThrough);
+                Assert.Contains(panel, owner.OwnedWindows);
                 Dispatcher.UIThread.RunJobs();
                 PixelPoint panelStart = panel.Position;
                 double panelStartWidth = panel.Width;
                 double panelStartHeight = panel.Height;
+                Assert.True(
+                    ZzzOverlayNativeWindow.TryGetWindowHandle(panel, out nint panelHandle),
+                    "Overlay 信息面板没有原生窗口句柄。");
+                NativePoint panelPointer = new(panelStart.X + 16, panelStart.Y + 12);
+                Assert.True(
+                    panelHandle == WindowFromPoint(panelPointer),
+                    "拖拽起点没有命中 Overlay 信息面板。");
+                nint hitTest = SendMessageW(
+                    panelHandle,
+                    WmNcHitTest,
+                    0,
+                    new nint((panelPointer.Y << 16) | (panelPointer.X & 0xffff)));
+                Assert.True(
+                    hitTest != new nint(HtTransparent),
+                    "Overlay 信息面板仍返回 HTTRANSPARENT。");
                 DragFromTo(panelStart.X + 16, panelStart.Y + 12, panelStart.X + 52, panelStart.Y + 39);
                 bool panelDragged = WaitFor(() => panel.Position != panelStart);
                 PixelPoint panelAfterDrag = panel.Position;
@@ -233,6 +276,30 @@ public sealed class ZzzOverlayWindowsIntegrationTests
                 NativeRect restoredOverlayBounds = AssertOverlayMatchesClient(overlay, restored);
                 evidence?.RecordGeometry("restored-follow", restored, restoredOverlayBounds);
                 Assert.True(restored.Dpi > 0);
+
+                evidence?.RecordWindowLifecycle(
+                    "classic-editor-lifecycle",
+                    AssertOwnedWindowCanOpenAndClose(owner, classicEditor, () => classicEditor.ResourcesReleased));
+                evidence?.RecordWindowLifecycle(
+                    "frontier-editor-lifecycle",
+                    AssertOwnedWindowCanOpenAndClose(owner, frontierEditor, () => frontierEditor.ResourcesReleased));
+                evidence?.RecordWindowLifecycle(
+                    "state-panel-lifecycle",
+                    AssertOwnedWindowClosesAndReleases(
+                    owner,
+                    panel,
+                    () => panel.ResourcesReleased,
+                    expectedClickThrough: false));
+                evidence?.RecordWindowLifecycle(
+                    "vision-overlay-lifecycle",
+                    AssertOwnedWindowClosesAndReleases(
+                    owner,
+                    overlay,
+                    () => overlay.ResourcesReleased,
+                    expectedClickThrough: true));
+                evidence?.RecordControllerLifecycle(
+                    "overlay-controller-owner-dispose",
+                    AssertControllerOwnerLifecycle(owner, restored));
             }
             catch (Exception exception)
             {
@@ -251,8 +318,11 @@ public sealed class ZzzOverlayWindowsIntegrationTests
                 }
                 finally
                 {
+                    frontierEditor.Close();
+                    classicEditor.Close();
                     panel.Close();
                     overlay.Close();
+                    owner.Close();
                     if (restoreCursor)
                     {
                         SetCursorPos(originalCursor.X, originalCursor.Y);
@@ -265,6 +335,159 @@ public sealed class ZzzOverlayWindowsIntegrationTests
                 }
             }
         });
+    }
+
+    private static void EnsureFluentTheme()
+    {
+        if (Avalonia.Application.Current?.Styles.OfType<FluentAvaloniaTheme>().Any() == false)
+        {
+            Avalonia.Application.Current.Styles.Add(new FluentAvaloniaTheme());
+        }
+    }
+
+    private static WindowLifecycleEvidence AssertOwnedWindowCanOpenAndClose(
+        AvaloniaWindow owner,
+        AvaloniaWindow child,
+        Func<bool> resourcesReleased)
+    {
+        child.Show(owner);
+        Assert.True(WaitFor(() => child.IsVisible));
+        bool ownerRegistered = owner.OwnedWindows.Contains(child);
+        Assert.True(ownerRegistered);
+        bool nativeHandleCreated = ZzzOverlayNativeWindow.TryGetWindowHandle(child, out nint handle);
+        Assert.True(nativeHandleCreated);
+        Assert.True(IsWindow(handle));
+        return AssertOwnedWindowClosesAndReleases(owner, child, resourcesReleased, expectedClickThrough: null, handle);
+    }
+
+    private static WindowLifecycleEvidence AssertOwnedWindowClosesAndReleases(
+        AvaloniaWindow owner,
+        AvaloniaWindow child,
+        Func<bool> resourcesReleased,
+        bool? expectedClickThrough,
+        nint existingHandle = default)
+    {
+        bool ownerRegistered = owner.OwnedWindows.Contains(child);
+        Assert.True(ownerRegistered);
+        bool nativeHandleCreated = ZzzOverlayNativeWindow.TryGetWindowHandle(child, out nint existingWindowHandle);
+        Assert.True(nativeHandleCreated);
+        bool nativeClickThrough = ZzzOverlayNativeWindow.HasClickThroughStyle(child);
+        if (expectedClickThrough.HasValue)
+        {
+            Assert.Equal(expectedClickThrough.Value, nativeClickThrough);
+        }
+
+        nint handle = existingHandle;
+        if (handle == 0)
+        {
+            handle = existingWindowHandle;
+        }
+
+        int closedCount = 0;
+        EventHandler onClosed = (_, _) => closedCount++;
+        child.Closed += onClosed;
+        child.Close();
+        bool closed = WaitFor(() => closedCount == 1);
+        bool removedFromOwner = WaitFor(() => !owner.OwnedWindows.Contains(child));
+        bool nativeHandleDestroyed = WaitFor(() => !IsWindow(handle));
+        child.Closed -= onClosed;
+        bool released = resourcesReleased();
+        Assert.True(closed);
+        Assert.True(removedFromOwner);
+        Assert.True(nativeHandleDestroyed);
+        Assert.True(released);
+        return new WindowLifecycleEvidence(
+            child.GetType().Name,
+            ownerRegistered,
+            nativeHandleCreated,
+            nativeClickThrough,
+            closedCount,
+            removedFromOwner,
+            nativeHandleDestroyed,
+            released);
+    }
+
+    private static ControllerLifecycleEvidence AssertControllerOwnerLifecycle(
+        AvaloniaWindow owner,
+        ZzzWindowStatusDto gameWindow)
+    {
+        string root = Path.Combine(Path.GetTempPath(), $"zzz-overlay-controller-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(root);
+        ZzzOverlayController? controller = null;
+        try
+        {
+            ZzzConfigScopeService scopes = new(root);
+            ZzzBackendResult<ZzzConfigScopeValuesDto> saved = scopes.Save(new ZzzSaveConfigScopeRequest(
+                "overlay",
+                new Dictionary<string, object?>
+                {
+                    ["enabled"] = true,
+                    ["visible"] = true,
+                    ["anti_capture"] = false,
+                    ["state_panel_enabled"] = true,
+                    ["log_panel_enabled"] = false,
+                    ["decision_panel_enabled"] = false,
+                    ["timeline_panel_enabled"] = false,
+                    ["performance_panel_enabled"] = false,
+                }));
+            Assert.True(saved.Success, saved.Error);
+
+            IZzzAppBackend backend = DispatchProxy.Create<IZzzAppBackend, WindowsIntegrationBackendProxy>();
+            WindowsIntegrationBackendProxy proxy = (WindowsIntegrationBackendProxy)backend;
+            proxy.Scopes = scopes;
+            proxy.Window = gameWindow with
+            {
+                IsWinValid = true,
+                IsWinActive = true,
+                IsWinMinimized = false,
+            };
+            using ZzzOverlayService service = new();
+            controller = new ZzzOverlayController(service, backend);
+            controller.AttachOwner(owner);
+            controller.Show();
+            Assert.True(WaitFor(() => controller.VisionWindowForTesting?.IsVisible == true));
+            Assert.True(WaitFor(() => controller.PanelWindowCountForTesting == 1));
+            ZzzOverlayTechnicalWindow vision = Assert.IsType<ZzzOverlayTechnicalWindow>(controller.VisionWindowForTesting);
+            ZzzOverlayInfoPanelWindow panel = Assert.Single(controller.PanelWindowsForTesting);
+            Assert.Contains(vision, owner.OwnedWindows);
+            Assert.Contains(panel, owner.OwnedWindows);
+            Assert.True(ZzzOverlayNativeWindow.TryGetWindowHandle(vision, out nint visionHandle));
+            Assert.True(ZzzOverlayNativeWindow.TryGetWindowHandle(panel, out nint panelHandle));
+            Assert.True(IsWindow(visionHandle));
+            Assert.True(IsWindow(panelHandle));
+            bool timersRunning = controller.TimersRunningForTesting;
+            Assert.True(timersRunning);
+
+            controller.Dispose();
+            bool visionDestroyed = WaitFor(() => !IsWindow(visionHandle));
+            bool panelDestroyed = WaitFor(() => !IsWindow(panelHandle));
+            bool windowsRemoved = WaitFor(
+                () => !owner.OwnedWindows.Contains(vision) && !owner.OwnedWindows.Contains(panel));
+            bool resourcesReleased = vision.ResourcesReleased && panel.ResourcesReleased;
+            bool controllerDetached = controller.OwnerWindowForTesting is null &&
+                                      controller.VisionWindowForTesting is null &&
+                                      controller.PanelWindowCountForTesting == 0 &&
+                                      !controller.TimersRunningForTesting;
+            Assert.True(visionDestroyed);
+            Assert.True(panelDestroyed);
+            Assert.True(windowsRemoved);
+            Assert.True(resourcesReleased);
+            Assert.True(controllerDetached);
+            return new ControllerLifecycleEvidence(
+                OwnerAttached: true,
+                OwnedWindowCountBeforeDispose: 2,
+                TimersRunningBeforeDispose: timersRunning,
+                VisionHandleDestroyed: visionDestroyed,
+                PanelHandleDestroyed: panelDestroyed,
+                WindowsRemovedFromOwner: windowsRemoved,
+                ResourcesReleased: resourcesReleased,
+                ControllerDetached: controllerDetached);
+        }
+        finally
+        {
+            controller?.Dispose();
+            Directory.Delete(root, recursive: true);
+        }
     }
 
     private static NativeRect AssertOverlayMatchesClient(ZzzOverlayTechnicalWindow overlay, ZzzWindowStatusDto client)
@@ -321,8 +544,30 @@ public sealed class ZzzOverlayWindowsIntegrationTests
     {
         using DrawingBitmap bitmap = new(1, 1);
         using DrawingGraphics graphics = DrawingGraphics.FromImage(bitmap);
-        graphics.CopyFromScreen(x, y, 0, 0, new DrawingSize(1, 1));
+        CopyScreenRegion(graphics, x, y, 1, 1);
         return bitmap.GetPixel(0, 0);
+    }
+
+    private static void CopyScreenRegion(DrawingGraphics graphics, int sourceX, int sourceY, int width, int height)
+    {
+        nint destination = graphics.GetHdc();
+        nint source = GetDC(0);
+        try
+        {
+            if (source == 0 || !BitBlt(destination, 0, 0, width, height, source, sourceX, sourceY, SrccopyCaptureBlt))
+            {
+                throw new InvalidOperationException($"BitBlt failed with Win32 error {Marshal.GetLastWin32Error()}.");
+            }
+        }
+        finally
+        {
+            if (source != 0)
+            {
+                ReleaseDC(0, source);
+            }
+
+            graphics.ReleaseHdc(destination);
+        }
     }
 
     private static bool IsProbeColor(DrawingColor color) => color.R > 200 && color.G < 80 && color.B > 200;
@@ -336,12 +581,57 @@ public sealed class ZzzOverlayWindowsIntegrationTests
 
     private static void DragFromTo(int fromX, int fromY, int toX, int toY)
     {
-        MoveCursor(fromX, fromY);
-        MouseEvent(MouseEventLeftDown, 0, 0, 0, 0);
-        Thread.Sleep(20);
-        MoveCursor(toX, toY);
-        Thread.Sleep(20);
-        MouseEvent(MouseEventLeftUp, 0, 0, 0, 0);
+        Exception? injectionFailure = null;
+        Thread injector = new(() =>
+        {
+            bool mouseDown = false;
+            try
+            {
+                MoveCursor(fromX, fromY);
+                Thread.Sleep(50);
+                MouseEvent(MouseEventLeftDown, 0, 0, 0, 0);
+                mouseDown = true;
+                Thread.Sleep(80);
+                const int steps = 6;
+                for (int step = 1; step <= steps; step++)
+                {
+                    MoveCursor(
+                        fromX + (toX - fromX) * step / steps,
+                        fromY + (toY - fromY) * step / steps);
+                    Thread.Sleep(20);
+                }
+            }
+            catch (Exception exception)
+            {
+                injectionFailure = exception;
+            }
+            finally
+            {
+                if (mouseDown)
+                {
+                    MouseEvent(MouseEventLeftUp, 0, 0, 0, 0);
+                }
+            }
+        })
+        {
+            IsBackground = true,
+            Name = "ZzzOd Overlay Input Injector",
+        };
+        injector.Start();
+        while (injector.IsAlive)
+        {
+            PumpNativeMessages();
+            Dispatcher.UIThread.RunJobs();
+            Thread.Sleep(5);
+        }
+
+        injector.Join();
+        PumpNativeMessages();
+        Dispatcher.UIThread.RunJobs();
+        if (injectionFailure is not null)
+        {
+            ExceptionDispatchInfo.Capture(injectionFailure).Throw();
+        }
     }
 
     private static void MoveCursor(int x, int y)
@@ -356,7 +646,9 @@ public sealed class ZzzOverlayWindowsIntegrationTests
     {
         for (int attempt = 0; attempt < 40; attempt++)
         {
+            PumpNativeMessages();
             Dispatcher.UIThread.RunJobs();
+            PumpNativeMessages();
             if (condition())
             {
                 return true;
@@ -366,6 +658,15 @@ public sealed class ZzzOverlayWindowsIntegrationTests
         }
 
         return condition();
+    }
+
+    private static void PumpNativeMessages()
+    {
+        while (PeekMessageW(out NativeMessage message, 0, 0, 0, PmRemove))
+        {
+            TranslateMessage(ref message);
+            DispatchMessageW(ref message);
+        }
     }
 
     private static void AssertSystemCaptureExcludesAffinityProbe(
@@ -381,7 +682,7 @@ public sealed class ZzzOverlayWindowsIntegrationTests
             Topmost = true,
             ShowActivated = false,
             ShowInTaskbar = false,
-            SystemDecorations = SystemDecorations.None,
+            WindowDecorations = WindowDecorations.None,
         };
         try
         {
@@ -462,6 +763,29 @@ public sealed class ZzzOverlayWindowsIntegrationTests
         if (failure is not null)
         {
             ExceptionDispatchInfo.Capture(failure).Throw();
+        }
+    }
+
+    private class WindowsIntegrationBackendProxy : DispatchProxy
+    {
+        public ZzzConfigScopeService Scopes { get; set; } = null!;
+
+        public ZzzWindowStatusDto Window { get; set; } = null!;
+
+        protected override object? Invoke(MethodInfo? targetMethod, object?[]? args)
+        {
+            ArgumentNullException.ThrowIfNull(targetMethod);
+            args ??= [];
+            return targetMethod.Name switch
+            {
+                nameof(IZzzAppBackend.GetConfigScope) => Scopes.Read(
+                    (string)args[0]!,
+                    (int?)args[1],
+                    (string?)args[2]),
+                nameof(IZzzAppBackend.SaveConfigScope) => Scopes.Save((ZzzSaveConfigScopeRequest)args[0]!),
+                nameof(IZzzAppBackend.GetWindow) => ZzzBackendResult<ZzzWindowStatusDto>.Ok(Window),
+                _ => throw new NotSupportedException(targetMethod.Name),
+            };
         }
     }
 
@@ -629,6 +953,24 @@ public sealed class ZzzOverlayWindowsIntegrationTests
                     probeColor.Item3)));
         }
 
+        public void RecordWindowLifecycle(string stage, WindowLifecycleEvidence lifecycle)
+        {
+            ArgumentNullException.ThrowIfNull(lifecycle);
+            _records.Add(new WindowsIntegrationEvidenceRecord(
+                stage,
+                DateTimeOffset.UtcNow,
+                WindowLifecycle: lifecycle));
+        }
+
+        public void RecordControllerLifecycle(string stage, ControllerLifecycleEvidence lifecycle)
+        {
+            ArgumentNullException.ThrowIfNull(lifecycle);
+            _records.Add(new WindowsIntegrationEvidenceRecord(
+                stage,
+                DateTimeOffset.UtcNow,
+                ControllerLifecycle: lifecycle));
+        }
+
         public void SaveSystemCapture(string fileName, NativeRect bounds)
         {
             if (bounds.Width <= 0 || bounds.Height <= 0)
@@ -638,7 +980,7 @@ public sealed class ZzzOverlayWindowsIntegrationTests
 
             using DrawingBitmap bitmap = new(bounds.Width, bounds.Height);
             using DrawingGraphics graphics = DrawingGraphics.FromImage(bitmap);
-            graphics.CopyFromScreen(bounds.Left, bounds.Top, 0, 0, new DrawingSize(bounds.Width, bounds.Height));
+            CopyScreenRegion(graphics, bounds.Left, bounds.Top, bounds.Width, bounds.Height);
             bitmap.Save(GetOutputPath(fileName), DrawingImageFormat.Png);
             _artifacts.Add(fileName);
         }
@@ -700,7 +1042,29 @@ public sealed class ZzzOverlayWindowsIntegrationTests
         PanelEditEvidence? PanelEdit = null,
         SystemCaptureEvidence? SystemCapture = null,
         OverlayCaptureEvidence? InProcessCapture = null,
+        WindowLifecycleEvidence? WindowLifecycle = null,
+        ControllerLifecycleEvidence? ControllerLifecycle = null,
         string? Failure = null);
+
+    private sealed record WindowLifecycleEvidence(
+        string Window,
+        bool OwnerRegistered,
+        bool NativeHandleCreated,
+        bool NativeClickThrough,
+        int ClosedCount,
+        bool RemovedFromOwner,
+        bool NativeHandleDestroyed,
+        bool ResourcesReleased);
+
+    private sealed record ControllerLifecycleEvidence(
+        bool OwnerAttached,
+        int OwnedWindowCountBeforeDispose,
+        bool TimersRunningBeforeDispose,
+        bool VisionHandleDestroyed,
+        bool PanelHandleDestroyed,
+        bool WindowsRemovedFromOwner,
+        bool ResourcesReleased,
+        bool ControllerDetached);
 
     private sealed record WindowGeometryEvidence(
         PhysicalRectEvidence TargetClient,
@@ -978,6 +1342,17 @@ public sealed class ZzzOverlayWindowsIntegrationTests
         public int Height => Bottom - Top;
     }
 
+    [StructLayout(LayoutKind.Sequential)]
+    private struct NativeMessage
+    {
+        public nint Window;
+        public uint Message;
+        public nuint WParam;
+        public nint LParam;
+        public uint Time;
+        public NativePoint Point;
+    }
+
     [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
     private static extern nint GetModuleHandleW(string? moduleName);
 
@@ -1009,6 +1384,10 @@ public sealed class ZzzOverlayWindowsIntegrationTests
     [DllImport("user32.dll")]
     private static extern bool ShowWindow(nint hwnd, int command);
 
+    [DllImport("user32.dll")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static extern bool IsWindow(nint hwnd);
+
     [DllImport("user32.dll", SetLastError = true)]
     [return: MarshalAs(UnmanagedType.Bool)]
     private static extern bool SetWindowPos(nint hwnd, nint insertAfter, int x, int y, int width, int height, uint flags);
@@ -1036,8 +1415,47 @@ public sealed class ZzzOverlayWindowsIntegrationTests
     private static extern nint DefWindowProcW(nint hwnd, uint message, nint wParam, nint lParam);
 
     private const uint WmLButtonDown = 0x0201;
+    private const uint WmNcHitTest = 0x0084;
+    private const int HtTransparent = -1;
     private const uint MouseEventLeftDown = 0x0002;
     private const uint MouseEventLeftUp = 0x0004;
+    private const uint PmRemove = 0x0001;
+    private const uint SrccopyCaptureBlt = 0x40CC0020;
+
+    [DllImport("user32.dll", SetLastError = true)]
+    private static extern nint GetDC(nint window);
+
+    [DllImport("user32.dll", SetLastError = true)]
+    private static extern int ReleaseDC(nint window, nint deviceContext);
+
+    [DllImport("gdi32.dll", SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static extern bool BitBlt(
+        nint destination,
+        int destinationX,
+        int destinationY,
+        int width,
+        int height,
+        nint source,
+        int sourceX,
+        int sourceY,
+        uint rasterOperation);
+
+    [DllImport("user32.dll", CharSet = CharSet.Unicode)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static extern bool PeekMessageW(
+        out NativeMessage message,
+        nint window,
+        uint minimumMessage,
+        uint maximumMessage,
+        uint removeMessage);
+
+    [DllImport("user32.dll")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static extern bool TranslateMessage(ref NativeMessage message);
+
+    [DllImport("user32.dll", CharSet = CharSet.Unicode)]
+    private static extern nint DispatchMessageW(ref NativeMessage message);
 
     [DllImport("user32.dll", SetLastError = true)]
     [return: MarshalAs(UnmanagedType.Bool)]
@@ -1045,6 +1463,12 @@ public sealed class ZzzOverlayWindowsIntegrationTests
 
     [DllImport("user32.dll")]
     private static extern nint GetForegroundWindow();
+
+    [DllImport("user32.dll")]
+    private static extern nint WindowFromPoint(NativePoint point);
+
+    [DllImport("user32.dll", CharSet = CharSet.Unicode)]
+    private static extern nint SendMessageW(nint window, uint message, nint wParam, nint lParam);
 
     [DllImport("user32.dll")]
     private static extern uint GetWindowThreadProcessId(nint hWnd, out uint processId);

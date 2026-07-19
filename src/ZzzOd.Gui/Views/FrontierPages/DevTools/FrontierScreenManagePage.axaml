@@ -1,0 +1,86 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:fa="using:FluentAvalonia.UI.Controls"
+             xmlns:local="using:ZzzOd.Gui.Views.FrontierPages.DevTools"
+             x:Class="ZzzOd.Gui.Views.FrontierPages.DevTools.FrontierScreenManagePage"
+             x:CompileBindings="False">
+  <Grid Margin="{DynamicResource SampleAppPageMargin}" ColumnDefinitions="640,*" ColumnSpacing="12">
+    <ScrollViewer Grid.Column="0" VerticalScrollBarVisibility="Auto">
+      <StackPanel Spacing="8">
+        <fa:FAInfoBar x:Name="StatusBar" IsOpen="False" IsClosable="True" />
+
+        <fa:FASettingsExpander Header="更新合并配置文件"
+                               Description="手动更改yml文件后 需要触发更新生效">
+          <fa:FASettingsExpander.Footer>
+            <Button x:Name="MergeButton" Content="更新" Click="OnMergeClicked" />
+          </fa:FASettingsExpander.Footer>
+        </fa:FASettingsExpander>
+
+        <fa:FACommandBar IsOpen="True" DefaultLabelPosition="Right">
+          <fa:FACommandBar.Content>
+            <fa:FAComboBox x:Name="ScreenSelector" Width="220" PlaceholderText="选择已有" SelectionChanged="OnScreenSelectionChanged" />
+          </fa:FACommandBar.Content>
+          <fa:FACommandBar.PrimaryCommands>
+            <fa:FACommandBarButton Label="新建" Click="OnCreateClicked" />
+            <fa:FACommandBarButton Label="保存" Click="OnSaveClicked" />
+            <fa:FACommandBarButton Label="删除" Click="OnDeleteClicked" />
+            <fa:FACommandBarButton Label="取消" Click="OnCancelClicked" />
+          </fa:FACommandBar.PrimaryCommands>
+        </fa:FACommandBar>
+
+        <fa:FACommandBar IsOpen="True" DefaultLabelPosition="Right">
+          <fa:FACommandBar.Content>
+            <CheckBox x:Name="PcAltToggle" Content="PC 点击需 Alt" Click="OnPcAltChanged" />
+          </fa:FACommandBar.Content>
+          <fa:FACommandBar.PrimaryCommands>
+            <fa:FACommandBarButton Label="选择图片" Click="OnChooseImageClicked" />
+            <fa:FACommandBarButton Label="截图" Click="OnScreenshotClicked" />
+            <fa:FACommandBarButton Label="导入模板区域" Click="OnImportTemplateClicked" />
+          </fa:FACommandBar.PrimaryCommands>
+        </fa:FACommandBar>
+
+        <fa:FASettingsExpander Header="画面信息" IsExpanded="True">
+          <fa:FASettingsExpanderItem Content="ID">
+            <fa:FASettingsExpanderItem.Footer>
+              <TextBox x:Name="ScreenIdBox" Width="260" TextChanged="OnScreenInfoChanged" />
+            </fa:FASettingsExpanderItem.Footer>
+          </fa:FASettingsExpanderItem>
+          <fa:FASettingsExpanderItem Content="名称">
+            <fa:FASettingsExpanderItem.Footer>
+              <TextBox x:Name="ScreenNameBox" Width="260" TextChanged="OnScreenInfoChanged" />
+            </fa:FASettingsExpanderItem.Footer>
+          </fa:FASettingsExpanderItem>
+        </fa:FASettingsExpander>
+
+        <TextBlock Text="区域表格" FontSize="18" FontWeight="SemiBold" />
+        <local:FrontierScreenAreaTable x:Name="AreaTable" Height="310" />
+        <fa:FACommandBar IsOpen="True" DefaultLabelPosition="Right">
+          <fa:FACommandBar.PrimaryCommands>
+            <fa:FACommandBarButton Label="新增区域" Click="OnAddAreaClicked" />
+            <fa:FACommandBarButton Label="删除区域" Click="OnDeleteAreaClicked" />
+            <fa:FACommandBarButton Label="弹出表格" Click="OnPopupTableClicked" />
+          </fa:FACommandBar.PrimaryCommands>
+        </fa:FACommandBar>
+      </StackPanel>
+    </ScrollViewer>
+
+    <Grid Grid.Column="1" RowDefinitions="Auto,*" RowSpacing="8">
+      <fa:FASettingsExpander Header="鼠标点击坐标" Description="图片左上角为(0, 0)">
+        <fa:FASettingsExpander.Footer>
+          <StackPanel Orientation="Horizontal" Spacing="6">
+            <TextBox x:Name="XPositionBox" Width="90" PlaceholderText="横" IsReadOnly="True" />
+            <TextBox x:Name="YPositionBox" Width="90" PlaceholderText="纵" IsReadOnly="True" />
+          </StackPanel>
+        </fa:FASettingsExpander.Footer>
+      </fa:FASettingsExpander>
+      <ScrollViewer Grid.Row="1" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto">
+        <Image x:Name="ScreenPreview"
+               MinWidth="420"
+               MinHeight="360"
+               Stretch="Uniform"
+               PointerPressed="OnPreviewPointerPressed"
+               PointerReleased="OnPreviewPointerReleased" />
+      </ScrollViewer>
+    </Grid>
+  </Grid>
+</UserControl>

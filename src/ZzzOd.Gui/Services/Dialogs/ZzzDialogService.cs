@@ -9,9 +9,9 @@ public interface IZzzDialogService
 
     Task ShowMessageAsync(Window owner, string title, string message);
 
-    ContentDialog CreateMessageDialog(string title, string message);
+    FAContentDialog CreateMessageDialog(string title, string message);
 
-    TeachingTip CreateTeachingTip(string title, string subtitle, Control? target = null);
+    FATeachingTip CreateTeachingTip(string title, string subtitle, Control? target = null);
 
     void ShowToast(string title, string message);
 }
@@ -24,11 +24,11 @@ public sealed class ZzzDialogService : IZzzDialogService
 
     public async Task ShowMessageAsync(Window owner, string title, string message)
     {
-        ContentDialog dialog = CreateMessageDialog(title, message);
+        FAContentDialog dialog = CreateMessageDialog(title, message);
         await dialog.ShowAsync(owner).ConfigureAwait(true);
     }
 
-    public ContentDialog CreateMessageDialog(string title, string message) => new()
+    public FAContentDialog CreateMessageDialog(string title, string message) => new()
     {
         Title = title,
         Content = new TextBlock
@@ -37,17 +37,17 @@ public sealed class ZzzDialogService : IZzzDialogService
             TextWrapping = Avalonia.Media.TextWrapping.Wrap,
         },
         CloseButtonText = "确定",
-        DefaultButton = ContentDialogButton.Close,
+        DefaultButton = FAContentDialogButton.Close,
     };
 
-    public TeachingTip CreateTeachingTip(string title, string subtitle, Control? target = null) => new()
+    public FATeachingTip CreateTeachingTip(string title, string subtitle, Control? target = null) => new()
     {
         Title = title,
         Subtitle = subtitle,
         Target = target,
         CloseButtonContent = "知道了",
         IsOpen = true,
-        PreferredPlacement = TeachingTipPlacementMode.Auto,
+        PreferredPlacement = FATeachingTipPlacementMode.Auto,
     };
 
     public void ShowToast(string title, string message)

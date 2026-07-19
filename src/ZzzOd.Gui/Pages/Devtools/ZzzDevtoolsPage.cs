@@ -13,8 +13,8 @@ internal sealed partial class ZzzDevtoolsPage : UserControl, IZzzPageLifecycle, 
 {
     private static readonly string[] Headers = ["图像分析", "模板管理", "画面管理", "代理人模板生成", "截图助手", "指令调试"];
     private readonly Control[] _pages;
-    private readonly TabViewItem[] _tabs;
-    private readonly TabView _pivot;
+    private readonly FATabViewItem[] _tabs;
+    private readonly FATabView _pivot;
     private Control? _activePage;
     private bool _activePageIsShown;
     private bool _isShown;
@@ -32,23 +32,23 @@ internal sealed partial class ZzzDevtoolsPage : UserControl, IZzzPageLifecycle, 
         ];
 
         AvaloniaXamlLoader.Load(this);
-        _pivot = Required<TabView>("DevtoolsPivot");
+        _pivot = Required<FATabView>("DevtoolsPivot");
         _tabs =
         [
-            Required<TabViewItem>("ImageAnalysisTab"),
-            Required<TabViewItem>("TemplateHelperTab"),
-            Required<TabViewItem>("ScreenManageTab"),
-            Required<TabViewItem>("AgentTemplateTab"),
-            Required<TabViewItem>("ScreenshotHelperTab"),
-            Required<TabViewItem>("OperationDebugTab"),
+            Required<FATabViewItem>("ImageAnalysisTab"),
+            Required<FATabViewItem>("TemplateHelperTab"),
+            Required<FATabViewItem>("ScreenManageTab"),
+            Required<FATabViewItem>("AgentTemplateTab"),
+            Required<FATabViewItem>("ScreenshotHelperTab"),
+            Required<FATabViewItem>("OperationDebugTab"),
         ];
 
-        Required<Frame>("ImageAnalysisFrame").Content = _pages[0];
-        Required<Frame>("TemplateHelperFrame").Content = _pages[1];
-        Required<Frame>("ScreenManageFrame").Content = _pages[2];
-        Required<Frame>("AgentTemplateFrame").Content = _pages[3];
-        Required<Frame>("ScreenshotHelperFrame").Content = _pages[4];
-        Required<Frame>("OperationDebugFrame").Content = _pages[5];
+        Required<FAFrame>("ImageAnalysisFrame").Content = _pages[0];
+        Required<FAFrame>("TemplateHelperFrame").Content = _pages[1];
+        Required<FAFrame>("ScreenManageFrame").Content = _pages[2];
+        Required<FAFrame>("AgentTemplateFrame").Content = _pages[3];
+        Required<FAFrame>("ScreenshotHelperFrame").Content = _pages[4];
+        Required<FAFrame>("OperationDebugFrame").Content = _pages[5];
 
         string? evidenceTab = ZzzGuiEvidenceSelection.FromEnvironment().Tab;
         int selectedIndex = Array.FindIndex(Headers, header => string.Equals(header, evidenceTab, StringComparison.Ordinal));
@@ -60,7 +60,7 @@ internal sealed partial class ZzzDevtoolsPage : UserControl, IZzzPageLifecycle, 
 
     public string SelectedHeader => Headers[SelectedIndex];
 
-    public string NavigationTargetKind => nameof(TabView);
+    public string NavigationTargetKind => nameof(FATabView);
 
     internal bool ActiveChildIsShown => _activePageIsShown;
 

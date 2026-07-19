@@ -6,11 +6,11 @@
   <UserControl.Resources>
     <DataTemplate x:Key="PredefinedTeamTemplate"
                   x:DataType="local:ZzzPredefinedTeamRowModel">
-      <fa:SettingsExpanderItem Margin="0,0,0,6">
-        <fa:SettingsExpanderItem.IconSource>
-          <fa:SymbolIconSource Symbol="People" />
-        </fa:SettingsExpanderItem.IconSource>
-        <fa:SettingsExpanderItem.Footer>
+      <fa:FASettingsExpanderItem Margin="0,0,0,6">
+        <fa:FASettingsExpanderItem.IconSource>
+          <fa:FASymbolIconSource Symbol="People" />
+        </fa:FASettingsExpanderItem.IconSource>
+        <fa:FASettingsExpanderItem.Footer>
           <StackPanel Spacing="8">
             <Grid ColumnDefinitions="130,13,Auto,10,*"
                   ColumnSpacing="0">
@@ -69,12 +69,12 @@
               </fa:FAComboBox>
             </StackPanel>
           </StackPanel>
-        </fa:SettingsExpanderItem.Footer>
-      </fa:SettingsExpanderItem>
+        </fa:FASettingsExpanderItem.Footer>
+      </fa:FASettingsExpanderItem>
     </DataTemplate>
   </UserControl.Resources>
 
-  <Grid Margin="11,11,11,0"
+  <Grid Margin="{DynamicResource SampleAppPageMargin}"
         ColumnDefinitions="500,10,*">
     <ScrollViewer Grid.Column="0"
                   HorizontalScrollBarVisibility="Disabled"
@@ -88,20 +88,20 @@
                   VerticalScrollBarVisibility="Auto">
       <StackPanel Spacing="10"
                   Margin="0,0,0,11">
-        <fa:InfoBar x:Name="TeamErrorBar"
+        <fa:FAInfoBar x:Name="TeamErrorBar"
                     IsOpen="False"
                     IsClosable="False"
                     Severity="Error" />
-        <fa:SettingsExpanderItem Content="预备编队识别">
-          <fa:SettingsExpanderItem.IconSource>
-            <fa:SymbolIconSource Symbol="Help" />
-          </fa:SettingsExpanderItem.IconSource>
-          <fa:SettingsExpanderItem.Footer>
+        <fa:FASettingsExpanderItem Content="预备编队识别">
+          <fa:FASettingsExpanderItem.IconSource>
+            <fa:FASymbolIconSource Symbol="Help" />
+          </fa:FASettingsExpanderItem.IconSource>
+          <fa:FASettingsExpanderItem.Footer>
             <Button x:Name="HelpButton"
                     Content="使用说明"
                     HorizontalAlignment="Stretch" />
-          </fa:SettingsExpanderItem.Footer>
-        </fa:SettingsExpanderItem>
+          </fa:FASettingsExpanderItem.Footer>
+        </fa:FASettingsExpanderItem>
         <ContentControl x:Name="RunPanelHost"
                         HorizontalContentAlignment="Stretch" />
       </StackPanel>

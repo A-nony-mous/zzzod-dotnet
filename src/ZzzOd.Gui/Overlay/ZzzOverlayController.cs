@@ -19,6 +19,7 @@ internal sealed class ZzzOverlayController : IDisposable
     private readonly ZzzGameWindowTracker _windowTracker;
     private readonly DispatcherTimer _inputTimer;
     private readonly Dictionary<string, ZzzOverlayInfoPanelWindow> _panelWindows = new(StringComparer.Ordinal);
+    private Window? _ownerWindow;
     private ZzzOverlayTechnicalWindow? _window;
     private ZzzWindowStatusDto? _currentGameWindow;
     private bool _visibilityRequested;
@@ -44,16 +45,23 @@ internal sealed class ZzzOverlayController : IDisposable
         _overlayService.SetEnabled(Settings.Enabled);
         ConfigureDisplay(Settings);
         _refreshTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(Settings.StatePollIntervalMs) };
-        _refreshTimer.Tick += (_, _) => Refresh(null);
+        _refreshTimer.Tick += OnRefreshTimerTick;
         _windowTracker = new ZzzGameWindowTracker(backend, Settings.FollowIntervalMs);
         _windowTracker.WindowChanged += ApplyTrackedWindow;
         _inputTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(Settings.InputPollIntervalMs) };
-        _inputTimer.Tick += (_, _) => PollInput();
+        _inputTimer.Tick += OnInputTimerTick;
     }
 
     public ZzzOverlayGuiSettings Settings { get; private set; }
 
     public ZzzOverlayStatusDto Status => _overlayService.GetStatus();
+
+    internal void AttachOwner(Window owner)
+    {
+        ArgumentNullException.ThrowIfNull(owner);
+        Dispatcher.UIThread.VerifyAccess();
+        _ownerWindow = owner;
+    }
 
     public void Dispose()
     {
@@ -72,19 +80,28 @@ internal sealed class ZzzOverlayController : IDisposable
         HideWindows();
         _disposed = true;
         _refreshTimer.Stop();
+        _refreshTimer.Tick -= OnRefreshTimerTick;
         _inputTimer.Stop();
+        _inputTimer.Tick -= OnInputTimerTick;
         _windowTracker.WindowChanged -= ApplyTrackedWindow;
         _windowTracker.Stop();
 
         ZzzOverlayTechnicalWindow? visionWindow = _window;
         _window = null;
+        if (visionWindow is not null)
+        {
+            visionWindow.Closed -= OnVisionWindowClosed;
+        }
+
         visionWindow?.Close();
         foreach (ZzzOverlayInfoPanelWindow panel in _panelWindows.Values.ToArray())
         {
+            DetachPanelWindow(panel);
             panel.Close();
         }
 
         _panelWindows.Clear();
+        _ownerWindow = null;
     }
 
     public void ReloadConfiguration(ZzzOverlayGuiSettings settings)
@@ -286,6 +303,14 @@ internal sealed class ZzzOverlayController : IDisposable
 
     internal ZzzOverlayTechnicalWindow? VisionWindowForTesting => _window;
 
+    internal Window? OwnerWindowForTesting => _ownerWindow;
+
+    internal int PanelWindowCountForTesting => _panelWindows.Count;
+
+    internal IReadOnlyList<ZzzOverlayInfoPanelWindow> PanelWindowsForTesting => _panelWindows.Values.ToArray();
+
+    internal bool TimersRunningForTesting => _refreshTimer.IsEnabled || _inputTimer.IsEnabled;
+
     private void FollowWindow(bool force = false)
     {
         Dispatcher.UIThread.VerifyAccess();
@@ -320,7 +345,14 @@ internal sealed class ZzzOverlayController : IDisposable
 
         if (!_window.IsVisible)
         {
-            _window.Show();
+            if (_ownerWindow is not null)
+            {
+                _window.Show(_ownerWindow);
+            }
+            else
+            {
+                _window.Show();
+            }
             geometryChanged = true;
         }
 
@@ -368,7 +400,14 @@ internal sealed class ZzzOverlayController : IDisposable
             panelWindow.UpdateContent(ZzzOverlayPanelTextFormatter.Format(panel.Id, snapshot, Settings));
             if (!panelWindow.IsVisible)
             {
-                panelWindow.Show();
+                if (_ownerWindow is not null)
+                {
+                    panelWindow.Show(_ownerWindow);
+                }
+                else
+                {
+                    panelWindow.Show();
+                }
             }
         }
     }
@@ -720,8 +759,22 @@ internal sealed class ZzzOverlayController : IDisposable
     private ZzzOverlayTechnicalWindow CreateWindow()
     {
         ZzzOverlayTechnicalWindow window = new();
-        window.Closed += (_, _) => _window = null;
+        window.Closed += OnVisionWindowClosed;
         return window;
+    }
+
+    private void OnVisionWindowClosed(object? sender, EventArgs args)
+    {
+        if (sender is not ZzzOverlayTechnicalWindow window)
+        {
+            return;
+        }
+
+        window.Closed -= OnVisionWindowClosed;
+        if (ReferenceEquals(_window, window))
+        {
+            _window = null;
+        }
     }
 
     private static ZzzOverlayCaptureTarget CreateCaptureTarget(string id, Window window)
@@ -748,10 +801,39 @@ internal sealed class ZzzOverlayController : IDisposable
         panelWindow.FreeModeChanged += OnPanelFreeModeChanged;
         panelWindow.AppearanceChanged += OnPanelAppearanceChanged;
         panelWindow.EditModeExitRequested += OnPanelEditModeExitRequested;
-        panelWindow.Closed += (_, _) => _panelWindows.Remove(panelId);
+        panelWindow.Closed += OnPanelWindowClosed;
         _panelWindows.Add(panelId, panelWindow);
         return panelWindow;
     }
+
+    private void OnPanelWindowClosed(object? sender, EventArgs args)
+    {
+        if (sender is not ZzzOverlayInfoPanelWindow panelWindow)
+        {
+            return;
+        }
+
+        DetachPanelWindow(panelWindow);
+        KeyValuePair<string, ZzzOverlayInfoPanelWindow> entry = _panelWindows.FirstOrDefault(
+            pair => ReferenceEquals(pair.Value, panelWindow));
+        if (entry.Key is not null)
+        {
+            _panelWindows.Remove(entry.Key);
+        }
+    }
+
+    private void DetachPanelWindow(ZzzOverlayInfoPanelWindow panelWindow)
+    {
+        panelWindow.GeometryCommitted -= OnPanelGeometryCommitted;
+        panelWindow.FreeModeChanged -= OnPanelFreeModeChanged;
+        panelWindow.AppearanceChanged -= OnPanelAppearanceChanged;
+        panelWindow.EditModeExitRequested -= OnPanelEditModeExitRequested;
+        panelWindow.Closed -= OnPanelWindowClosed;
+    }
+
+    private void OnRefreshTimerTick(object? sender, EventArgs args) => Refresh(null);
+
+    private void OnInputTimerTick(object? sender, EventArgs args) => PollInput();
 
     private void OnPanelGeometryCommitted(ZzzOverlayInfoPanelWindow panelWindow) => PersistPanelLayout();
 

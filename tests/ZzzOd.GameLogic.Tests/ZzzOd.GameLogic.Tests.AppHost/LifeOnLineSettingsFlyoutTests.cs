@@ -94,7 +94,7 @@ public sealed class LifeOnLineSettingsFlyoutTests
 		Assert.True(text.IndexOf("完成次数", StringComparison.Ordinal) < text.IndexOf("预备编队", StringComparison.Ordinal));
 		Assert.Contains("Minimum=\"0\"", text, StringComparison.Ordinal);
 		Assert.Contains("Maximum=\"20000\"", text, StringComparison.Ordinal);
-		Assert.Contains("fa:NumberBox", text, StringComparison.Ordinal);
+		Assert.Contains("fa:FANumberBox", text, StringComparison.Ordinal);
 		Assert.Contains("fa:FAComboBox", text, StringComparison.Ordinal);
 		Assert.Contains("当日: {_viewModel.DailyRunTimes}", actualString, StringComparison.Ordinal);
 		Assert.Contains("List<PredefinedTeamInfo>", actualString2, StringComparison.Ordinal);

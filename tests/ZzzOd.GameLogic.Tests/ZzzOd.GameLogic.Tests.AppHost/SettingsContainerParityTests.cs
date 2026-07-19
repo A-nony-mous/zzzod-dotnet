@@ -39,7 +39,7 @@ public sealed class SettingsContainerParityTests
 		string path3 = Path.Combine(buffer2);
 		XDocument xDocument = XDocument.Load(text2);
 		XNamespace xNamespace = "using:FluentAvalonia.UI.Controls";
-		string[] actual = (from item in xDocument.Descendants(xNamespace + "TabViewItem")
+		string[] actual = (from item in xDocument.Descendants(xNamespace + "FATabViewItem")
 			select (string?)item.Attribute("Header") into header
 			where header != null
 			select header).Cast<string>().ToArray();
@@ -47,8 +47,8 @@ public sealed class SettingsContainerParityTests
 		string actualString2 = File.ReadAllText(path2);
 		string text3 = File.ReadAllText(path3);
 		Assert.Equal<string[]>(ExpectedHeaders, actual);
-		Assert.Contains("<fa:TabView", actualString, StringComparison.Ordinal);
-		Assert.Equal(6, xDocument.Descendants(xNamespace + "Frame").Count());
+		Assert.Contains("<fa:FATabView", actualString, StringComparison.Ordinal);
+		Assert.Equal(6, xDocument.Descendants(xNamespace + "FAFrame").Count());
 		Assert.Contains("new ZzzPushSettingsAxamlPage(backend, pushNotificationService, _operations)", actualString2, StringComparison.Ordinal);
 		Assert.DoesNotContain("new ZzzPushSettingsPage(backend)", actualString2, StringComparison.Ordinal);
 		Assert.Contains("_environmentRuntimeCoordinator", text3, StringComparison.Ordinal);

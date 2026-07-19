@@ -48,11 +48,11 @@ public sealed class AppHostRuntimeTests
 			Application = application;
 		}
 
-		public static BackendHarness Create(bool failOnCreate = false)
+		public static BackendHarness Create(bool failOnCreate = false, bool ignoreCancellation = false)
 		{
 			string runRoot = Path.Combine(Path.GetTempPath(), "zzzod-apphost-tests", Guid.NewGuid().ToString("N"));
 			CreateRequiredAssets(runRoot);
-			TestApplication application = new TestApplication();
+			TestApplication application = new TestApplication(ignoreCancellation);
 			ZzzRuntimeManager runtime = new ZzzRuntimeManager(runRoot, NullLogger<ZzzRuntimeManager>.Instance, (int instanceIndex) => CreateContext(runRoot, instanceIndex, new TestApplicationFactory(application, failOnCreate)));
 			ZzzBackendEventBus eventBus = new ZzzBackendEventBus();
 			ZzzBattleAssistantRuntimeSource battleAssistantRuntimeSource = new ZzzBattleAssistantRuntimeSource();
@@ -69,6 +69,15 @@ public sealed class AppHostRuntimeTests
 
 	private sealed class TestApplication : IApplication
 	{
+		private readonly bool _ignoreCancellation;
+
+		private readonly TaskCompletionSource _allowExit = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+		public TestApplication(bool ignoreCancellation = false)
+		{
+			_ignoreCancellation = ignoreCancellation;
+		}
+
 		public TaskCompletionSource Started { get; } = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
 
 		public int PauseCount { get; private set; }
@@ -82,9 +91,17 @@ public sealed class AppHostRuntimeTests
 		public async Task<OperationResult> ExecuteAsync(CancellationToken cancellationToken)
 		{
 			Started.TrySetResult();
+			if (_ignoreCancellation)
+			{
+				await _allowExit.Task.ConfigureAwait(false);
+				return new OperationResult(IsSuccess: false, "迟到退出");
+			}
+
 			await Task.Delay(Timeout.InfiniteTimeSpan, cancellationToken);
 			return new OperationResult(IsSuccess: true, "完成");
 		}
+
+		public void AllowExit() => _allowExit.TrySetResult();
 
 		public Task OnPauseAsync(CancellationToken cancellationToken)
 		{
@@ -362,7 +379,7 @@ public sealed class AppHostRuntimeTests
 			{
 				ZzzRunPanel zzzRunPanel = new ZzzRunPanel(backend, "one_dragon", null, runIntent, null, "default");
 				zzzRunPanel.OnPageShown();
-				InfoBar infoBar = zzzRunPanel.FindControl<InfoBar>("RunErrorBar");
+				FAInfoBar infoBar = zzzRunPanel.FindControl<FAInfoBar>("RunErrorBar");
 				Assert.True(infoBar.IsOpen);
 				Assert.False(string.IsNullOrWhiteSpace(infoBar.Message));
 				Assert.NotEqual("运行状态读取失败。", infoBar.Message);
@@ -431,7 +448,29 @@ public sealed class AppHostRuntimeTests
 		Assert.Equal(1, harness.Application.ResumeCount);
 		Assert.True(stopped.Success);
 		Assert.Equal(ZzzRunState.Cancelled, stopped.Value.State);
-		Assert.Equal(1, harness.Application.StopCount);
+		Assert.Equal(0, harness.Application.StopCount);
+	}
+
+	/// <summary>
+	/// 停止已返回 Cancelled 后，仍在退出的旧 application 不得改写终态。
+	/// </summary>
+	[Fact]
+	public async Task BackendKeepsCancelledWhenOldApplicationExitsLate()
+	{
+		using BackendHarness harness = BackendHarness.Create(ignoreCancellation: true);
+		ZzzBackendResult<ZzzRunStatusDto> started = await harness.Backend.StartRunAsync(new ZzzStartRunRequest("test-app"));
+		await harness.Application.Started.Task.WaitAsync(TimeSpan.FromSeconds(3L));
+
+		ZzzBackendResult<ZzzRunStatusDto> stopped = await harness.Backend.StopRunAsync();
+		Assert.True(started.Success);
+		Assert.Equal(ZzzRunState.Cancelled, stopped.Value.State);
+
+		harness.Application.AllowExit();
+		await Task.Delay(50);
+
+		ZzzBackendResult<ZzzRunStatusDto> current = harness.Backend.GetCurrentRun();
+		Assert.True(current.Success);
+		Assert.Equal(ZzzRunState.Cancelled, current.Value.State);
 	}
 
 	/// <summary>

@@ -74,11 +74,11 @@ public sealed class ZzzUnavailablePageModel
     public ZzzPageStatusModel ToStatus() =>
         new(ZzzPageStatusSeverity.Warning, Title, string.IsNullOrWhiteSpace(MissingService) ? Reason : $"{Reason}：{MissingService}");
 
-    public Control ToControl() => new InfoBar
+    public Control ToControl() => new FAInfoBar
     {
         Title = Title,
         Message = ToStatus().Message,
-        Severity = InfoBarSeverity.Warning,
+        Severity = FAInfoBarSeverity.Warning,
         IsOpen = true,
         IsClosable = false,
     };

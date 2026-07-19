@@ -1,0 +1,110 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:fa="using:FluentAvalonia.UI.Controls"
+             xmlns:local="using:ZzzOd.Gui.Views.FrontierPages.DevTools"
+             x:Class="ZzzOd.Gui.Views.FrontierPages.DevTools.FrontierAgentTemplateGeneratorPage">
+  <Grid Margin="{DynamicResource SampleAppPageMargin}"
+        RowDefinitions="Auto,*"
+        RowSpacing="8">
+    <fa:FAInfoBar x:Name="StatusBar"
+                  Grid.Row="0"
+                  IsOpen="False"
+                  IsClosable="True" />
+    <Grid Grid.Row="1"
+          ColumnDefinitions="300,650"
+          ColumnSpacing="16">
+      <ScrollViewer Grid.Column="0"
+                    HorizontalScrollBarVisibility="Disabled"
+                    VerticalScrollBarVisibility="Auto">
+      <StackPanel Spacing="16">
+        <fa:FASettingsExpander Header="代理人模板生成"
+                               IsExpanded="True">
+        <fa:FASettingsExpanderItem Content="代理人模板生成"
+                                 Description="为指定角色生成6个头像模板">
+          <fa:FASettingsExpanderItem.IconSource>
+            <fa:FASymbolIconSource Symbol="People" />
+          </fa:FASettingsExpanderItem.IconSource>
+        </fa:FASettingsExpanderItem>
+
+        <fa:FASettingsExpanderItem Content="代理人英文名">
+          <fa:FASettingsExpanderItem.Footer>
+            <StackPanel Spacing="12">
+              <TextBox x:Name="AgentIdBox"
+                       PlaceholderText="输入代理人英文名"
+                       TextChanged="OnAgentIdChanged" />
+              <Button x:Name="GenerateAllButton"
+                      Content="一键生成"
+                      IsEnabled="False"
+                      Click="OnGenerateAllClicked" />
+            </StackPanel>
+          </fa:FASettingsExpanderItem.Footer>
+        </fa:FASettingsExpanderItem>
+
+        <fa:FASettingsExpanderItem Content="截图方法">
+          <fa:FASettingsExpanderItem.Footer>
+            <StackPanel Spacing="6">
+              <TextBlock Text="1号大头像：3人组队，目标角色切到1号位" />
+              <TextBlock Text="2号小头像：3人组队，目标角色切到2号位" />
+              <TextBlock Text="连携头像：触发目标角色连携（头像在左边）" />
+              <TextBlock Text="快速支援：触发目标角色快速支援" />
+              <TextBlock Text="空洞头像：走格子，目标角色在编队1号位" />
+              <TextBlock Text="预备编队：菜单-更多，目标角色在1号队伍1号位" />
+            </StackPanel>
+          </fa:FASettingsExpanderItem.Footer>
+        </fa:FASettingsExpanderItem>
+        </fa:FASettingsExpander>
+
+      </StackPanel>
+      </ScrollViewer>
+
+      <ScrollViewer Grid.Column="1"
+                    HorizontalScrollBarVisibility="Disabled"
+                    VerticalScrollBarVisibility="Auto">
+        <fa:FASettingsExpander x:Name="TemplateCards"
+                               Header="模板预览"
+                               IsExpanded="True">
+        <fa:FASettingsExpander.ItemTemplate>
+          <DataTemplate x:DataType="local:ZzzAgentTemplateCardView">
+            <fa:FASettingsExpanderItem Margin="0,0,0,16"
+                                     Content="{Binding Name}">
+              <fa:FASettingsExpanderItem.Footer>
+                <Grid RowDefinitions="220,Auto"
+                      RowSpacing="10">
+                  <Image Source="{Binding Preview}"
+                         Stretch="Uniform" />
+                  <fa:FACommandBar Grid.Row="1"
+                                 DefaultLabelPosition="Right">
+                    <fa:FACommandBar.PrimaryCommands>
+                      <fa:FACommandBarButton Label="选择截图"
+                                           IsEnabled="{Binding IsEnabled}"
+                                           Click="OnChooseScreenshotClicked">
+                        <fa:FACommandBarButton.IconSource>
+                          <fa:FASymbolIconSource Symbol="OpenFile" />
+                        </fa:FACommandBarButton.IconSource>
+                      </fa:FACommandBarButton>
+                      <fa:FACommandBarButton Label="游戏截图"
+                                           IsEnabled="{Binding IsEnabled}"
+                                           Click="OnCaptureGameClicked">
+                        <fa:FACommandBarButton.IconSource>
+                          <fa:FASymbolIconSource Symbol="Camera" />
+                        </fa:FACommandBarButton.IconSource>
+                      </fa:FACommandBarButton>
+                      <fa:FACommandBarButton Label="保存"
+                                           IsEnabled="{Binding CanSave}"
+                                           Click="OnSaveClicked">
+                        <fa:FACommandBarButton.IconSource>
+                          <fa:FASymbolIconSource Symbol="Save" />
+                        </fa:FACommandBarButton.IconSource>
+                      </fa:FACommandBarButton>
+                    </fa:FACommandBar.PrimaryCommands>
+                  </fa:FACommandBar>
+                </Grid>
+              </fa:FASettingsExpanderItem.Footer>
+            </fa:FASettingsExpanderItem>
+          </DataTemplate>
+        </fa:FASettingsExpander.ItemTemplate>
+        </fa:FASettingsExpander>
+      </ScrollViewer>
+    </Grid>
+  </Grid>
+</UserControl>

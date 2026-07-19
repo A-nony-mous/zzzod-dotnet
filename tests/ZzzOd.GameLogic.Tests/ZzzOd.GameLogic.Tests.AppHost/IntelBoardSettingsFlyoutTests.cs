@@ -124,7 +124,7 @@ public sealed class IntelBoardSettingsFlyoutTests
 		string text = File.ReadAllText(Path.Combine(path, "ZzzIntelBoardSettingsFlyoutContent.axaml"));
 		string actualString = File.ReadAllText(Path.Combine(path, "ZzzIntelBoardSettingsFlyoutContent.axaml.cs"));
 		AssertOrder(text, "预备编队", "自动战斗", "刷满经验", "重置进度");
-		Assert.Contains("fa:SettingsExpanderItem", text, StringComparison.Ordinal);
+		Assert.Contains("fa:FASettingsExpanderItem", text, StringComparison.Ordinal);
 		Assert.Contains("fa:FAComboBox", text, StringComparison.Ordinal);
 		Assert.Contains("ToggleSwitch", text, StringComparison.Ordinal);
 		Assert.Contains("GetConfigScope(\"team\", _instanceIndex)", actualString, StringComparison.Ordinal);

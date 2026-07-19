@@ -13,9 +13,9 @@ internal sealed partial class ZzzGameAssistantPage : UserControl, IZzzPageLifecy
     private static readonly string[] Headers = ["战斗助手", "委托助手"];
     private readonly ZzzBattleAssistantPage _battlePage;
     private readonly ZzzCommissionAssistantPage _commissionPage;
-    private readonly TabView _pivot;
-    private readonly TabViewItem _battleTab;
-    private readonly TabViewItem _commissionTab;
+    private readonly FATabView _pivot;
+    private readonly FATabViewItem _battleTab;
+    private readonly FATabViewItem _commissionTab;
     private Control? _activePage;
     private bool _activePageIsShown;
     private bool _isShown;
@@ -25,15 +25,15 @@ internal sealed partial class ZzzGameAssistantPage : UserControl, IZzzPageLifecy
         _battlePage = new ZzzBattleAssistantPage(backend, runIntent);
         _commissionPage = new ZzzCommissionAssistantPage(backend, runIntent);
         AvaloniaXamlLoader.Load(this);
-        _pivot = this.FindControl<TabView>("AssistantPivot")
+        _pivot = this.FindControl<FATabView>("AssistantPivot")
             ?? throw new InvalidOperationException("游戏助手缺少 TabView。");
-        _battleTab = this.FindControl<TabViewItem>("BattleTab")
+        _battleTab = this.FindControl<FATabViewItem>("BattleTab")
             ?? throw new InvalidOperationException("游戏助手缺少战斗助手 TabViewItem。");
-        _commissionTab = this.FindControl<TabViewItem>("CommissionTab")
+        _commissionTab = this.FindControl<FATabViewItem>("CommissionTab")
             ?? throw new InvalidOperationException("游戏助手缺少委托助手 TabViewItem。");
-        Frame battleFrame = this.FindControl<Frame>("BattleFrame")
+        FAFrame battleFrame = this.FindControl<FAFrame>("BattleFrame")
             ?? throw new InvalidOperationException("游戏助手缺少战斗助手 Frame。");
-        Frame commissionFrame = this.FindControl<Frame>("CommissionFrame")
+        FAFrame commissionFrame = this.FindControl<FAFrame>("CommissionFrame")
             ?? throw new InvalidOperationException("游戏助手缺少委托助手 Frame。");
         battleFrame.Content = _battlePage;
         commissionFrame.Content = _commissionPage;
@@ -47,7 +47,7 @@ internal sealed partial class ZzzGameAssistantPage : UserControl, IZzzPageLifecy
 
     public string SelectedHeader => Headers[_pivot.SelectedIndex is 1 ? 1 : 0];
 
-    public string NavigationTargetKind => nameof(TabView);
+    public string NavigationTargetKind => nameof(FATabView);
 
     internal bool ActiveChildIsShown => _activePageIsShown;
 
@@ -74,7 +74,7 @@ internal sealed partial class ZzzGameAssistantPage : UserControl, IZzzPageLifecy
 
     public bool FocusSegment(int index)
     {
-        TabViewItem? item = index switch
+        FATabViewItem? item = index switch
         {
             0 => _battleTab,
             1 => _commissionTab,

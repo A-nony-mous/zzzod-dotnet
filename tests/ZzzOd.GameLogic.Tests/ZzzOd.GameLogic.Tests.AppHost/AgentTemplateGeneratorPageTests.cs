@@ -42,8 +42,8 @@ public sealed class AgentTemplateGeneratorPageTests
 		string path = FindDevtoolsDirectory();
 		string actualString = File.ReadAllText(Path.Combine(path, "ZzzAgentTemplateGeneratorPage.axaml"));
 		string actualString2 = File.ReadAllText(Path.Combine(path, "ZzzAgentTemplateGeneratorPage.axaml.cs"));
-		Assert.Contains("fa:SettingsExpanderItem", actualString, StringComparison.Ordinal);
-		Assert.Contains("fa:CommandBar", actualString, StringComparison.Ordinal);
+		Assert.Contains("fa:FASettingsExpanderItem", actualString, StringComparison.Ordinal);
+		Assert.Contains("fa:FACommandBar", actualString, StringComparison.Ordinal);
 		Assert.Contains("输入代理人英文名", actualString, StringComparison.Ordinal);
 		Assert.Contains("一键生成", actualString, StringComparison.Ordinal);
 		Assert.Contains("选择截图", actualString, StringComparison.Ordinal);

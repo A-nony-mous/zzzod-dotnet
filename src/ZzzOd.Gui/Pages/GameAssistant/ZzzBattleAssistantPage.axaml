@@ -29,7 +29,7 @@
     </Style>
   </UserControl.Styles>
 
-  <Grid Margin="11"
+  <Grid Margin="{DynamicResource SampleAppPageMargin}"
         ColumnDefinitions="*,12,Auto">
     <Grid Grid.Column="0"
           Margin="0,-10,0,-7"
@@ -52,7 +52,7 @@
           MaxWidth="400"
           RowDefinitions="Auto,*">
       <Grid RowDefinitions="Auto,Auto">
-        <fa:InfoBar x:Name="RuntimeErrorBar"
+        <fa:FAInfoBar x:Name="RuntimeErrorBar"
                     IsOpen="False"
                     IsClosable="False"
                     Severity="Error" />
@@ -98,7 +98,7 @@
             RowDefinitions="Auto,34,*"
             RowSpacing="6">
         <TextBox x:Name="BattleStateFilter"
-                 Watermark="输入状态关键词过滤..." />
+                 PlaceholderText="输入状态关键词过滤..." />
         <Grid Grid.Row="1"
               Height="34"
               ColumnDefinitions="150,100,60">

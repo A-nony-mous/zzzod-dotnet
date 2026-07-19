@@ -9,21 +9,22 @@ namespace ZzzOd.Gui.Pages.ApplicationSettings;
 internal sealed partial class ZzzWorldPatrolLargeMapIconEditorWindow : Window
 {
     private readonly ListBox _iconList;
-    private readonly CommandBarButton _setTeleportButton;
-    private readonly CommandBarButton _deleteIconButton;
-    private readonly ContentDialog _deleteDialog;
+    private readonly FACommandBarButton _setTeleportButton;
+    private readonly FACommandBarButton _deleteIconButton;
+    private readonly FAContentDialog _deleteDialog;
     private List<ZzzWorldPatrolEditableIcon> _icons;
 
     public ZzzWorldPatrolLargeMapIconEditorWindow(IReadOnlyList<ZzzWorldPatrolLargeMapIconDto> icons)
     {
         AvaloniaXamlLoader.Load(this);
         _iconList = Required<ListBox>("IconList");
-        _setTeleportButton = Required<CommandBarButton>("SetTeleportButton");
-        _deleteIconButton = Required<CommandBarButton>("DeleteIconButton");
-        _deleteDialog = Required<ContentDialog>("DeleteDialog");
+        _setTeleportButton = Required<FACommandBarButton>("SetTeleportButton");
+        _deleteIconButton = Required<FACommandBarButton>("DeleteIconButton");
+        _deleteDialog = Required<FAContentDialog>("DeleteDialog");
         _icons = icons.Select(ToEditable).ToList();
         RefreshList();
         UpdateButtons();
+        Closed += OnClosed;
     }
 
     public event Action<int>? IconSelected;
@@ -31,6 +32,11 @@ internal sealed partial class ZzzWorldPatrolLargeMapIconEditorWindow : Window
     public event Action<IReadOnlyList<ZzzWorldPatrolLargeMapIconDto>>? IconsSaved;
 
     public Func<ZzzWorldPatrolRoutePositionDto?>? CurrentPositionRequested { get; set; }
+
+    internal bool ResourcesReleased =>
+        CurrentPositionRequested is null &&
+        _iconList.ItemsSource is null &&
+        _icons.Count == 0;
 
     public void HighlightIcon(int index)
     {
@@ -79,7 +85,7 @@ internal sealed partial class ZzzWorldPatrolLargeMapIconEditorWindow : Window
 
         ZzzWorldPatrolEditableIcon icon = _icons[index];
         _deleteDialog.Content = $"确定要删除图标 \"{icon.IconName}\" ({icon.TemplateId}) 吗？\n此操作不可撤销。";
-        if (await _deleteDialog.ShowAsync(this).ConfigureAwait(true) != ContentDialogResult.Primary)
+        if (await _deleteDialog.ShowAsync(this).ConfigureAwait(true) != FAContentDialogResult.Primary)
         {
             return;
         }
@@ -97,6 +103,17 @@ internal sealed partial class ZzzWorldPatrolLargeMapIconEditorWindow : Window
     }
 
     private void OnCancelClicked(object? sender, RoutedEventArgs args) => Close();
+
+    private void OnClosed(object? sender, EventArgs args)
+    {
+        IconSelected = null;
+        IconsSaved = null;
+        CurrentPositionRequested = null;
+        _iconList.ItemsSource = null;
+        _icons.Clear();
+        _deleteDialog.Content = null;
+        Closed -= OnClosed;
+    }
 
     private IReadOnlyList<ZzzWorldPatrolLargeMapIconDto> BuildDtos() => _icons.Select(icon =>
         new ZzzWorldPatrolLargeMapIconDto(

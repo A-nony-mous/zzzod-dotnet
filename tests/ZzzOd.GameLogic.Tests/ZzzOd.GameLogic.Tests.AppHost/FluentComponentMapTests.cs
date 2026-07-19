@@ -32,25 +32,25 @@ public sealed class FluentComponentMapTests
 	public void ApprovedRolesMapToOfficialFluentAvaloniaControls()
 	{
 		Dictionary<ZzzFluentComponentRole, Type> dictionary = new Dictionary<ZzzFluentComponentRole, Type>();
-		dictionary[ZzzFluentComponentRole.SettingsGroup] = typeof(SettingsExpander);
-		dictionary[ZzzFluentComponentRole.SettingsItem] = typeof(SettingsExpanderItem);
+		dictionary[ZzzFluentComponentRole.SettingsGroup] = typeof(FASettingsExpander);
+		dictionary[ZzzFluentComponentRole.SettingsItem] = typeof(FASettingsExpanderItem);
 		dictionary[ZzzFluentComponentRole.ComboBox] = typeof(FAComboBox);
-		dictionary[ZzzFluentComponentRole.NumberInput] = typeof(NumberBox);
-		dictionary[ZzzFluentComponentRole.CommandBar] = typeof(CommandBar);
-		dictionary[ZzzFluentComponentRole.Dialog] = typeof(ContentDialog);
-		dictionary[ZzzFluentComponentRole.TeachingTip] = typeof(TeachingTip);
-		dictionary[ZzzFluentComponentRole.InfoBar] = typeof(InfoBar);
-		dictionary[ZzzFluentComponentRole.Tab] = typeof(TabView);
-		dictionary[ZzzFluentComponentRole.Frame] = typeof(Frame);
-		dictionary[ZzzFluentComponentRole.Navigation] = typeof(NavigationView);
-		dictionary[ZzzFluentComponentRole.SymbolIcon] = typeof(SymbolIcon);
-		dictionary[ZzzFluentComponentRole.FontIcon] = typeof(FontIcon);
+		dictionary[ZzzFluentComponentRole.NumberInput] = typeof(FANumberBox);
+		dictionary[ZzzFluentComponentRole.FACommandBar] = typeof(FACommandBar);
+		dictionary[ZzzFluentComponentRole.Dialog] = typeof(FAContentDialog);
+		dictionary[ZzzFluentComponentRole.FATeachingTip] = typeof(FATeachingTip);
+		dictionary[ZzzFluentComponentRole.FAInfoBar] = typeof(FAInfoBar);
+		dictionary[ZzzFluentComponentRole.Tab] = typeof(FATabView);
+		dictionary[ZzzFluentComponentRole.FAFrame] = typeof(FAFrame);
+		dictionary[ZzzFluentComponentRole.Navigation] = typeof(FANavigationView);
+		dictionary[ZzzFluentComponentRole.FASymbolIcon] = typeof(FASymbolIcon);
+		dictionary[ZzzFluentComponentRole.FAFontIcon] = typeof(FAFontIcon);
 		Dictionary<ZzzFluentComponentRole, Type> dictionary2 = dictionary;
 		Assert.Equal(dictionary2.Count, ZzzFluentComponentMap.All.Count);
 		foreach (var (role, type2) in dictionary2)
 		{
 			Assert.Equal(type2, ZzzFluentComponentMap.GetRequired(role));
-			Assert.Equal(typeof(NavigationView).Assembly, type2.Assembly);
+			Assert.Equal(typeof(FANavigationView).Assembly, type2.Assembly);
 		}
 	}
 }

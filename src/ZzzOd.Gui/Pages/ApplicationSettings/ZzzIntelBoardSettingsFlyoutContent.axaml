@@ -4,34 +4,34 @@
              x:Class="ZzzOd.Gui.Pages.ApplicationSettings.ZzzIntelBoardSettingsFlyoutContent"
              MinWidth="420">
   <StackPanel Margin="8" Spacing="8">
-    <fa:InfoBar x:Name="ErrorBar"
+    <fa:FAInfoBar x:Name="ErrorBar"
                 IsOpen="False"
                 IsClosable="True"
                 Severity="Error" />
 
     <StackPanel Spacing="1">
-      <fa:SettingsExpanderItem Content="预备编队">
-        <fa:SettingsExpanderItem.Footer>
+      <fa:FASettingsExpanderItem Content="预备编队">
+        <fa:FASettingsExpanderItem.Footer>
           <fa:FAComboBox x:Name="PredefinedTeamCombo"
                          Width="190"
                          SelectionChanged="OnPredefinedTeamChanged" />
-        </fa:SettingsExpanderItem.Footer>
-      </fa:SettingsExpanderItem>
+        </fa:FASettingsExpanderItem.Footer>
+      </fa:FASettingsExpanderItem>
 
-      <fa:SettingsExpanderItem x:Name="AutoBattleItem" Content="自动战斗">
-        <fa:SettingsExpanderItem.Footer>
+      <fa:FASettingsExpanderItem x:Name="AutoBattleItem" Content="自动战斗">
+        <fa:FASettingsExpanderItem.Footer>
           <fa:FAComboBox x:Name="AutoBattleCombo"
                          Width="190"
                          SelectionChanged="OnAutoBattleChanged" />
-        </fa:SettingsExpanderItem.Footer>
-      </fa:SettingsExpanderItem>
+        </fa:FASettingsExpanderItem.Footer>
+      </fa:FASettingsExpanderItem>
 
-      <fa:SettingsExpanderItem Content="刷满经验">
-        <fa:SettingsExpanderItem.Footer>
+      <fa:FASettingsExpanderItem Content="刷满经验">
+        <fa:FASettingsExpanderItem.Footer>
           <ToggleSwitch x:Name="ExpGrindToggle"
                         Click="OnExpGrindChanged" />
-        </fa:SettingsExpanderItem.Footer>
-      </fa:SettingsExpanderItem>
+        </fa:FASettingsExpanderItem.Footer>
+      </fa:FASettingsExpanderItem>
     </StackPanel>
 
     <Button x:Name="ResetProgressButton"

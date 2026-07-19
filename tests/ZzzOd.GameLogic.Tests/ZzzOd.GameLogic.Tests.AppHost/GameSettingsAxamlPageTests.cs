@@ -61,9 +61,10 @@ public sealed class GameSettingsAxamlPageTests
 		Assert.DoesNotContain("对应 Python", text, StringComparison.Ordinal);
 		Assert.DoesNotContain("PageModel", text, StringComparison.Ordinal);
 		Assert.Contains("游戏路径、输入方式等基础设置，建议首次使用前检查一遍", text, StringComparison.Ordinal);
-		Assert.Contains("出现剪切板失败时切换到输入法", actualString, StringComparison.Ordinal);
+		string viewModelString = File.ReadAllText(FindWorkspaceFile("zzzod-dotnet", "src", "ZzzOd.Gui", "Pages", "Settings", "ZzzGameSettingsViewModel.cs"));
+		Assert.Contains("出现剪切板失败时切换到输入法", viewModelString, StringComparison.Ordinal);
 		Assert.Contains("如果你不知道这是做什么的 请不要填写", text, StringComparison.Ordinal);
-		Assert.Contains("未检测到 vgamepad / ViGEmBus，请先安装虚拟手柄驱动", actualString, StringComparison.Ordinal);
+		Assert.Contains("未检测到 vgamepad / ViGEmBus，请先安装虚拟手柄驱动", viewModelString, StringComparison.Ordinal);
 		Assert.DoesNotContain("Save(\"hdr\"", actualString, StringComparison.Ordinal);
 	}
 

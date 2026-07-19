@@ -36,12 +36,12 @@ internal sealed partial class ZzzEnvironmentSettingsAxamlPage : UserControl, IZz
     private readonly IZzzEnvironmentRuntimeCoordinator? _runtimeCoordinator;
     private readonly ZzzGuiOperationTracker _operations;
     private readonly bool _ownsInputMonitor;
-    private readonly InfoBar _actionBar;
+    private readonly FAInfoBar _actionBar;
     private readonly FAComboBox _screenshotMethodCombo;
     private readonly ToggleSwitch _debugToggle;
     private readonly ToggleSwitch _copyScreenshotToggle;
     private readonly FAComboBox _proxyTypeCombo;
-    private readonly SettingsExpanderItem _personalProxyItem;
+    private readonly FASettingsExpanderItem _personalProxyItem;
     private readonly TextBox _personalProxyInput;
     private readonly IReadOnlyDictionary<string, Button> _hotkeyButtons;
     private bool _loading;
@@ -61,12 +61,12 @@ internal sealed partial class ZzzEnvironmentSettingsAxamlPage : UserControl, IZz
         _ownsInputMonitor = inputMonitor is null;
         AvaloniaXamlLoader.Load(this);
 
-        _actionBar = Required<InfoBar>("ActionBar");
+        _actionBar = Required<FAInfoBar>("ActionBar");
         _screenshotMethodCombo = Required<FAComboBox>("ScreenshotMethodCombo");
         _debugToggle = Required<ToggleSwitch>("DebugToggle");
         _copyScreenshotToggle = Required<ToggleSwitch>("CopyScreenshotToggle");
         _proxyTypeCombo = Required<FAComboBox>("ProxyTypeCombo");
-        _personalProxyItem = Required<SettingsExpanderItem>("PersonalProxyItem");
+        _personalProxyItem = Required<FASettingsExpanderItem>("PersonalProxyItem");
         _personalProxyInput = Required<TextBox>("PersonalProxyInput");
         _hotkeyButtons = new Dictionary<string, Button>(StringComparer.Ordinal)
         {
@@ -376,7 +376,7 @@ internal sealed partial class ZzzEnvironmentSettingsAxamlPage : UserControl, IZz
     {
         _actionBar.Title = "脚本环境读取失败";
         _actionBar.Message = message;
-        _actionBar.Severity = InfoBarSeverity.Error;
+        _actionBar.Severity = FAInfoBarSeverity.Error;
         _actionBar.IsOpen = true;
     }
 

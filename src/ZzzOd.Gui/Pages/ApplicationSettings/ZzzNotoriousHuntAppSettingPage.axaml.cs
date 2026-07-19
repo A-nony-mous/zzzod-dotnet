@@ -316,25 +316,26 @@ internal sealed partial class ZzzNotoriousHuntAppSettingPage : UserControl, IZzz
         DataFormat.CreateStringApplicationFormat("zzzod.notorious-hunt-plan-index");
 
     private readonly ZzzNotoriousHuntAppSettingState _state;
-    private readonly InfoBar _errorBar;
+    private readonly FAInfoBar _errorBar;
     private readonly FAComboBox _weekdayCombo;
     private readonly ToggleSwitch _loopToggle;
     private readonly ItemsControl _planList;
-    private readonly ContentDialog _addPlanDialog;
+    private readonly FAContentDialog _addPlanDialog;
     private readonly ContentControl _dialogPlanHost;
     private ZzzNotoriousHuntPlanRowModel? _dragCandidate;
     private Point _dragStart;
+    private PointerPressedEventArgs? _dragPointerPressedArgs;
     private bool _loading;
 
     public ZzzNotoriousHuntAppSettingPage(IZzzAppBackend backend, int instanceIndex, string groupId)
     {
         _state = new ZzzNotoriousHuntAppSettingState(backend, instanceIndex, groupId);
         AvaloniaXamlLoader.Load(this);
-        _errorBar = Required<InfoBar>("ErrorBar");
+        _errorBar = Required<FAInfoBar>("ErrorBar");
         _weekdayCombo = Required<FAComboBox>("WeekdayCombo");
         _loopToggle = Required<ToggleSwitch>("LoopToggle");
         _planList = Required<ItemsControl>("PlanList");
-        _addPlanDialog = Required<ContentDialog>("AddPlanDialog");
+        _addPlanDialog = Required<FAContentDialog>("AddPlanDialog");
         _dialogPlanHost = Required<ContentControl>("DialogPlanHost");
         Reload();
     }
@@ -511,8 +512,8 @@ internal sealed partial class ZzzNotoriousHuntAppSettingPage : UserControl, IZzz
             return;
         }
 
-        ContentDialogResult result = await _addPlanDialog.ShowAsync(owner).ConfigureAwait(true);
-        if (result == ContentDialogResult.Primary)
+        FAContentDialogResult result = await _addPlanDialog.ShowAsync(owner).ConfigureAwait(true);
+        if (result == FAContentDialogResult.Primary)
         {
             _state.AddPlan(row.Plan);
             RefreshPlans();
@@ -526,16 +527,18 @@ internal sealed partial class ZzzNotoriousHuntAppSettingPage : UserControl, IZzz
             || !args.GetCurrentPoint(control).Properties.IsLeftButtonPressed || IsInteractiveSource(args.Source))
         {
             _dragCandidate = null;
+            _dragPointerPressedArgs = null;
             return;
         }
 
         _dragCandidate = row;
         _dragStart = args.GetPosition(control);
+        _dragPointerPressedArgs = args;
     }
 
     private async void OnPlanPointerMoved(object? sender, PointerEventArgs args)
     {
-        if (sender is not Control control || _dragCandidate is not { } row
+        if (sender is not Control control || _dragCandidate is not { } row || _dragPointerPressedArgs is not { } pressedArgs
             || !args.GetCurrentPoint(control).Properties.IsLeftButtonPressed)
         {
             return;
@@ -548,9 +551,10 @@ internal sealed partial class ZzzNotoriousHuntAppSettingPage : UserControl, IZzz
         }
 
         _dragCandidate = null;
+        _dragPointerPressedArgs = null;
         DataTransfer transfer = new();
         transfer.Add(DataTransferItem.Create(PlanIndexFormat, row.Index.ToString(CultureInfo.InvariantCulture)));
-        await DragDrop.DoDragDropAsync(args, transfer, DragDropEffects.Move).ConfigureAwait(true);
+        await DragDrop.DoDragDropAsync(pressedArgs, transfer, DragDropEffects.Move).ConfigureAwait(true);
     }
 
     private void OnPlanDragOver(object? sender, DragEventArgs args)
@@ -621,7 +625,7 @@ internal sealed partial class ZzzNotoriousHuntAppSettingPage : UserControl, IZzz
     {
         _errorBar.Title = "错误";
         _errorBar.Message = message;
-        _errorBar.Severity = InfoBarSeverity.Error;
+        _errorBar.Severity = FAInfoBarSeverity.Error;
         _errorBar.IsOpen = true;
     }
 

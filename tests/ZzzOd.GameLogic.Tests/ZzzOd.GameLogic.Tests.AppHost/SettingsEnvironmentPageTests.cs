@@ -63,8 +63,8 @@ public sealed class SettingsEnvironmentPageTests
 		int num2 = text.IndexOf("Header=\"网络相关\"", StringComparison.Ordinal);
 		int num3 = text.IndexOf("Header=\"脚本按键\"", StringComparison.Ordinal);
 		Assert.True(num >= 0 && num < num2 && num2 < num3);
-		Assert.Contains("fa:SettingsExpander", text, StringComparison.Ordinal);
-		Assert.Contains("fa:SettingsExpanderItem", text, StringComparison.Ordinal);
+		Assert.Contains("fa:FASettingsExpander", text, StringComparison.Ordinal);
+		Assert.Contains("fa:FASettingsExpanderItem", text, StringComparison.Ordinal);
 		Assert.Contains("fa:FAComboBox", text, StringComparison.Ordinal);
 		Assert.Contains("正常无需开启", text, StringComparison.Ordinal);
 		Assert.Contains("按下截图按键时，自动将截图复制到剪贴板", text, StringComparison.Ordinal);

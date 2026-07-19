@@ -21,13 +21,13 @@ internal sealed partial class ZzzResourceDownloadSettingsAxamlPage : UserControl
     private readonly IZzzAppBackend _backend;
     private readonly IZzzResourceDownloadService _resourceService;
     private readonly ZzzGuiOperationTracker _operations;
-    private readonly InfoBar _configErrorBar;
+    private readonly FAInfoBar _configErrorBar;
     private readonly ZzzLogDisplayCard _logCard;
     private readonly Dictionary<string, FAComboBox> _modelCombos;
     private readonly Dictionary<string, ToggleSwitch> _gpuToggles;
     private readonly Dictionary<string, Button> _downloadButtons;
     private readonly Dictionary<string, Button> _cancelButtons;
-    private readonly Dictionary<string, SettingsExpanderItem> _items;
+    private readonly Dictionary<string, FASettingsExpanderItem> _items;
     private readonly Dictionary<string, IReadOnlyList<ZzzResourceModelOption>> _options = new(StringComparer.Ordinal);
     private bool _loading;
     private bool _shown;
@@ -42,7 +42,7 @@ internal sealed partial class ZzzResourceDownloadSettingsAxamlPage : UserControl
         _operations = operations ?? new ZzzGuiOperationTracker();
         AvaloniaXamlLoader.Load(this);
 
-        _configErrorBar = Required<InfoBar>("ConfigErrorBar");
+        _configErrorBar = Required<FAInfoBar>("ConfigErrorBar");
         _modelCombos = new Dictionary<string, FAComboBox>(StringComparer.Ordinal)
         {
             ["ocr"] = Required<FAComboBox>("OcrProfileCombo"),
@@ -71,12 +71,12 @@ internal sealed partial class ZzzResourceDownloadSettingsAxamlPage : UserControl
             ["hollow_zero_event"] = Required<Button>("HollowZeroEventCancelButton"),
             ["lost_void_det"] = Required<Button>("LostVoidDetectorCancelButton"),
         };
-        _items = new Dictionary<string, SettingsExpanderItem>(StringComparer.Ordinal)
+        _items = new Dictionary<string, FASettingsExpanderItem>(StringComparer.Ordinal)
         {
-            ["ocr"] = Required<SettingsExpanderItem>("OcrItem"),
-            ["flash_classifier"] = Required<SettingsExpanderItem>("FlashClassifierItem"),
-            ["hollow_zero_event"] = Required<SettingsExpanderItem>("HollowZeroEventItem"),
-            ["lost_void_det"] = Required<SettingsExpanderItem>("LostVoidDetectorItem"),
+            ["ocr"] = Required<FASettingsExpanderItem>("OcrItem"),
+            ["flash_classifier"] = Required<FASettingsExpanderItem>("FlashClassifierItem"),
+            ["hollow_zero_event"] = Required<FASettingsExpanderItem>("HollowZeroEventItem"),
+            ["lost_void_det"] = Required<FASettingsExpanderItem>("LostVoidDetectorItem"),
         };
 
         _modelCombos["ocr"].Tag = "ocr";
@@ -256,7 +256,7 @@ internal sealed partial class ZzzResourceDownloadSettingsAxamlPage : UserControl
 
     private void ApplyStatus(ZzzResourceDownloadStatusDto status)
     {
-        if (!_items.TryGetValue(status.ResourceId, out SettingsExpanderItem? item))
+        if (!_items.TryGetValue(status.ResourceId, out FASettingsExpanderItem? item))
         {
             return;
         }

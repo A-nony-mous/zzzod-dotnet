@@ -26,25 +26,13 @@ internal sealed class ZzzOverlayTechnicalWindow : Window
         ShowActivated = false;
         ShowInTaskbar = false;
         Topmost = true;
-        SystemDecorations = SystemDecorations.None;
+        WindowDecorations = WindowDecorations.None;
         TransparencyLevelHint = [WindowTransparencyLevel.Transparent];
         Background = Brushes.Transparent;
         Content = _visionControl;
-        Opened += (_, _) =>
-        {
-            ZzzOverlayNativeWindow.Apply(this, clickThrough: true, preventCapture: _settings.PreventCapture);
-            if (_lastGameWindow is not null)
-            {
-                FollowGameWindow(_lastGameWindow);
-            }
-        };
-        ScalingChanged += (_, _) => QueueScalingRefresh();
-        Closed += (_, _) =>
-        {
-            _lastGameWindow = null;
-            _lastFrame = null;
-            _scalingRefreshQueued = false;
-        };
+        Opened += OnOpened;
+        ScalingChanged += OnScalingChanged;
+        Closed += OnClosed;
     }
 
     public void ApplySettings(ZzzOverlayGuiSettings settings)
@@ -90,6 +78,35 @@ internal sealed class ZzzOverlayTechnicalWindow : Window
         Position.Y,
         Math.Max(1, (int)Math.Round(Width * _geometryScaling)),
         Math.Max(1, (int)Math.Round(Height * _geometryScaling)));
+
+    internal bool ResourcesReleased =>
+        _lastGameWindow is null &&
+        _lastFrame is null &&
+        !_scalingRefreshQueued &&
+        Content is null;
+
+    private void OnOpened(object? sender, EventArgs args)
+    {
+        ZzzOverlayNativeWindow.Apply(this, clickThrough: true, preventCapture: _settings.PreventCapture);
+        if (_lastGameWindow is not null)
+        {
+            FollowGameWindow(_lastGameWindow);
+        }
+    }
+
+    private void OnScalingChanged(object? sender, EventArgs args) => QueueScalingRefresh();
+
+    private void OnClosed(object? sender, EventArgs args)
+    {
+        _lastGameWindow = null;
+        _lastFrame = null;
+        _scalingRefreshQueued = false;
+        _settings = new ZzzOverlayGuiSettings();
+        Content = null;
+        Opened -= OnOpened;
+        ScalingChanged -= OnScalingChanged;
+        Closed -= OnClosed;
+    }
 
     private void QueueScalingRefresh()
     {

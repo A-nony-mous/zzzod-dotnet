@@ -16,8 +16,8 @@ internal sealed partial class ZzzOneDragonPage : UserControl, IZzzPageLifecycle,
     private readonly ZzzOneDragonRunPage _runPage;
     private readonly ZzzGuiOperationTracker _operations;
     private readonly ZzzPageStackHost _runPageStack;
-    private readonly TabViewItem[] _tabs;
-    private readonly TabView _pivot;
+    private readonly FATabViewItem[] _tabs;
+    private readonly FATabView _pivot;
     private Control? _activePage;
     private bool _activePageIsShown;
     private bool _isShown;
@@ -38,19 +38,19 @@ internal sealed partial class ZzzOneDragonPage : UserControl, IZzzPageLifecycle,
         ];
 
         AvaloniaXamlLoader.Load(this);
-        _pivot = Required<TabView>("OneDragonPivot");
+        _pivot = Required<FATabView>("OneDragonPivot");
         _tabs =
         [
-            Required<TabViewItem>("RunTab"),
-            Required<TabViewItem>("ChargePlanTab"),
-            Required<TabViewItem>("PredefinedTeamTab"),
-            Required<TabViewItem>("SensitivityTab"),
+            Required<FATabViewItem>("RunTab"),
+            Required<FATabViewItem>("ChargePlanTab"),
+            Required<FATabViewItem>("PredefinedTeamTab"),
+            Required<FATabViewItem>("SensitivityTab"),
         ];
 
-        Required<Frame>("RunFrame").Content = _pages[0];
-        Required<Frame>("ChargePlanFrame").Content = _pages[1];
-        Required<Frame>("PredefinedTeamFrame").Content = _pages[2];
-        Required<Frame>("SensitivityFrame").Content = _pages[3];
+        Required<FAFrame>("RunFrame").Content = _pages[0];
+        Required<FAFrame>("ChargePlanFrame").Content = _pages[1];
+        Required<FAFrame>("PredefinedTeamFrame").Content = _pages[2];
+        Required<FAFrame>("SensitivityFrame").Content = _pages[3];
 
         string? evidenceTab = ZzzGuiEvidenceSelection.FromEnvironment().Tab;
         int selectedIndex = Array.FindIndex(Headers, header => string.Equals(header, evidenceTab, StringComparison.Ordinal));
@@ -62,7 +62,7 @@ internal sealed partial class ZzzOneDragonPage : UserControl, IZzzPageLifecycle,
 
     public string SelectedHeader => Headers[SelectedIndex];
 
-    public string NavigationTargetKind => nameof(TabView);
+    public string NavigationTargetKind => nameof(FATabView);
 
     internal bool ActiveChildIsShown => _activePageIsShown;
 

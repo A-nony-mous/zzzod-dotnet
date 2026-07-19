@@ -5,26 +5,26 @@
              x:Class="ZzzOd.Gui.Pages.Devtools.ZzzOperationDebugAxamlPage">
   <ScrollViewer HorizontalScrollBarVisibility="Disabled"
                 VerticalScrollBarVisibility="Auto">
-    <StackPanel Margin="11,11,11,11"
+    <StackPanel Margin="{DynamicResource SampleAppPageMargin}"
                 Spacing="10">
-      <fa:InfoBar x:Name="ActionBar"
+      <fa:FAInfoBar x:Name="ActionBar"
                   IsOpen="False"
                   IsClosable="False"
                   Severity="Error" />
 
-      <fa:SettingsExpander>
-        <fa:SettingsExpander.Header>
+      <fa:FASettingsExpander>
+        <fa:FASettingsExpander.Header>
           <TextBlock Text="指令调试"
                      FontSize="20"
                      FontWeight="SemiBold" />
-        </fa:SettingsExpander.Header>
+        </fa:FASettingsExpander.Header>
 
-        <fa:SettingsExpanderItem Content="指令配置"
+        <fa:FASettingsExpanderItem Content="指令配置"
                                  Description="在 config/auto_battle_operation 文件夹">
-          <fa:SettingsExpanderItem.IconSource>
-            <fa:SymbolIconSource Symbol="Play" />
-          </fa:SettingsExpanderItem.IconSource>
-          <fa:SettingsExpanderItem.Footer>
+          <fa:FASettingsExpanderItem.IconSource>
+            <fa:FASymbolIconSource Symbol="Play" />
+          </fa:FASettingsExpanderItem.IconSource>
+          <fa:FASettingsExpanderItem.Footer>
             <Grid ColumnDefinitions="*,Auto"
                   ColumnSpacing="8">
               <fa:FAComboBox x:Name="OperationTemplateCombo"
@@ -32,43 +32,43 @@
                              IsEditable="True"
                              SelectionChanged="OnOperationTemplateChanged"
                              LostFocus="OnOperationTemplateLostFocus" />
-              <fa:CommandBar Grid.Column="1"
+              <fa:FACommandBar Grid.Column="1"
                              DefaultLabelPosition="Collapsed">
-                <fa:CommandBar.PrimaryCommands>
-                  <fa:CommandBarButton x:Name="DeleteTemplateButton"
+                <fa:FACommandBar.PrimaryCommands>
+                  <fa:FACommandBarButton x:Name="DeleteTemplateButton"
                                        Label=""
                                        AutomationProperties.Name="删除配置"
                                        ToolTip.Tip="删除配置"
                                        Click="OnDeleteTemplateClicked">
-                    <fa:CommandBarButton.IconSource>
-                      <fa:SymbolIconSource Symbol="Delete" />
-                    </fa:CommandBarButton.IconSource>
-                  </fa:CommandBarButton>
-                </fa:CommandBar.PrimaryCommands>
-              </fa:CommandBar>
+                    <fa:FACommandBarButton.IconSource>
+                      <fa:FASymbolIconSource Symbol="Delete" />
+                    </fa:FACommandBarButton.IconSource>
+                  </fa:FACommandBarButton>
+                </fa:FACommandBar.PrimaryCommands>
+              </fa:FACommandBar>
             </Grid>
-          </fa:SettingsExpanderItem.Footer>
-        </fa:SettingsExpanderItem>
+          </fa:FASettingsExpanderItem.Footer>
+        </fa:FASettingsExpanderItem>
 
-        <fa:SettingsExpanderItem Content="循环指令"
+        <fa:FASettingsExpanderItem Content="循环指令"
                                  Description="不断重复指令 确保可以连贯执行">
-          <fa:SettingsExpanderItem.IconSource>
-            <fa:SymbolIconSource Symbol="RepeatAll" />
-          </fa:SettingsExpanderItem.IconSource>
-          <fa:SettingsExpanderItem.Footer>
+          <fa:FASettingsExpanderItem.IconSource>
+            <fa:FASymbolIconSource Symbol="RepeatAll" />
+          </fa:FASettingsExpanderItem.IconSource>
+          <fa:FASettingsExpanderItem.Footer>
             <ToggleSwitch x:Name="RepeatToggle"
                           OnContent="开"
                           OffContent="关"
                           IsCheckedChanged="OnRepeatChanged" />
-          </fa:SettingsExpanderItem.Footer>
-        </fa:SettingsExpanderItem>
+          </fa:FASettingsExpanderItem.Footer>
+        </fa:FASettingsExpanderItem>
 
-        <fa:SettingsExpanderItem Content="操作方式"
+        <fa:FASettingsExpanderItem Content="操作方式"
                                  Description="仅影响自动战斗。如需使用手柄，请先安装虚拟手柄依赖。">
-          <fa:SettingsExpanderItem.IconSource>
-            <fa:FontIconSource Glyph="&#xE7FC;" />
-          </fa:SettingsExpanderItem.IconSource>
-          <fa:SettingsExpanderItem.Footer>
+          <fa:FASettingsExpanderItem.IconSource>
+            <fa:FAFontIconSource Glyph="&#xE7FC;" />
+          </fa:FASettingsExpanderItem.IconSource>
+          <fa:FASettingsExpanderItem.Footer>
             <fa:FAComboBox x:Name="ControlMethodCombo"
                            MinWidth="220"
                            SelectionChanged="OnControlMethodChanged">
@@ -78,9 +78,9 @@
                 </DataTemplate>
               </fa:FAComboBox.ItemTemplate>
             </fa:FAComboBox>
-          </fa:SettingsExpanderItem.Footer>
-        </fa:SettingsExpanderItem>
-      </fa:SettingsExpander>
+          </fa:FASettingsExpanderItem.Footer>
+        </fa:FASettingsExpanderItem>
+      </fa:FASettingsExpander>
 
       <ContentControl x:Name="RunPanelHost"
                       HorizontalContentAlignment="Stretch" />

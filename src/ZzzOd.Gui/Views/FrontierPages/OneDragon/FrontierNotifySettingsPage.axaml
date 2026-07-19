@@ -1,0 +1,74 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:fa="using:FluentAvalonia.UI.Controls"
+             xmlns:local="using:ZzzOd.Gui.Pages.OneDragon"
+             x:Class="ZzzOd.Gui.Views.FrontierPages.OneDragon.FrontierNotifySettingsPage">
+  <ScrollViewer Padding="{DynamicResource SampleAppPageMargin}"
+                HorizontalScrollBarVisibility="Disabled"
+                VerticalScrollBarVisibility="Auto">
+    <StackPanel Spacing="8">
+      <fa:FAInfoBar x:Name="ErrorBar"
+                  IsOpen="False"
+                  IsClosable="True"
+                  Severity="Error" />
+      <fa:FASettingsExpander Header="合并模式失败节点立即通知"
+                             Description="节点通知为全部合并时，失败节点会额外立即推送">
+        <fa:FASettingsExpander.IconSource>
+          <fa:FASymbolIconSource Symbol="Message" />
+        </fa:FASettingsExpander.IconSource>
+        <fa:FASettingsExpander.Footer>
+          <ToggleSwitch x:Name="MergeErrorToggle"
+                        OnContent="开启"
+                        OffContent="关闭"
+                        Click="OnMergeErrorChanged" />
+        </fa:FASettingsExpander.Footer>
+      </fa:FASettingsExpander>
+
+      <fa:FASettingsExpander x:Name="AppNotifyList"
+                             Header="应用通知"
+                             IsExpanded="True">
+        <fa:FASettingsExpander.ItemsPanel>
+          <ItemsPanelTemplate>
+            <UniformGrid Columns="2" />
+          </ItemsPanelTemplate>
+        </fa:FASettingsExpander.ItemsPanel>
+        <fa:FASettingsExpander.ItemTemplate>
+          <DataTemplate x:DataType="local:ZzzNotifyAppRowModel">
+            <fa:FASettingsExpanderItem Content="{Binding Name}"
+                                       Margin="0,0,6,6">
+              <fa:FASettingsExpanderItem.Footer>
+                <StackPanel Orientation="Horizontal"
+                            Spacing="6">
+                  <TextBlock Text="应用"
+                             VerticalAlignment="Center" />
+                  <fa:FAComboBox Width="120"
+                                 ItemsSource="{Binding LifecycleOptions}"
+                                 SelectedItem="{Binding SelectedLifecycle, Mode=TwoWay}"
+                                 SelectionChanged="OnApplicationModeChanged">
+                    <fa:FAComboBox.ItemTemplate>
+                      <DataTemplate x:DataType="local:ZzzNotifyModeOption">
+                        <TextBlock Text="{Binding Label}" />
+                      </DataTemplate>
+                    </fa:FAComboBox.ItemTemplate>
+                  </fa:FAComboBox>
+                  <TextBlock Text="节点"
+                             VerticalAlignment="Center" />
+                  <fa:FAComboBox Width="90"
+                                 ItemsSource="{Binding DetailOptions}"
+                                 SelectedItem="{Binding SelectedDetail, Mode=TwoWay}"
+                                 SelectionChanged="OnApplicationModeChanged">
+                    <fa:FAComboBox.ItemTemplate>
+                      <DataTemplate x:DataType="local:ZzzNotifyModeOption">
+                        <TextBlock Text="{Binding Label}" />
+                      </DataTemplate>
+                    </fa:FAComboBox.ItemTemplate>
+                  </fa:FAComboBox>
+                </StackPanel>
+              </fa:FASettingsExpanderItem.Footer>
+            </fa:FASettingsExpanderItem>
+          </DataTemplate>
+        </fa:FASettingsExpander.ItemTemplate>
+      </fa:FASettingsExpander>
+    </StackPanel>
+  </ScrollViewer>
+</UserControl>

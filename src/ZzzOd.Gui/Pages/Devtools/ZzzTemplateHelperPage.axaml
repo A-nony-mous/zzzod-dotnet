@@ -4,128 +4,128 @@
              xmlns:local="using:ZzzOd.Gui.Pages.Devtools"
              x:Class="ZzzOd.Gui.Pages.Devtools.ZzzTemplateHelperAxamlPage"
              Focusable="True">
-  <Grid Margin="11"
+  <Grid Margin="{DynamicResource SampleAppPageMargin}"
         ColumnDefinitions="420,172,*"
         ColumnSpacing="8">
     <ScrollViewer Grid.Column="0"
                   HorizontalScrollBarVisibility="Disabled"
                   VerticalScrollBarVisibility="Auto">
       <StackPanel Spacing="8">
-        <fa:InfoBar x:Name="StatusBar"
+        <fa:FAInfoBar x:Name="StatusBar"
                     IsClosable="True"
                     IsOpen="False" />
 
-        <fa:CommandBar DefaultLabelPosition="Right">
-          <fa:CommandBar.Content>
+        <fa:FACommandBar DefaultLabelPosition="Right">
+          <fa:FACommandBar.Content>
             <fa:FAComboBox x:Name="ExistingTemplateCombo"
                            Width="180"
                            PlaceholderText="选择已有"
                            SelectionChanged="OnExistingTemplateChanged" />
-          </fa:CommandBar.Content>
-          <fa:CommandBar.PrimaryCommands>
-            <fa:CommandBarButton x:Name="CreateButton"
+          </fa:FACommandBar.Content>
+          <fa:FACommandBar.PrimaryCommands>
+            <fa:FACommandBarButton x:Name="CreateButton"
                                  Label="新建"
                                  Click="OnCreateClicked">
-              <fa:CommandBarButton.IconSource><fa:SymbolIconSource Symbol="Add" /></fa:CommandBarButton.IconSource>
-            </fa:CommandBarButton>
-            <fa:CommandBarButton x:Name="CopyButton"
+              <fa:FACommandBarButton.IconSource><fa:FASymbolIconSource Symbol="Add" /></fa:FACommandBarButton.IconSource>
+            </fa:FACommandBarButton>
+            <fa:FACommandBarButton x:Name="CopyButton"
                                  Label="复制"
                                  Click="OnCopyClicked">
-              <fa:CommandBarButton.IconSource><fa:SymbolIconSource Symbol="Copy" /></fa:CommandBarButton.IconSource>
-            </fa:CommandBarButton>
-            <fa:CommandBarButton x:Name="DeleteButton"
+              <fa:FACommandBarButton.IconSource><fa:FASymbolIconSource Symbol="Copy" /></fa:FACommandBarButton.IconSource>
+            </fa:FACommandBarButton>
+            <fa:FACommandBarButton x:Name="DeleteButton"
                                  Label="删除"
                                  Click="OnDeleteClicked">
-              <fa:CommandBarButton.IconSource><fa:SymbolIconSource Symbol="Delete" /></fa:CommandBarButton.IconSource>
-            </fa:CommandBarButton>
-            <fa:CommandBarButton x:Name="CancelButton"
+              <fa:FACommandBarButton.IconSource><fa:FASymbolIconSource Symbol="Delete" /></fa:FACommandBarButton.IconSource>
+            </fa:FACommandBarButton>
+            <fa:FACommandBarButton x:Name="CancelButton"
                                  Label="取消"
                                  Click="OnCancelClicked">
-              <fa:CommandBarButton.IconSource><fa:SymbolIconSource Symbol="Cancel" /></fa:CommandBarButton.IconSource>
-            </fa:CommandBarButton>
-          </fa:CommandBar.PrimaryCommands>
-        </fa:CommandBar>
+              <fa:FACommandBarButton.IconSource><fa:FASymbolIconSource Symbol="Cancel" /></fa:FACommandBarButton.IconSource>
+            </fa:FACommandBarButton>
+          </fa:FACommandBar.PrimaryCommands>
+        </fa:FACommandBar>
 
-        <fa:CommandBar DefaultLabelPosition="Right">
-          <fa:CommandBar.PrimaryCommands>
-            <fa:CommandBarButton x:Name="ChooseImageButton"
+        <fa:FACommandBar DefaultLabelPosition="Right">
+          <fa:FACommandBar.PrimaryCommands>
+            <fa:FACommandBarButton x:Name="ChooseImageButton"
                                  Label="选择图片"
                                  Click="OnChooseImageClicked">
-              <fa:CommandBarButton.IconSource><fa:SymbolIconSource Symbol="OpenFile" /></fa:CommandBarButton.IconSource>
-            </fa:CommandBarButton>
-            <fa:CommandBarButton x:Name="ScreenshotButton"
+              <fa:FACommandBarButton.IconSource><fa:FASymbolIconSource Symbol="OpenFile" /></fa:FACommandBarButton.IconSource>
+            </fa:FACommandBarButton>
+            <fa:FACommandBarButton x:Name="ScreenshotButton"
                                  Label="截图"
                                  Click="OnScreenshotClicked">
-              <fa:CommandBarButton.IconSource><fa:SymbolIconSource Symbol="Camera" /></fa:CommandBarButton.IconSource>
-            </fa:CommandBarButton>
-            <fa:CommandBarButton x:Name="SaveConfigButton"
+              <fa:FACommandBarButton.IconSource><fa:FASymbolIconSource Symbol="Camera" /></fa:FACommandBarButton.IconSource>
+            </fa:FACommandBarButton>
+            <fa:FACommandBarButton x:Name="SaveConfigButton"
                                  Label="保存配置"
                                  Click="OnSaveConfigClicked">
-              <fa:CommandBarButton.IconSource><fa:SymbolIconSource Symbol="Save" /></fa:CommandBarButton.IconSource>
-            </fa:CommandBarButton>
-            <fa:CommandBarButton x:Name="SaveRawButton"
+              <fa:FACommandBarButton.IconSource><fa:FASymbolIconSource Symbol="Save" /></fa:FACommandBarButton.IconSource>
+            </fa:FACommandBarButton>
+            <fa:FACommandBarButton x:Name="SaveRawButton"
                                  Label="保存模板"
                                  Click="OnSaveRawClicked">
-              <fa:CommandBarButton.IconSource><fa:SymbolIconSource Symbol="Save" /></fa:CommandBarButton.IconSource>
-            </fa:CommandBarButton>
-            <fa:CommandBarButton x:Name="SaveMaskButton"
+              <fa:FACommandBarButton.IconSource><fa:FASymbolIconSource Symbol="Save" /></fa:FACommandBarButton.IconSource>
+            </fa:FACommandBarButton>
+            <fa:FACommandBarButton x:Name="SaveMaskButton"
                                  Label="保存掩码"
                                  Click="OnSaveMaskClicked">
-              <fa:CommandBarButton.IconSource><fa:SymbolIconSource Symbol="Save" /></fa:CommandBarButton.IconSource>
-            </fa:CommandBarButton>
-          </fa:CommandBar.PrimaryCommands>
-        </fa:CommandBar>
+              <fa:FACommandBarButton.IconSource><fa:FASymbolIconSource Symbol="Save" /></fa:FACommandBarButton.IconSource>
+            </fa:FACommandBarButton>
+          </fa:FACommandBar.PrimaryCommands>
+        </fa:FACommandBar>
 
-        <fa:SettingsExpanderItem Content="画面">
-          <fa:SettingsExpanderItem.IconSource><fa:SymbolIconSource Symbol="Home" /></fa:SettingsExpanderItem.IconSource>
-          <fa:SettingsExpanderItem.Footer>
+        <fa:FASettingsExpanderItem Content="画面">
+          <fa:FASettingsExpanderItem.IconSource><fa:FASymbolIconSource Symbol="Home" /></fa:FASettingsExpanderItem.IconSource>
+          <fa:FASettingsExpanderItem.Footer>
             <TextBox x:Name="TemplateSubDirBox" Width="240" TextChanged="OnTemplateInfoChanged" />
-          </fa:SettingsExpanderItem.Footer>
-        </fa:SettingsExpanderItem>
+          </fa:FASettingsExpanderItem.Footer>
+        </fa:FASettingsExpanderItem>
 
-        <fa:SettingsExpanderItem Content="模板ID">
-          <fa:SettingsExpanderItem.IconSource><fa:SymbolIconSource Symbol="Home" /></fa:SettingsExpanderItem.IconSource>
-          <fa:SettingsExpanderItem.Footer>
+        <fa:FASettingsExpanderItem Content="模板ID">
+          <fa:FASettingsExpanderItem.IconSource><fa:FASymbolIconSource Symbol="Home" /></fa:FASettingsExpanderItem.IconSource>
+          <fa:FASettingsExpanderItem.Footer>
             <TextBox x:Name="TemplateIdBox" Width="240" TextChanged="OnTemplateInfoChanged" />
-          </fa:SettingsExpanderItem.Footer>
-        </fa:SettingsExpanderItem>
+          </fa:FASettingsExpanderItem.Footer>
+        </fa:FASettingsExpanderItem>
 
-        <fa:SettingsExpanderItem Content="模板名称">
-          <fa:SettingsExpanderItem.IconSource><fa:SymbolIconSource Symbol="Home" /></fa:SettingsExpanderItem.IconSource>
-          <fa:SettingsExpanderItem.Footer>
+        <fa:FASettingsExpanderItem Content="模板名称">
+          <fa:FASettingsExpanderItem.IconSource><fa:FASymbolIconSource Symbol="Home" /></fa:FASettingsExpanderItem.IconSource>
+          <fa:FASettingsExpanderItem.Footer>
             <TextBox x:Name="TemplateNameBox" Width="240" TextChanged="OnTemplateInfoChanged" />
-          </fa:SettingsExpanderItem.Footer>
-        </fa:SettingsExpanderItem>
+          </fa:FASettingsExpanderItem.Footer>
+        </fa:FASettingsExpanderItem>
 
-        <fa:SettingsExpanderItem Content="微调">
-          <fa:SettingsExpanderItem.IconSource><fa:SymbolIconSource Symbol="Home" /></fa:SettingsExpanderItem.IconSource>
-          <fa:SettingsExpanderItem.Footer>
+        <fa:FASettingsExpanderItem Content="微调">
+          <fa:FASettingsExpanderItem.IconSource><fa:FASymbolIconSource Symbol="Home" /></fa:FASettingsExpanderItem.IconSource>
+          <fa:FASettingsExpanderItem.Footer>
             <StackPanel Orientation="Horizontal" Spacing="6">
-              <TextBox x:Name="HorizontalMoveBox" Width="72" Watermark="横" />
-              <TextBox x:Name="VerticalMoveBox" Width="72" Watermark="纵" />
+              <TextBox x:Name="HorizontalMoveBox" Width="72" PlaceholderText="横" />
+              <TextBox x:Name="VerticalMoveBox" Width="72" PlaceholderText="纵" />
               <Button Content="移动" Click="OnMoveClicked" />
             </StackPanel>
-          </fa:SettingsExpanderItem.Footer>
-        </fa:SettingsExpanderItem>
+          </fa:FASettingsExpanderItem.Footer>
+        </fa:FASettingsExpanderItem>
 
-        <fa:SettingsExpanderItem Content="形状">
-          <fa:SettingsExpanderItem.IconSource><fa:SymbolIconSource Symbol="Home" /></fa:SettingsExpanderItem.IconSource>
-          <fa:SettingsExpanderItem.Footer>
+        <fa:FASettingsExpanderItem Content="形状">
+          <fa:FASettingsExpanderItem.IconSource><fa:FASymbolIconSource Symbol="Home" /></fa:FASettingsExpanderItem.IconSource>
+          <fa:FASettingsExpanderItem.Footer>
             <StackPanel Orientation="Horizontal" Spacing="6">
               <fa:FAComboBox x:Name="ShapeCombo" Width="150" SelectionChanged="OnShapeChanged" />
               <Button x:Name="ShapeHelpButton" ToolTip.Tip="点击查看形状使用说明" Click="OnShapeHelpClicked">
-                <fa:SymbolIcon Symbol="Help" />
+                <fa:FASymbolIcon Symbol="Help" />
               </Button>
             </StackPanel>
-          </fa:SettingsExpanderItem.Footer>
-        </fa:SettingsExpanderItem>
+          </fa:FASettingsExpanderItem.Footer>
+        </fa:FASettingsExpanderItem>
 
-        <fa:SettingsExpanderItem Content="自动生成掩码">
-          <fa:SettingsExpanderItem.IconSource><fa:SymbolIconSource Symbol="Home" /></fa:SettingsExpanderItem.IconSource>
-          <fa:SettingsExpanderItem.Footer>
+        <fa:FASettingsExpanderItem Content="自动生成掩码">
+          <fa:FASettingsExpanderItem.IconSource><fa:FASymbolIconSource Symbol="Home" /></fa:FASettingsExpanderItem.IconSource>
+          <fa:FASettingsExpanderItem.Footer>
             <ToggleSwitch x:Name="AutoMaskToggle" Click="OnAutoMaskChanged" />
-          </fa:SettingsExpanderItem.Footer>
-        </fa:SettingsExpanderItem>
+          </fa:FASettingsExpanderItem.Footer>
+        </fa:FASettingsExpanderItem>
 
         <Grid ColumnDefinitions="42,*" Margin="8,0,8,0">
           <TextBlock Grid.Column="0" Text="操作" FontWeight="SemiBold" />
@@ -140,7 +140,7 @@
                         Height="32"
                         DataContext="{Binding}"
                         Click="OnPointDeleteClicked">
-                  <fa:SymbolIcon Symbol="Delete" />
+                  <fa:FASymbolIcon Symbol="Delete" />
                 </Button>
                 <TextBox Grid.Column="1"
                          Text="{Binding Text}"
@@ -169,30 +169,30 @@
     </ScrollViewer>
 
     <Grid Grid.Column="2" RowDefinitions="Auto,Auto,*" RowSpacing="8">
-      <fa:SettingsExpanderItem Grid.Row="0"
+      <fa:FASettingsExpanderItem Grid.Row="0"
                                Content="鼠标点击坐标"
                                Description="图片左上角为(0, 0)">
-        <fa:SettingsExpanderItem.IconSource><fa:SymbolIconSource Symbol="Home" /></fa:SettingsExpanderItem.IconSource>
-        <fa:SettingsExpanderItem.Footer>
+        <fa:FASettingsExpanderItem.IconSource><fa:FASymbolIconSource Symbol="Home" /></fa:FASettingsExpanderItem.IconSource>
+        <fa:FASettingsExpanderItem.Footer>
           <StackPanel Orientation="Horizontal" Spacing="6">
-            <TextBox x:Name="XPositionBox" Width="72" Watermark="横" IsReadOnly="True" />
-            <TextBox x:Name="YPositionBox" Width="72" Watermark="纵" IsReadOnly="True" />
+            <TextBox x:Name="XPositionBox" Width="72" PlaceholderText="横" IsReadOnly="True" />
+            <TextBox x:Name="YPositionBox" Width="72" PlaceholderText="纵" IsReadOnly="True" />
             <Button x:Name="ClearPointsButton" Content="清除点位" Click="OnClearPointsClicked" />
           </StackPanel>
-        </fa:SettingsExpanderItem.Footer>
-      </fa:SettingsExpanderItem>
+        </fa:FASettingsExpanderItem.Footer>
+      </fa:FASettingsExpanderItem>
 
-      <fa:SettingsExpanderItem Grid.Row="1"
+      <fa:FASettingsExpanderItem Grid.Row="1"
                                Content="历史记录"
                                Description="Ctrl+Z 撤回，Ctrl+Shift+Z 恢复">
-        <fa:SettingsExpanderItem.IconSource><fa:SymbolIconSource Symbol="Home" /></fa:SettingsExpanderItem.IconSource>
-        <fa:SettingsExpanderItem.Footer>
+        <fa:FASettingsExpanderItem.IconSource><fa:FASymbolIconSource Symbol="Home" /></fa:FASettingsExpanderItem.IconSource>
+        <fa:FASettingsExpanderItem.Footer>
           <StackPanel Orientation="Horizontal" Spacing="6">
             <Button x:Name="UndoButton" Content="撤回" Click="OnUndoClicked" />
             <Button x:Name="RedoButton" Content="恢复" Click="OnRedoClicked" />
           </StackPanel>
-        </fa:SettingsExpanderItem.Footer>
-      </fa:SettingsExpanderItem>
+        </fa:FASettingsExpanderItem.Footer>
+      </fa:FASettingsExpanderItem>
 
       <ScrollViewer Grid.Row="2"
                     HorizontalScrollBarVisibility="Auto"
@@ -207,7 +207,7 @@
       </ScrollViewer>
     </Grid>
 
-    <fa:TeachingTip x:Name="ShapeTeachingTip"
+    <fa:FATeachingTip x:Name="ShapeTeachingTip"
                     Target="{Binding ElementName=ShapeHelpButton}"
                     Title="形状使用说明"
                     IsLightDismissEnabled="True"

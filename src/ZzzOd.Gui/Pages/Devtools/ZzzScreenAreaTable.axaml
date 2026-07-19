@@ -32,15 +32,15 @@
               <Button Grid.Column="0" Tag="{Binding}" Click="OnSelectClicked" ToolTip.Tip="选中区域">定位</Button>
               <CheckBox Grid.Column="1" IsChecked="{Binding IdMark, Mode=TwoWay}" HorizontalAlignment="Center" />
               <TextBox Grid.Column="2" Text="{Binding AreaName, Mode=TwoWay}" />
-              <fa:NumberBox Grid.Column="3" Value="{Binding X1, Mode=TwoWay}" SpinButtonPlacementMode="Compact" />
-              <fa:NumberBox Grid.Column="4" Value="{Binding Y1, Mode=TwoWay}" SpinButtonPlacementMode="Compact" />
-              <fa:NumberBox Grid.Column="5" Value="{Binding X2, Mode=TwoWay}" SpinButtonPlacementMode="Compact" />
-              <fa:NumberBox Grid.Column="6" Value="{Binding Y2, Mode=TwoWay}" SpinButtonPlacementMode="Compact" />
+              <fa:FANumberBox Grid.Column="3" Value="{Binding X1, Mode=TwoWay}" SpinButtonPlacementMode="Compact" />
+              <fa:FANumberBox Grid.Column="4" Value="{Binding Y1, Mode=TwoWay}" SpinButtonPlacementMode="Compact" />
+              <fa:FANumberBox Grid.Column="5" Value="{Binding X2, Mode=TwoWay}" SpinButtonPlacementMode="Compact" />
+              <fa:FANumberBox Grid.Column="6" Value="{Binding Y2, Mode=TwoWay}" SpinButtonPlacementMode="Compact" />
               <TextBox Grid.Column="7" Text="{Binding Text, Mode=TwoWay}" />
-              <fa:NumberBox Grid.Column="8" Value="{Binding LcsPercent, Mode=TwoWay}" Minimum="0" Maximum="1" SmallChange="0.05" />
+              <fa:FANumberBox Grid.Column="8" Value="{Binding LcsPercent, Mode=TwoWay}" Minimum="0" Maximum="1" SmallChange="0.05" />
               <TextBox Grid.Column="9" Text="{Binding TemplateSubDir, Mode=TwoWay}" />
               <TextBox Grid.Column="10" Text="{Binding TemplateId, Mode=TwoWay}" />
-              <fa:NumberBox Grid.Column="11" Value="{Binding TemplateMatchThreshold, Mode=TwoWay}" Minimum="0" Maximum="1" SmallChange="0.05" />
+              <fa:FANumberBox Grid.Column="11" Value="{Binding TemplateMatchThreshold, Mode=TwoWay}" Minimum="0" Maximum="1" SmallChange="0.05" />
               <TextBox Grid.Column="12" Text="{Binding ColorRangeText, Mode=TwoWay}" />
               <TextBox Grid.Column="13" Text="{Binding GotoListText, Mode=TwoWay}" />
               <TextBox Grid.Column="14" Text="{Binding GamepadKey, Mode=TwoWay}" />

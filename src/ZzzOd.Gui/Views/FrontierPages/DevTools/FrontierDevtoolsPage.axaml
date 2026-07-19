@@ -1,0 +1,125 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:fa="using:FluentAvalonia.UI.Controls"
+             x:Class="ZzzOd.Gui.Views.FrontierPages.DevTools.FrontierDevtoolsPage">
+  <UserControl.Styles>
+    <Style Selector="fa|FATabView#DevtoolsPivot /template/ Rectangle#LeftBottomBorderLine">
+      <Setter Property="IsVisible" Value="False" />
+    </Style>
+    <Style Selector="fa|FATabView#DevtoolsPivot /template/ Rectangle#RightBottomBorderLine">
+      <Setter Property="IsVisible" Value="False" />
+    </Style>
+    <Style Selector="fa|FATabViewItem.devtools-pivot-item">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="Padding" Value="0" />
+      <Setter Property="HorizontalContentAlignment" Value="Center" />
+      <Setter Property="VerticalContentAlignment" Value="Center" />
+    </Style>
+    <Style Selector="fa|FATabViewItem.devtools-pivot-item /template/ Border#BottomBorderLine">
+      <Setter Property="IsVisible" Value="False" />
+    </Style>
+    <Style Selector="fa|FATabViewItem.devtools-pivot-item /template/ Path#LeftRadiusRenderArc">
+      <Setter Property="IsVisible" Value="False" />
+    </Style>
+    <Style Selector="fa|FATabViewItem.devtools-pivot-item /template/ Path#RightRadiusRenderArc">
+      <Setter Property="IsVisible" Value="False" />
+    </Style>
+    <Style Selector="fa|FATabViewItem.devtools-pivot-item /template/ Path#SelectedBackgroundPath">
+      <Setter Property="IsVisible" Value="False" />
+    </Style>
+    <Style Selector="fa|FATabViewItem.devtools-pivot-item /template/ Border#TabSeparator">
+      <Setter Property="IsVisible" Value="False" />
+    </Style>
+    <Style Selector="fa|FATabViewItem.devtools-pivot-item /template/ Border#TabContainerBorder">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="Margin" Value="0" />
+      <Setter Property="Padding" Value="0" />
+    </Style>
+    <Style Selector="fa|FATabViewItem.devtools-pivot-item /template/ ContentPresenter#ContentPresenter">
+      <Setter Property="FontSize" Value="16" />
+    </Style>
+    <Style Selector="fa|FATabViewItem.devtools-pivot-item Border.devtools-pivot-indicator">
+      <Setter Property="Opacity" Value="0" />
+    </Style>
+    <Style Selector="fa|FATabViewItem.devtools-pivot-item:selected Border.devtools-pivot-indicator">
+      <Setter Property="Opacity" Value="1" />
+    </Style>
+  </UserControl.Styles>
+
+  <fa:FATabView x:Name="DevtoolsPivot"
+              IsAddTabButtonVisible="False"
+              CanDragTabs="False"
+              CanReorderTabs="False"
+              TabWidthMode="SizeToContent"
+              Margin="0,7,0,0"
+              Padding="0">
+    <fa:FATabViewItem x:Name="ImageAnalysisTab" Header="图像分析" IsClosable="False" Classes="devtools-pivot-item" Focusable="True">
+      <fa:FATabViewItem.HeaderTemplate>
+        <DataTemplate>
+          <Grid MinWidth="72" Height="32" RowDefinitions="*,3">
+            <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" Text="{Binding}" />
+            <Border Grid.Row="1" Classes="devtools-pivot-indicator" Width="16" Height="3" CornerRadius="2" HorizontalAlignment="Center" Background="{DynamicResource SystemAccentColor}" />
+          </Grid>
+        </DataTemplate>
+      </fa:FATabViewItem.HeaderTemplate>
+      <fa:FAFrame x:Name="ImageAnalysisFrame" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch" IsNavigationStackEnabled="False" />
+    </fa:FATabViewItem>
+    <fa:FATabViewItem x:Name="TemplateHelperTab" Header="模板管理" IsClosable="False" Classes="devtools-pivot-item" Focusable="True">
+      <fa:FATabViewItem.HeaderTemplate>
+        <DataTemplate>
+          <Grid MinWidth="72" Height="32" RowDefinitions="*,3">
+            <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" Text="{Binding}" />
+            <Border Grid.Row="1" Classes="devtools-pivot-indicator" Width="16" Height="3" CornerRadius="2" HorizontalAlignment="Center" Background="{DynamicResource SystemAccentColor}" />
+          </Grid>
+        </DataTemplate>
+      </fa:FATabViewItem.HeaderTemplate>
+      <fa:FAFrame x:Name="TemplateHelperFrame" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch" IsNavigationStackEnabled="False" />
+    </fa:FATabViewItem>
+    <fa:FATabViewItem x:Name="ScreenManageTab" Header="画面管理" IsClosable="False" Classes="devtools-pivot-item" Focusable="True">
+      <fa:FATabViewItem.HeaderTemplate>
+        <DataTemplate>
+          <Grid MinWidth="72" Height="32" RowDefinitions="*,3">
+            <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" Text="{Binding}" />
+            <Border Grid.Row="1" Classes="devtools-pivot-indicator" Width="16" Height="3" CornerRadius="2" HorizontalAlignment="Center" Background="{DynamicResource SystemAccentColor}" />
+          </Grid>
+        </DataTemplate>
+      </fa:FATabViewItem.HeaderTemplate>
+      <fa:FAFrame x:Name="ScreenManageFrame" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch" IsNavigationStackEnabled="False" />
+    </fa:FATabViewItem>
+    <fa:FATabViewItem x:Name="AgentTemplateTab" Header="代理人模板生成" IsClosable="False" Classes="devtools-pivot-item" Focusable="True">
+      <fa:FATabViewItem.HeaderTemplate>
+        <DataTemplate>
+          <Grid MinWidth="112" Height="32" RowDefinitions="*,3">
+            <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" Text="{Binding}" />
+            <Border Grid.Row="1" Classes="devtools-pivot-indicator" Width="16" Height="3" CornerRadius="2" HorizontalAlignment="Center" Background="{DynamicResource SystemAccentColor}" />
+          </Grid>
+        </DataTemplate>
+      </fa:FATabViewItem.HeaderTemplate>
+      <fa:FAFrame x:Name="AgentTemplateFrame" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch" IsNavigationStackEnabled="False" />
+    </fa:FATabViewItem>
+    <fa:FATabViewItem x:Name="ScreenshotHelperTab" Header="截图助手" IsClosable="False" Classes="devtools-pivot-item" Focusable="True">
+      <fa:FATabViewItem.HeaderTemplate>
+        <DataTemplate>
+          <Grid MinWidth="72" Height="32" RowDefinitions="*,3">
+            <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" Text="{Binding}" />
+            <Border Grid.Row="1" Classes="devtools-pivot-indicator" Width="16" Height="3" CornerRadius="2" HorizontalAlignment="Center" Background="{DynamicResource SystemAccentColor}" />
+          </Grid>
+        </DataTemplate>
+      </fa:FATabViewItem.HeaderTemplate>
+      <fa:FAFrame x:Name="ScreenshotHelperFrame" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch" IsNavigationStackEnabled="False" />
+    </fa:FATabViewItem>
+    <fa:FATabViewItem x:Name="OperationDebugTab" Header="指令调试" IsClosable="False" Classes="devtools-pivot-item" Focusable="True">
+      <fa:FATabViewItem.HeaderTemplate>
+        <DataTemplate>
+          <Grid MinWidth="72" Height="32" RowDefinitions="*,3">
+            <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" Text="{Binding}" />
+            <Border Grid.Row="1" Classes="devtools-pivot-indicator" Width="16" Height="3" CornerRadius="2" HorizontalAlignment="Center" Background="{DynamicResource SystemAccentColor}" />
+          </Grid>
+        </DataTemplate>
+      </fa:FATabViewItem.HeaderTemplate>
+      <fa:FAFrame x:Name="OperationDebugFrame" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch" IsNavigationStackEnabled="False" />
+    </fa:FATabViewItem>
+  </fa:FATabView>
+</UserControl>

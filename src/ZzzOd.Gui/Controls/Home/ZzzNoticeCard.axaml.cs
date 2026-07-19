@@ -17,7 +17,7 @@ public sealed partial class ZzzNoticeCard : UserControl
     private readonly ListBox _gameGuidesList;
     private readonly ListBox _softwareResearchList;
     private readonly ListBox _announcementsList;
-    private readonly InfoBar _failureInfoBar;
+    private readonly FAInfoBar _failureInfoBar;
     private readonly Button _retryButton;
     private IReadOnlyList<ZzzNoticeBannerViewItem> _banners = [];
     private Bitmap? _bannerBitmap;
@@ -32,7 +32,7 @@ public sealed partial class ZzzNoticeCard : UserControl
         _gameGuidesList = GetRequiredControl<ListBox>("GameGuidesList");
         _softwareResearchList = GetRequiredControl<ListBox>("SoftwareResearchList");
         _announcementsList = GetRequiredControl<ListBox>("AnnouncementsList");
-        _failureInfoBar = GetRequiredControl<InfoBar>("FailureInfoBar");
+        _failureInfoBar = GetRequiredControl<FAInfoBar>("FailureInfoBar");
         _retryButton = GetRequiredControl<Button>("RetryButton");
         _bannerTimer = new DispatcherTimer
         {

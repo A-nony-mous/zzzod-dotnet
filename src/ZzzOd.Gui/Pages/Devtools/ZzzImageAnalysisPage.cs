@@ -2,6 +2,7 @@ using System.Collections.ObjectModel;
 using System.Globalization;
 using System.Text;
 using Avalonia.Controls;
+using Avalonia.Input.Platform;
 using Avalonia.Interactivity;
 using Avalonia.Markup.Xaml;
 using Avalonia.Media.Imaging;
@@ -140,7 +141,10 @@ internal sealed partial class ZzzImageAnalysisPage : UserControl
         {
             ImageAnalysisColorChannels channels = _service.GetColorChannels(_sourceBytes);
             Required<ItemsControl>("ColorSpaceList").ItemsSource = channels.Spaces.Select(space => new ColorSpaceEditor(space)).ToArray();
-            await Required<ContentDialog>("ColorChannelsDialog").ShowAsync();
+            if (TopLevel.GetTopLevel(this) is { } owner)
+            {
+                await Required<FAContentDialog>("ColorChannelsDialog").ShowAsync(owner);
+            }
         }
         catch (Exception exception) { SetResult(exception.Message); }
     }
@@ -192,17 +196,26 @@ internal sealed partial class ZzzImageAnalysisPage : UserControl
     }
     private async Task<string?> PromptName(string title, string? initial)
     {
-        ContentDialog dialog = Required<ContentDialog>("PipelineNameDialog");
+        FAContentDialog dialog = Required<FAContentDialog>("PipelineNameDialog");
         dialog.Title = title;
         TextBox text = Required<TextBox>("PipelineNameText");
         text.Text = initial ?? string.Empty;
-        return await dialog.ShowAsync() == ContentDialogResult.Primary ? text.Text?.Trim() : null;
+        if (TopLevel.GetTopLevel(this) is not { } owner)
+        {
+            return null;
+        }
+
+        return await dialog.ShowAsync(owner) == FAContentDialogResult.Primary ? text.Text?.Trim() : null;
     }
     private async void OnDeletePipeline(object? sender, RoutedEventArgs args)
     {
         if (_activePipeline is null) return;
-        ContentDialog confirm = new() { Title = "删除流水线", Content = $"确定要删除流水线 {_activePipeline} 吗？", PrimaryButtonText = "确定", CloseButtonText = "取消", DefaultButton = ContentDialogButton.Close };
-        if (await confirm.ShowAsync() != ContentDialogResult.Primary) return;
+        FAContentDialog confirm = new() { Title = "删除流水线", Content = $"确定要删除流水线 {_activePipeline} 吗？", PrimaryButtonText = "确定", CloseButtonText = "取消", DefaultButton = FAContentDialogButton.Close };
+        if (TopLevel.GetTopLevel(this) is not { } owner
+            || await confirm.ShowAsync(owner) != FAContentDialogResult.Primary)
+        {
+            return;
+        }
         try { string deleted = _activePipeline; _service.DeletePipeline(deleted); _activePipeline = null; _steps.Clear(); _parameters.Clear(); ReloadPipelines(); SetResult($"流水线已删除：{deleted}"); }
         catch (Exception exception) { SetResult(exception.Message); }
     }
@@ -234,12 +247,12 @@ internal sealed partial class ZzzImageAnalysisPage : UserControl
         foreach (ImageAnalysisParameterDefinition definition in step.Definition.Parameters) _parameters.Add(new ImageAnalysisParameterEditor(step, definition, GetOptions(definition, step)));
     }
 
-    private void OnParameterNumberChanged(NumberBox sender, NumberBoxValueChangedEventArgs args) { if (sender.DataContext is ImageAnalysisParameterEditor p && !double.IsNaN(args.NewValue)) p.SetNumber(args.NewValue); }
+    private void OnParameterNumberChanged(FANumberBox sender, FANumberBoxValueChangedEventArgs args) { if (sender.DataContext is ImageAnalysisParameterEditor p && !double.IsNaN(args.NewValue)) p.SetNumber(args.NewValue); }
     private void OnParameterBooleanChanged(object? sender, RoutedEventArgs args) { if (sender is ToggleSwitch { DataContext: ImageAnalysisParameterEditor p } toggle) p.SetValue(toggle.IsChecked == true); }
     private void OnParameterChoiceChanged(object? sender, SelectionChangedEventArgs args) { if (sender is FAComboBox { DataContext: ImageAnalysisParameterEditor p } combo && combo.SelectedItem is string value) { p.SetValue(value); if (p.Definition.Kind == ImageAnalysisParameterKind.Screen) RefreshAreaParameter(); } }
-    private void OnTuple0Changed(NumberBox sender, NumberBoxValueChangedEventArgs args) { if (sender.DataContext is ImageAnalysisParameterEditor p && !double.IsNaN(args.NewValue)) p.SetTuple(0, args.NewValue); }
-    private void OnTuple1Changed(NumberBox sender, NumberBoxValueChangedEventArgs args) { if (sender.DataContext is ImageAnalysisParameterEditor p && !double.IsNaN(args.NewValue)) p.SetTuple(1, args.NewValue); }
-    private void OnTuple2Changed(NumberBox sender, NumberBoxValueChangedEventArgs args) { if (sender.DataContext is ImageAnalysisParameterEditor p && !double.IsNaN(args.NewValue)) p.SetTuple(2, args.NewValue); }
+    private void OnTuple0Changed(FANumberBox sender, FANumberBoxValueChangedEventArgs args) { if (sender.DataContext is ImageAnalysisParameterEditor p && !double.IsNaN(args.NewValue)) p.SetTuple(0, args.NewValue); }
+    private void OnTuple1Changed(FANumberBox sender, FANumberBoxValueChangedEventArgs args) { if (sender.DataContext is ImageAnalysisParameterEditor p && !double.IsNaN(args.NewValue)) p.SetTuple(1, args.NewValue); }
+    private void OnTuple2Changed(FANumberBox sender, FANumberBoxValueChangedEventArgs args) { if (sender.DataContext is ImageAnalysisParameterEditor p && !double.IsNaN(args.NewValue)) p.SetTuple(2, args.NewValue); }
     private void RefreshAreaParameter() { if (Required<ListBox>("StepList").SelectedItem is ImageAnalysisStepEditor selected) { int index = Required<ListBox>("StepList").SelectedIndex; Required<ListBox>("StepList").SelectedIndex = -1; Required<ListBox>("StepList").SelectedIndex = index; } }
 
     private IReadOnlyList<string> GetOptions(ImageAnalysisParameterDefinition definition, ImageAnalysisStepEditor step) => definition.Kind switch
@@ -254,7 +267,7 @@ internal sealed partial class ZzzImageAnalysisPage : UserControl
     private string GenerateCode() { StringBuilder code = new(); code.AppendLine("pipeline = CvPipeline()"); foreach (ImageAnalysisStepEditor step in _steps) code.AppendLine($"pipeline.steps.append(cv_service.create_step('{step.Name}', {string.Join(", ", step.Step.Parameters.Select(pair => $"{pair.Key}={pair.Value}"))}))"); return code.ToString(); }
     private void ReloadPipelines() { _loading = true; try { FAComboBox combo = Required<FAComboBox>("PipelineCombo"); combo.ItemsSource = _service.GetPipelineNames().Append(CreatePipelineText).ToArray(); combo.SelectedItem = _activePipeline; } finally { _loading = false; } }
     private void ShowImage(byte[] bytes) { Required<Image>("PreviewImage").Source = new Bitmap(new MemoryStream(bytes)); }
-    private void UpdateViewLabel() { Required<CommandBarButton>("ToggleViewButton").Label = _showProcessed ? "处理后" : "原图"; }
+    private void UpdateViewLabel() { Required<FACommandBarButton>("ToggleViewButton").Label = _showProcessed ? "处理后" : "原图"; }
     private void SetResult(string text) => Required<TextBox>("ResultText").Text = text;
     private static object? CloneDefault(object? value) => value is int[] array ? array.ToArray() : value;
     private T Required<T>(string name) where T : Control => this.FindControl<T>(name) ?? throw new InvalidOperationException($"图像分析页缺少 {name}。");

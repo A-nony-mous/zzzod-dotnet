@@ -48,7 +48,7 @@ internal sealed partial class ZzzBattleAssistantPage : UserControl, IZzzPageLife
     private readonly TextBlock _taskDurationValue;
     private readonly TextBox _battleStateFilter;
     private readonly ItemsControl _battleStateRows;
-    private readonly InfoBar _runtimeErrorBar;
+    private readonly FAInfoBar _runtimeErrorBar;
     private readonly DispatcherTimer _refreshTimer;
     private IReadOnlyList<ZzzBattleAssistantStateRowModel> _latestStateRows = [];
     private IReadOnlyDictionary<string, ZzzBattleAssistantStateDto> _previousStates = new Dictionary<string, ZzzBattleAssistantStateDto>();
@@ -84,7 +84,7 @@ internal sealed partial class ZzzBattleAssistantPage : UserControl, IZzzPageLife
             ?? throw new InvalidOperationException("战斗助手缺少状态过滤输入框。");
         _battleStateRows = this.FindControl<ItemsControl>("BattleStateRows")
             ?? throw new InvalidOperationException("战斗助手缺少状态行列表。");
-        _runtimeErrorBar = this.FindControl<InfoBar>("RuntimeErrorBar")
+        _runtimeErrorBar = this.FindControl<FAInfoBar>("RuntimeErrorBar")
             ?? throw new InvalidOperationException("战斗助手缺少运行状态错误 InfoBar?");
         settingsHost.Content = settings;
         runHost.Content = RunPanel;
@@ -397,18 +397,18 @@ internal sealed partial class ZzzBattleAssistantSettings : UserControl, IZzzPage
     ];
 
     private readonly IZzzAppBackend _backend;
-    private readonly TabView _modeTabs;
-    private readonly ContentDialog _helpDialog;
-    private readonly InfoBar _settingsErrorBar;
+    private readonly FATabView _modeTabs;
+    private readonly FAContentDialog _helpDialog;
+    private readonly FAInfoBar _settingsErrorBar;
     private readonly FAComboBox _autoBattleConfigCombo;
     private readonly FAComboBox _dodgeConfigCombo;
     private readonly ToggleSwitch _autoUltimateToggle;
     private readonly ToggleSwitch _mergedFileToggle;
     private readonly ToggleSwitch _gpuToggle;
-    private readonly NumberBox _screenshotIntervalNumber;
+    private readonly FANumberBox _screenshotIntervalNumber;
     private readonly FAComboBox _controlMethodCombo;
-    private readonly CommandBarButton _deleteAutoBattleConfigButton;
-    private readonly CommandBarButton _deleteDodgeConfigButton;
+    private readonly FACommandBarButton _deleteAutoBattleConfigButton;
+    private readonly FACommandBarButton _deleteDodgeConfigButton;
     private IReadOnlyList<string> _autoBattleOptions = [];
     private IReadOnlyList<string> _dodgeOptions = [];
     private IReadOnlyList<string> _loadErrors = [];
@@ -421,11 +421,11 @@ internal sealed partial class ZzzBattleAssistantSettings : UserControl, IZzzPage
     {
         _backend = backend;
         AvaloniaXamlLoader.Load(this);
-        _modeTabs = this.FindControl<TabView>("ModeTabs")
+        _modeTabs = this.FindControl<FATabView>("ModeTabs")
             ?? throw new InvalidOperationException("战斗助手缺少模式 TabView?");
-        _helpDialog = this.FindControl<ContentDialog>("BattleHelpDialog")
+        _helpDialog = this.FindControl<FAContentDialog>("BattleHelpDialog")
             ?? throw new InvalidOperationException("战斗助手缺少使用说明 ContentDialog?");
-        _settingsErrorBar = this.FindControl<InfoBar>("SettingsErrorBar")
+        _settingsErrorBar = this.FindControl<FAInfoBar>("SettingsErrorBar")
             ?? throw new InvalidOperationException("战斗助手缺少配置错误 InfoBar?");
         _autoBattleConfigCombo = this.FindControl<FAComboBox>("AutoBattleConfigCombo")
             ?? throw new InvalidOperationException("战斗助手缺少战斗配置下拉框。");
@@ -437,13 +437,13 @@ internal sealed partial class ZzzBattleAssistantSettings : UserControl, IZzzPage
             ?? throw new InvalidOperationException("战斗助手缺少合并配置开关。");
         _gpuToggle = this.FindControl<ToggleSwitch>("GpuToggle")
             ?? throw new InvalidOperationException("战斗助手缺少 GPU 开关。");
-        _screenshotIntervalNumber = this.FindControl<NumberBox>("ScreenshotIntervalNumber")
+        _screenshotIntervalNumber = this.FindControl<FANumberBox>("ScreenshotIntervalNumber")
             ?? throw new InvalidOperationException("战斗助手缺少截图间隔输入框。");
         _controlMethodCombo = this.FindControl<FAComboBox>("ControlMethodCombo")
             ?? throw new InvalidOperationException("战斗助手缺少操作方式下拉框。");
-        _deleteAutoBattleConfigButton = this.FindControl<CommandBarButton>("DeleteAutoBattleConfigButton")
+        _deleteAutoBattleConfigButton = this.FindControl<FACommandBarButton>("DeleteAutoBattleConfigButton")
             ?? throw new InvalidOperationException("战斗助手缺少战斗配置删除按钮。");
-        _deleteDodgeConfigButton = this.FindControl<CommandBarButton>("DeleteDodgeConfigButton")
+        _deleteDodgeConfigButton = this.FindControl<FACommandBarButton>("DeleteDodgeConfigButton")
             ?? throw new InvalidOperationException("战斗助手缺少闪避配置删除按钮。");
 
         _controlMethodCombo.ItemsSource = ControlMethodLabels;
@@ -813,7 +813,7 @@ internal sealed partial class ZzzBattleAssistantSettings : UserControl, IZzzPage
         }
     }
 
-    private void OnScreenshotIntervalChanged(object? sender, NumberBoxValueChangedEventArgs args)
+    private void OnScreenshotIntervalChanged(object? sender, FANumberBoxValueChangedEventArgs args)
     {
         if (!_loading && !double.IsNaN(args.NewValue))
         {
@@ -867,9 +867,9 @@ internal sealed partial class ZzzCommissionAssistantSettings : UserControl, IZzz
     private static readonly string[] DialogOptions = ["第一个", "最后一个"];
     private static readonly string[] StoryModes = ["自动点击", "等待剧情自动播放", "跳过剧情"];
     private readonly IZzzAppBackend _backend;
-    private readonly InfoBar _errorBar;
-    private readonly NumberBox _dialogClickIntervalNumber;
-    private readonly NumberBox _emptyScreenWaitNumber;
+    private readonly FAInfoBar _errorBar;
+    private readonly FANumberBox _dialogClickIntervalNumber;
+    private readonly FANumberBox _emptyScreenWaitNumber;
     private readonly FAComboBox _dodgeCombo;
     private readonly FAComboBox _autoBattleCombo;
     private readonly ToggleSwitch _pauseInBackgroundToggle;
@@ -889,11 +889,11 @@ internal sealed partial class ZzzCommissionAssistantSettings : UserControl, IZzz
     {
         _backend = backend;
         AvaloniaXamlLoader.Load(this);
-        _errorBar = this.FindControl<InfoBar>("CommissionErrorBar")
+        _errorBar = this.FindControl<FAInfoBar>("CommissionErrorBar")
             ?? throw new InvalidOperationException("委托助手缺少错误 InfoBar?");
-        _dialogClickIntervalNumber = this.FindControl<NumberBox>("DialogClickIntervalNumber")
+        _dialogClickIntervalNumber = this.FindControl<FANumberBox>("DialogClickIntervalNumber")
             ?? throw new InvalidOperationException("委托助手缺少对话间隔输入框。");
-        _emptyScreenWaitNumber = this.FindControl<NumberBox>("EmptyScreenWaitNumber")
+        _emptyScreenWaitNumber = this.FindControl<FANumberBox>("EmptyScreenWaitNumber")
             ?? throw new InvalidOperationException("委托助手缺少空画面等待输入框。");
         _dodgeCombo = this.FindControl<FAComboBox>("CommissionDodgeCombo")
             ?? throw new InvalidOperationException("委托助手缺少闪避配置下拉框。");
@@ -1047,7 +1047,7 @@ internal sealed partial class ZzzCommissionAssistantSettings : UserControl, IZzz
     private static void ApplyNumber(
         IReadOnlyDictionary<string, object?> values,
         string key,
-        NumberBox control,
+        FANumberBox control,
         List<string> errors)
     {
         if (TryReadDouble(values, key, out double value))
@@ -1181,7 +1181,7 @@ internal sealed partial class ZzzCommissionAssistantSettings : UserControl, IZzz
         }
     }
 
-    private void OnNumberChanged(object? sender, NumberBoxValueChangedEventArgs args)
+    private void OnNumberChanged(object? sender, FANumberBoxValueChangedEventArgs args)
     {
         if (_loading || double.IsNaN(args.NewValue))
         {

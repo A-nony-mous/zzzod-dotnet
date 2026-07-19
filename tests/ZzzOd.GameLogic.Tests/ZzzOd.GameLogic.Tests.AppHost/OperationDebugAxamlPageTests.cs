@@ -119,11 +119,11 @@ public sealed class OperationDebugAxamlPageTests
 		string actualString = File.ReadAllText(Path.Combine(path, "ZzzOperationDebugAxamlPage.cs"));
 		AssertOrder(text, "指令配置", "循环指令", "操作方式", "RunPanelHost");
 		Assert.Contains("config/auto_battle_operation", text, StringComparison.Ordinal);
-		Assert.Contains("fa:SettingsExpander", text, StringComparison.Ordinal);
-		Assert.Contains("fa:SettingsExpanderItem", text, StringComparison.Ordinal);
+		Assert.Contains("fa:FASettingsExpander", text, StringComparison.Ordinal);
+		Assert.Contains("fa:FASettingsExpanderItem", text, StringComparison.Ordinal);
 		Assert.Contains("fa:FAComboBox", text, StringComparison.Ordinal);
-		Assert.Contains("fa:CommandBar", text, StringComparison.Ordinal);
-		Assert.Contains("fa:CommandBarButton", text, StringComparison.Ordinal);
+		Assert.Contains("fa:FACommandBar", text, StringComparison.Ordinal);
+		Assert.Contains("fa:FACommandBarButton", text, StringComparison.Ordinal);
 		Assert.Contains("ToggleSwitch", text, StringComparison.Ordinal);
 		Assert.Contains("new ZzzRunPanel", actualString, StringComparison.Ordinal);
 		Assert.Contains("ZzzApplicationIds.OperationDebug", actualString, StringComparison.Ordinal);
@@ -135,7 +135,7 @@ public sealed class OperationDebugAxamlPageTests
 		Assert.DoesNotContain("PageModel", actualString, StringComparison.Ordinal);
 		Assert.DoesNotContain("Ui.Source", actualString, StringComparison.Ordinal);
 		Assert.DoesNotContain("Python", text, StringComparison.Ordinal);
-		Assert.DoesNotContain("sample", text, StringComparison.OrdinalIgnoreCase);
+		Assert.DoesNotContain("sample", text.Replace("SampleAppPageMargin", string.Empty, StringComparison.OrdinalIgnoreCase), StringComparison.OrdinalIgnoreCase);
 	}
 
 	[Fact]

@@ -29,7 +29,7 @@
           <Grid Margin="0,2"
                 ColumnDefinitions="160,150,90,90,90,90"
                 ColumnSpacing="6">
-            <TextBox Grid.Column="0" Text="{Binding IconName}" Watermark="图标名称" />
+            <TextBox Grid.Column="0" Text="{Binding IconName}" PlaceholderText="图标名称" />
             <TextBlock Grid.Column="1" Text="{Binding TemplateId}" VerticalAlignment="Center" />
             <TextBlock Grid.Column="2" Text="{Binding LargeMapX}" VerticalAlignment="Center" />
             <TextBlock Grid.Column="3" Text="{Binding LargeMapY}" VerticalAlignment="Center" />
@@ -43,20 +43,20 @@
     <TextBlock Grid.Row="2"
                Text="提示：点击表格行可在主窗口地图上高亮对应图标位置；选中行后可设置传送坐标或删除图标" />
 
-    <fa:CommandBar Grid.Row="3">
-      <fa:CommandBar.PrimaryCommands>
-        <fa:CommandBarButton x:Name="SetTeleportButton"
+    <fa:FACommandBar Grid.Row="3">
+      <fa:FACommandBar.PrimaryCommands>
+        <fa:FACommandBarButton x:Name="SetTeleportButton"
                              Label="设置传送坐标"
                              Click="OnSetTeleportClicked" />
-        <fa:CommandBarButton x:Name="DeleteIconButton"
+        <fa:FACommandBarButton x:Name="DeleteIconButton"
                              Label="删除图标"
                              Click="OnDeleteIconClicked" />
-        <fa:CommandBarButton Label="保存" Click="OnSaveClicked" />
-        <fa:CommandBarButton Label="取消" Click="OnCancelClicked" />
-      </fa:CommandBar.PrimaryCommands>
-    </fa:CommandBar>
+        <fa:FACommandBarButton Label="保存" Click="OnSaveClicked" />
+        <fa:FACommandBarButton Label="取消" Click="OnCancelClicked" />
+      </fa:FACommandBar.PrimaryCommands>
+    </fa:FACommandBar>
 
-    <fa:ContentDialog x:Name="DeleteDialog"
+    <fa:FAContentDialog x:Name="DeleteDialog"
                       Title="确认删除"
                       PrimaryButtonText="删除"
                       CloseButtonText="取消" />

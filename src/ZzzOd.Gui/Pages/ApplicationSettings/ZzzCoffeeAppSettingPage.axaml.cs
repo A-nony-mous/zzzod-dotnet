@@ -22,10 +22,10 @@ internal sealed partial class ZzzCoffeeAppSettingPage : UserControl, IZzzPageLif
     private readonly IZzzAppBackend _backend;
     private readonly int _instanceIndex;
     private readonly string _groupId;
-    private readonly InfoBar _errorBar;
-    private readonly SettingsExpanderItem _chooseWayItem;
-    private readonly SettingsExpanderItem _cardNumItem;
-    private readonly SettingsExpanderItem _autoBattleItem;
+    private readonly FAInfoBar _errorBar;
+    private readonly FASettingsExpanderItem _chooseWayItem;
+    private readonly FASettingsExpanderItem _cardNumItem;
+    private readonly FASettingsExpanderItem _autoBattleItem;
     private readonly FAComboBox _transportPointCombo;
     private readonly FAComboBox _chooseWayCombo;
     private readonly FAComboBox _challengeWayCombo;
@@ -42,10 +42,10 @@ internal sealed partial class ZzzCoffeeAppSettingPage : UserControl, IZzzPageLif
         _groupId = groupId;
         AvaloniaXamlLoader.Load(this);
 
-        _errorBar = Required<InfoBar>("ErrorBar");
-        _chooseWayItem = Required<SettingsExpanderItem>("ChooseWayItem");
-        _cardNumItem = Required<SettingsExpanderItem>("CardNumItem");
-        _autoBattleItem = Required<SettingsExpanderItem>("AutoBattleItem");
+        _errorBar = Required<FAInfoBar>("ErrorBar");
+        _chooseWayItem = Required<FASettingsExpanderItem>("ChooseWayItem");
+        _cardNumItem = Required<FASettingsExpanderItem>("CardNumItem");
+        _autoBattleItem = Required<FASettingsExpanderItem>("AutoBattleItem");
         _transportPointCombo = Required<FAComboBox>("TransportPointCombo");
         _chooseWayCombo = Required<FAComboBox>("ChooseWayCombo");
         _challengeWayCombo = Required<FAComboBox>("ChallengeWayCombo");
@@ -203,7 +203,7 @@ internal sealed partial class ZzzCoffeeAppSettingPage : UserControl, IZzzPageLif
             && value == -1;
     }
 
-    private static void UpdateDescription(SettingsExpanderItem item, SelectingItemsControl combo)
+    private static void UpdateDescription(FASettingsExpanderItem item, SelectingItemsControl combo)
     {
         item.Description = combo.SelectedItem is ZzzCoffeeSettingOption option
             ? option.Description

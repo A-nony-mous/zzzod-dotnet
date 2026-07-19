@@ -3,18 +3,18 @@
              xmlns:fa="using:FluentAvalonia.UI.Controls"
              x:Class="ZzzOd.Gui.Pages.Devtools.ZzzImageAnalysisPage"
              x:CompileBindings="False">
-  <Grid Margin="11" ColumnDefinitions="440,12,*">
+  <Grid Margin="{DynamicResource SampleAppPageMargin}" ColumnDefinitions="440,12,*">
     <ScrollViewer Grid.Column="0" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
       <StackPanel Spacing="8">
-        <fa:CommandBar>
-          <fa:CommandBar.PrimaryCommands>
-            <fa:CommandBarButton Label="打开图片" Click="OnOpenImage"><fa:CommandBarButton.IconSource><fa:SymbolIconSource Symbol="OpenFile" /></fa:CommandBarButton.IconSource></fa:CommandBarButton>
-            <fa:CommandBarButton Label="截图" Click="OnScreenshot"><fa:CommandBarButton.IconSource><fa:SymbolIconSource Symbol="Camera" /></fa:CommandBarButton.IconSource></fa:CommandBarButton>
-            <fa:CommandBarButton x:Name="ToggleViewButton" Label="切换视图" Click="OnToggleView"><fa:CommandBarButton.IconSource><fa:SymbolIconSource Symbol="View" /></fa:CommandBarButton.IconSource></fa:CommandBarButton>
-            <fa:CommandBarButton Label="执行" Click="OnRun"><fa:CommandBarButton.IconSource><fa:SymbolIconSource Symbol="Play" /></fa:CommandBarButton.IconSource></fa:CommandBarButton>
-            <fa:CommandBarButton Label="色彩通道" Click="OnColorChannels"><fa:CommandBarButton.IconSource><fa:SymbolIconSource Symbol="Pictures" /></fa:CommandBarButton.IconSource></fa:CommandBarButton>
-          </fa:CommandBar.PrimaryCommands>
-        </fa:CommandBar>
+        <fa:FACommandBar>
+          <fa:FACommandBar.PrimaryCommands>
+            <fa:FACommandBarButton Label="打开图片" Click="OnOpenImage"><fa:FACommandBarButton.IconSource><fa:FASymbolIconSource Symbol="OpenFile" /></fa:FACommandBarButton.IconSource></fa:FACommandBarButton>
+            <fa:FACommandBarButton Label="截图" Click="OnScreenshot"><fa:FACommandBarButton.IconSource><fa:FASymbolIconSource Symbol="Camera" /></fa:FACommandBarButton.IconSource></fa:FACommandBarButton>
+            <fa:FACommandBarButton x:Name="ToggleViewButton" Label="切换视图" Click="OnToggleView"><fa:FACommandBarButton.IconSource><fa:FASymbolIconSource Symbol="View" /></fa:FACommandBarButton.IconSource></fa:FACommandBarButton>
+            <fa:FACommandBarButton Label="执行" Click="OnRun"><fa:FACommandBarButton.IconSource><fa:FASymbolIconSource Symbol="Play" /></fa:FACommandBarButton.IconSource></fa:FACommandBarButton>
+            <fa:FACommandBarButton Label="色彩通道" Click="OnColorChannels"><fa:FACommandBarButton.IconSource><fa:FASymbolIconSource Symbol="Pictures" /></fa:FACommandBarButton.IconSource></fa:FACommandBarButton>
+          </fa:FACommandBar.PrimaryCommands>
+        </fa:FACommandBar>
 
         <Grid ColumnDefinitions="*,Auto,Auto,Auto,Auto">
           <fa:FAComboBox x:Name="PipelineCombo" PlaceholderText="选择或新建流水线" SelectionChanged="OnPipelineSelectionChanged" />
@@ -45,13 +45,13 @@
             <DataTemplate>
               <Grid Margin="0,3" ColumnDefinitions="*,170">
                 <TextBlock Text="{Binding Label}" VerticalAlignment="Center" ToolTip.Tip="{Binding ToolTip}" />
-                <fa:NumberBox Grid.Column="1" Value="{Binding NumberValue}" Minimum="{Binding Minimum}" Maximum="{Binding Maximum}" SmallChange="{Binding SmallChange}" SpinButtonPlacementMode="Compact" IsVisible="{Binding IsNumber}" ValueChanged="OnParameterNumberChanged" />
+                <fa:FANumberBox Grid.Column="1" Value="{Binding NumberValue}" Minimum="{Binding Minimum}" Maximum="{Binding Maximum}" SmallChange="{Binding SmallChange}" SpinButtonPlacementMode="Compact" IsVisible="{Binding IsNumber}" ValueChanged="OnParameterNumberChanged" />
                 <ToggleSwitch Grid.Column="1" IsChecked="{Binding BooleanValue}" OnContent="" OffContent="" IsVisible="{Binding IsBoolean}" Click="OnParameterBooleanChanged" />
                 <fa:FAComboBox Grid.Column="1" ItemsSource="{Binding Options}" SelectedItem="{Binding ChoiceValue}" IsVisible="{Binding IsChoice}" SelectionChanged="OnParameterChoiceChanged" />
                 <Grid Grid.Column="1" ColumnDefinitions="*,*,*" IsVisible="{Binding IsTuple}">
-                  <fa:NumberBox Value="{Binding Tuple0}" Minimum="{Binding Minimum}" Maximum="{Binding Maximum}" SpinButtonPlacementMode="Compact" ValueChanged="OnTuple0Changed" />
-                  <fa:NumberBox Grid.Column="1" Value="{Binding Tuple1}" Minimum="{Binding Minimum}" Maximum="{Binding Maximum}" SpinButtonPlacementMode="Compact" ValueChanged="OnTuple1Changed" />
-                  <fa:NumberBox Grid.Column="2" Value="{Binding Tuple2}" Minimum="{Binding Minimum}" Maximum="{Binding Maximum}" SpinButtonPlacementMode="Compact" ValueChanged="OnTuple2Changed" />
+                  <fa:FANumberBox Value="{Binding Tuple0}" Minimum="{Binding Minimum}" Maximum="{Binding Maximum}" SpinButtonPlacementMode="Compact" ValueChanged="OnTuple0Changed" />
+                  <fa:FANumberBox Grid.Column="1" Value="{Binding Tuple1}" Minimum="{Binding Minimum}" Maximum="{Binding Maximum}" SpinButtonPlacementMode="Compact" ValueChanged="OnTuple1Changed" />
+                  <fa:FANumberBox Grid.Column="2" Value="{Binding Tuple2}" Minimum="{Binding Minimum}" Maximum="{Binding Maximum}" SpinButtonPlacementMode="Compact" ValueChanged="OnTuple2Changed" />
                 </Grid>
               </Grid>
             </DataTemplate>
@@ -66,11 +66,11 @@
       <Image x:Name="PreviewImage" MinWidth="560" MinHeight="420" Stretch="Uniform" />
     </ScrollViewer>
 
-    <fa:ContentDialog x:Name="PipelineNameDialog" Title="流水线名称" PrimaryButtonText="确定" CloseButtonText="取消">
-      <TextBox x:Name="PipelineNameText" Width="360" Watermark="请输入流水线名称" />
-    </fa:ContentDialog>
+    <fa:FAContentDialog x:Name="PipelineNameDialog" Title="流水线名称" PrimaryButtonText="确定" CloseButtonText="取消">
+      <TextBox x:Name="PipelineNameText" Width="360" PlaceholderText="请输入流水线名称" />
+    </fa:FAContentDialog>
 
-    <fa:ContentDialog x:Name="ColorChannelsDialog" Title="色彩通道分析" PrimaryButtonText="确定" DefaultButton="Primary">
+    <fa:FAContentDialog x:Name="ColorChannelsDialog" Title="色彩通道分析" PrimaryButtonText="确定" DefaultButton="Primary">
       <ScrollViewer Width="900" Height="620" VerticalScrollBarVisibility="Auto">
         <ItemsControl x:Name="ColorSpaceList">
           <ItemsControl.ItemTemplate>
@@ -86,6 +86,6 @@
           </ItemsControl.ItemTemplate>
         </ItemsControl>
       </ScrollViewer>
-    </fa:ContentDialog>
+    </fa:FAContentDialog>
   </Grid>
 </UserControl>

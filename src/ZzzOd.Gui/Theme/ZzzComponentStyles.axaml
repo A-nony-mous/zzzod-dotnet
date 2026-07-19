@@ -17,16 +17,33 @@
   <Style Selector="TextBlock.zzz-body">
     <Setter Property="FontSize" Value="{DynamicResource ZzzFontSizeBody}" />
   </Style>
-  <Style Selector="ui|InfoBar.zzz-info-bar">
+  <Style Selector="ui|FAInfoBar.zzz-info-bar">
     <Setter Property="Margin" Value="0" />
   </Style>
+
+  <Style Selector="ToggleSwitch">
+    <Setter Property="MinHeight" Value="28" />
+  </Style>
+
+  <Style Selector="ui|FANumberBox">
+    <Setter Property="MinHeight" Value="28" />
+  </Style>
+
+  <Style Selector="ComboBox">
+    <Setter Property="MinHeight" Value="28" />
+  </Style>
+
+  <Style Selector="ui|FAComboBox">
+    <Setter Property="MinHeight" Value="28" />
+  </Style>
+
   <Style Selector="Border.zzz-media-overlay">
     <Setter Property="Background" Value="{DynamicResource ZzzMediaOverlayBrush}" />
   </Style>
   <Style Selector="TextBlock.zzz-log-line">
     <Setter Property="FontSize" Value="{DynamicResource ZzzFontSizeCaption}" />
   </Style>
-  <Style Selector="ui|NavigationViewItem.zzz-navigation-item">
+  <Style Selector="ui|FANavigationViewItem.zzz-navigation-item">
     <Setter Property="Width" Value="{DynamicResource ZzzNavigationPaneWidth}" />
     <Setter Property="Height" Value="{DynamicResource ZzzNavigationItemHeight}" />
     <Setter Property="MinHeight" Value="{DynamicResource ZzzNavigationItemHeight}" />
@@ -35,7 +52,7 @@
     <Setter Property="HorizontalContentAlignment" Value="Center" />
     <Setter Property="VerticalContentAlignment" Value="Center" />
   </Style>
-  <Style Selector="ui|NavigationViewItem.zzz-navigation-item:selected">
+  <Style Selector="ui|FANavigationViewItem.zzz-navigation-item:selected">
     <Setter Property="Background" Value="Transparent" />
   </Style>
 

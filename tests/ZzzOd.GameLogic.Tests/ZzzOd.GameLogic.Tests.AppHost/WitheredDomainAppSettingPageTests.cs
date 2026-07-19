@@ -57,11 +57,11 @@ public sealed class WitheredDomainAppSettingPageTests
 		AssertOrder(text, "Header=\"枯萎之都配置\"", "Header=\"挑战配置-枯\"");
 		AssertOrder(text, "Content=\"使用说明\"", "Content=\"挑战副本\"", "Content=\"每周基础次数\"", "Content=\"额外刷取\"", "Content=\"运行记录\"", "Content=\"挑战配置\"", "Content=\"每天进入次数\"", "Content=\"额外刷取方式\"");
 		AssertOrder(text, "PlaceholderText=\"选择已有\"", "Label=\"新建\"", "Label=\"复制\"", "Label=\"删除\"", "Label=\"关闭\"");
-		Assert.Contains("fa:TabView", text, StringComparison.Ordinal);
-		Assert.Contains("fa:CommandBar", text, StringComparison.Ordinal);
+		Assert.Contains("fa:FATabView", text, StringComparison.Ordinal);
+		Assert.Contains("fa:FACommandBar", text, StringComparison.Ordinal);
 		Assert.Contains("fa:FAComboBox", text, StringComparison.Ordinal);
-		Assert.Contains("fa:NumberBox", text, StringComparison.Ordinal);
-		Assert.Contains("fa:ContentDialog", text, StringComparison.Ordinal);
+		Assert.Contains("fa:FANumberBox", text, StringComparison.Ordinal);
+		Assert.Contains("fa:FAContentDialog", text, StringComparison.Ordinal);
 		Assert.Contains("IsEditable=\"True\"", text, StringComparison.Ordinal);
 		Assert.Contains("GetWitheredDomainSettingsCatalog", actualString, StringComparison.Ordinal);
 		Assert.Contains("SaveWitheredDomainChallengeConfig", actualString, StringComparison.Ordinal);

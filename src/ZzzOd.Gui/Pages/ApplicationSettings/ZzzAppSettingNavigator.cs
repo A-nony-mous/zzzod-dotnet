@@ -8,10 +8,14 @@ namespace ZzzOd.Gui.Pages.ApplicationSettings;
 internal sealed class ZzzAppSettingNavigator
 {
     private readonly IZzzAppBackend _backend;
+    private readonly Func<string, int, string, Control?>? _targetFactory;
 
-    public ZzzAppSettingNavigator(IZzzAppBackend backend)
+    public ZzzAppSettingNavigator(
+        IZzzAppBackend backend,
+        Func<string, int, string, Control?>? targetFactory = null)
     {
         _backend = backend;
+        _targetFactory = targetFactory;
     }
 
     public bool Open(string appId, string groupId, Button target, Action<Control> pushSecondary)
@@ -50,8 +54,12 @@ internal sealed class ZzzAppSettingNavigator
 
     private Control? CreateTarget(string targetKey, int instanceIndex, string groupId)
     {
-        _ = instanceIndex;
-        _ = groupId;
+        Control? dedicated = _targetFactory?.Invoke(targetKey, instanceIndex, groupId);
+        if (dedicated is not null)
+        {
+            return dedicated;
+        }
+
         return targetKey switch
         {
             "world-patrol-settings" when _backend is IZzzWorldPatrolSettingsBackend worldPatrolBackend =>

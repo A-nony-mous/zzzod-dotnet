@@ -17,12 +17,12 @@ internal sealed partial class ZzzOverlaySettingsAxamlPage : UserControl, IZzzPag
     private readonly ZzzOverlayController _overlayController;
     private readonly ZzzGuiOperationTracker _operations;
     private readonly bool _systemSupported;
-    private readonly InfoBar _unsupportedBar;
-    private readonly InfoBar _errorBar;
-    private readonly InfoBar _resultBar;
+    private readonly FAInfoBar _unsupportedBar;
+    private readonly FAInfoBar _errorBar;
+    private readonly FAInfoBar _resultBar;
     private readonly Button _resetGeometryButton;
     private readonly IReadOnlyDictionary<string, ToggleSwitch> _toggles;
-    private readonly IReadOnlyDictionary<string, NumberBox> _numbers;
+    private readonly IReadOnlyDictionary<string, FANumberBox> _numbers;
     private readonly IReadOnlyDictionary<string, TextBox> _texts;
     private readonly IReadOnlyDictionary<string, ToggleSwitch> _metricToggles;
     private Dictionary<string, bool> _performanceMetrics = new(StringComparer.Ordinal);
@@ -35,9 +35,9 @@ internal sealed partial class ZzzOverlaySettingsAxamlPage : UserControl, IZzzPag
         _operations = operations ?? new ZzzGuiOperationTracker();
         _systemSupported = OperatingSystem.IsWindowsVersionAtLeast(10, 0, 19041);
         AvaloniaXamlLoader.Load(this);
-        _unsupportedBar = Required<InfoBar>("UnsupportedBar");
-        _errorBar = Required<InfoBar>("ErrorBar");
-        _resultBar = Required<InfoBar>("ResultBar");
+        _unsupportedBar = Required<FAInfoBar>("UnsupportedBar");
+        _errorBar = Required<FAInfoBar>("ErrorBar");
+        _resultBar = Required<FAInfoBar>("ResultBar");
         _resetGeometryButton = Required<Button>("ResetGeometryButton");
         _toggles = new Dictionary<string, ToggleSwitch>(StringComparer.Ordinal)
         {
@@ -58,19 +58,19 @@ internal sealed partial class ZzzOverlaySettingsAxamlPage : UserControl, IZzzPag
             ["panel_edit_mode"] = Required<ToggleSwitch>("PanelEditModeToggle"),
             ["patched_capture_enabled"] = Required<ToggleSwitch>("PatchedCaptureToggle"),
         };
-        _numbers = new Dictionary<string, NumberBox>(StringComparer.Ordinal)
+        _numbers = new Dictionary<string, FANumberBox>(StringComparer.Ordinal)
         {
-            ["vision_offset_x"] = Required<NumberBox>("VisionOffsetXNumber"),
-            ["vision_offset_y"] = Required<NumberBox>("VisionOffsetYNumber"),
-            ["vision_scale_x"] = Required<NumberBox>("VisionScaleXNumber"),
-            ["vision_scale_y"] = Required<NumberBox>("VisionScaleYNumber"),
-            ["font_size"] = Required<NumberBox>("FontSizeNumber"),
-            ["log_max_lines"] = Required<NumberBox>("LogMaxLinesNumber"),
-            ["log_fade_seconds"] = Required<NumberBox>("LogFadeSecondsNumber"),
-            ["follow_interval_ms"] = Required<NumberBox>("FollowIntervalNumber"),
-            ["state_poll_interval_ms"] = Required<NumberBox>("StatePollIntervalNumber"),
-            ["input_poll_interval_ms"] = Required<NumberBox>("InputPollIntervalNumber"),
-            ["panel_opacity"] = Required<NumberBox>("PanelOpacityNumber"),
+            ["vision_offset_x"] = Required<FANumberBox>("VisionOffsetXNumber"),
+            ["vision_offset_y"] = Required<FANumberBox>("VisionOffsetYNumber"),
+            ["vision_scale_x"] = Required<FANumberBox>("VisionScaleXNumber"),
+            ["vision_scale_y"] = Required<FANumberBox>("VisionScaleYNumber"),
+            ["font_size"] = Required<FANumberBox>("FontSizeNumber"),
+            ["log_max_lines"] = Required<FANumberBox>("LogMaxLinesNumber"),
+            ["log_fade_seconds"] = Required<FANumberBox>("LogFadeSecondsNumber"),
+            ["follow_interval_ms"] = Required<FANumberBox>("FollowIntervalNumber"),
+            ["state_poll_interval_ms"] = Required<FANumberBox>("StatePollIntervalNumber"),
+            ["input_poll_interval_ms"] = Required<FANumberBox>("InputPollIntervalNumber"),
+            ["panel_opacity"] = Required<FANumberBox>("PanelOpacityNumber"),
         };
         _texts = new Dictionary<string, TextBox>(StringComparer.Ordinal)
         {
@@ -153,7 +153,7 @@ internal sealed partial class ZzzOverlaySettingsAxamlPage : UserControl, IZzzPag
         Save(new Dictionary<string, object?> { [key] = toggle.IsChecked == true });
     }
 
-    private void OnNumberChanged(NumberBox sender, NumberBoxValueChangedEventArgs args)
+    private void OnNumberChanged(FANumberBox sender, FANumberBoxValueChangedEventArgs args)
     {
         if (_loading || sender.Tag is not string key || double.IsNaN(sender.Value))
         {
@@ -235,7 +235,7 @@ internal sealed partial class ZzzOverlaySettingsAxamlPage : UserControl, IZzzPag
                 toggle.IsChecked = ReadBool(values, key);
             }
 
-            foreach ((string key, NumberBox number) in _numbers)
+            foreach ((string key, FANumberBox number) in _numbers)
             {
                 number.Value = ReadDouble(values, key);
             }
@@ -275,7 +275,7 @@ internal sealed partial class ZzzOverlaySettingsAxamlPage : UserControl, IZzzPag
             toggle.IsEnabled = enabled;
         }
 
-        foreach (NumberBox number in _numbers.Values)
+        foreach (FANumberBox number in _numbers.Values)
         {
             number.IsEnabled = enabled;
         }

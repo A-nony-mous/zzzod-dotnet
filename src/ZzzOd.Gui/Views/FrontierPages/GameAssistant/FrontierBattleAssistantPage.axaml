@@ -1,0 +1,150 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:fa="using:FluentAvalonia.UI.Controls"
+             xmlns:local="using:ZzzOd.Gui.Views.FrontierPages.GameAssistant"
+             x:Class="ZzzOd.Gui.Views.FrontierPages.GameAssistant.FrontierBattleAssistantPage">
+  <UserControl.Styles>
+    <Style Selector="TextBlock#StateText">
+      <Setter Property="FontSize" Value="20" />
+      <Setter Property="FontWeight" Value="Bold" />
+      <Setter Property="HorizontalAlignment" Value="Center" />
+      <Setter Property="TextAlignment" Value="Center" />
+    </Style>
+    <Style Selector="Button#PrimaryButton">
+      <Setter Property="Width" Value="327" />
+      <Setter Property="Height" Value="32" />
+      <Setter Property="HorizontalContentAlignment" Value="Center" />
+    </Style>
+    <Style Selector="Button#StopButton">
+      <Setter Property="Width" Value="327" />
+      <Setter Property="Height" Value="32" />
+      <Setter Property="HorizontalContentAlignment" Value="Center" />
+    </Style>
+    <Style Selector="ContentControl#LogHost">
+      <Setter Property="Height" Value="160" />
+    </Style>
+    <Style Selector="ContentControl#LogHost ScrollViewer">
+      <Setter Property="MinHeight" Value="160" />
+      <Setter Property="MaxHeight" Value="160" />
+    </Style>
+  </UserControl.Styles>
+
+  <Grid Margin="{DynamicResource SampleAppPageMargin}"
+        ColumnDefinitions="*,12,Auto">
+    <Grid Grid.Column="0"
+          Margin="0,-10,0,-7"
+          RowDefinitions="*,Auto"
+          RowSpacing="12">
+      <ContentControl x:Name="SettingsHost"
+                      HorizontalContentAlignment="Stretch"
+                      VerticalContentAlignment="Stretch" />
+      <ContentControl x:Name="RunHost"
+                      Grid.Row="1"
+                      HorizontalContentAlignment="Stretch"
+                      VerticalContentAlignment="Stretch" />
+    </Grid>
+
+    <Grid x:Name="StatusColumn"
+          Grid.Column="2"
+          Margin="0,-10,0,-7"
+          Width="350"
+          MinWidth="350"
+          MaxWidth="400"
+          RowDefinitions="Auto,*">
+      <Grid RowDefinitions="Auto,Auto">
+        <fa:FAInfoBar x:Name="RuntimeErrorBar"
+                    IsOpen="False"
+                    IsClosable="False"
+                    Severity="Error" />
+        <Grid x:Name="TaskDisplay"
+              Grid.Row="1"
+              Height="116"
+              Margin="0,0,0,6"
+              ColumnDefinitions="100,220"
+              RowDefinitions="*,*,*">
+          <TextBlock Grid.Row="0"
+                     Margin="12,0"
+                     VerticalAlignment="Center"
+                     Text="[触发器]" />
+          <TextBlock x:Name="TaskTriggerValue"
+                     Grid.Row="0"
+                     Grid.Column="1"
+                     VerticalAlignment="Center"
+                     Text="/" />
+          <TextBlock Grid.Row="1"
+                     Margin="12,0"
+                     VerticalAlignment="Center"
+                     Text="[条件集]" />
+          <TextBlock x:Name="TaskExpressionValue"
+                     Grid.Row="1"
+                     Grid.Column="1"
+                     VerticalAlignment="Center"
+                     Text="/"
+                     TextWrapping="Wrap" />
+          <TextBlock Grid.Row="2"
+                     Margin="12,0"
+                     VerticalAlignment="Center"
+                     Text="[持续时间]" />
+          <TextBlock x:Name="TaskDurationValue"
+                     Grid.Row="2"
+                     Grid.Column="1"
+                     VerticalAlignment="Center"
+                     Text="/" />
+        </Grid>
+      </Grid>
+
+      <Grid x:Name="BattleStateDisplay"
+            Grid.Row="1"
+            RowDefinitions="Auto,34,*"
+            RowSpacing="6">
+        <TextBox x:Name="BattleStateFilter"
+                 PlaceholderText="输入状态关键词过滤..." />
+        <Grid Grid.Row="1"
+              Height="34"
+              ColumnDefinitions="150,100,60">
+          <TextBlock HorizontalAlignment="Center"
+                     VerticalAlignment="Center"
+                     Text="状态" />
+          <TextBlock Grid.Column="1"
+                     HorizontalAlignment="Center"
+                     VerticalAlignment="Center"
+                     Text="触发秒数" />
+          <TextBlock Grid.Column="2"
+                     HorizontalAlignment="Center"
+                     VerticalAlignment="Center"
+                     Text="状态值" />
+        </Grid>
+        <ScrollViewer Grid.Row="2"
+                      HorizontalScrollBarVisibility="Disabled">
+          <ItemsControl x:Name="BattleStateRows">
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="local:ZzzBattleAssistantStateRowModel">
+                <Grid ColumnDefinitions="150,100,60"
+                      Height="34">
+                  <Border Padding="8,0"
+                          Background="{Binding StateBackground}">
+                    <TextBlock Text="{Binding StateName}"
+                               VerticalAlignment="Center"
+                               TextTrimming="CharacterEllipsis" />
+                  </Border>
+                  <Border Grid.Column="1"
+                          Padding="8,0"
+                          Background="{Binding TriggerBackground}">
+                    <TextBlock Text="{Binding TriggerSecondsText}"
+                               VerticalAlignment="Center" />
+                  </Border>
+                  <Border Grid.Column="2"
+                          Padding="8,0"
+                          Background="{Binding ValueBackground}">
+                    <TextBlock Text="{Binding ValueText}"
+                               VerticalAlignment="Center" />
+                  </Border>
+                </Grid>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+        </ScrollViewer>
+      </Grid>
+    </Grid>
+  </Grid>
+</UserControl>

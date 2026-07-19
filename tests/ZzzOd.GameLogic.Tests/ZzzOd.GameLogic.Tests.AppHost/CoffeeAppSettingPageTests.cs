@@ -81,7 +81,7 @@ public sealed class CoffeeAppSettingPageTests
 		string actualString = File.ReadAllText(Path.Combine(path, "ZzzCoffeeAppSettingPage.axaml.cs"));
 		AssertOrder(text, "传送地点", "咖啡选择", "喝后挑战", "体力计划外的数量", "预备编队", "自动战斗", "结束后运行体力计划");
 		Assert.Contains("咖啡店在体力计划后运行可开启", text, StringComparison.Ordinal);
-		Assert.Contains("fa:SettingsExpanderItem", text, StringComparison.Ordinal);
+		Assert.Contains("fa:FASettingsExpanderItem", text, StringComparison.Ordinal);
 		Assert.Contains("fa:FAComboBox", text, StringComparison.Ordinal);
 		Assert.Contains("ToggleSwitch", text, StringComparison.Ordinal);
 		Assert.Contains("六分街 - 咖啡店", actualString, StringComparison.Ordinal);

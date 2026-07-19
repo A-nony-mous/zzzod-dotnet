@@ -17,54 +17,54 @@ internal sealed record ZzzLostVoidChallengeChoice(string ModuleName, bool IsSamp
 internal sealed partial class ZzzLostVoidAppSettingPage : UserControl, IZzzPageLifecycle
 {
     private readonly ZzzLostVoidAppSettingViewModel _viewModel;
-    private readonly InfoBar _actionBar;
+    private readonly FAInfoBar _actionBar;
     private readonly FAComboBox _missionCombo;
     private readonly FAComboBox _taskCombo;
-    private readonly SettingsExpanderItem _taskItem;
-    private readonly SettingsExpanderItem _weeklyPlanItem;
-    private readonly NumberBox _weeklyPlanNumber;
-    private readonly SettingsExpanderItem _runRecordItem;
+    private readonly FASettingsExpanderItem _taskItem;
+    private readonly FASettingsExpanderItem _weeklyPlanItem;
+    private readonly FANumberBox _weeklyPlanNumber;
+    private readonly FASettingsExpanderItem _runRecordItem;
     private readonly FAComboBox _baseChallengeConfigCombo;
-    private readonly NumberBox _dailyPlanNumber;
+    private readonly FANumberBox _dailyPlanNumber;
     private readonly FAComboBox _existingConfigCombo;
-    private readonly CommandBarButton _createButton;
-    private readonly CommandBarButton _copyButton;
-    private readonly CommandBarButton _deleteButton;
-    private readonly CommandBarButton _closeButton;
-    private readonly SettingsExpanderItem _nameItem;
+    private readonly FACommandBarButton _createButton;
+    private readonly FACommandBarButton _copyButton;
+    private readonly FACommandBarButton _deleteButton;
+    private readonly FACommandBarButton _closeButton;
+    private readonly FASettingsExpanderItem _nameItem;
     private readonly TextBox _nameTextBox;
-    private readonly SettingsExpanderItem _predefinedTeamItem;
+    private readonly FASettingsExpanderItem _predefinedTeamItem;
     private readonly FAComboBox _predefinedTeamCombo;
-    private readonly SettingsExpanderItem _priorityTeamItem;
+    private readonly FASettingsExpanderItem _priorityTeamItem;
     private readonly ToggleSwitch _priorityTeamToggle;
-    private readonly SettingsExpanderItem _manualAgentItem;
+    private readonly FASettingsExpanderItem _manualAgentItem;
     private readonly ToggleSwitch _manualAgentToggle;
-    private readonly SettingsExpanderItem _agentTeamItem;
+    private readonly FASettingsExpanderItem _agentTeamItem;
     private readonly FAComboBox[] _agentCombos;
-    private readonly SettingsExpanderItem _autoBattleItem;
+    private readonly FASettingsExpanderItem _autoBattleItem;
     private readonly FAComboBox _autoBattleCombo;
-    private readonly SettingsExpanderItem _chaseNewItem;
+    private readonly FASettingsExpanderItem _chaseNewItem;
     private readonly ToggleSwitch _chaseNewToggle;
-    private readonly SettingsExpanderItem _investigationItem;
+    private readonly FASettingsExpanderItem _investigationItem;
     private readonly FAComboBox _investigationCombo;
-    private readonly SettingsExpanderItem _periodBuffItem;
+    private readonly FASettingsExpanderItem _periodBuffItem;
     private readonly FAComboBox _periodBuffCombo;
-    private readonly SettingsExpanderItem _storeGoldItem;
+    private readonly FASettingsExpanderItem _storeGoldItem;
     private readonly ToggleSwitch _storeGoldToggle;
-    private readonly SettingsExpanderItem _storeBloodItem;
+    private readonly FASettingsExpanderItem _storeBloodItem;
     private readonly ToggleSwitch _storeBloodToggle;
-    private readonly SettingsExpanderItem _storeBloodMinItem;
+    private readonly FASettingsExpanderItem _storeBloodMinItem;
     private readonly TextBox _storeBloodMinText;
-    private readonly SettingsExpanderItem _priorityNewItem;
+    private readonly FASettingsExpanderItem _priorityNewItem;
     private readonly ToggleSwitch _priorityNewToggle;
-    private readonly SettingsExpanderItem _buyPriority1Item;
+    private readonly FASettingsExpanderItem _buyPriority1Item;
     private readonly TextBox _buyPriority1Text;
-    private readonly SettingsExpanderItem _buyPriority2Item;
+    private readonly FASettingsExpanderItem _buyPriority2Item;
     private readonly TextBox _buyPriority2Text;
     private readonly TextBox _artifactPriorityText;
     private readonly TextBox _artifactPriority2Text;
     private readonly TextBox _regionPriorityText;
-    private readonly ContentDialog _deleteDialog;
+    private readonly FAContentDialog _deleteDialog;
     private bool _loading;
 
     public ZzzLostVoidAppSettingPage(
@@ -75,54 +75,54 @@ internal sealed partial class ZzzLostVoidAppSettingPage : UserControl, IZzzPageL
     {
         _viewModel = new ZzzLostVoidAppSettingViewModel(backend, lostVoidBackend, instanceIndex, groupId);
         AvaloniaXamlLoader.Load(this);
-        _actionBar = Required<InfoBar>("ActionBar");
+        _actionBar = Required<FAInfoBar>("ActionBar");
         _missionCombo = Required<FAComboBox>("MissionCombo");
         _taskCombo = Required<FAComboBox>("TaskCombo");
-        _taskItem = Required<SettingsExpanderItem>("TaskItem");
-        _weeklyPlanItem = Required<SettingsExpanderItem>("WeeklyPlanItem");
-        _weeklyPlanNumber = Required<NumberBox>("WeeklyPlanNumber");
-        _runRecordItem = Required<SettingsExpanderItem>("RunRecordItem");
+        _taskItem = Required<FASettingsExpanderItem>("TaskItem");
+        _weeklyPlanItem = Required<FASettingsExpanderItem>("WeeklyPlanItem");
+        _weeklyPlanNumber = Required<FANumberBox>("WeeklyPlanNumber");
+        _runRecordItem = Required<FASettingsExpanderItem>("RunRecordItem");
         _baseChallengeConfigCombo = Required<FAComboBox>("BaseChallengeConfigCombo");
-        _dailyPlanNumber = Required<NumberBox>("DailyPlanNumber");
+        _dailyPlanNumber = Required<FANumberBox>("DailyPlanNumber");
         _existingConfigCombo = Required<FAComboBox>("ExistingConfigCombo");
-        _createButton = Required<CommandBarButton>("CreateButton");
-        _copyButton = Required<CommandBarButton>("CopyButton");
-        _deleteButton = Required<CommandBarButton>("DeleteButton");
-        _closeButton = Required<CommandBarButton>("CloseButton");
-        _nameItem = Required<SettingsExpanderItem>("NameItem");
+        _createButton = Required<FACommandBarButton>("CreateButton");
+        _copyButton = Required<FACommandBarButton>("CopyButton");
+        _deleteButton = Required<FACommandBarButton>("DeleteButton");
+        _closeButton = Required<FACommandBarButton>("CloseButton");
+        _nameItem = Required<FASettingsExpanderItem>("NameItem");
         _nameTextBox = Required<TextBox>("NameTextBox");
-        _predefinedTeamItem = Required<SettingsExpanderItem>("PredefinedTeamItem");
+        _predefinedTeamItem = Required<FASettingsExpanderItem>("PredefinedTeamItem");
         _predefinedTeamCombo = Required<FAComboBox>("PredefinedTeamCombo");
-        _priorityTeamItem = Required<SettingsExpanderItem>("PriorityTeamItem");
+        _priorityTeamItem = Required<FASettingsExpanderItem>("PriorityTeamItem");
         _priorityTeamToggle = Required<ToggleSwitch>("PriorityTeamToggle");
-        _manualAgentItem = Required<SettingsExpanderItem>("ManualAgentItem");
+        _manualAgentItem = Required<FASettingsExpanderItem>("ManualAgentItem");
         _manualAgentToggle = Required<ToggleSwitch>("ManualAgentToggle");
-        _agentTeamItem = Required<SettingsExpanderItem>("AgentTeamItem");
+        _agentTeamItem = Required<FASettingsExpanderItem>("AgentTeamItem");
         _agentCombos = [Required<FAComboBox>("Agent1Combo"), Required<FAComboBox>("Agent2Combo"), Required<FAComboBox>("Agent3Combo")];
-        _autoBattleItem = Required<SettingsExpanderItem>("AutoBattleItem");
+        _autoBattleItem = Required<FASettingsExpanderItem>("AutoBattleItem");
         _autoBattleCombo = Required<FAComboBox>("AutoBattleCombo");
-        _chaseNewItem = Required<SettingsExpanderItem>("ChaseNewItem");
+        _chaseNewItem = Required<FASettingsExpanderItem>("ChaseNewItem");
         _chaseNewToggle = Required<ToggleSwitch>("ChaseNewToggle");
-        _investigationItem = Required<SettingsExpanderItem>("InvestigationItem");
+        _investigationItem = Required<FASettingsExpanderItem>("InvestigationItem");
         _investigationCombo = Required<FAComboBox>("InvestigationCombo");
-        _periodBuffItem = Required<SettingsExpanderItem>("PeriodBuffItem");
+        _periodBuffItem = Required<FASettingsExpanderItem>("PeriodBuffItem");
         _periodBuffCombo = Required<FAComboBox>("PeriodBuffCombo");
-        _storeGoldItem = Required<SettingsExpanderItem>("StoreGoldItem");
+        _storeGoldItem = Required<FASettingsExpanderItem>("StoreGoldItem");
         _storeGoldToggle = Required<ToggleSwitch>("StoreGoldToggle");
-        _storeBloodItem = Required<SettingsExpanderItem>("StoreBloodItem");
+        _storeBloodItem = Required<FASettingsExpanderItem>("StoreBloodItem");
         _storeBloodToggle = Required<ToggleSwitch>("StoreBloodToggle");
-        _storeBloodMinItem = Required<SettingsExpanderItem>("StoreBloodMinItem");
+        _storeBloodMinItem = Required<FASettingsExpanderItem>("StoreBloodMinItem");
         _storeBloodMinText = Required<TextBox>("StoreBloodMinText");
-        _priorityNewItem = Required<SettingsExpanderItem>("PriorityNewItem");
+        _priorityNewItem = Required<FASettingsExpanderItem>("PriorityNewItem");
         _priorityNewToggle = Required<ToggleSwitch>("PriorityNewToggle");
-        _buyPriority1Item = Required<SettingsExpanderItem>("BuyPriority1Item");
+        _buyPriority1Item = Required<FASettingsExpanderItem>("BuyPriority1Item");
         _buyPriority1Text = Required<TextBox>("BuyPriority1Text");
-        _buyPriority2Item = Required<SettingsExpanderItem>("BuyPriority2Item");
+        _buyPriority2Item = Required<FASettingsExpanderItem>("BuyPriority2Item");
         _buyPriority2Text = Required<TextBox>("BuyPriority2Text");
         _artifactPriorityText = Required<TextBox>("ArtifactPriorityText");
         _artifactPriority2Text = Required<TextBox>("ArtifactPriority2Text");
         _regionPriorityText = Required<TextBox>("RegionPriorityText");
-        _deleteDialog = Required<ContentDialog>("DeleteDialog");
+        _deleteDialog = Required<FAContentDialog>("DeleteDialog");
         Reload();
     }
 
@@ -282,7 +282,7 @@ internal sealed partial class ZzzLostVoidAppSettingPage : UserControl, IZzzPageL
         ShowStatus();
     }
 
-    private void OnWeeklyPlanChanged(NumberBox sender, NumberBoxValueChangedEventArgs args)
+    private void OnWeeklyPlanChanged(FANumberBox sender, FANumberBoxValueChangedEventArgs args)
     {
         if (!_loading && !double.IsNaN(args.NewValue))
         {
@@ -291,7 +291,7 @@ internal sealed partial class ZzzLostVoidAppSettingPage : UserControl, IZzzPageL
         }
     }
 
-    private void OnDailyPlanChanged(NumberBox sender, NumberBoxValueChangedEventArgs args)
+    private void OnDailyPlanChanged(FANumberBox sender, FANumberBoxValueChangedEventArgs args)
     {
         if (!_loading && !double.IsNaN(args.NewValue))
         {
@@ -337,7 +337,7 @@ internal sealed partial class ZzzLostVoidAppSettingPage : UserControl, IZzzPageL
     private async void OnDeleteClicked(object? sender, RoutedEventArgs args)
     {
         if (TopLevel.GetTopLevel(this) is Window owner
-            && await _deleteDialog.ShowAsync(owner).ConfigureAwait(true) == ContentDialogResult.Primary)
+            && await _deleteDialog.ShowAsync(owner).ConfigureAwait(true) == FAContentDialogResult.Primary)
         {
             _viewModel.DeleteConfig();
             RefreshChallengeChoices();
@@ -479,8 +479,8 @@ internal sealed partial class ZzzLostVoidAppSettingPage : UserControl, IZzzPageL
             ? "当前为默认配置，点击复制后可修改"
             : error;
         _actionBar.Severity = sample && string.IsNullOrWhiteSpace(error)
-            ? InfoBarSeverity.Informational
-            : InfoBarSeverity.Error;
+            ? FAInfoBarSeverity.Informational
+            : FAInfoBarSeverity.Error;
     }
 
     private void OnHelpClicked(object? sender, RoutedEventArgs args)
@@ -497,7 +497,7 @@ internal sealed partial class ZzzLostVoidAppSettingPage : UserControl, IZzzPageL
         {
             _actionBar.Title = "错误";
             _actionBar.Message = exception.Message;
-            _actionBar.Severity = InfoBarSeverity.Error;
+            _actionBar.Severity = FAInfoBarSeverity.Error;
             _actionBar.IsOpen = true;
         }
     }

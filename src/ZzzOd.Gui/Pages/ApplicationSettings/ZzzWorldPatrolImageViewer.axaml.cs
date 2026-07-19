@@ -44,9 +44,9 @@ internal sealed class ZzzWorldPatrolImageAreaEventArgs(int x, int y, int width, 
 internal sealed partial class ZzzWorldPatrolImageViewer : UserControl
 {
     private readonly FAComboBox _modeCombo;
-    private readonly NumberBox _scaleBox;
+    private readonly FANumberBox _scaleBox;
     private readonly TextBlock _selectionText;
-    private readonly CommandBarButton _clearSelectionButton;
+    private readonly FACommandBarButton _clearSelectionButton;
     private readonly ScrollViewer _scrollViewer;
     private readonly Canvas _canvas;
     private readonly Image _image;
@@ -62,9 +62,9 @@ internal sealed partial class ZzzWorldPatrolImageViewer : UserControl
     {
         AvaloniaXamlLoader.Load(this);
         _modeCombo = Required<FAComboBox>("ModeCombo");
-        _scaleBox = Required<NumberBox>("ScaleBox");
+        _scaleBox = Required<FANumberBox>("ScaleBox");
         _selectionText = Required<TextBlock>("SelectionText");
-        _clearSelectionButton = Required<CommandBarButton>("ClearSelectionButton");
+        _clearSelectionButton = Required<FACommandBarButton>("ClearSelectionButton");
         _scrollViewer = Required<ScrollViewer>("ImageScrollViewer");
         _canvas = Required<Canvas>("ImageCanvas");
         _image = Required<Image>("DisplayImage");
@@ -121,7 +121,7 @@ internal sealed partial class ZzzWorldPatrolImageViewer : UserControl
         }
     }
 
-    private void OnScaleChanged(NumberBox sender, NumberBoxValueChangedEventArgs args)
+    private void OnScaleChanged(FANumberBox sender, FANumberBoxValueChangedEventArgs args)
     {
         if (!_updatingScale)
         {

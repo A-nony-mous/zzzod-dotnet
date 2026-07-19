@@ -35,7 +35,7 @@ internal sealed partial class ZzzTemplateHelperAxamlPage : UserControl, IZzzPage
     private readonly ObservableCollection<TemplatePointRow> _pointRows = [];
     private readonly List<PointHistoryEntry> _history = [];
     private readonly List<Bitmap> _previewBitmaps = [];
-    private readonly InfoBar _statusBar;
+    private readonly FAInfoBar _statusBar;
     private readonly FAComboBox _existingTemplateCombo;
     private readonly FAComboBox _shapeCombo;
     private readonly TextBox _subDirBox;
@@ -52,7 +52,7 @@ internal sealed partial class ZzzTemplateHelperAxamlPage : UserControl, IZzzPage
     private readonly Image _maskPreview;
     private readonly Image _mergePreview;
     private readonly Image _reversePreview;
-    private readonly TeachingTip _shapeTeachingTip;
+    private readonly FATeachingTip _shapeTeachingTip;
     private readonly Button _undoButton;
     private readonly Button _redoButton;
     private readonly Control[] _editingControls;
@@ -65,7 +65,7 @@ internal sealed partial class ZzzTemplateHelperAxamlPage : UserControl, IZzzPage
     {
         _backend = backend;
         AvaloniaXamlLoader.Load(this);
-        _statusBar = Required<InfoBar>("StatusBar");
+        _statusBar = Required<FAInfoBar>("StatusBar");
         _existingTemplateCombo = Required<FAComboBox>("ExistingTemplateCombo");
         _shapeCombo = Required<FAComboBox>("ShapeCombo");
         _subDirBox = Required<TextBox>("TemplateSubDirBox");
@@ -82,7 +82,7 @@ internal sealed partial class ZzzTemplateHelperAxamlPage : UserControl, IZzzPage
         _maskPreview = Required<Image>("MaskPreview");
         _mergePreview = Required<Image>("MergePreview");
         _reversePreview = Required<Image>("ReversePreview");
-        _shapeTeachingTip = Required<TeachingTip>("ShapeTeachingTip");
+        _shapeTeachingTip = Required<FATeachingTip>("ShapeTeachingTip");
         _undoButton = Required<Button>("UndoButton");
         _redoButton = Required<Button>("RedoButton");
         _editingControls =
@@ -114,7 +114,7 @@ internal sealed partial class ZzzTemplateHelperAxamlPage : UserControl, IZzzPage
         }
         else
         {
-            ShowStatus(health.Error ?? "无法确定模板资源目录。", InfoBarSeverity.Error);
+            ShowStatus(health.Error ?? "无法确定模板资源目录。", FAInfoBarSeverity.Error);
         }
 
         ReloadTemplateOptions();
@@ -215,7 +215,7 @@ internal sealed partial class ZzzTemplateHelperAxamlPage : UserControl, IZzzPage
         }
         catch (Exception exception)
         {
-            ShowStatus(exception.Message, InfoBarSeverity.Error);
+            ShowStatus(exception.Message, FAInfoBarSeverity.Error);
         }
         finally
         {
@@ -263,7 +263,7 @@ internal sealed partial class ZzzTemplateHelperAxamlPage : UserControl, IZzzPage
         }
         catch (Exception exception)
         {
-            ShowStatus(exception.Message, InfoBarSeverity.Error);
+            ShowStatus(exception.Message, FAInfoBarSeverity.Error);
         }
     }
 
@@ -274,15 +274,16 @@ internal sealed partial class ZzzTemplateHelperAxamlPage : UserControl, IZzzPage
             return;
         }
 
-        ContentDialog dialog = new()
+        FAContentDialog dialog = new()
         {
             Title = "删除模板",
             Content = $"确定删除 {_chosenTemplate.SubDir}/{_chosenTemplate.TemplateId}？",
             PrimaryButtonText = "删除",
             CloseButtonText = "取消",
-            DefaultButton = ContentDialogButton.Close,
+            DefaultButton = FAContentDialogButton.Close,
         };
-        if (await dialog.ShowAsync().ConfigureAwait(true) == ContentDialogResult.Primary)
+        if (TopLevel.GetTopLevel(this) is { } owner
+            && await dialog.ShowAsync(owner).ConfigureAwait(true) == FAContentDialogResult.Primary)
         {
             DeleteTemplate();
         }
@@ -308,7 +309,7 @@ internal sealed partial class ZzzTemplateHelperAxamlPage : UserControl, IZzzPage
         }
         catch (Exception exception)
         {
-            ShowStatus(exception.Message, InfoBarSeverity.Error);
+            ShowStatus(exception.Message, FAInfoBarSeverity.Error);
             return false;
         }
     }
@@ -348,7 +349,7 @@ internal sealed partial class ZzzTemplateHelperAxamlPage : UserControl, IZzzPage
         }
         catch (Exception exception)
         {
-            ShowStatus(exception.Message, InfoBarSeverity.Error);
+            ShowStatus(exception.Message, FAInfoBarSeverity.Error);
         }
     }
 
@@ -364,7 +365,7 @@ internal sealed partial class ZzzTemplateHelperAxamlPage : UserControl, IZzzPage
         ZzzBackendResult<ZzzScreenshotDto> result = _backend.GetScreenshot();
         if (!result.Success || result.Value is null)
         {
-            ShowStatus(result.Error ?? "截图失败。", InfoBarSeverity.Error);
+            ShowStatus(result.Error ?? "截图失败。", FAInfoBarSeverity.Error);
             return;
         }
 
@@ -381,7 +382,7 @@ internal sealed partial class ZzzTemplateHelperAxamlPage : UserControl, IZzzPage
         }
         catch (Exception exception)
         {
-            ShowStatus(exception.Message, InfoBarSeverity.Error);
+            ShowStatus(exception.Message, FAInfoBarSeverity.Error);
         }
     }
 
@@ -393,7 +394,7 @@ internal sealed partial class ZzzTemplateHelperAxamlPage : UserControl, IZzzPage
         _service!.SaveConfig(_chosenTemplate!);
         LastSavedPath = _chosenTemplate!.ConfigPath;
         ReloadTemplateOptions();
-        ShowStatus($"已保存 {_chosenTemplate.SubDir}/{_chosenTemplate.TemplateId}/config.yml", InfoBarSeverity.Success);
+        ShowStatus($"已保存 {_chosenTemplate.SubDir}/{_chosenTemplate.TemplateId}/config.yml", FAInfoBarSeverity.Success);
         return LastSavedPath;
     }
 
@@ -406,7 +407,7 @@ internal sealed partial class ZzzTemplateHelperAxamlPage : UserControl, IZzzPage
         LastSavedPath = _chosenTemplate!.RawPath;
         ReloadTemplateOptions();
         RefreshImages();
-        ShowStatus($"已保存 {_chosenTemplate.SubDir}/{_chosenTemplate.TemplateId}/raw.png", InfoBarSeverity.Success);
+        ShowStatus($"已保存 {_chosenTemplate.SubDir}/{_chosenTemplate.TemplateId}/raw.png", FAInfoBarSeverity.Success);
         return LastSavedPath;
     }
 
@@ -419,7 +420,7 @@ internal sealed partial class ZzzTemplateHelperAxamlPage : UserControl, IZzzPage
         LastSavedPath = _chosenTemplate!.MaskPath;
         ReloadTemplateOptions();
         RefreshImages();
-        ShowStatus($"已保存 {_chosenTemplate.SubDir}/{_chosenTemplate.TemplateId}/mask.png", InfoBarSeverity.Success);
+        ShowStatus($"已保存 {_chosenTemplate.SubDir}/{_chosenTemplate.TemplateId}/mask.png", FAInfoBarSeverity.Success);
         return LastSavedPath;
     }
 
@@ -441,7 +442,7 @@ internal sealed partial class ZzzTemplateHelperAxamlPage : UserControl, IZzzPage
         }
         catch (Exception exception)
         {
-            ShowStatus(exception.Message, InfoBarSeverity.Error);
+            ShowStatus(exception.Message, FAInfoBarSeverity.Error);
         }
     }
 
@@ -483,7 +484,7 @@ internal sealed partial class ZzzTemplateHelperAxamlPage : UserControl, IZzzPage
     {
         if (_chosenTemplate is null)
         {
-            ShowStatus("请先选择或创建模板", InfoBarSeverity.Warning);
+            ShowStatus("请先选择或创建模板", FAInfoBarSeverity.Warning);
             return;
         }
 
@@ -744,13 +745,16 @@ internal sealed partial class ZzzTemplateHelperAxamlPage : UserControl, IZzzPage
         using Mat hsv = new();
         Cv2.CvtColor(pixel, hsv, ColorConversionCodes.BGR2HSV);
         Vec3b hsvValue = hsv.At<Vec3b>(0, 0);
-        ContentDialog dialog = new()
+        FAContentDialog dialog = new()
         {
             Title = "像素颜色信息",
             Content = $"点击位置: ({point.X}, {point.Y})\nRGB: ({bgr.Item2}, {bgr.Item1}, {bgr.Item0})\nHSV: ({hsvValue.Item0}, {hsvValue.Item1}, {hsvValue.Item2})",
             CloseButtonText = "确定",
         };
-        await dialog.ShowAsync().ConfigureAwait(true);
+        if (TopLevel.GetTopLevel(this) is { } owner)
+        {
+            await dialog.ShowAsync(owner).ConfigureAwait(true);
+        }
     }
 
     private void ChooseTemplate(TemplateInfo template)
@@ -879,7 +883,7 @@ internal sealed partial class ZzzTemplateHelperAxamlPage : UserControl, IZzzPage
         _yPositionBox.Text = point.Y.ToString();
     }
 
-    private void ShowStatus(string message, InfoBarSeverity severity)
+    private void ShowStatus(string message, FAInfoBarSeverity severity)
     {
         _statusBar.Message = message;
         _statusBar.Severity = severity;

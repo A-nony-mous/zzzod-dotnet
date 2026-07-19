@@ -1,0 +1,205 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:fa="using:FluentAvalonia.UI.Controls"
+             xmlns:uip="using:FluentAvalonia.UI.Controls.Primitives"
+             xmlns:shell="using:ZzzOd.Gui.Shell"
+             x:Class="ZzzOd.Gui.Views.FrontierMainView"
+             x:DataType="shell:ZzzShellViewModel">
+  <UserControl.Resources>
+    <Thickness x:Key="NavigationViewContentMargin">0,48,0,0</Thickness>
+  </UserControl.Resources>
+  <UserControl.Styles>
+    <Style Selector="fa|FANavigationViewItem.frontier-navigation-item">
+      <Setter Property="Width" Value="72" />
+      <Setter Property="MinWidth" Value="72" />
+      <Setter Property="MaxWidth" Value="72" />
+      <Setter Property="Height" Value="72" />
+      <Setter Property="MinHeight" Value="72" />
+      <Setter Property="MaxHeight" Value="72" />
+      <Setter Property="Margin" Value="0,4" />
+      <Setter Property="Padding" Value="0" />
+      <Setter Property="CornerRadius" Value="6" />
+      <Setter Property="BorderBrush" Value="Transparent" />
+      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="FocusAdorner" Value="{x:Null}" />
+      <Setter Property="HorizontalAlignment" Value="Center" />
+      <Setter Property="HorizontalContentAlignment" Value="Center" />
+      <Setter Property="VerticalContentAlignment" Value="Center" />
+      <Setter Property="Foreground" Value="{DynamicResource TextFillColorSecondaryBrush}" />
+    </Style>
+    <Style Selector="fa|FANavigationViewItem.frontier-navigation-item uip|FANavigationViewItemPresenter">
+      <Setter Property="Width" Value="72" />
+      <Setter Property="MinWidth" Value="72" />
+      <Setter Property="MaxWidth" Value="72" />
+      <Setter Property="Height" Value="72" />
+      <Setter Property="MinHeight" Value="72" />
+      <Setter Property="MaxHeight" Value="72" />
+      <Setter Property="Margin" Value="0" />
+      <Setter Property="Padding" Value="0" />
+      <Setter Property="BorderBrush" Value="Transparent" />
+      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="FocusAdorner" Value="{x:Null}" />
+      <Setter Property="HorizontalContentAlignment" Value="Center" />
+      <Setter Property="VerticalContentAlignment" Value="Center" />
+    </Style>
+    <Style Selector="fa|FANavigationViewItem.frontier-navigation-item uip|FANavigationViewItemPresenter /template/ Border#LayoutRoot">
+      <Setter Property="Width" Value="72" />
+      <Setter Property="Height" Value="72" />
+      <Setter Property="Margin" Value="0" />
+    </Style>
+    <Style Selector="fa|FANavigationViewItem.frontier-navigation-item uip|FANavigationViewItemPresenter /template/ Border#IconColumn">
+      <Setter Property="Width" Value="0" />
+      <Setter Property="IsVisible" Value="False" />
+    </Style>
+    <Style Selector="fa|FANavigationViewItem.frontier-navigation-item uip|FANavigationViewItemPresenter /template/ Grid#ContentGrid">
+      <Setter Property="Margin" Value="0" />
+    </Style>
+    <Style Selector="fa|FANavigationViewItem.frontier-navigation-item uip|FANavigationViewItemPresenter /template/ ContentPresenter#ContentPresenter">
+      <Setter Property="Grid.Column" Value="0" />
+      <Setter Property="Grid.ColumnSpan" Value="4" />
+      <Setter Property="Margin" Value="0" />
+      <Setter Property="Padding" Value="0" />
+      <Setter Property="HorizontalAlignment" Value="Center" />
+      <Setter Property="VerticalAlignment" Value="Center" />
+    </Style>
+    <Style Selector="fa|FANavigationViewItem.frontier-navigation-item uip|FANavigationViewItemPresenter:selected /template/ ContentPresenter#ContentPresenter">
+      <Setter Property="Foreground" Value="{DynamicResource SystemAccentColor}" />
+    </Style>
+    <Style Selector="fa|FANavigationViewItem.frontier-navigation-item uip|FANavigationViewItemPresenter:pointerover /template/ ContentPresenter#ContentPresenter">
+      <Setter Property="Foreground" Value="{DynamicResource TextFillColorPrimaryBrush}" />
+    </Style>
+    <Style Selector="fa|FANavigationViewItem.frontier-navigation-item:pointerover">
+      <Setter Property="Background" Value="{DynamicResource SubtleFillColorSecondaryBrush}" />
+    </Style>
+    <Style Selector="fa|FANavigationViewItem.frontier-navigation-item:pressed">
+      <Setter Property="Background" Value="{DynamicResource SubtleFillColorTertiaryBrush}" />
+    </Style>
+    <Style Selector="fa|FANavigationViewItem.frontier-navigation-item:focus-visible">
+      <Setter Property="Background" Value="{DynamicResource SubtleFillColorTertiaryBrush}" />
+    </Style>
+    <Style Selector="fa|FANavigationViewItem.frontier-navigation-item:selected">
+      <Setter Property="Background" Value="{DynamicResource SubtleFillColorSecondaryBrush}" />
+      <Setter Property="BorderBrush" Value="Transparent" />
+      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="Foreground" Value="{DynamicResource SystemAccentColor}" />
+    </Style>
+    <Style Selector="fa|FANavigationViewItem.frontier-navigation-item TextBlock.frontier-navigation-label">
+      <Setter Property="Foreground" Value="{Binding $parent[fa:FANavigationViewItem].Foreground}" />
+    </Style>
+    <Style Selector="fa|FANavigationViewItem.frontier-navigation-item fa|FAFontIcon.frontier-navigation-icon">
+      <Setter Property="Foreground" Value="{Binding $parent[fa:FANavigationViewItem].Foreground}" />
+    </Style>
+  </UserControl.Styles>
+
+  <Grid RowDefinitions="Auto,*"
+        Background="{DynamicResource ZzzFrontierContentSurfaceBrush}">
+    <Grid x:Name="TitleBarHost"
+          Height="48"
+          ColumnDefinitions="Auto,Auto,*,Auto"
+          Panel.ZIndex="100"
+          Background="{DynamicResource ZzzFrontierTitleBarBackgroundBrush}"
+          ClipToBounds="True"
+          WindowDecorationProperties.ElementRole="TitleBar">
+      <Image x:Name="WindowIcon"
+             Grid.Column="0"
+             Width="18"
+             Height="18"
+             Margin="12,4"
+             VerticalAlignment="Center"
+             Stretch="Uniform"
+             IsHitTestVisible="False">
+        <Image.Transitions>
+          <Transitions>
+            <ThicknessTransition Property="Margin" Duration="0:0:0.25" />
+          </Transitions>
+        </Image.Transitions>
+      </Image>
+      <TextBlock Grid.Column="1"
+                 VerticalAlignment="Center"
+                 FontSize="12"
+                 Foreground="{DynamicResource ZzzFrontierTitleBarForegroundBrush}"
+                 IsHitTestVisible="False"
+                 Text="{Binding FrontierWindowTitle}" />
+      <Border x:Name="TitleBarDragRegion"
+              Grid.Column="2"
+              Background="Transparent"
+              PointerPressed="OnTitleBarPointerPressed" />
+
+      <StackPanel Grid.Column="3"
+                  Orientation="Horizontal"
+                  HorizontalAlignment="Right"
+                  WindowDecorationProperties.ElementRole="User">
+        <Button Classes="zzz-titlebar-action"
+                IsVisible="{Binding HasLauncherVersion}"
+                Click="OnLauncherVersionClicked"
+                Content="{Binding LauncherVersionText}" />
+        <Button Classes="zzz-titlebar-action"
+                IsVisible="{Binding HasCodeVersion}"
+                Click="OnCodeVersionClicked"
+                Content="{Binding CodeVersionText}" />
+        <Button Classes="zzz-titlebar-action"
+                IsVisible="{Binding HasIssueUrl}"
+                Click="OnIssueClicked">
+          <StackPanel Orientation="Horizontal" Spacing="5">
+            <fa:FAFontIcon Glyph="&#xE897;"
+                           FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" />
+            <TextBlock Text="问题反馈" />
+          </StackPanel>
+        </Button>
+        <Button Classes="zzz-window-control" Click="OnMinimizeClicked">
+          <fa:FAFontIcon Glyph="&#xE921;"
+                         FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" />
+        </Button>
+        <Button Classes="zzz-window-control" Click="OnMaximizeClicked">
+          <fa:FAFontIcon Glyph="&#xE922;"
+                         FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" />
+        </Button>
+        <Button Classes="zzz-window-control" Click="OnCloseClicked">
+          <fa:FAFontIcon Glyph="&#xE8BB;"
+                         FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" />
+        </Button>
+      </StackPanel>
+    </Grid>
+
+    <fa:FANavigationView x:Name="NavView"
+                         Grid.RowSpan="2"
+                         AlwaysShowHeader="False"
+                         PaneDisplayMode="Left"
+                         OpenPaneLength="108"
+                         CompactPaneLength="48"
+                         IsPaneOpen="True"
+                         IsPaneToggleButtonVisible="False"
+                         IsSettingsVisible="False"
+                         IsBackButtonVisible="False"
+                         IsBackEnabled="False"
+                         Background="{DynamicResource ZzzFrontierNavigationSurfaceBrush}"
+                         WindowDecorationProperties.ElementRole="User">
+      <fa:FANavigationView.PaneHeader>
+        <Border x:Name="PaneTitleSpacer"
+                Height="40"
+                IsHitTestVisible="False" />
+      </fa:FANavigationView.PaneHeader>
+      <fa:FANavigationView.Content>
+        <fa:FAFrame x:Name="FrameView"
+                    CacheSize="16"
+                    IsNavigationStackEnabled="True"
+                    HorizontalContentAlignment="Stretch"
+                    VerticalContentAlignment="Stretch"
+                    Background="{DynamicResource ZzzFrontierContentSurfaceBrush}" />
+      </fa:FANavigationView.Content>
+    </fa:FANavigationView>
+
+    <Panel x:Name="OverlayHost"
+           Grid.Row="1"
+           IsHitTestVisible="False"
+           ZIndex="20">
+      <fa:FAInfoBar x:Name="ToastBar"
+                    Margin="0,8,24,0"
+                    HorizontalAlignment="Right"
+                    VerticalAlignment="Top"
+                    Classes="zzz-info-bar"
+                    IsOpen="False"
+                    IsClosable="False" />
+    </Panel>
+  </Grid>
+</UserControl>

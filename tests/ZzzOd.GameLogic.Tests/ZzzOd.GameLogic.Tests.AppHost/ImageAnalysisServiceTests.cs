@@ -66,11 +66,11 @@ public sealed class ImageAnalysisServiceTests
 		buffer[5] = "Devtools";
 		buffer[6] = "ZzzImageAnalysisPage.axaml";
 		string actualString = File.ReadAllText(Path.Combine(buffer));
-		Assert.Contains("<fa:CommandBar", actualString, StringComparison.Ordinal);
+		Assert.Contains("<fa:FACommandBar", actualString, StringComparison.Ordinal);
 		Assert.Contains("<ListBox", actualString, StringComparison.Ordinal);
 		Assert.Contains("<DataTemplate", actualString, StringComparison.Ordinal);
-		Assert.Contains("<fa:NumberBox", actualString, StringComparison.Ordinal);
-		Assert.Contains("<fa:ContentDialog", actualString, StringComparison.Ordinal);
+		Assert.Contains("<fa:FANumberBox", actualString, StringComparison.Ordinal);
+		Assert.Contains("<fa:FAContentDialog", actualString, StringComparison.Ordinal);
 		Assert.DoesNotContain("默认流水线", actualString, StringComparison.Ordinal);
 		Assert.DoesNotContain("battle/avatar", actualString, StringComparison.Ordinal);
 		Assert.DoesNotContain("来源", actualString, StringComparison.Ordinal);

@@ -77,14 +77,14 @@ internal sealed partial class ZzzRedemptionCodeAppSettingPage : UserControl, IZz
     private readonly IZzzRedemptionCodeBackend _backend;
     private readonly ObservableCollection<ZzzRedemptionCodeRowModel> _rows = [];
     private readonly ItemsControl _codeList;
-    private readonly InfoBar _messageBar;
+    private readonly FAInfoBar _messageBar;
 
     public ZzzRedemptionCodeAppSettingPage(IZzzRedemptionCodeBackend backend)
     {
         _backend = backend;
         AvaloniaXamlLoader.Load(this);
         _codeList = Required<ItemsControl>("CodeList");
-        _messageBar = Required<InfoBar>("MessageBar");
+        _messageBar = Required<FAInfoBar>("MessageBar");
         _codeList.ItemsSource = _rows;
         Reload();
     }
@@ -119,7 +119,7 @@ internal sealed partial class ZzzRedemptionCodeAppSettingPage : UserControl, IZz
         ZzzBackendResult<IReadOnlyList<ZzzRedemptionCodeDto>> result = _backend.GetRedemptionCodes();
         if (!result.Success || result.Value is null)
         {
-            ShowMessage(result.Error ?? "兑换码读取失败。", InfoBarSeverity.Error);
+            ShowMessage(result.Error ?? "兑换码读取失败。", FAInfoBarSeverity.Error);
             return;
         }
 
@@ -203,11 +203,11 @@ internal sealed partial class ZzzRedemptionCodeAppSettingPage : UserControl, IZz
                     row.Code = row.OriginalCode;
                 }
 
-                ShowMessage("兑换码已存在", InfoBarSeverity.Warning);
+                ShowMessage("兑换码已存在", FAInfoBarSeverity.Warning);
                 return;
             }
 
-            ShowMessage(result.Error ?? "兑换码保存失败。", InfoBarSeverity.Error);
+            ShowMessage(result.Error ?? "兑换码保存失败。", FAInfoBarSeverity.Error);
             return;
         }
 
@@ -240,7 +240,7 @@ internal sealed partial class ZzzRedemptionCodeAppSettingPage : UserControl, IZz
         ZzzBackendResult<IReadOnlyList<ZzzRedemptionCodeDto>> result = _backend.DeleteRedemptionCode(row.OriginalCode);
         if (!result.Success || result.Value is null)
         {
-            ShowMessage(result.Error ?? "兑换码删除失败。", InfoBarSeverity.Error);
+            ShowMessage(result.Error ?? "兑换码删除失败。", FAInfoBarSeverity.Error);
             return;
         }
 
@@ -256,7 +256,7 @@ internal sealed partial class ZzzRedemptionCodeAppSettingPage : UserControl, IZz
         textBox?.Focus(NavigationMethod.Unspecified);
     }
 
-    private void ShowMessage(string message, InfoBarSeverity severity)
+    private void ShowMessage(string message, FAInfoBarSeverity severity)
     {
         _messageBar.Title = string.Empty;
         _messageBar.Message = message;

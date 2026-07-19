@@ -175,13 +175,6 @@ internal sealed class ZzzPageFactory
         return stack;
     });
 
-    private static Control Placeholder(string message) => new ZzzVerticalScrollPage(() =>
-    {
-        StackPanel stack = Stack();
-        stack.Children.Add(BodyText(message));
-        return stack;
-    });
-
     private static bool IsRunActive(ZzzRunState state) =>
         state is ZzzRunState.Starting or ZzzRunState.Running or ZzzRunState.Paused or ZzzRunState.Stopping;
 

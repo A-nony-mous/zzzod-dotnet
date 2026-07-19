@@ -28,7 +28,7 @@ internal sealed partial class ZzzStandaloneAppRunPage : UserControl, IZzzPageLif
     private readonly ZzzGuiOperationTracker _operations;
     private readonly ZzzAppSettingNavigator _appSettingNavigator;
     private readonly ItemsControl _appList;
-    private readonly InfoBar _actionInfoBar;
+    private readonly FAInfoBar _actionInfoBar;
     private readonly Button _addAppButton;
     private readonly List<ZzzAppDto> _availableApps = [];
     private readonly List<ZzzStandaloneAppRowModel> _appRows = [];
@@ -36,12 +36,17 @@ internal sealed partial class ZzzStandaloneAppRunPage : UserControl, IZzzPageLif
     private CancellationTokenSource? _eventCancellation;
     private ZzzStandaloneAppRowModel? _dragCandidate;
     private Point _dragStart;
+    private PointerPressedEventArgs? _dragPointerPressedArgs;
 
-    public ZzzStandaloneAppRunPage(IZzzAppBackend backend, ZzzGuiRunIntentService runIntent, ZzzGuiOperationTracker? operations = null)
+    public ZzzStandaloneAppRunPage(
+        IZzzAppBackend backend,
+        ZzzGuiRunIntentService runIntent,
+        ZzzGuiOperationTracker? operations = null,
+        Func<string, int, string, Control?>? appSettingFactory = null)
     {
         _backend = backend;
         _operations = operations ?? new ZzzGuiOperationTracker();
-        _appSettingNavigator = new ZzzAppSettingNavigator(backend);
+        _appSettingNavigator = new ZzzAppSettingNavigator(backend, appSettingFactory);
         RunPanel = new ZzzRunPanel(
             backend,
             title: "应用运行",
@@ -51,7 +56,7 @@ internal sealed partial class ZzzStandaloneAppRunPage : UserControl, IZzzPageLif
 
         AvaloniaXamlLoader.Load(this);
         _appList = Required<ItemsControl>("AppList");
-        _actionInfoBar = Required<InfoBar>("ActionInfoBar");
+        _actionInfoBar = Required<FAInfoBar>("ActionInfoBar");
         _addAppButton = Required<Button>("AddAppButton");
         Required<ContentControl>("RunHost").Content = RunPanel;
     }
@@ -186,16 +191,21 @@ internal sealed partial class ZzzStandaloneAppRunPage : UserControl, IZzzPageLif
             MinWidth = 480,
             MinHeight = 400,
         };
-        ContentDialog dialog = new()
+        FAContentDialog dialog = new()
         {
             Title = "添加应用",
             Content = list,
             PrimaryButtonText = "确定",
             CloseButtonText = "取消",
-            DefaultButton = ContentDialogButton.Primary,
+            DefaultButton = FAContentDialogButton.Primary,
         };
-        ContentDialogResult result = await dialog.ShowAsync().ConfigureAwait(true);
-        if (result != ContentDialogResult.Primary)
+        if (TopLevel.GetTopLevel(this) is not { } owner)
+        {
+            return;
+        }
+
+        FAContentDialogResult result = await dialog.ShowAsync(owner).ConfigureAwait(true);
+        if (result != FAContentDialogResult.Primary)
         {
             return;
         }
@@ -269,17 +279,19 @@ internal sealed partial class ZzzStandaloneAppRunPage : UserControl, IZzzPageLif
             || IsInteractiveSource(args.Source))
         {
             _dragCandidate = null;
+            _dragPointerPressedArgs = null;
             return;
         }
 
         SelectApp(row.AppId);
         _dragCandidate = row;
         _dragStart = args.GetPosition(control);
+        _dragPointerPressedArgs = args;
     }
 
     private async void OnAppPointerMoved(object? sender, PointerEventArgs args)
     {
-        if (sender is not Control control || _dragCandidate is not { } row
+        if (sender is not Control control || _dragCandidate is not { } row || _dragPointerPressedArgs is not { } pressedArgs
             || !args.GetCurrentPoint(control).Properties.IsLeftButtonPressed)
         {
             return;
@@ -292,9 +304,10 @@ internal sealed partial class ZzzStandaloneAppRunPage : UserControl, IZzzPageLif
         }
 
         _dragCandidate = null;
+        _dragPointerPressedArgs = null;
         DataTransfer transfer = new();
         transfer.Add(DataTransferItem.Create(AppIdFormat, row.AppId));
-        await DragDrop.DoDragDropAsync(args, transfer, DragDropEffects.Move).ConfigureAwait(true);
+        await DragDrop.DoDragDropAsync(pressedArgs, transfer, DragDropEffects.Move).ConfigureAwait(true);
     }
 
     private void OnAppDragOver(object? sender, DragEventArgs args)
@@ -455,7 +468,7 @@ internal sealed partial class ZzzStandaloneAppRunPage : UserControl, IZzzPageLif
     private void ShowError(string message)
     {
         _actionInfoBar.Message = message;
-        _actionInfoBar.Severity = InfoBarSeverity.Error;
+        _actionInfoBar.Severity = FAInfoBarSeverity.Error;
         _actionInfoBar.IsOpen = true;
     }
 

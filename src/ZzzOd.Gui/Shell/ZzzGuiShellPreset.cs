@@ -6,9 +6,6 @@ namespace ZzzOd.Gui.Shell;
 public enum ZzzGuiShellPreset
 {
     Classic,
-
-    Mixed,
-
     Frontier,
 }
 
@@ -66,7 +63,7 @@ public sealed class ZzzGuiShellPresetService
                 preset = ZzzGuiShellPreset.Classic;
                 return true;
             case "mixed":
-                preset = ZzzGuiShellPreset.Mixed;
+                preset = ZzzGuiShellPreset.Frontier;
                 return true;
             case "frontier":
                 preset = ZzzGuiShellPreset.Frontier;
@@ -80,7 +77,6 @@ public sealed class ZzzGuiShellPresetService
     public static string ToConfigValue(ZzzGuiShellPreset preset) => preset switch
     {
         ZzzGuiShellPreset.Classic => "classic",
-        ZzzGuiShellPreset.Mixed => "mixed",
         ZzzGuiShellPreset.Frontier => "frontier",
         _ => throw new ArgumentOutOfRangeException(nameof(preset), preset, "未知 GUI Shell 预设。"),
     };

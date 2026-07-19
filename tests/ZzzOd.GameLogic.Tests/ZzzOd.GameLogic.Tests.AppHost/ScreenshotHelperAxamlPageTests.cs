@@ -26,8 +26,8 @@ public sealed class ScreenshotHelperAxamlPageTests
 		string actualString = File.ReadAllText(Path.Combine(path, "ZzzScreenshotHelperPage.cs"));
 		AssertOrder(text, "截图间隔(秒)", "持续时间(秒)", "保存截图按键", "闪避检测", "按键前截图", "小地图朝向检测", "RunHost");
 		Assert.Contains("x:Class=\"ZzzOd.Gui.Pages.Devtools.ZzzScreenshotHelperAxamlPage\"", text, StringComparison.Ordinal);
-		Assert.Contains("fa:SettingsExpanderItem", text, StringComparison.Ordinal);
-		Assert.Contains("fa:NumberBox", text, StringComparison.Ordinal);
+		Assert.Contains("fa:FASettingsExpanderItem", text, StringComparison.Ordinal);
+		Assert.Contains("fa:FANumberBox", text, StringComparison.Ordinal);
 		Assert.Contains("ToggleSwitch", text, StringComparison.Ordinal);
 		Assert.Contains("new ZzzRunPanel(", actualString, StringComparison.Ordinal);
 		Assert.Contains("ZzzApplicationIds.ScreenshotHelper", actualString, StringComparison.Ordinal);

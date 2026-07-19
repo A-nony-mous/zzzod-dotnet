@@ -1,0 +1,43 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:fa="using:FluentAvalonia.UI.Controls"
+             x:Class="ZzzOd.Gui.Views.FrontierPages.ApplicationSettings.FrontierIntelBoardSettingsFlyoutContent"
+             MinWidth="420">
+  <StackPanel Margin="8" Spacing="8">
+    <fa:FAInfoBar x:Name="ErrorBar"
+                IsOpen="False"
+                IsClosable="True"
+                Severity="Error" />
+
+    <StackPanel Spacing="1">
+      <fa:FASettingsExpander Header="预备编队">
+        <fa:FASettingsExpander.Footer>
+          <fa:FAComboBox x:Name="PredefinedTeamCombo"
+                         Width="190"
+                         SelectionChanged="OnPredefinedTeamChanged" />
+        </fa:FASettingsExpander.Footer>
+      </fa:FASettingsExpander>
+
+      <fa:FASettingsExpander x:Name="AutoBattleItem" Header="自动战斗">
+        <fa:FASettingsExpander.Footer>
+          <fa:FAComboBox x:Name="AutoBattleCombo"
+                         Width="190"
+                         SelectionChanged="OnAutoBattleChanged" />
+        </fa:FASettingsExpander.Footer>
+      </fa:FASettingsExpander>
+
+      <fa:FASettingsExpander Header="刷满经验">
+        <fa:FASettingsExpander.Footer>
+          <ToggleSwitch x:Name="ExpGrindToggle"
+                        Click="OnExpGrindChanged" />
+        </fa:FASettingsExpander.Footer>
+      </fa:FASettingsExpander>
+    </StackPanel>
+
+    <Button x:Name="ResetProgressButton"
+            HorizontalAlignment="Stretch"
+            HorizontalContentAlignment="Center"
+            Content="重置进度"
+            Click="OnResetProgressClicked" />
+  </StackPanel>
+</UserControl>

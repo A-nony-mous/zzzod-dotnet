@@ -10,10 +10,9 @@
         MinWidth="960"
         MinHeight="640"
         ShowActivated="True"
-        SystemDecorations="None"
+        WindowDecorations="None"
         ExtendClientAreaToDecorationsHint="True"
         ExtendClientAreaTitleBarHeightHint="32"
-        TransparencyLevelHint="Mica, AcrylicBlur, Blur, Transparent, None"
         Background="{DynamicResource ApplicationPageBackgroundThemeBrush}">
   <Window.Resources>
     <ResourceDictionary>
@@ -23,24 +22,24 @@
     </ResourceDictionary>
   </Window.Resources>
   <Window.Styles>
-    <Style Selector="fa|NavigationViewItem.zzz-navigation-item">
+    <Style Selector="fa|FANavigationViewItem.zzz-navigation-item">
       <Setter Property="Foreground" Value="{DynamicResource ZzzClassicNavigationForegroundBrush}" />
     </Style>
-    <Style Selector="fa|NavigationViewItem.zzz-navigation-item TextBlock">
+    <Style Selector="fa|FANavigationViewItem.zzz-navigation-item TextBlock">
       <Setter Property="Foreground" Value="{DynamicResource ZzzClassicNavigationForegroundBrush}" />
     </Style>
-    <Style Selector="fa|NavigationViewItem.zzz-navigation-item fa|FontIcon">
+    <Style Selector="fa|FANavigationViewItem.zzz-navigation-item fa|FAFontIcon">
       <Setter Property="Foreground" Value="{DynamicResource ZzzClassicNavigationForegroundBrush}" />
     </Style>
-    <Style Selector="fa|NavigationViewItem.zzz-navigation-item:selected TextBlock">
+    <Style Selector="fa|FANavigationViewItem.zzz-navigation-item:selected TextBlock">
       <Setter Property="Foreground" Value="{DynamicResource SystemAccentColor}" />
     </Style>
-    <Style Selector="fa|NavigationViewItem.zzz-navigation-item:selected fa|FontIcon">
+    <Style Selector="fa|FANavigationViewItem.zzz-navigation-item:selected fa|FAFontIcon">
       <Setter Property="Foreground" Value="{DynamicResource SystemAccentColor}" />
     </Style>
   </Window.Styles>
   <Grid>
-    <fa:NavigationView x:Name="Navigation"
+    <fa:FANavigationView x:Name="Navigation"
                        PaneDisplayMode="Left"
                        Background="{DynamicResource ZzzClassicNavigationSurfaceBrush}"
                        Foreground="{DynamicResource ZzzClassicNavigationForegroundBrush}"
@@ -53,9 +52,9 @@
                        IsSettingsVisible="False"
                        BackRequested="OnNavigationBackRequested"
                        SelectionChanged="OnNavigationSelectionChanged">
-      <fa:NavigationView.MenuItemTemplate>
+      <fa:FANavigationView.MenuItemTemplate>
         <DataTemplate x:DataType="shell:ZzzNavigationEntry">
-          <fa:NavigationViewItem Tag="{Binding Key}"
+          <fa:FANavigationViewItem Tag="{Binding Key}"
                                  Classes="zzz-navigation-item"
                                  ToolTip.Tip="{Binding AccessibleName}">
             <StackPanel Width="{DynamicResource ZzzNavigationPaneWidth}"
@@ -63,7 +62,7 @@
                         Spacing="1"
                         HorizontalAlignment="Center"
                         VerticalAlignment="Center">
-              <fa:FontIcon Glyph="{Binding IconGlyph}"
+              <fa:FAFontIcon Glyph="{Binding IconGlyph}"
                            FontSize="20"
                            HorizontalAlignment="Center"
                            FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" />
@@ -73,18 +72,18 @@
                          TextAlignment="Center"
                          HorizontalAlignment="Center" />
             </StackPanel>
-          </fa:NavigationViewItem>
+          </fa:FANavigationViewItem>
         </DataTemplate>
-      </fa:NavigationView.MenuItemTemplate>
+      </fa:FANavigationView.MenuItemTemplate>
 
-      <fa:NavigationView.Content>
-        <fa:Frame x:Name="ContentFrame"
+      <fa:FANavigationView.Content>
+        <fa:FAFrame x:Name="ContentFrame"
                   Margin="{DynamicResource ZzzShellContentMargin}"
                   HorizontalContentAlignment="Stretch"
                   VerticalContentAlignment="Stretch"
                   IsNavigationStackEnabled="False" />
-      </fa:NavigationView.Content>
-    </fa:NavigationView>
+      </fa:FANavigationView.Content>
+    </fa:FANavigationView>
 
     <Grid x:Name="TitleBar"
           Classes="zzz-titlebar"
@@ -123,30 +122,30 @@
                 Click="OnIssueClicked">
           <StackPanel Orientation="Horizontal"
                       Spacing="5">
-            <fa:FontIcon Glyph="&#xE897;"
+            <fa:FAFontIcon Glyph="&#xE897;"
                          FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" />
             <TextBlock Text="问题反馈" />
           </StackPanel>
         </Button>
         <Button Classes="zzz-window-control"
                 Click="OnMinimizeClicked">
-          <fa:FontIcon Glyph="&#xE921;"
+          <fa:FAFontIcon Glyph="&#xE921;"
                        FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" />
         </Button>
         <Button Classes="zzz-window-control"
                 Click="OnMaximizeClicked">
-          <fa:FontIcon Glyph="&#xE922;"
+          <fa:FAFontIcon Glyph="&#xE922;"
                        FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" />
         </Button>
         <Button Classes="zzz-window-control"
                 Click="OnCloseClicked">
-          <fa:FontIcon Glyph="&#xE8BB;"
+          <fa:FAFontIcon Glyph="&#xE8BB;"
                        FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" />
         </Button>
       </StackPanel>
     </Grid>
 
-    <fa:InfoBar x:Name="ToastBar"
+    <fa:FAInfoBar x:Name="ToastBar"
                 Margin="0,40,24,0"
                 HorizontalAlignment="Right"
                 VerticalAlignment="Top"

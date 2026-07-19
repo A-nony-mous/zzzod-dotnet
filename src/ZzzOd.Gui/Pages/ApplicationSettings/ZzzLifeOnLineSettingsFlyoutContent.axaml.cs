@@ -9,8 +9,8 @@ namespace ZzzOd.Gui.Pages.ApplicationSettings;
 internal sealed partial class ZzzLifeOnLineSettingsFlyoutContent : UserControl, IZzzPageLifecycle
 {
     private readonly ZzzLifeOnLineSettingsFlyoutViewModel _viewModel;
-    private readonly InfoBar _errorBar;
-    private readonly NumberBox _dailyPlanTimesNumber;
+    private readonly FAInfoBar _errorBar;
+    private readonly FANumberBox _dailyPlanTimesNumber;
     private readonly TextBlock _doneValueText;
     private readonly FAComboBox _predefinedTeamCombo;
     private bool _loading;
@@ -22,8 +22,8 @@ internal sealed partial class ZzzLifeOnLineSettingsFlyoutContent : UserControl, 
     {
         _viewModel = new ZzzLifeOnLineSettingsFlyoutViewModel(backend, instanceIndex, groupId);
         AvaloniaXamlLoader.Load(this);
-        _errorBar = Required<InfoBar>("ErrorBar");
-        _dailyPlanTimesNumber = Required<NumberBox>("DailyPlanTimesNumber");
+        _errorBar = Required<FAInfoBar>("ErrorBar");
+        _dailyPlanTimesNumber = Required<FANumberBox>("DailyPlanTimesNumber");
         _doneValueText = Required<TextBlock>("DoneValueText");
         _predefinedTeamCombo = Required<FAComboBox>("PredefinedTeamCombo");
         Reload();
@@ -71,7 +71,7 @@ internal sealed partial class ZzzLifeOnLineSettingsFlyoutContent : UserControl, 
         }
     }
 
-    private void OnDailyPlanTimesChanged(NumberBox sender, NumberBoxValueChangedEventArgs args)
+    private void OnDailyPlanTimesChanged(FANumberBox sender, FANumberBoxValueChangedEventArgs args)
     {
         if (!_loading && !double.IsNaN(args.NewValue))
         {

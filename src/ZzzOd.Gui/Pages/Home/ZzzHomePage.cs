@@ -49,9 +49,9 @@ public sealed partial class ZzzHomePage : UserControl, IZzzPageLifecycle
     private readonly TextBlock _mediaPageCount;
     private readonly Button _startButton;
     private readonly TextBlock _startButtonText;
-    private readonly SymbolIcon _startButtonIcon;
-    private readonly TeachingTip _quickLinkTeachingTip;
-    private readonly ContentDialog _preFlightDialog;
+    private readonly FASymbolIcon _startButtonIcon;
+    private readonly FATeachingTip _quickLinkTeachingTip;
+    private readonly FAContentDialog _preFlightDialog;
     private readonly ItemsControl _preFlightIssueList;
     private CancellationTokenSource? _activationCancellation;
     private VideoCapture? _videoCapture;
@@ -106,11 +106,11 @@ public sealed partial class ZzzHomePage : UserControl, IZzzPageLifecycle
             ?? throw new InvalidOperationException("首页缺少启动按钮。");
         _startButtonText = this.FindControl<TextBlock>("StartButtonText")
             ?? throw new InvalidOperationException("首页缺少启动按钮文本。");
-        _startButtonIcon = this.FindControl<SymbolIcon>("StartButtonIcon")
+        _startButtonIcon = this.FindControl<FASymbolIcon>("StartButtonIcon")
             ?? throw new InvalidOperationException("首页缺少启动按钮图标。");
-        _quickLinkTeachingTip = this.FindControl<TeachingTip>("QuickLinkTeachingTip")
+        _quickLinkTeachingTip = this.FindControl<FATeachingTip>("QuickLinkTeachingTip")
             ?? throw new InvalidOperationException("首页缺少 TeachingTip。");
-        _preFlightDialog = (ContentDialog)Resources["PreFlightDialog"]!
+        _preFlightDialog = (FAContentDialog)Resources["PreFlightDialog"]!
             ?? throw new InvalidOperationException("首页缺少 ContentDialog。");
         _preFlightIssueList = (ItemsControl)((StackPanel)_preFlightDialog.Content!).Children[1];
 
@@ -586,8 +586,8 @@ public sealed partial class ZzzHomePage : UserControl, IZzzPageLifecycle
             return;
         }
 
-        ContentDialogResult result = await _preFlightDialog.ShowAsync(owner).ConfigureAwait(true);
-        if (result is ContentDialogResult.Primary)
+        FAContentDialogResult result = await _preFlightDialog.ShowAsync(owner).ConfigureAwait(true);
+        if (result is FAContentDialogResult.Primary)
         {
             _navigation.RequestNavigate(LastReadiness.Issues[0].TargetNavigationKey);
             return;
@@ -609,7 +609,7 @@ public sealed partial class ZzzHomePage : UserControl, IZzzPageLifecycle
         _startButtonText.Text = LastReadiness.Ready
             ? "启动一条龙"
             : $"{LastReadiness.Issues.Count} 项待配置 ";
-        _startButtonIcon.Symbol = LastReadiness.Ready ? Symbol.PlayFilled : Symbol.Settings;
+        _startButtonIcon.Symbol = LastReadiness.Ready ? FASymbol.PlayFilled : FASymbol.Settings;
     }
 
     private void OnQuickLinkClicked(object? sender, RoutedEventArgs args)

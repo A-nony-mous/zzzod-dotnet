@@ -64,21 +64,21 @@ internal sealed partial class ZzzWorldPatrolAppSettingPage : UserControl, IZzzPa
     private readonly IZzzWorldPatrolSettingsBackend _worldPatrolBackend;
     private readonly int _instanceIndex;
     private readonly string _groupId;
-    private readonly InfoBar _settingsErrorBar;
-    private readonly InfoBar _routeListErrorBar;
-    private readonly InfoBar _largeMapErrorBar;
-    private readonly InfoBar _largeMapStatusBar;
-    private readonly InfoBar _routeEditorErrorBar;
-    private readonly TabView _settingsTabView;
-    private readonly SettingsExpanderItem _runRecordItem;
+    private readonly FAInfoBar _settingsErrorBar;
+    private readonly FAInfoBar _routeListErrorBar;
+    private readonly FAInfoBar _largeMapErrorBar;
+    private readonly FAInfoBar _largeMapStatusBar;
+    private readonly FAInfoBar _routeEditorErrorBar;
+    private readonly FATabView _settingsTabView;
+    private readonly FASettingsExpanderItem _runRecordItem;
     private readonly FAComboBox _autoBattleCombo;
     private readonly FAComboBox _routeListConfigCombo;
     private readonly FAComboBox _uiDisappearActionCombo;
     private readonly FAComboBox _routeRetryActionCombo;
-    private readonly NumberBox _uiDisappearSecondsBox;
-    private readonly NumberBox _routeRetryTimesBox;
-    private readonly NumberBox _dailyLoopCountBox;
-    private readonly NumberBox _loopIntervalSecondsBox;
+    private readonly FANumberBox _uiDisappearSecondsBox;
+    private readonly FANumberBox _routeRetryTimesBox;
+    private readonly FANumberBox _dailyLoopCountBox;
+    private readonly FANumberBox _loopIntervalSecondsBox;
     private readonly FAComboBox _editorRouteListCombo;
     private readonly FAComboBox _listTypeCombo;
     private readonly FAComboBox _entryCombo;
@@ -87,20 +87,20 @@ internal sealed partial class ZzzWorldPatrolAppSettingPage : UserControl, IZzzPa
     private readonly ListBox _availableRouteList;
     private readonly FAComboBox _largeMapEntryCombo;
     private readonly FAComboBox _largeMapAreaCombo;
-    private readonly NumberBox _largeMapIconThresholdBox;
-    private readonly NumberBox _largeMapScaleBox;
-    private readonly NumberBox _largeMapHorizontalMoveBox;
-    private readonly NumberBox _largeMapVerticalMoveBox;
+    private readonly FANumberBox _largeMapIconThresholdBox;
+    private readonly FANumberBox _largeMapScaleBox;
+    private readonly FANumberBox _largeMapHorizontalMoveBox;
+    private readonly FANumberBox _largeMapVerticalMoveBox;
     private readonly TextBlock _largeMapPositionText;
     private readonly Image _largeMapMiniMap1Image;
     private readonly Image _largeMapMiniMap2Image;
     private readonly Image _largeMapMiniMapMergedImage;
     private readonly ZzzWorldPatrolImageViewer _largeMapViewer;
-    private readonly CommandBarButton _loadLargeMapButton;
-    private readonly CommandBarButton _saveLargeMapButton;
-    private readonly CommandBarButton _deleteLargeMapButton;
-    private readonly CommandBarButton _cancelLargeMapButton;
-    private readonly CommandBarButton _editLargeMapIconsButton;
+    private readonly FACommandBarButton _loadLargeMapButton;
+    private readonly FACommandBarButton _saveLargeMapButton;
+    private readonly FACommandBarButton _deleteLargeMapButton;
+    private readonly FACommandBarButton _cancelLargeMapButton;
+    private readonly FACommandBarButton _editLargeMapIconsButton;
     private readonly ZzzLogDisplayCard _largeMapLogCard;
     private readonly ZzzLogDisplayCard _routeRecorderLogCard;
     private readonly FAComboBox _routeEntryCombo;
@@ -110,11 +110,11 @@ internal sealed partial class ZzzWorldPatrolAppSettingPage : UserControl, IZzzPa
     private readonly Image _routeMiniMapRoadImage;
     private readonly ZzzWorldPatrolImageViewer _routeMapViewer;
     private readonly ToggleSwitch _autoAddRouteClickSwitch;
-    private readonly ContentDialog _routeOperationDialog;
-    private readonly ContentDialog _deleteRouteOperationDialog;
-    private readonly InfoBar _routeOperationErrorBar;
+    private readonly FAContentDialog _routeOperationDialog;
+    private readonly FAContentDialog _deleteRouteOperationDialog;
+    private readonly FAInfoBar _routeOperationErrorBar;
     private readonly ListBox _routeOperationList;
-    private readonly NumberBox _debugStartBox;
+    private readonly FANumberBox _debugStartBox;
     private readonly Button[] _requiresListButtons;
     private readonly Button[] _requiresChosenRouteButtons;
     private ZzzWorldPatrolCatalogDto? _catalog;
@@ -144,21 +144,21 @@ internal sealed partial class ZzzWorldPatrolAppSettingPage : UserControl, IZzzPa
         _instanceIndex = instanceIndex;
         _groupId = groupId;
         AvaloniaXamlLoader.Load(this);
-        _settingsErrorBar = Required<InfoBar>("SettingsErrorBar");
-        _routeListErrorBar = Required<InfoBar>("RouteListErrorBar");
-        _largeMapErrorBar = Required<InfoBar>("LargeMapErrorBar");
-        _largeMapStatusBar = Required<InfoBar>("LargeMapStatusBar");
-        _routeEditorErrorBar = Required<InfoBar>("RouteEditorErrorBar");
-        _settingsTabView = Required<TabView>("SettingsTabView");
-        _runRecordItem = Required<SettingsExpanderItem>("RunRecordItem");
+        _settingsErrorBar = Required<FAInfoBar>("SettingsErrorBar");
+        _routeListErrorBar = Required<FAInfoBar>("RouteListErrorBar");
+        _largeMapErrorBar = Required<FAInfoBar>("LargeMapErrorBar");
+        _largeMapStatusBar = Required<FAInfoBar>("LargeMapStatusBar");
+        _routeEditorErrorBar = Required<FAInfoBar>("RouteEditorErrorBar");
+        _settingsTabView = Required<FATabView>("SettingsTabView");
+        _runRecordItem = Required<FASettingsExpanderItem>("RunRecordItem");
         _autoBattleCombo = Required<FAComboBox>("AutoBattleCombo");
         _routeListConfigCombo = Required<FAComboBox>("RouteListConfigCombo");
         _uiDisappearActionCombo = Required<FAComboBox>("UiDisappearActionCombo");
         _routeRetryActionCombo = Required<FAComboBox>("RouteRetryActionCombo");
-        _uiDisappearSecondsBox = Required<NumberBox>("UiDisappearSecondsBox");
-        _routeRetryTimesBox = Required<NumberBox>("RouteRetryTimesBox");
-        _dailyLoopCountBox = Required<NumberBox>("DailyLoopCountBox");
-        _loopIntervalSecondsBox = Required<NumberBox>("LoopIntervalSecondsBox");
+        _uiDisappearSecondsBox = Required<FANumberBox>("UiDisappearSecondsBox");
+        _routeRetryTimesBox = Required<FANumberBox>("RouteRetryTimesBox");
+        _dailyLoopCountBox = Required<FANumberBox>("DailyLoopCountBox");
+        _loopIntervalSecondsBox = Required<FANumberBox>("LoopIntervalSecondsBox");
         _editorRouteListCombo = Required<FAComboBox>("EditorRouteListCombo");
         _listTypeCombo = Required<FAComboBox>("ListTypeCombo");
         _entryCombo = Required<FAComboBox>("EntryCombo");
@@ -167,20 +167,20 @@ internal sealed partial class ZzzWorldPatrolAppSettingPage : UserControl, IZzzPa
         _availableRouteList = Required<ListBox>("AvailableRouteList");
         _largeMapEntryCombo = Required<FAComboBox>("LargeMapEntryCombo");
         _largeMapAreaCombo = Required<FAComboBox>("LargeMapAreaCombo");
-        _largeMapIconThresholdBox = Required<NumberBox>("LargeMapIconThresholdBox");
-        _largeMapScaleBox = Required<NumberBox>("LargeMapScaleBox");
-        _largeMapHorizontalMoveBox = Required<NumberBox>("LargeMapHorizontalMoveBox");
-        _largeMapVerticalMoveBox = Required<NumberBox>("LargeMapVerticalMoveBox");
+        _largeMapIconThresholdBox = Required<FANumberBox>("LargeMapIconThresholdBox");
+        _largeMapScaleBox = Required<FANumberBox>("LargeMapScaleBox");
+        _largeMapHorizontalMoveBox = Required<FANumberBox>("LargeMapHorizontalMoveBox");
+        _largeMapVerticalMoveBox = Required<FANumberBox>("LargeMapVerticalMoveBox");
         _largeMapPositionText = Required<TextBlock>("LargeMapPositionText");
         _largeMapMiniMap1Image = Required<Image>("LargeMapMiniMap1Image");
         _largeMapMiniMap2Image = Required<Image>("LargeMapMiniMap2Image");
         _largeMapMiniMapMergedImage = Required<Image>("LargeMapMiniMapMergedImage");
         _largeMapViewer = Required<ZzzWorldPatrolImageViewer>("LargeMapViewer");
-        _loadLargeMapButton = Required<CommandBarButton>("LoadLargeMapButton");
-        _saveLargeMapButton = Required<CommandBarButton>("SaveLargeMapButton");
-        _deleteLargeMapButton = Required<CommandBarButton>("DeleteLargeMapButton");
-        _cancelLargeMapButton = Required<CommandBarButton>("CancelLargeMapButton");
-        _editLargeMapIconsButton = Required<CommandBarButton>("EditLargeMapIconsButton");
+        _loadLargeMapButton = Required<FACommandBarButton>("LoadLargeMapButton");
+        _saveLargeMapButton = Required<FACommandBarButton>("SaveLargeMapButton");
+        _deleteLargeMapButton = Required<FACommandBarButton>("DeleteLargeMapButton");
+        _cancelLargeMapButton = Required<FACommandBarButton>("CancelLargeMapButton");
+        _editLargeMapIconsButton = Required<FACommandBarButton>("EditLargeMapIconsButton");
         _largeMapLogCard = new ZzzLogDisplayCard(_backend);
         Required<ContentControl>("LargeMapLogHost").Content = _largeMapLogCard;
         _routeRecorderLogCard = new ZzzLogDisplayCard(_backend);
@@ -192,11 +192,11 @@ internal sealed partial class ZzzWorldPatrolAppSettingPage : UserControl, IZzzPa
         _routeMiniMapRoadImage = Required<Image>("RouteMiniMapRoadImage");
         _routeMapViewer = Required<ZzzWorldPatrolImageViewer>("RouteMapViewer");
         _autoAddRouteClickSwitch = Required<ToggleSwitch>("AutoAddRouteClickSwitch");
-        _routeOperationDialog = Required<ContentDialog>("RouteOperationDialog");
-        _deleteRouteOperationDialog = Required<ContentDialog>("DeleteRouteOperationDialog");
-        _routeOperationErrorBar = Required<InfoBar>("RouteOperationErrorBar");
+        _routeOperationDialog = Required<FAContentDialog>("RouteOperationDialog");
+        _deleteRouteOperationDialog = Required<FAContentDialog>("DeleteRouteOperationDialog");
+        _routeOperationErrorBar = Required<FAInfoBar>("RouteOperationErrorBar");
         _routeOperationList = Required<ListBox>("RouteOperationList");
-        _debugStartBox = Required<NumberBox>("DebugStartBox");
+        _debugStartBox = Required<FANumberBox>("DebugStartBox");
         _requiresListButtons =
         [
             Required<Button>("SaveListButton"),
@@ -371,7 +371,7 @@ internal sealed partial class ZzzWorldPatrolAppSettingPage : UserControl, IZzzPa
         }
     }
 
-    private void OnConfigNumberChanged(NumberBox sender, NumberBoxValueChangedEventArgs args)
+    private void OnConfigNumberChanged(FANumberBox sender, FANumberBoxValueChangedEventArgs args)
     {
         if (_loading || sender.Tag is not string key)
         {
@@ -477,16 +477,16 @@ internal sealed partial class ZzzWorldPatrolAppSettingPage : UserControl, IZzzPa
             return;
         }
 
-        TextBox input = new() { Watermark = "请输入列表名称" };
-        ContentDialog dialog = new()
+        TextBox input = new() { PlaceholderText = "请输入列表名称" };
+        FAContentDialog dialog = new()
         {
             Title = "新建路线列表",
             Content = input,
             PrimaryButtonText = "确认",
             CloseButtonText = "取消",
-            DefaultButton = ContentDialogButton.Primary,
+            DefaultButton = FAContentDialogButton.Primary,
         };
-        if (await dialog.ShowAsync(owner).ConfigureAwait(true) == ContentDialogResult.Primary
+        if (await dialog.ShowAsync(owner).ConfigureAwait(true) == FAContentDialogResult.Primary
             && !string.IsNullOrWhiteSpace(input.Text))
         {
             BeginNewList(input.Text);
@@ -825,6 +825,11 @@ internal sealed partial class ZzzWorldPatrolAppSettingPage : UserControl, IZzzPa
             return;
         }
 
+        if (TopLevel.GetTopLevel(this) is not Window owner)
+        {
+            return;
+        }
+
         _largeMapIconEditorWindow = new ZzzWorldPatrolLargeMapIconEditorWindow(_largeMapState.Icons)
         {
             CurrentPositionRequested = () => _largeMapState?.CalculatedPosition ?? _largeMapState?.CurrentPosition,
@@ -832,14 +837,7 @@ internal sealed partial class ZzzWorldPatrolAppSettingPage : UserControl, IZzzPa
         _largeMapIconEditorWindow.IconSelected += OnLargeMapIconSelected;
         _largeMapIconEditorWindow.IconsSaved += OnLargeMapIconsSaved;
         _largeMapIconEditorWindow.Closed += OnLargeMapIconEditorClosed;
-        if (TopLevel.GetTopLevel(this) is Window owner)
-        {
-            _largeMapIconEditorWindow.Show(owner);
-        }
-        else
-        {
-            _largeMapIconEditorWindow.Show();
-        }
+        _largeMapIconEditorWindow.Show(owner);
     }
 
     private void OnLargeMapIconSelected(int index)
@@ -1167,7 +1165,7 @@ internal sealed partial class ZzzWorldPatrolAppSettingPage : UserControl, IZzzPa
         UpdateRouteEditorButtons();
     }
 
-    private void OnSaveRouteOperationsClicked(ContentDialog sender, ContentDialogButtonClickEventArgs args)
+    private void OnSaveRouteOperationsClicked(FAContentDialog sender, FAContentDialogButtonClickEventArgs args)
     {
         for (int index = 0; index < _routeOperationDraft.Count; index++)
         {
@@ -1231,7 +1229,7 @@ internal sealed partial class ZzzWorldPatrolAppSettingPage : UserControl, IZzzPa
 
         _deleteRouteOperationDialog.Content = $"确定要删除第{index}个操作吗？";
         if (await _deleteRouteOperationDialog.ShowAsync(TopLevel.GetTopLevel(this)).ConfigureAwait(true)
-            != ContentDialogResult.Primary)
+            != FAContentDialogResult.Primary)
         {
             return;
         }

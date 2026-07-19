@@ -42,11 +42,11 @@ internal sealed partial class ZzzOneDragonRunPage : UserControl, IZzzPageLifecyc
     private readonly ZzzOneDragonRunSettings _settings;
     private readonly ZzzAppSettingNavigator _appSettingNavigator;
     private readonly ItemsControl _appList;
-    private readonly InfoBar _actionInfoBar;
+    private readonly FAInfoBar _actionInfoBar;
     private readonly ToggleSwitch _notifyToggle;
     private readonly FAComboBox _instanceRunCombo;
     private readonly FAComboBox _afterDoneCombo;
-    private readonly TeachingTip _appNotifyTip;
+    private readonly FATeachingTip _appNotifyTip;
     private readonly FAComboBox _appLifecycleCombo;
     private readonly FAComboBox _appDetailCombo;
     private readonly Dictionary<string, Button> _moreButtons = new(StringComparer.Ordinal);
@@ -54,6 +54,7 @@ internal sealed partial class ZzzOneDragonRunPage : UserControl, IZzzPageLifecyc
     private CancellationTokenSource? _eventCancellation;
     private ZzzOneDragonAppRowModel? _dragCandidate;
     private Point _dragStart;
+    private PointerPressedEventArgs? _dragPointerPressedArgs;
     private string? _notifyAppId;
     private bool _loadingSettings;
     private bool _loadingAppNotify;
@@ -74,11 +75,11 @@ internal sealed partial class ZzzOneDragonRunPage : UserControl, IZzzPageLifecyc
 
         AvaloniaXamlLoader.Load(this);
         _appList = Required<ItemsControl>("AppList");
-        _actionInfoBar = Required<InfoBar>("ActionInfoBar");
+        _actionInfoBar = Required<FAInfoBar>("ActionInfoBar");
         _notifyToggle = Required<ToggleSwitch>("NotifyToggle");
         _instanceRunCombo = Required<FAComboBox>("InstanceRunCombo");
         _afterDoneCombo = Required<FAComboBox>("AfterDoneCombo");
-        _appNotifyTip = Required<TeachingTip>("AppNotifyTip");
+        _appNotifyTip = Required<FATeachingTip>("AppNotifyTip");
         _appLifecycleCombo = Required<FAComboBox>("AppLifecycleCombo");
         _appDetailCombo = Required<FAComboBox>("AppDetailCombo");
         Required<ContentControl>("RunHost").Content = RunPanel;
@@ -110,7 +111,7 @@ internal sealed partial class ZzzOneDragonRunPage : UserControl, IZzzPageLifecyc
         catch (Exception exception)
         {
             _operations.Complete(operationId, ZzzGuiOperationState.Failed, exception: exception);
-            ShowAction(exception.Message, InfoBarSeverity.Error);
+            ShowAction(exception.Message, FAInfoBarSeverity.Error);
         }
     }
 
@@ -149,7 +150,7 @@ internal sealed partial class ZzzOneDragonRunPage : UserControl, IZzzPageLifecyc
         }
 
         ZzzBackendResult<ZzzRunStatusDto> result = await _settings.StartSingleAppAsync(row.AppId).ConfigureAwait(true);
-        ShowAction(result.Success ? $"已启动 {row.Name}" : result.Error ?? "应用启动失败。", result.Success ? InfoBarSeverity.Success : InfoBarSeverity.Error);
+        ShowAction(result.Success ? $"已启动 {row.Name}" : result.Error ?? "应用启动失败。", result.Success ? FAInfoBarSeverity.Success : FAInfoBarSeverity.Error);
     }
 
     private void OnAppSettingClicked(object? sender, RoutedEventArgs args)
@@ -296,16 +297,18 @@ internal sealed partial class ZzzOneDragonRunPage : UserControl, IZzzPageLifecyc
             || IsInteractiveSource(args.Source))
         {
             _dragCandidate = null;
+            _dragPointerPressedArgs = null;
             return;
         }
 
         _dragCandidate = row;
         _dragStart = args.GetPosition(control);
+        _dragPointerPressedArgs = args;
     }
 
     private async void OnAppPointerMoved(object? sender, PointerEventArgs args)
     {
-        if (sender is not Control control || _dragCandidate is not { } row
+        if (sender is not Control control || _dragCandidate is not { } row || _dragPointerPressedArgs is not { } pressedArgs
             || !args.GetCurrentPoint(control).Properties.IsLeftButtonPressed)
         {
             return;
@@ -318,9 +321,10 @@ internal sealed partial class ZzzOneDragonRunPage : UserControl, IZzzPageLifecyc
         }
 
         _dragCandidate = null;
+        _dragPointerPressedArgs = null;
         DataTransfer transfer = new();
         transfer.Add(DataTransferItem.Create(AppIdFormat, row.AppId));
-        await DragDrop.DoDragDropAsync(args, transfer, DragDropEffects.Move).ConfigureAwait(true);
+        await DragDrop.DoDragDropAsync(pressedArgs, transfer, DragDropEffects.Move).ConfigureAwait(true);
     }
 
     private void OnAppDragOver(object? sender, DragEventArgs args)
@@ -437,7 +441,7 @@ internal sealed partial class ZzzOneDragonRunPage : UserControl, IZzzPageLifecyc
     {
         if (!string.IsNullOrWhiteSpace(_settings.LastError))
         {
-            ShowAction(_settings.LastError, InfoBarSeverity.Error);
+            ShowAction(_settings.LastError, FAInfoBarSeverity.Error);
         }
     }
 
@@ -456,7 +460,7 @@ internal sealed partial class ZzzOneDragonRunPage : UserControl, IZzzPageLifecyc
         ? control.DataContext as ZzzOneDragonAppRowModel ?? control.Tag as ZzzOneDragonAppRowModel
         : null;
 
-    private void ShowAction(string message, InfoBarSeverity severity)
+    private void ShowAction(string message, FAInfoBarSeverity severity)
     {
         _actionInfoBar.Message = message;
         _actionInfoBar.Severity = severity;

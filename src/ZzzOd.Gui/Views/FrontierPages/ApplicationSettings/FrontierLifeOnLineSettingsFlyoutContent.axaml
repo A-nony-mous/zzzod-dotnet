@@ -1,0 +1,40 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:fa="using:FluentAvalonia.UI.Controls"
+             x:Class="ZzzOd.Gui.Views.FrontierPages.ApplicationSettings.FrontierLifeOnLineSettingsFlyoutContent"
+             MinWidth="420">
+  <StackPanel Margin="8" Spacing="1">
+    <fa:FAInfoBar x:Name="ErrorBar"
+                IsOpen="False"
+                IsClosable="True"
+                Severity="Error" />
+
+    <fa:FASettingsExpander Header="每日次数">
+      <fa:FASettingsExpander.Footer>
+        <fa:FANumberBox x:Name="DailyPlanTimesNumber"
+                      Width="160"
+                      Minimum="0"
+                      Maximum="20000"
+                      SpinButtonPlacementMode="Compact"
+                      ValueChanged="OnDailyPlanTimesChanged" />
+      </fa:FASettingsExpander.Footer>
+    </fa:FASettingsExpander>
+
+    <Grid ColumnDefinitions="*,8,*">
+      <fa:FASettingsExpander Grid.Column="0" Header="完成次数" />
+      <fa:FASettingsExpander Grid.Column="2">
+        <fa:FASettingsExpander.Header>
+          <TextBlock x:Name="DoneValueText" />
+        </fa:FASettingsExpander.Header>
+      </fa:FASettingsExpander>
+    </Grid>
+
+    <fa:FASettingsExpander Header="预备编队">
+      <fa:FASettingsExpander.Footer>
+        <fa:FAComboBox x:Name="PredefinedTeamCombo"
+                       Width="220"
+                       SelectionChanged="OnPredefinedTeamChanged" />
+      </fa:FASettingsExpander.Footer>
+    </fa:FASettingsExpander>
+  </StackPanel>
+</UserControl>

@@ -21,12 +21,12 @@ internal sealed partial class ZzzSuibianTempleAppSettingPage : UserControl, IZzz
     private readonly IZzzAppBackend _backend;
     private readonly int _instanceIndex;
     private readonly string _groupId;
-    private readonly InfoBar _errorBar;
+    private readonly FAInfoBar _errorBar;
     private readonly ToggleSwitch _autoManageToggle;
-    private readonly NumberBox _craftDragNumber;
+    private readonly FANumberBox _craftDragNumber;
     private readonly IReadOnlyDictionary<string, ToggleSwitch> _boolEditors;
     private readonly IReadOnlyDictionary<string, FAComboBox> _comboEditors;
-    private readonly SettingsExpanderItem[] _manualItems;
+    private readonly FASettingsExpanderItem[] _manualItems;
     private bool _loading;
 
     public ZzzSuibianTempleAppSettingPage(IZzzAppBackend backend, int instanceIndex, string groupId)
@@ -35,9 +35,9 @@ internal sealed partial class ZzzSuibianTempleAppSettingPage : UserControl, IZzz
         _instanceIndex = instanceIndex;
         _groupId = groupId;
         AvaloniaXamlLoader.Load(this);
-        _errorBar = Required<InfoBar>("ErrorBar");
+        _errorBar = Required<FAInfoBar>("ErrorBar");
         _autoManageToggle = Required<ToggleSwitch>("AutoManageToggle");
-        _craftDragNumber = Required<NumberBox>("CraftDragNumber");
+        _craftDragNumber = Required<FANumberBox>("CraftDragNumber");
         _boolEditors = new Dictionary<string, ToggleSwitch>(StringComparer.Ordinal)
         {
             ["yum_cha_sin"] = Required<ToggleSwitch>("YumChaToggle"),
@@ -58,11 +58,11 @@ internal sealed partial class ZzzSuibianTempleAppSettingPage : UserControl, IZzz
         };
         _manualItems =
         [
-            Required<SettingsExpanderItem>("YumChaItem"),
-            Required<SettingsExpanderItem>("YumChaRefreshItem"),
-            Required<SettingsExpanderItem>("AdventureDurationItem"),
-            Required<SettingsExpanderItem>("AdventureMissionItem"),
-            Required<SettingsExpanderItem>("CraftDragItem"),
+            Required<FASettingsExpanderItem>("YumChaItem"),
+            Required<FASettingsExpanderItem>("YumChaRefreshItem"),
+            Required<FASettingsExpanderItem>("AdventureDurationItem"),
+            Required<FASettingsExpanderItem>("AdventureMissionItem"),
+            Required<FASettingsExpanderItem>("CraftDragItem"),
         ];
 
         _comboEditors["adventure_duration"].ItemsSource = Options(SuibianTempleAdventureDispatchDuration.Options);
@@ -155,7 +155,7 @@ internal sealed partial class ZzzSuibianTempleAppSettingPage : UserControl, IZzz
         }
     }
 
-    private void OnCraftDragChanged(NumberBox sender, NumberBoxValueChangedEventArgs args)
+    private void OnCraftDragChanged(FANumberBox sender, FANumberBoxValueChangedEventArgs args)
     {
         if (!_loading)
         {
@@ -165,7 +165,7 @@ internal sealed partial class ZzzSuibianTempleAppSettingPage : UserControl, IZzz
 
     private void UpdateManualVisibility(bool autoManage)
     {
-        foreach (SettingsExpanderItem item in _manualItems)
+        foreach (FASettingsExpanderItem item in _manualItems)
         {
             item.IsVisible = !autoManage;
         }

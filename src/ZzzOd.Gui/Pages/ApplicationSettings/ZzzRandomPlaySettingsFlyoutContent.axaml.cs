@@ -10,7 +10,7 @@ namespace ZzzOd.Gui.Pages.ApplicationSettings;
 internal sealed partial class ZzzRandomPlaySettingsFlyoutContent : UserControl, IZzzPageLifecycle
 {
     private readonly ZzzRandomPlaySettingsFlyoutViewModel _viewModel;
-    private readonly InfoBar _errorBar;
+    private readonly FAInfoBar _errorBar;
     private readonly FAComboBox _transportPointCombo;
     private readonly FAComboBox _agent1Combo;
     private readonly FAComboBox _agent2Combo;
@@ -23,7 +23,7 @@ internal sealed partial class ZzzRandomPlaySettingsFlyoutContent : UserControl, 
     {
         _viewModel = new ZzzRandomPlaySettingsFlyoutViewModel(backend, instanceIndex, groupId);
         AvaloniaXamlLoader.Load(this);
-        _errorBar = Required<InfoBar>("ErrorBar");
+        _errorBar = Required<FAInfoBar>("ErrorBar");
         _transportPointCombo = Required<FAComboBox>("TransportPointCombo");
         _agent1Combo = Required<FAComboBox>("Agent1Combo");
         _agent2Combo = Required<FAComboBox>("Agent2Combo");

@@ -18,12 +18,12 @@ internal sealed partial class ZzzRunPanel : UserControl, IZzzPageLifecycle
     private readonly string? _fixedAppId;
     private readonly string? _fixedGroupId;
     private readonly Func<string?>? _appIdProvider;
-    private readonly InfoBar _errorBar;
+    private readonly FAInfoBar _errorBar;
     private readonly TextBlock _stateText;
     private readonly FAComboBox _apps;
     private readonly Button _primaryButton;
     private readonly Button _stopButton;
-    private readonly SymbolIcon _primaryIcon;
+    private readonly FASymbolIcon _primaryIcon;
     private readonly TextBlock _primaryLabel;
     private readonly TextBlock _stopLabel;
     private readonly Border _runOperationOverlay;
@@ -53,7 +53,7 @@ internal sealed partial class ZzzRunPanel : UserControl, IZzzPageLifecycle
         _fixedGroupId = fixedGroupId;
         _appIdProvider = appIdProvider;
         AvaloniaXamlLoader.Load(this);
-        _errorBar = this.FindControl<InfoBar>("RunErrorBar")
+        _errorBar = this.FindControl<FAInfoBar>("RunErrorBar")
             ?? throw new InvalidOperationException("运行面缺少错误 InfoBar。");
         _stateText = this.FindControl<TextBlock>("StateText")
             ?? throw new InvalidOperationException("运行面缺少状态文本。");
@@ -63,7 +63,7 @@ internal sealed partial class ZzzRunPanel : UserControl, IZzzPageLifecycle
             ?? throw new InvalidOperationException("运行面缺少开始按钮。");
         _stopButton = this.FindControl<Button>("StopButton")
             ?? throw new InvalidOperationException("运行面缺少停止按钮。");
-        _primaryIcon = this.FindControl<SymbolIcon>("PrimaryIcon")
+        _primaryIcon = this.FindControl<FASymbolIcon>("PrimaryIcon")
             ?? throw new InvalidOperationException("运行面缺少主操作图标。");
         _primaryLabel = this.FindControl<TextBlock>("PrimaryLabel")
             ?? throw new InvalidOperationException("运行面缺少主操作文本。");
@@ -321,8 +321,8 @@ internal sealed partial class ZzzRunPanel : UserControl, IZzzPageLifecycle
     {
         _primaryAction = action;
         _primaryIcon.Symbol = string.Equals(action, "暂停", StringComparison.Ordinal)
-            ? Symbol.Pause
-            : Symbol.Play;
+            ? FASymbol.Pause
+            : FASymbol.Play;
         _primaryLabel.Text = JoinActionAndHotkey(action, _startHotkey);
         _stopLabel.Text = JoinActionAndHotkey("停止", _stopHotkey);
     }

@@ -33,7 +33,7 @@ public sealed class DevtoolsContainerParityTests
 		string path3 = Path.Combine(path, "ZzzDevtoolsShared.cs");
 		XDocument xDocument = XDocument.Load(text2);
 		XNamespace xNamespace = "using:FluentAvalonia.UI.Controls";
-		string[] array = (from item in xDocument.Descendants(xNamespace + "TabViewItem")
+		string[] array = (from item in xDocument.Descendants(xNamespace + "FATabViewItem")
 			select (string?)item.Attribute("Header") into header
 			where header != null
 			select header).Cast<string>().ToArray();
@@ -41,8 +41,8 @@ public sealed class DevtoolsContainerParityTests
 		string actualString2 = File.ReadAllText(path2);
 		string actualString3 = File.ReadAllText(path3);
 		Assert.Equal<string[]>(ExpectedHeaders, array);
-		Assert.Contains("<fa:TabView", actualString, StringComparison.Ordinal);
-		Assert.Equal(6, xDocument.Descendants(xNamespace + "Frame").Count());
+		Assert.Contains("<fa:FATabView", actualString, StringComparison.Ordinal);
+		Assert.Equal(6, xDocument.Descendants(xNamespace + "FAFrame").Count());
 		Assert.Contains("new ZzzImageAnalysisPage(backend, imageAnalysisService)", actualString2, StringComparison.Ordinal);
 		Assert.Contains("new ZzzTemplateHelperAxamlPage(backend)", actualString2, StringComparison.Ordinal);
 		Assert.Contains("new ZzzScreenManagePage(screenManageService)", actualString2, StringComparison.Ordinal);

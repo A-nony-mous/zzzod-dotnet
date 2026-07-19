@@ -3,11 +3,11 @@
              xmlns:fa="using:FluentAvalonia.UI.Controls"
              xmlns:local="using:ZzzOd.Gui.Pages.OneDragon"
              x:Class="ZzzOd.Gui.Pages.OneDragon.ZzzOneDragonRunPage">
-  <Grid Margin="11,11,11,0"
+  <Grid Margin="{DynamicResource SampleAppPageMargin}"
         ColumnDefinitions="*,10,*">
     <Grid Grid.Column="0"
           RowDefinitions="Auto,*">
-      <fa:InfoBar x:Name="ActionInfoBar"
+      <fa:FAInfoBar x:Name="ActionInfoBar"
                   IsOpen="False"
                   IsClosable="True"
                   Severity="Informational" />
@@ -17,7 +17,7 @@
         <ItemsControl x:Name="AppList">
             <ItemsControl.ItemTemplate>
               <DataTemplate x:DataType="local:ZzzOneDragonAppRowModel">
-                <fa:SettingsExpanderItem Content="{Binding Name}"
+                <fa:FASettingsExpanderItem Content="{Binding Name}"
                                          Description="{Binding LastRunText}"
                                          Margin="0,0,0,1"
                                          DragDrop.AllowDrop="True"
@@ -25,10 +25,10 @@
                                          PointerMoved="OnAppPointerMoved"
                                          DragDrop.DragOver="OnAppDragOver"
                                          DragDrop.Drop="OnAppDrop">
-                  <fa:SettingsExpanderItem.IconSource>
-                    <fa:FontIconSource Glyph="{Binding StatusGlyph}" />
-                  </fa:SettingsExpanderItem.IconSource>
-                  <fa:SettingsExpanderItem.Footer>
+                  <fa:FASettingsExpanderItem.IconSource>
+                    <fa:FAFontIconSource Glyph="{Binding StatusGlyph}" />
+                  </fa:FASettingsExpanderItem.IconSource>
+                  <fa:FASettingsExpanderItem.Footer>
                     <StackPanel Orientation="Horizontal"
                                 Spacing="4">
                       <Button Width="36"
@@ -38,7 +38,7 @@
                               IsVisible="{Binding SettingVisible}"
                               Tag="{Binding}"
                               Click="OnAppSettingClicked">
-                        <fa:FontIcon Glyph="&#xE713;" />
+                        <fa:FAFontIcon Glyph="&#xE713;" />
                       </Button>
                       <Button Width="36"
                               Height="32"
@@ -46,7 +46,7 @@
                               ToolTip.Tip="更多"
                               Tag="{Binding}"
                               Click="OnMoreClicked">
-                        <fa:FontIcon Glyph="&#xE712;" />
+                        <fa:FAFontIcon Glyph="&#xE712;" />
                         <Button.Flyout>
                           <MenuFlyout>
                             <MenuItem Header="通知设置"
@@ -54,14 +54,14 @@
                                       IsVisible="{Binding NotifyVisible}"
                                       Click="OnAppNotifyClicked">
                               <MenuItem.Icon>
-                                <fa:SymbolIcon Symbol="Message" />
+                                <fa:FASymbolIcon Symbol="Message" />
                               </MenuItem.Icon>
                             </MenuItem>
                             <MenuItem Header="移到顶部"
                                       Tag="{Binding}"
                                       Click="OnMoveTopClicked">
                               <MenuItem.Icon>
-                                <fa:FontIcon Glyph="&#xE74A;" />
+                                <fa:FAFontIcon Glyph="&#xE74A;" />
                               </MenuItem.Icon>
                             </MenuItem>
                           </MenuFlyout>
@@ -73,15 +73,15 @@
                               ToolTip.Tip="运行"
                               IsEnabled="{Binding RunAvailable}"
                               Click="OnRunAppClicked">
-                        <fa:SymbolIcon Symbol="Play" />
+                        <fa:FASymbolIcon Symbol="Play" />
                       </Button>
                       <ToggleSwitch IsChecked="{Binding Enabled}"
                                     OnContent=""
                                     OffContent=""
                                     Click="OnAppEnabledClicked" />
                     </StackPanel>
-                  </fa:SettingsExpanderItem.Footer>
-                </fa:SettingsExpanderItem>
+                  </fa:FASettingsExpanderItem.Footer>
+                </fa:FASettingsExpanderItem>
               </DataTemplate>
             </ItemsControl.ItemTemplate>
         </ItemsControl>
@@ -94,21 +94,21 @@
         <TextBlock Text="运行设置"
                    FontSize="18"
                    FontWeight="SemiBold" />
-        <fa:SettingsExpanderItem Content="使用说明"
+        <fa:FASettingsExpanderItem Content="使用说明"
                                  Description="先看说明 再使用与提问">
-          <fa:SettingsExpanderItem.IconSource>
-            <fa:SymbolIconSource Symbol="Message" />
-          </fa:SettingsExpanderItem.IconSource>
-          <fa:SettingsExpanderItem.Footer>
+          <fa:FASettingsExpanderItem.IconSource>
+            <fa:FASymbolIconSource Symbol="Message" />
+          </fa:FASettingsExpanderItem.IconSource>
+          <fa:FASettingsExpanderItem.Footer>
             <Button Content="点此查看指南"
                     Click="OnHelpClicked" />
-          </fa:SettingsExpanderItem.Footer>
-        </fa:SettingsExpanderItem>
-        <fa:SettingsExpanderItem Content="应用通知">
-          <fa:SettingsExpanderItem.IconSource>
-            <fa:FontIconSource Glyph="&#xE7F4;" />
-          </fa:SettingsExpanderItem.IconSource>
-          <fa:SettingsExpanderItem.Footer>
+          </fa:FASettingsExpanderItem.Footer>
+        </fa:FASettingsExpanderItem>
+        <fa:FASettingsExpanderItem Content="应用通知">
+          <fa:FASettingsExpanderItem.IconSource>
+            <fa:FAFontIconSource Glyph="&#xE7F4;" />
+          </fa:FASettingsExpanderItem.IconSource>
+          <fa:FASettingsExpanderItem.Footer>
             <StackPanel Orientation="Horizontal"
                         Spacing="8">
               <Button x:Name="GlobalNotifySettingsButton"
@@ -119,28 +119,28 @@
                             OffContent=""
                             Click="OnNotifyToggleClicked" />
             </StackPanel>
-          </fa:SettingsExpanderItem.Footer>
-        </fa:SettingsExpanderItem>
-        <fa:SettingsExpanderItem Content="运行实例">
-          <fa:SettingsExpanderItem.IconSource>
-            <fa:FontIconSource Glyph="&#xE716;" />
-          </fa:SettingsExpanderItem.IconSource>
-          <fa:SettingsExpanderItem.Footer>
+          </fa:FASettingsExpanderItem.Footer>
+        </fa:FASettingsExpanderItem>
+        <fa:FASettingsExpanderItem Content="运行实例">
+          <fa:FASettingsExpanderItem.IconSource>
+            <fa:FAFontIconSource Glyph="&#xE716;" />
+          </fa:FASettingsExpanderItem.IconSource>
+          <fa:FASettingsExpanderItem.Footer>
             <fa:FAComboBox x:Name="InstanceRunCombo"
                            Width="140"
                            SelectionChanged="OnInstanceRunChanged" />
-          </fa:SettingsExpanderItem.Footer>
-        </fa:SettingsExpanderItem>
-        <fa:SettingsExpanderItem Content="结束后">
-          <fa:SettingsExpanderItem.IconSource>
-            <fa:FontIconSource Glyph="&#xE787;" />
-          </fa:SettingsExpanderItem.IconSource>
-          <fa:SettingsExpanderItem.Footer>
+          </fa:FASettingsExpanderItem.Footer>
+        </fa:FASettingsExpanderItem>
+        <fa:FASettingsExpanderItem Content="结束后">
+          <fa:FASettingsExpanderItem.IconSource>
+            <fa:FAFontIconSource Glyph="&#xE787;" />
+          </fa:FASettingsExpanderItem.IconSource>
+          <fa:FASettingsExpanderItem.Footer>
             <fa:FAComboBox x:Name="AfterDoneCombo"
                            Width="140"
                            SelectionChanged="OnAfterDoneChanged" />
-          </fa:SettingsExpanderItem.Footer>
-        </fa:SettingsExpanderItem>
+          </fa:FASettingsExpanderItem.Footer>
+        </fa:FASettingsExpanderItem>
       </StackPanel>
       <ContentControl x:Name="RunHost"
                       Grid.Row="1"
@@ -149,7 +149,7 @@
                       VerticalContentAlignment="Stretch" />
     </Grid>
 
-    <fa:TeachingTip x:Name="AppNotifyTip"
+    <fa:FATeachingTip x:Name="AppNotifyTip"
                     IsLightDismissEnabled="True"
                     PreferredPlacement="Right"
                     TailVisibility="Visible">
@@ -176,6 +176,6 @@
           </fa:FAComboBox.ItemTemplate>
         </fa:FAComboBox>
       </StackPanel>
-    </fa:TeachingTip>
+    </fa:FATeachingTip>
   </Grid>
 </UserControl>

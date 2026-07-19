@@ -34,7 +34,7 @@ public sealed class MouseSensitivityPageParityTests
 		buffer2[5] = "ZzzMouseSensitivityCheckerPage.cs";
 		string actualString2 = File.ReadAllText(Path.Combine(buffer2));
 		Assert.Contains("x:Class=\"ZzzOd.Gui.Pages.OneDragon.ZzzMouseSensitivityCheckerPage\"", actualString, StringComparison.Ordinal);
-		Assert.Contains("<fa:SettingsExpanderItem", actualString, StringComparison.Ordinal);
+		Assert.Contains("<fa:FASettingsExpanderItem", actualString, StringComparison.Ordinal);
 		Assert.Contains("Content=\"使用说明\"", actualString, StringComparison.Ordinal);
 		Assert.Contains("Description=\"点击「开始」后将自动校准鼠标/手柄的转向灵敏度，用于视角转动\"", actualString, StringComparison.Ordinal);
 		Assert.Contains("x:Name=\"SensitivityRunHost\"", actualString, StringComparison.Ordinal);

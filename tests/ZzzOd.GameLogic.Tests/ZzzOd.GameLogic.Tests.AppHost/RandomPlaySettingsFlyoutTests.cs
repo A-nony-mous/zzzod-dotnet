@@ -67,7 +67,7 @@ public sealed class RandomPlaySettingsFlyoutTests
 		string actualString2 = File.ReadAllText(Path.Combine(path, "ZzzRandomPlaySettingsFlyoutViewModel.cs"));
 		Assert.True(text.IndexOf("传送地点", StringComparison.Ordinal) < text.IndexOf("影像店代理人-1", StringComparison.Ordinal));
 		Assert.True(text.IndexOf("影像店代理人-1", StringComparison.Ordinal) < text.IndexOf("影像店代理人-2", StringComparison.Ordinal));
-		Assert.Equal(3, Count(text, "fa:SettingsExpanderItem Content="));
+		Assert.Equal(3, Count(text, "fa:FASettingsExpanderItem Content="));
 		Assert.Equal(3, Count(text, "fa:FAComboBox"));
 		Assert.Equal(2, Count(text, "IsEditable=\"True\""));
 		Assert.Contains("RandomPlayTransportPoint.All", actualString2, StringComparison.Ordinal);

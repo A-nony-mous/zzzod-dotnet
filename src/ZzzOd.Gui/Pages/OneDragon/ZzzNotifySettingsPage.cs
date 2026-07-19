@@ -44,7 +44,7 @@ internal sealed partial class ZzzNotifySettingsPage : UserControl, IZzzPageLifec
 
     private readonly IZzzAppBackend _backend;
     private readonly int _instanceIndex;
-    private readonly InfoBar _errorBar;
+    private readonly FAInfoBar _errorBar;
     private readonly ToggleSwitch _mergeErrorToggle;
     private readonly ItemsControl _appNotifyList;
     private bool _loading;
@@ -54,7 +54,7 @@ internal sealed partial class ZzzNotifySettingsPage : UserControl, IZzzPageLifec
         _backend = backend;
         _instanceIndex = instanceIndex;
         AvaloniaXamlLoader.Load(this);
-        _errorBar = Required<InfoBar>("ErrorBar");
+        _errorBar = Required<FAInfoBar>("ErrorBar");
         _mergeErrorToggle = Required<ToggleSwitch>("MergeErrorToggle");
         _appNotifyList = Required<ItemsControl>("AppNotifyList");
     }

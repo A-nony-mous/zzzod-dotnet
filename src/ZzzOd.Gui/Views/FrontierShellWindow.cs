@@ -1,33 +1,20 @@
-using Avalonia.Markup.Xaml;
-using Avalonia;
 using Avalonia.Controls;
-using Avalonia.Media.Imaging;
-using Avalonia.Media;
-using LibVLCSharp.Avalonia;
-using LibVLCSharp.Shared;
+using Avalonia.Markup.Xaml;
+using FluentAvalonia.UI.Controls;
 using Microsoft.Extensions.DependencyInjection;
 using ZzzOd.AppHost;
-using ZzzOd.Gui.Services.LauncherMedia;
 using ZzzOd.Gui.Shell;
 
 namespace ZzzOd.Gui.Views;
 
-public sealed partial class FrontierShellWindow : MainWindow
+public sealed partial class FrontierShellWindow : Window
 {
-    protected override string NavigationControlName => "FrontierNavigation";
-    protected override string ContentFrameControlName => "FrontierContentFrame";
-    protected override string TitleBarControlName => "FrontierTitleBar";
-    protected override string TitleBarIconControlName => "FrontierTitleBarIcon";
-    protected override string ToastBarControlName => "FrontierToastBar";
+    private readonly FrontierMainView _mainView;
 
-    private readonly ZzzLauncherMediaService _mediaService;
-    private readonly Image _backgroundImage;
-    private readonly ContentControl _backgroundVideoHost;
-    private Bitmap? _backgroundBitmap;
-    private LibVLC? _libVlc;
-    private MediaPlayer? _mediaPlayer;
-    private Media? _backgroundVideo;
-    private readonly ZzzFrontierMediaLifecycle _mediaLifecycle = new();
+    public FrontierShellWindow()
+    {
+        throw new InvalidOperationException("FrontierShellWindow 必须通过应用宿主的依赖注入创建。");
+    }
 
     [ActivatorUtilitiesConstructor]
     public FrontierShellWindow(
@@ -37,101 +24,48 @@ public sealed partial class FrontierShellWindow : MainWindow
         ZzzShellNavigationService navigationService,
         ZzzShellViewModel shellViewModel,
         IZzzShellWindowRuntime windowRuntime,
-        ZzzRunRoot runRoot,
-        ZzzLauncherMediaService mediaService)
-        : base(services, navigationRegistry, pageLifecycle, navigationService, shellViewModel, windowRuntime, runRoot, false)
+        ZzzRunRoot runRoot)
     {
-        _mediaService = mediaService;
+        DataContext = shellViewModel;
         AvaloniaXamlLoader.Load(this);
-        _backgroundImage = this.FindControl<Image>("BackgroundImage")
-            ?? throw new InvalidOperationException("前卫 Shell 缺少背景图像层。");
-        _backgroundVideoHost = this.FindControl<ContentControl>("BackgroundVideoHost")
-            ?? throw new InvalidOperationException("前卫 Shell 缺少背景视频层。");
-        InitializeShell(navigationRegistry, pageLifecycle, navigationService, runRoot);
-        Opened += async (_, _) => await LoadBackgroundSafelyAsync().ConfigureAwait(true);
-        Closed += (_, _) =>
+
+        ContentControl host = this.FindControl<ContentControl>("MainViewHost")
+            ?? throw new InvalidOperationException("前卫 Shell 缺少 MainView Host。");
+        _mainView = new FrontierMainView(
+            services,
+            navigationRegistry,
+            pageLifecycle,
+            navigationService,
+            shellViewModel,
+            windowRuntime,
+            runRoot,
+            this);
+        host.Content = _mainView;
+
+        ZzzGuiEvidenceSelection evidence = ZzzGuiEvidenceSelection.FromEnvironment();
+        if (evidence.Width is double width && evidence.Height is double height)
         {
-            _mediaLifecycle.Release();
-            _backgroundBitmap?.Dispose();
-            _backgroundBitmap = null;
-            _mediaPlayer?.Pause();
-            _backgroundVideoHost.Content = null;
-            _backgroundVideoHost.IsVisible = false;
-            _mediaPlayer?.Dispose();
-            _backgroundVideo?.Dispose();
-            _libVlc?.Dispose();
-        };
+            Width = Math.Max(MinWidth, width);
+            Height = Math.Max(MinHeight, height);
+        }
+
+        Opened += OnOpened;
+        Closed += OnClosed;
     }
 
-    private async Task LoadBackgroundSafelyAsync()
+    private void OnOpened(object? sender, EventArgs args)
     {
-        try
+        Opened -= OnOpened;
+        if (((ZzzShellViewModel)DataContext!).ConsumeStartupError() is { Length: > 0 } error)
         {
-            await LoadBackgroundAsync().ConfigureAwait(true);
-        }
-        catch
-        {
-            _backgroundImage.Source = null;
-            _backgroundImage.IsVisible = false;
-            _backgroundVideoHost.Content = null;
-            _backgroundVideoHost.IsVisible = false;
-        }
-    }
-
-    private async Task LoadBackgroundAsync()
-    {
-        IReadOnlyList<ZzzLauncherMediaItem> items = await _mediaService.GetDashboardMediaAsync().ConfigureAwait(true);
-        ZzzLauncherMediaItem? item = items.FirstOrDefault(media => !string.IsNullOrWhiteSpace(media.LocalPath));
-        if (item?.LocalPath is not { } path)
-        {
-            return;
-        }
-
-        if (item.IsVideo)
-        {
-            Core.Initialize();
-            _libVlc = new LibVLC();
-            _mediaPlayer = new MediaPlayer(_libVlc);
-            _backgroundVideoHost.Content = new VideoView { MediaPlayer = _mediaPlayer };
-            _backgroundVideo = new Media(_libVlc, new Uri(path));
-            if (_mediaLifecycle.ShouldPlay)
-            {
-                _mediaPlayer.Play(_backgroundVideo);
-            }
-            _backgroundVideoHost.IsVisible = true;
-            return;
-        }
-
-        try
-        {
-            _backgroundBitmap?.Dispose();
-            _backgroundBitmap = new Bitmap(path);
-            _backgroundImage.Source = _backgroundBitmap;
-            _backgroundImage.IsVisible = true;
-        }
-        catch
-        {
-            _backgroundImage.Source = null;
-            _backgroundImage.IsVisible = false;
+            _mainView.ShowToast("界面配置错误", error, TimeSpan.FromSeconds(8), FAInfoBarSeverity.Error);
         }
     }
 
-
-    protected override void OnRouteChanged(object? sender, string routeKey)
+    private void OnClosed(object? sender, EventArgs args)
     {
-        base.OnRouteChanged(sender, routeKey);
-        _mediaLifecycle.OnRouteChanged(routeKey);
-        if (_mediaPlayer is null)
-        {
-            return;
-        }
-
-        if (_mediaLifecycle.ShouldPlay)
-        {
-            _mediaPlayer.Play();
-            return;
-        }
-
-        _mediaPlayer.Pause();
+        Opened -= OnOpened;
+        Closed -= OnClosed;
+        _mainView.Dispose();
     }
 }

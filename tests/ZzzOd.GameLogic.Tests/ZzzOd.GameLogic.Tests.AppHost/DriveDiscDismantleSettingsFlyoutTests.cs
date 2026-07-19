@@ -61,7 +61,7 @@ public sealed class DriveDiscDismantleSettingsFlyoutTests
 		string text = File.ReadAllText(Path.Combine(path, "ZzzDriveDiscDismantleSettingsFlyoutContent.axaml"));
 		string actualString = File.ReadAllText(Path.Combine(path, "ZzzDriveDiscDismantleSettingsFlyoutContent.axaml.cs"));
 		Assert.True(text.IndexOf("拆解等级", StringComparison.Ordinal) < text.IndexOf("全部已弃置", StringComparison.Ordinal));
-		Assert.Contains("fa:SettingsExpanderItem", text, StringComparison.Ordinal);
+		Assert.Contains("fa:FASettingsExpanderItem", text, StringComparison.Ordinal);
 		Assert.Contains("fa:FAComboBox", text, StringComparison.Ordinal);
 		Assert.Contains("ToggleSwitch", text, StringComparison.Ordinal);
 		Assert.Contains("new ZzzDriveDiscOption(\"B\", \"B\")", actualString, StringComparison.Ordinal);

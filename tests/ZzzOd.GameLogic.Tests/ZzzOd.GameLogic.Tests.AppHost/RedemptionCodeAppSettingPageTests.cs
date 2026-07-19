@@ -49,9 +49,9 @@ public sealed class RedemptionCodeAppSettingPageTests
 		string text = File.ReadAllText(Path.Combine(path, "ZzzRedemptionCodeAppSettingPage.axaml"));
 		string actualString = File.ReadAllText(Path.Combine(path, "ZzzRedemptionCodeAppSettingPage.axaml.cs"));
 		AssertOrder(text, "兑换码", "过期日期", "Delete", "新增");
-		Assert.Contains("fa:SettingsExpanderItem", text, StringComparison.Ordinal);
-		Assert.Contains("fa:InfoBar", text, StringComparison.Ordinal);
-		Assert.Contains("fa:SymbolIcon", text, StringComparison.Ordinal);
+		Assert.Contains("fa:FASettingsExpanderItem", text, StringComparison.Ordinal);
+		Assert.Contains("fa:FAInfoBar", text, StringComparison.Ordinal);
+		Assert.Contains("fa:FASymbolIcon", text, StringComparison.Ordinal);
 		Assert.Contains("请输入兑换码", actualString, StringComparison.Ordinal);
 		Assert.Contains("20990101", actualString, StringComparison.Ordinal);
 		Assert.Contains("DateTime.Now", actualString, StringComparison.Ordinal);

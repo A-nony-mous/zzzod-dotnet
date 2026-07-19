@@ -1,0 +1,65 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:fa="using:FluentAvalonia.UI.Controls"
+        xmlns:local="using:ZzzOd.Gui.Views.FrontierPages.WorldPatrol"
+        xmlns:model="using:ZzzOd.Gui.Pages.ApplicationSettings"
+        x:Class="ZzzOd.Gui.Views.FrontierPages.WorldPatrol.FrontierWorldPatrolLargeMapIconEditorWindow"
+        Title="图标编辑器"
+        Width="760"
+        Height="520"
+        MinWidth="720"
+        MinHeight="420"
+        WindowStartupLocation="CenterOwner">
+  <Grid Margin="12" RowDefinitions="Auto,*,Auto,Auto" RowSpacing="8">
+    <Grid Grid.Row="0"
+          ColumnDefinitions="160,150,90,90,90,90"
+          ColumnSpacing="6">
+      <TextBlock Grid.Column="0" Text="图标名称" FontWeight="SemiBold" />
+      <TextBlock Grid.Column="1" Text="模板ID" FontWeight="SemiBold" />
+      <TextBlock Grid.Column="2" Text="X坐标" FontWeight="SemiBold" />
+      <TextBlock Grid.Column="3" Text="Y坐标" FontWeight="SemiBold" />
+      <TextBlock Grid.Column="4" Text="传送X" FontWeight="SemiBold" />
+      <TextBlock Grid.Column="5" Text="传送Y" FontWeight="SemiBold" />
+    </Grid>
+
+    <ListBox x:Name="IconList"
+             Grid.Row="1"
+             SelectionChanged="OnIconSelectionChanged">
+      <ListBox.ItemTemplate>
+        <DataTemplate x:DataType="model:ZzzWorldPatrolEditableIcon">
+          <Grid Margin="0,2"
+                ColumnDefinitions="160,150,90,90,90,90"
+                ColumnSpacing="6">
+            <TextBox Grid.Column="0" Text="{Binding IconName}" PlaceholderText="图标名称" />
+            <TextBlock Grid.Column="1" Text="{Binding TemplateId}" VerticalAlignment="Center" />
+            <TextBlock Grid.Column="2" Text="{Binding LargeMapX}" VerticalAlignment="Center" />
+            <TextBlock Grid.Column="3" Text="{Binding LargeMapY}" VerticalAlignment="Center" />
+            <TextBlock Grid.Column="4" Text="{Binding TeleportX}" VerticalAlignment="Center" />
+            <TextBlock Grid.Column="5" Text="{Binding TeleportY}" VerticalAlignment="Center" />
+          </Grid>
+        </DataTemplate>
+      </ListBox.ItemTemplate>
+    </ListBox>
+
+    <TextBlock Grid.Row="2"
+               Text="提示：点击表格行可在主窗口地图上高亮对应图标位置；选中行后可设置传送坐标或删除图标" />
+
+    <fa:FACommandBar Grid.Row="3">
+      <fa:FACommandBar.PrimaryCommands>
+        <fa:FACommandBarButton x:Name="SetTeleportButton"
+                             Label="设置传送坐标"
+                             Click="OnSetTeleportClicked" />
+        <fa:FACommandBarButton x:Name="DeleteIconButton"
+                             Label="删除图标"
+                             Click="OnDeleteIconClicked" />
+        <fa:FACommandBarButton Label="保存" Click="OnSaveClicked" />
+        <fa:FACommandBarButton Label="取消" Click="OnCancelClicked" />
+      </fa:FACommandBar.PrimaryCommands>
+    </fa:FACommandBar>
+
+    <fa:FAContentDialog x:Name="DeleteDialog"
+                      Title="确认删除"
+                      PrimaryButtonText="删除"
+                      CloseButtonText="取消" />
+  </Grid>
+</Window>

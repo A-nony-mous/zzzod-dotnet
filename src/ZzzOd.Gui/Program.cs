@@ -49,7 +49,6 @@ internal static class Program
                 services.AddSingleton<ZzzOverlayController>();
                 services.AddSingleton<ZzzAvaloniaOverlayCapturer>();
                 services.AddSingleton<IOverlayCapturer>(provider => provider.GetRequiredService<ZzzAvaloniaOverlayCapturer>());
-                services.AddSingleton<ZzzWindowBackdropService>();
                 services.AddSingleton<ZzzGuiShellPresetService>();
                 services.AddSingleton<ZzzShellWindowFactory>();
                 services.AddSingleton<ZzzNavigationRegistry>();
@@ -83,6 +82,9 @@ internal static class Program
     public static AppBuilder BuildAvaloniaApp() =>
         AppBuilder.Configure<App>()
             .UsePlatformDetect()
+#if DEBUG
+            .WithDeveloperTools()
+#endif
             .LogToTrace();
 
     private static ZzzRuntimeLock? AcquireRuntimeLock(string runRoot, IReadOnlyList<string> args)

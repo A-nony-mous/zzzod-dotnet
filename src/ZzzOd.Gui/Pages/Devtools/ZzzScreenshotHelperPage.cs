@@ -19,9 +19,9 @@ internal sealed partial class ZzzScreenshotHelperAxamlPage : UserControl, IZzzPa
     private const string ScopeName = "screenshot-helper";
     private readonly IZzzAppBackend _backend;
     private readonly ZzzGuiRunIntentService _runIntent;
-    private readonly InfoBar _configErrorBar;
-    private readonly NumberBox _frequencyBox;
-    private readonly NumberBox _lengthBox;
+    private readonly FAInfoBar _configErrorBar;
+    private readonly FANumberBox _frequencyBox;
+    private readonly FANumberBox _lengthBox;
     private readonly Button _saveKeyButton;
     private readonly ToggleSwitch _dodgeDetectToggle;
     private readonly ToggleSwitch _screenshotBeforeKeyToggle;
@@ -44,9 +44,9 @@ internal sealed partial class ZzzScreenshotHelperAxamlPage : UserControl, IZzzPa
             fixedGroupId: ScreenshotHelperConstants.DefaultGroupId);
 
         AvaloniaXamlLoader.Load(this);
-        _configErrorBar = Required<InfoBar>("ConfigErrorBar");
-        _frequencyBox = Required<NumberBox>("FrequencyBox");
-        _lengthBox = Required<NumberBox>("LengthBox");
+        _configErrorBar = Required<FAInfoBar>("ConfigErrorBar");
+        _frequencyBox = Required<FANumberBox>("FrequencyBox");
+        _lengthBox = Required<FANumberBox>("LengthBox");
         _saveKeyButton = Required<Button>("SaveKeyButton");
         _dodgeDetectToggle = Required<ToggleSwitch>("DodgeDetectToggle");
         _screenshotBeforeKeyToggle = Required<ToggleSwitch>("ScreenshotBeforeKeyToggle");
@@ -110,7 +110,7 @@ internal sealed partial class ZzzScreenshotHelperAxamlPage : UserControl, IZzzPa
         ApplyValues(result.Value.Values);
     }
 
-    private void OnFrequencyChanged(NumberBox sender, NumberBoxValueChangedEventArgs args)
+    private void OnFrequencyChanged(FANumberBox sender, FANumberBoxValueChangedEventArgs args)
     {
         if (!_loading && !double.IsNaN(args.NewValue))
         {
@@ -118,7 +118,7 @@ internal sealed partial class ZzzScreenshotHelperAxamlPage : UserControl, IZzzPa
         }
     }
 
-    private void OnLengthChanged(NumberBox sender, NumberBoxValueChangedEventArgs args)
+    private void OnLengthChanged(FANumberBox sender, FANumberBoxValueChangedEventArgs args)
     {
         if (!_loading && !double.IsNaN(args.NewValue))
         {

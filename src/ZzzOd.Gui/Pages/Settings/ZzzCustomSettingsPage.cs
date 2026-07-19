@@ -1,15 +1,12 @@
 using System.Diagnostics;
-using System.Globalization;
 using System.Security.Cryptography;
 using System.Text;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
-using Avalonia.Controls.Primitives;
 using Avalonia.Interactivity;
 using Avalonia.Markup.Xaml;
 using Avalonia.Platform.Storage;
-using Avalonia.Styling;
 using FluentAvalonia.UI.Controls;
 using ZzzOd.AppHost.Backend;
 using ZzzOd.Gui.Services.LauncherMedia;
@@ -24,22 +21,16 @@ internal sealed record ZzzCustomOption(string Label, string Value)
 
 internal sealed partial class ZzzCustomSettingsAxamlPage : UserControl, IZzzPageLifecycle
 {
-    private const string ScopeName = "custom";
-    private readonly IZzzAppBackend _backend;
     private readonly ZzzLauncherMediaService _mediaService;
-    private readonly ZzzGuiOperationTracker _operations;
-    private readonly InfoBar _errorBar;
-    private readonly FAComboBox _languageCombo;
-    private readonly FAComboBox _themeCombo;
-    private readonly FAComboBox _shellPresetCombo;
-    private readonly FAComboBox _backgroundTypeCombo;
+    private readonly ZzzCustomSettingsViewModel _viewModel;
+    private readonly ComboBox _languageCombo;
+    private readonly ComboBox _themeCombo;
+    private readonly ComboBox _shellPresetCombo;
+    private readonly ComboBox _backgroundTypeCombo;
     private readonly ToggleSwitch _customThemeColorToggle;
     private readonly ToggleSwitch _customBannerToggle;
     private readonly TextBox _themeColorPassword;
     private readonly TextBox _customBannerPassword;
-    private readonly Button _chooseThemeColorButton;
-    private readonly Button _selectBannerButton;
-    private bool _loading;
     private bool _initializingThemeColorDialog;
 
     private const string ThemeColorPasswordHash = "b0cd76b7d7829362d581b739c0b295abf53182792609078bb17a9dd917ffba7c";
@@ -47,164 +38,84 @@ internal sealed partial class ZzzCustomSettingsAxamlPage : UserControl, IZzzPage
 
     public ZzzCustomSettingsAxamlPage(IZzzAppBackend backend, ZzzLauncherMediaService mediaService, ZzzGuiOperationTracker? operations = null)
     {
-        _backend = backend;
         _mediaService = mediaService;
-        _operations = operations ?? new ZzzGuiOperationTracker();
+        ZzzCustomSettingsViewModel viewModel = new(backend, operations);
+        viewModel.RestartRequested += async (sender, language) =>
+        {
+            FAContentDialog dialog = CreateRestartDialog();
+            ConfigureRestartDialog(dialog, language);
+            if (TopLevel.GetTopLevel(this) is { } owner
+                && await dialog.ShowAsync(owner).ConfigureAwait(true) == FAContentDialogResult.Primary)
+            {
+                RestartApplication();
+            }
+        };
+        viewModel.ShellRestartRequested += async (sender, _) =>
+        {
+            FAContentDialog dialog = CreateRestartDialog();
+            ConfigureShellRestartDialog(dialog);
+            if (TopLevel.GetTopLevel(this) is { } owner
+                && await dialog.ShowAsync(owner).ConfigureAwait(true) == FAContentDialogResult.Primary)
+            {
+                RestartApplication();
+            }
+        };
+        viewModel.ThemeColorEditorRequested += ShowThemeColorEditorAsync;
+        viewModel.CustomBannerSelectionRequested += SelectCustomBannerAsync;
         AvaloniaXamlLoader.Load(this);
-        _errorBar = Required<InfoBar>("ErrorBar");
-        _languageCombo = Required<FAComboBox>("LanguageCombo");
-        _themeCombo = Required<FAComboBox>("ThemeCombo");
-        _shellPresetCombo = Required<FAComboBox>("ShellPresetCombo");
-        _backgroundTypeCombo = Required<FAComboBox>("BackgroundTypeCombo");
+        _viewModel = viewModel;
         _customThemeColorToggle = Required<ToggleSwitch>("CustomThemeColorToggle");
         _customBannerToggle = Required<ToggleSwitch>("CustomBannerToggle");
         _themeColorPassword = Required<TextBox>("ThemeColorPassword");
         _customBannerPassword = Required<TextBox>("CustomBannerPassword");
-        _chooseThemeColorButton = Required<Button>("ChooseThemeColorButton");
-        _selectBannerButton = Required<Button>("SelectBannerButton");
-
-        _languageCombo.ItemsSource = Options(("跟随系统", "auto"), ("简体中文", "zh"), ("English", "en"));
-        _themeCombo.ItemsSource = Options(("跟随系统", "Auto"), ("浅色", "Light"), ("深色", "Dark"));
-        _shellPresetCombo.ItemsSource = Options(("经典", "classic"), ("混合", "mixed"), ("前卫", "frontier"));
-        _backgroundTypeCombo.ItemsSource = Options(
-            ("版本海报", "version_poster"),
-            ("静态背景", "static_background"),
-            ("动态背景", "dynamic_background"),
-            ("无", "none"));
+        _languageCombo = Required<ComboBox>("LanguageCombo");
+        _themeCombo = Required<ComboBox>("ThemeCombo");
+        _shellPresetCombo = Required<ComboBox>("ShellPresetCombo");
+        _backgroundTypeCombo = Required<ComboBox>("BackgroundTypeCombo");
     }
 
     public void OnPageShown()
     {
-        Guid operationId = _operations.Start("settings-custom", "reload-custom-settings");
-        try
+        DataContext = null;
+        _viewModel.OnPageShown();
+        DataContext = _viewModel;
+        ApplySelectedOptions();
+    }
+    public void OnPageHidden() => (DataContext as IZzzPageLifecycle)?.OnPageHidden();
+    public void OnPageLeave() => (DataContext as IZzzPageLifecycle)?.OnPageLeave();
+    public void DisposePage() => (DataContext as IZzzPageLifecycle)?.DisposePage();
+
+    internal void SetLanguageForTest(string value)
+    {
+        if (DataContext is ZzzCustomSettingsViewModel vm)
         {
-            _operations.Complete(operationId, Reload() ? ZzzGuiOperationState.Succeeded : ZzzGuiOperationState.Failed);
+            vm.SelectedLanguageValue = value;
         }
-        catch (Exception exception)
+    }
+
+    internal void SetThemeForTest(string value)
+    {
+        if (DataContext is ZzzCustomSettingsViewModel vm)
         {
-            _operations.Complete(operationId, ZzzGuiOperationState.Failed, exception: exception);
-            ShowError(exception.Message);
+            vm.SelectedThemeValue = value;
         }
     }
-
-    public void OnPageHidden()
-    {
-    }
-
-    public void OnPageLeave()
-    {
-    }
-
-    public void DisposePage()
-    {
-    }
-
-    internal void SetLanguageForTest(string value) => SelectAndSave(_languageCombo, value, "ui_language");
-
-    internal void SetThemeForTest(string value) => SelectAndSave(_themeCombo, value, "theme");
 
     internal async Task<string> SaveCustomBackgroundForTest(string path)
     {
         string saved = await _mediaService.SaveCustomBackgroundAsync(path).ConfigureAwait(true);
-        ZzzBackendResult<ZzzConfigScopeValuesDto> current = _backend.GetConfigScope(ScopeName);
-        if (!current.Success || current.Value is null)
+        if (DataContext is not ZzzCustomSettingsViewModel viewModel || !viewModel.PersistCustomBanner())
         {
-			throw new InvalidOperationException(current.Error ?? "自定义设置读取失败。");
+            throw new InvalidOperationException("自定义主页背景保存失败。");
         }
-
-        Save("custom_banner", RequiredBool(current.Value.Values, "custom_banner"));
         return saved;
     }
 
     internal static bool VerifyPasswordForTest(string password, string expectedHash) => VerifyPassword(password, expectedHash);
 
-    private bool Reload()
-    {
-        _loading = true;
-        _errorBar.IsOpen = false;
-        ZzzBackendResult<ZzzConfigScopeValuesDto> result = _backend.GetConfigScope(ScopeName);
-        if (!result.Success || result.Value is null)
-        {
-            ShowError(result.Error ?? "自定义设置读取失败。");
-            _loading = false;
-            return false;
-        }
-
-        IReadOnlyDictionary<string, object?> values = result.Value.Values;
-        try
-        {
-            Select(_languageCombo, RequiredString(values, "ui_language"));
-            Select(_themeCombo, RequiredString(values, "theme"));
-            Select(_shellPresetCombo, ReadString(values, ZzzGuiShellPresetService.ConfigKey, "classic"));
-            Select(_backgroundTypeCombo, RequiredString(values, "background_type"));
-            _customThemeColorToggle.IsChecked = RequiredBool(values, "custom_theme_color");
-            _customBannerToggle.IsChecked = RequiredBool(values, "custom_banner");
-            _chooseThemeColorButton.IsEnabled = _customThemeColorToggle.IsChecked == true;
-            _selectBannerButton.IsEnabled = _customBannerToggle.IsChecked == true;
-        }
-        catch (InvalidOperationException exception)
-        {
-            ShowError(exception.Message);
-        }
-        finally
-        {
-            _loading = false;
-        }
-
-        return !_errorBar.IsOpen;
-    }
-
-    private async void OnLanguageChanged(object? sender, SelectionChangedEventArgs args)
-    {
-        if (_loading || _languageCombo.SelectedItem is not ZzzCustomOption option || !Save("ui_language", option.Value))
-        {
-            return;
-        }
-
-        ContentDialog dialog = (ContentDialog)Resources["RestartDialog"]!;
-        ConfigureRestartDialog(dialog, option.Value);
-        if (await dialog.ShowAsync().ConfigureAwait(true) == ContentDialogResult.Primary)
-        {
-            RestartApplication();
-        }
-    }
-
-    private void OnThemeChanged(object? sender, SelectionChangedEventArgs args)
-    {
-        if (_loading || _themeCombo.SelectedItem is not ZzzCustomOption option || !Save("theme", option.Value))
-        {
-            return;
-        }
-
-        if (Application.Current is not null)
-        {
-            Application.Current.RequestedThemeVariant = option.Value switch
-            {
-                "Light" => ThemeVariant.Light,
-                "Dark" => ThemeVariant.Dark,
-                _ => ThemeVariant.Default,
-            };
-        }
-    }
-
-    private async void OnShellPresetChanged(object? sender, SelectionChangedEventArgs args)
-    {
-        if (_loading || _shellPresetCombo.SelectedItem is not ZzzCustomOption option || !Save(ZzzGuiShellPresetService.ConfigKey, option.Value))
-        {
-            return;
-        }
-
-        ContentDialog dialog = (ContentDialog)Resources["RestartDialog"]!;
-        ConfigureShellRestartDialog(dialog);
-        if (await dialog.ShowAsync().ConfigureAwait(true) == ContentDialogResult.Primary)
-        {
-            RestartApplication();
-        }
-    }
-
     private void OnCustomThemeColorChanged(object? sender, RoutedEventArgs args)
     {
-        if (_loading)
+        if (DataContext is not ZzzCustomSettingsViewModel vm || vm.IsLoading)
         {
             return;
         }
@@ -217,32 +128,21 @@ internal sealed partial class ZzzCustomSettingsAxamlPage : UserControl, IZzzPage
             return;
         }
 
-        if (Save("custom_theme_color", enabled))
-        {
-            _chooseThemeColorButton.IsEnabled = enabled;
-        }
+        vm.CustomThemeColor = enabled;
     }
 
-    private async void OnChooseThemeColorClicked(object? sender, RoutedEventArgs args)
+    private async void ShowThemeColorEditorAsync(object? sender, EventArgs args)
     {
-        if (!_customThemeColorToggle.IsChecked.GetValueOrDefault())
+        if (DataContext is not ZzzCustomSettingsViewModel viewModel || !viewModel.CustomThemeColor)
         {
             return;
         }
 
-        ZzzBackendResult<ZzzConfigScopeValuesDto> current = _backend.GetConfigScope(ScopeName);
-        if (!current.Success || current.Value is null)
-        {
-			ShowError(current.Error ?? "自定义设置读取失败。");
-            return;
-        }
-
-        string value = RequiredString(current.Value.Values, "global_theme_color");
-        byte[] rgb = ParseRgb(value);
-        ContentDialog dialog = (ContentDialog)Resources["ThemeColorDialog"]!;
-        NumberBox red = dialog.FindControl<NumberBox>("RedNumber")!;
-        NumberBox green = dialog.FindControl<NumberBox>("GreenNumber")!;
-        NumberBox blue = dialog.FindControl<NumberBox>("BlueNumber")!;
+        byte[] rgb = ParseRgb(viewModel.GlobalThemeColor);
+        FAContentDialog dialog = (FAContentDialog)Resources["ThemeColorDialog"]!;
+        FANumberBox red = dialog.FindControl<FANumberBox>("RedNumber")!;
+        FANumberBox green = dialog.FindControl<FANumberBox>("GreenNumber")!;
+        FANumberBox blue = dialog.FindControl<FANumberBox>("BlueNumber")!;
         _initializingThemeColorDialog = true;
         try
         {
@@ -255,37 +155,34 @@ internal sealed partial class ZzzCustomSettingsAxamlPage : UserControl, IZzzPage
             _initializingThemeColorDialog = false;
         }
 
-        await dialog.ShowAsync().ConfigureAwait(true);
+        if (TopLevel.GetTopLevel(this) is { } owner)
+        {
+            await dialog.ShowAsync(owner).ConfigureAwait(true);
+        }
     }
 
-    private void OnThemeColorValueChanged(NumberBox sender, NumberBoxValueChangedEventArgs args)
+    private void OnThemeColorValueChanged(FANumberBox sender, FANumberBoxValueChangedEventArgs args)
     {
-        if (_initializingThemeColorDialog || !_customThemeColorToggle.IsChecked.GetValueOrDefault())
+        if (_initializingThemeColorDialog || DataContext is not ZzzCustomSettingsViewModel viewModel || !viewModel.CustomThemeColor)
         {
             return;
         }
 
-        ContentDialog dialog = (ContentDialog)Resources["ThemeColorDialog"]!;
-        byte r = ClampColor(dialog.FindControl<NumberBox>("RedNumber")!.Value);
-        byte g = ClampColor(dialog.FindControl<NumberBox>("GreenNumber")!.Value);
-        byte b = ClampColor(dialog.FindControl<NumberBox>("BlueNumber")!.Value);
-        if (Save("global_theme_color", $"{r},{g},{b}"))
+        FAContentDialog dialog = (FAContentDialog)Resources["ThemeColorDialog"]!;
+        byte r = ClampColor(dialog.FindControl<FANumberBox>("RedNumber")!.Value);
+        byte g = ClampColor(dialog.FindControl<FANumberBox>("GreenNumber")!.Value);
+        byte b = ClampColor(dialog.FindControl<FANumberBox>("BlueNumber")!.Value);
+        if (viewModel.SaveThemeColor($"{r},{g},{b}"))
         {
             App.ApplyAccentColor(Avalonia.Media.Color.FromRgb(r, g, b));
         }
     }
 
-    private void OnBackgroundTypeChanged(object? sender, SelectionChangedEventArgs args)
-    {
-        if (!_loading && _backgroundTypeCombo.SelectedItem is ZzzCustomOption option)
-        {
-            Save("background_type", option.Value);
-        }
-    }
+
 
     private void OnCustomBannerChanged(object? sender, RoutedEventArgs args)
     {
-        if (_loading)
+        if (DataContext is not ZzzCustomSettingsViewModel vm || vm.IsLoading)
         {
             return;
         }
@@ -298,13 +195,10 @@ internal sealed partial class ZzzCustomSettingsAxamlPage : UserControl, IZzzPage
             return;
         }
 
-        if (Save("custom_banner", enabled))
-        {
-            _selectBannerButton.IsEnabled = enabled;
-        }
+        vm.CustomBanner = enabled;
     }
 
-    private async void OnSelectBannerClicked(object? sender, RoutedEventArgs args)
+    private async void SelectCustomBannerAsync(object? sender, EventArgs args)
     {
         TopLevel? topLevel = TopLevel.GetTopLevel(this);
         if (topLevel is null)
@@ -336,42 +230,20 @@ internal sealed partial class ZzzCustomSettingsAxamlPage : UserControl, IZzzPage
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or InvalidOperationException)
         {
-            ShowError(exception.Message);
+            (DataContext as ZzzCustomSettingsViewModel)?.ReportError(exception.Message);
         }
-    }
-
-    private void SelectAndSave(SelectingItemsControl combo, string value, string key)
-    {
-        Select(combo, value);
-        Save(key, value);
-    }
-
-    private bool Save(string key, object? value) => Save(new Dictionary<string, object?> { [key] = value });
-
-    private bool Save(IReadOnlyDictionary<string, object?> values)
-    {
-        ZzzBackendResult<ZzzConfigScopeValuesDto> result = _backend.SaveConfigScope(new ZzzSaveConfigScopeRequest(ScopeName, values));
-        if (!result.Success)
-        {
-            ShowError(result.Error ?? "自定义设置保存失败。");
-        }
-
-        return result.Success;
-    }
-
-    private void ShowError(string message)
-    {
-        _errorBar.Message = message;
-        _errorBar.IsOpen = true;
     }
 
     private async Task ShowPasswordErrorAsync()
     {
-        ContentDialog dialog = (ContentDialog)Resources["PasswordErrorDialog"]!;
-        await dialog.ShowAsync().ConfigureAwait(true);
+        FAContentDialog dialog = (FAContentDialog)Resources["PasswordErrorDialog"]!;
+        if (TopLevel.GetTopLevel(this) is { } owner)
+        {
+            await dialog.ShowAsync(owner).ConfigureAwait(true);
+        }
     }
 
-    private static void ConfigureRestartDialog(ContentDialog dialog, string language)
+    private static void ConfigureRestartDialog(FAContentDialog dialog, string language)
     {
         bool english = string.Equals(language, "en", StringComparison.Ordinal);
         dialog.Title = english ? "Notice" : "提示";
@@ -382,7 +254,27 @@ internal sealed partial class ZzzCustomSettingsAxamlPage : UserControl, IZzzPage
         dialog.CloseButtonText = english ? "Restart Later" : "稍后重启";
     }
 
-    private static void ConfigureShellRestartDialog(ContentDialog dialog)
+    private static FAContentDialog CreateRestartDialog() => new()
+    {
+        Title = "提示",
+        PrimaryButtonText = "立即重启",
+        CloseButtonText = "稍后重启",
+        DefaultButton = FAContentDialogButton.Primary,
+    };
+
+    private void ApplySelectedOptions()
+    {
+        _languageCombo.ItemsSource = _viewModel.LanguageOptions;
+        _themeCombo.ItemsSource = _viewModel.ThemeOptions;
+        _shellPresetCombo.ItemsSource = _viewModel.ShellPresetOptions;
+        _backgroundTypeCombo.ItemsSource = _viewModel.BackgroundTypeOptions;
+        _languageCombo.SelectedItem = _viewModel.SelectedLanguage;
+        _themeCombo.SelectedItem = _viewModel.SelectedTheme;
+        _shellPresetCombo.SelectedItem = _viewModel.SelectedShellPreset;
+        _backgroundTypeCombo.SelectedItem = _viewModel.SelectedBackgroundType;
+    }
+
+    private static void ConfigureShellRestartDialog(FAContentDialog dialog)
     {
         dialog.Title = "提示";
         dialog.Content = "界面样式已保存，重启应用后生效";
@@ -412,37 +304,7 @@ internal sealed partial class ZzzCustomSettingsAxamlPage : UserControl, IZzzPage
         App.ExitForRestart();
     }
 
-    private static IReadOnlyList<ZzzCustomOption> Options(params (string Label, string Value)[] values) =>
-        values.Select(value => new ZzzCustomOption(value.Label, value.Value)).ToArray();
 
-    private static void Select(SelectingItemsControl combo, string value)
-    {
-        combo.SelectedItem = combo.ItemsSource?.OfType<ZzzCustomOption>()
-            .FirstOrDefault(option => string.Equals(option.Value, value, StringComparison.Ordinal));
-    }
-
-    private static string RequiredString(IReadOnlyDictionary<string, object?> values, string key)
-    {
-        if (!values.TryGetValue(key, out object? value))
-        {
-			throw new InvalidOperationException("自定义设置缺少 " + key + "。");
-        }
-
-        return Convert.ToString(value, CultureInfo.InvariantCulture) ?? string.Empty;
-    }
-
-    private static string ReadString(IReadOnlyDictionary<string, object?> values, string key, string defaultValue) =>
-        values.TryGetValue(key, out object? value) ? Convert.ToString(value, CultureInfo.InvariantCulture) ?? defaultValue : defaultValue;
-
-    private static bool RequiredBool(IReadOnlyDictionary<string, object?> values, string key)
-    {
-        if (!values.TryGetValue(key, out object? value))
-        {
-			throw new InvalidOperationException("自定义设置缺少 " + key + "。");
-        }
-
-        return Convert.ToBoolean(value, CultureInfo.InvariantCulture);
-    }
 
     private static byte[] ParseRgb(string value)
     {

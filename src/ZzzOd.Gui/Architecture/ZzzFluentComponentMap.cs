@@ -12,23 +12,23 @@ public enum ZzzFluentComponentRole
 
     NumberInput,
 
-    CommandBar,
+    FACommandBar,
 
     Dialog,
 
-    TeachingTip,
+    FATeachingTip,
 
-    InfoBar,
+    FAInfoBar,
 
     Tab,
 
-    Frame,
+    FAFrame,
 
     Navigation,
 
-    SymbolIcon,
+    FASymbolIcon,
 
-    FontIcon,
+    FAFontIcon,
 }
 
 public static class ZzzFluentComponentMap
@@ -36,19 +36,19 @@ public static class ZzzFluentComponentMap
     private static readonly IReadOnlyDictionary<ZzzFluentComponentRole, Type> ComponentTypes =
         new Dictionary<ZzzFluentComponentRole, Type>
         {
-            [ZzzFluentComponentRole.SettingsGroup] = typeof(SettingsExpander),
-            [ZzzFluentComponentRole.SettingsItem] = typeof(SettingsExpanderItem),
+            [ZzzFluentComponentRole.SettingsGroup] = typeof(FASettingsExpander),
+            [ZzzFluentComponentRole.SettingsItem] = typeof(FASettingsExpanderItem),
             [ZzzFluentComponentRole.ComboBox] = typeof(FAComboBox),
-            [ZzzFluentComponentRole.NumberInput] = typeof(NumberBox),
-            [ZzzFluentComponentRole.CommandBar] = typeof(CommandBar),
-            [ZzzFluentComponentRole.Dialog] = typeof(ContentDialog),
-            [ZzzFluentComponentRole.TeachingTip] = typeof(TeachingTip),
-            [ZzzFluentComponentRole.InfoBar] = typeof(InfoBar),
-            [ZzzFluentComponentRole.Tab] = typeof(TabView),
-            [ZzzFluentComponentRole.Frame] = typeof(Frame),
-            [ZzzFluentComponentRole.Navigation] = typeof(NavigationView),
-            [ZzzFluentComponentRole.SymbolIcon] = typeof(SymbolIcon),
-            [ZzzFluentComponentRole.FontIcon] = typeof(FontIcon),
+            [ZzzFluentComponentRole.NumberInput] = typeof(FANumberBox),
+            [ZzzFluentComponentRole.FACommandBar] = typeof(FACommandBar),
+            [ZzzFluentComponentRole.Dialog] = typeof(FAContentDialog),
+            [ZzzFluentComponentRole.FATeachingTip] = typeof(FATeachingTip),
+            [ZzzFluentComponentRole.FAInfoBar] = typeof(FAInfoBar),
+            [ZzzFluentComponentRole.Tab] = typeof(FATabView),
+            [ZzzFluentComponentRole.FAFrame] = typeof(FAFrame),
+            [ZzzFluentComponentRole.Navigation] = typeof(FANavigationView),
+            [ZzzFluentComponentRole.FASymbolIcon] = typeof(FASymbolIcon),
+            [ZzzFluentComponentRole.FAFontIcon] = typeof(FAFontIcon),
         };
 
     public static IReadOnlyDictionary<ZzzFluentComponentRole, Type> All => ComponentTypes;

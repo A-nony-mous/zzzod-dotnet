@@ -129,10 +129,10 @@ public sealed class TemplateHelperParityTests : IDisposable
 		string path = FindGuiRoot();
 		string actualString = File.ReadAllText(Path.Combine(path, "Pages", "Devtools", "ZzzTemplateHelperPage.axaml"));
 		string actualString2 = File.ReadAllText(Path.Combine(path, "Pages", "Devtools", "ZzzTemplateHelperPage.cs"));
-		Assert.Contains("<fa:CommandBar", actualString, StringComparison.Ordinal);
+		Assert.Contains("<fa:FACommandBar", actualString, StringComparison.Ordinal);
 		Assert.Contains("<fa:FAComboBox", actualString, StringComparison.Ordinal);
-		Assert.Contains("<fa:SettingsExpanderItem", actualString, StringComparison.Ordinal);
-		Assert.Contains("<fa:TeachingTip", actualString, StringComparison.Ordinal);
+		Assert.Contains("<fa:FASettingsExpanderItem", actualString, StringComparison.Ordinal);
+		Assert.Contains("<fa:FATeachingTip", actualString, StringComparison.Ordinal);
 		Assert.Contains("模板原图", actualString, StringComparison.Ordinal);
 		Assert.Contains("模板掩码", actualString, StringComparison.Ordinal);
 		Assert.Contains("模板抠图", actualString, StringComparison.Ordinal);

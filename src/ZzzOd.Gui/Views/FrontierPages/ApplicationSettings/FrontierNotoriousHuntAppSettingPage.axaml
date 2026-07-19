@@ -1,0 +1,159 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:fa="using:FluentAvalonia.UI.Controls"
+             xmlns:local="using:ZzzOd.Gui.Pages.ApplicationSettings"
+             x:Class="ZzzOd.Gui.Views.FrontierPages.ApplicationSettings.FrontierNotoriousHuntAppSettingPage">
+  <UserControl.Resources>
+    <DataTemplate x:Key="NotoriousHuntPlanTemplate"
+                  x:DataType="local:ZzzNotoriousHuntPlanRowModel">
+      <fa:FASettingsExpander Margin="0,0,0,6"
+                               DragDrop.AllowDrop="True"
+                               PointerPressed="OnPlanPointerPressed"
+                               PointerMoved="OnPlanPointerMoved"
+                               DragDrop.DragOver="OnPlanDragOver"
+                               DragDrop.Drop="OnPlanDrop">
+        <fa:FASettingsExpander.IconSource>
+          <fa:FAFontIconSource Glyph="&#xE787;" />
+        </fa:FASettingsExpander.IconSource>
+        <fa:FASettingsExpander.Footer>
+          <StackPanel Spacing="6">
+            <StackPanel Orientation="Horizontal" Spacing="6">
+              <fa:FAComboBox Width="180"
+                             ItemsSource="{Binding MissionTypeOptions}"
+                             SelectedItem="{Binding SelectedMissionType, Mode=TwoWay}"
+                             SelectionChanged="OnMissionTypeChanged">
+                <fa:FAComboBox.ItemTemplate>
+                  <DataTemplate x:DataType="local:ZzzNotoriousHuntOption">
+                    <TextBlock Text="{Binding Label}" />
+                  </DataTemplate>
+                </fa:FAComboBox.ItemTemplate>
+              </fa:FAComboBox>
+              <fa:FAComboBox Width="132"
+                             ItemsSource="{Binding LevelOptions}"
+                             SelectedItem="{Binding SelectedLevel, Mode=TwoWay}"
+                             SelectionChanged="OnLevelChanged">
+                <fa:FAComboBox.ItemTemplate>
+                  <DataTemplate x:DataType="local:ZzzNotoriousHuntOption">
+                    <TextBlock Text="{Binding Label}" />
+                  </DataTemplate>
+                </fa:FAComboBox.ItemTemplate>
+              </fa:FAComboBox>
+              <fa:FAComboBox Width="150"
+                             ItemsSource="{Binding TeamOptions}"
+                             SelectedItem="{Binding SelectedTeam, Mode=TwoWay}"
+                             SelectionChanged="OnTeamChanged">
+                <fa:FAComboBox.ItemTemplate>
+                  <DataTemplate x:DataType="local:ZzzNotoriousHuntOption">
+                    <TextBlock Text="{Binding Label}" />
+                  </DataTemplate>
+                </fa:FAComboBox.ItemTemplate>
+              </fa:FAComboBox>
+              <fa:FAComboBox Width="180"
+                             IsVisible="{Binding IsAutoBattleVisible}"
+                             ItemsSource="{Binding AutoBattleOptions}"
+                             SelectedItem="{Binding SelectedAutoBattle, Mode=TwoWay}"
+                             SelectionChanged="OnAutoBattleChanged">
+                <fa:FAComboBox.ItemTemplate>
+                  <DataTemplate x:DataType="local:ZzzNotoriousHuntOption">
+                    <TextBlock Text="{Binding Label}" />
+                  </DataTemplate>
+                </fa:FAComboBox.ItemTemplate>
+              </fa:FAComboBox>
+              <fa:FAComboBox Width="132"
+                             ItemsSource="{Binding BuffOptions}"
+                             SelectedItem="{Binding SelectedBuff, Mode=TwoWay}"
+                             SelectionChanged="OnBuffChanged">
+                <fa:FAComboBox.ItemTemplate>
+                  <DataTemplate x:DataType="local:ZzzNotoriousHuntOption">
+                    <TextBlock Text="{Binding Label}" />
+                  </DataTemplate>
+                </fa:FAComboBox.ItemTemplate>
+              </fa:FAComboBox>
+            </StackPanel>
+            <StackPanel Orientation="Horizontal"
+                        HorizontalAlignment="Right"
+                        Spacing="6">
+              <TextBlock Text="已运行次数" VerticalAlignment="Center" />
+              <TextBox Width="64"
+                       Text="{Binding RunTimesText, Mode=TwoWay}"
+                       TextChanged="OnRunTimesChanged" />
+              <TextBlock Text="计划次数" VerticalAlignment="Center" />
+              <TextBox Width="64"
+                       Text="{Binding PlanTimesText, Mode=TwoWay}"
+                       TextChanged="OnPlanTimesChanged" />
+              <Button Width="36"
+                      Height="32"
+                      Padding="0"
+                      ToolTip.Tip="置顶"
+                      IsVisible="{Binding ShowCommands}"
+                      Click="OnMoveTopClicked">
+                <fa:FAFontIcon Glyph="&#xE74A;" />
+              </Button>
+              <Button Width="36"
+                      Height="32"
+                      Padding="0"
+                      ToolTip.Tip="删除"
+                      IsVisible="{Binding ShowCommands}"
+                      Click="OnDeleteClicked">
+                <fa:FASymbolIcon Symbol="Delete" />
+              </Button>
+            </StackPanel>
+          </StackPanel>
+        </fa:FASettingsExpander.Footer>
+      </fa:FASettingsExpander>
+    </DataTemplate>
+  </UserControl.Resources>
+
+  <Grid>
+    <ScrollViewer HorizontalScrollBarVisibility="Auto"
+                  VerticalScrollBarVisibility="Auto">
+      <StackPanel Margin="{DynamicResource SampleAppPageMargin}"
+                  Spacing="{DynamicResource SampleAppSectionSpacing}">
+        <fa:FAInfoBar x:Name="ErrorBar"
+                    IsOpen="False"
+                    IsClosable="True"
+                    Severity="Error" />
+        <Grid ColumnDefinitions="*,6,*">
+          <fa:FASettingsExpander Header="恶名狩猎（周期挑战）开始日"
+                                   Description="从开始日起才会自动运行。当日未完成会顺延到次日，直到当周完成/结束">
+            <fa:FASettingsExpander.IconSource>
+              <fa:FAFontIconSource Glyph="&#xE787;" />
+            </fa:FASettingsExpander.IconSource>
+            <fa:FASettingsExpander.Footer>
+              <fa:FAComboBox x:Name="WeekdayCombo"
+                             Width="132"
+                             SelectionChanged="OnWeekdayChanged" />
+            </fa:FASettingsExpander.Footer>
+          </fa:FASettingsExpander>
+          <fa:FASettingsExpander Grid.Column="2"
+                                   Header="循环执行"
+                                   Description="开启后，全部计划均达到计划次数后，已运行次数会清零并开始下一轮">
+            <fa:FASettingsExpander.IconSource>
+              <fa:FAFontIconSource Glyph="&#xE72C;" />
+            </fa:FASettingsExpander.IconSource>
+            <fa:FASettingsExpander.Footer>
+              <ToggleSwitch x:Name="LoopToggle"
+                            OnContent=""
+                            OffContent=""
+                            Click="OnLoopChanged" />
+            </fa:FASettingsExpander.Footer>
+          </fa:FASettingsExpander>
+        </Grid>
+        <ItemsControl x:Name="PlanList"
+                      ItemTemplate="{StaticResource NotoriousHuntPlanTemplate}" />
+        <Button Content="新增"
+                HorizontalAlignment="Left"
+                Click="OnAddClicked" />
+      </StackPanel>
+    </ScrollViewer>
+
+    <fa:FAContentDialog x:Name="AddPlanDialog"
+                      Title="新增恶名狩猎计划"
+                      PrimaryButtonText="确定"
+                      CloseButtonText="取消"
+                      DefaultButton="Primary">
+      <ContentControl x:Name="DialogPlanHost"
+                      ContentTemplate="{StaticResource NotoriousHuntPlanTemplate}" />
+    </fa:FAContentDialog>
+  </Grid>
+</UserControl>

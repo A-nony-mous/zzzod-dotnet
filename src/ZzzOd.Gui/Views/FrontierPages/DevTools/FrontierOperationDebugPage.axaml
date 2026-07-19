@@ -1,0 +1,89 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:fa="using:FluentAvalonia.UI.Controls"
+             xmlns:local="using:ZzzOd.Gui.Views.FrontierPages.DevTools"
+             x:Class="ZzzOd.Gui.Views.FrontierPages.DevTools.FrontierOperationDebugPage">
+  <ScrollViewer HorizontalScrollBarVisibility="Disabled"
+                VerticalScrollBarVisibility="Auto">
+    <StackPanel Margin="{DynamicResource SampleAppPageMargin}"
+                Spacing="10">
+      <fa:FAInfoBar x:Name="ActionBar"
+                  IsOpen="False"
+                  IsClosable="False"
+                  Severity="Error" />
+
+      <fa:FASettingsExpander>
+        <fa:FASettingsExpander.Header>
+          <TextBlock Text="指令调试"
+                     FontSize="20"
+                     FontWeight="SemiBold" />
+        </fa:FASettingsExpander.Header>
+
+        <fa:FASettingsExpanderItem Content="指令配置"
+                                 Description="在 config/auto_battle_operation 文件夹">
+          <fa:FASettingsExpanderItem.IconSource>
+            <fa:FASymbolIconSource Symbol="Play" />
+          </fa:FASettingsExpanderItem.IconSource>
+          <fa:FASettingsExpanderItem.Footer>
+            <Grid ColumnDefinitions="*,Auto"
+                  ColumnSpacing="8">
+              <fa:FAComboBox x:Name="OperationTemplateCombo"
+                             MinWidth="300"
+                             IsEditable="True"
+                             SelectionChanged="OnOperationTemplateChanged"
+                             LostFocus="OnOperationTemplateLostFocus" />
+              <fa:FACommandBar Grid.Column="1"
+                             DefaultLabelPosition="Collapsed">
+                <fa:FACommandBar.PrimaryCommands>
+                  <fa:FACommandBarButton x:Name="DeleteTemplateButton"
+                                       Label=""
+                                       AutomationProperties.Name="删除配置"
+                                       ToolTip.Tip="删除配置"
+                                       Click="OnDeleteTemplateClicked">
+                    <fa:FACommandBarButton.IconSource>
+                      <fa:FASymbolIconSource Symbol="Delete" />
+                    </fa:FACommandBarButton.IconSource>
+                  </fa:FACommandBarButton>
+                </fa:FACommandBar.PrimaryCommands>
+              </fa:FACommandBar>
+            </Grid>
+          </fa:FASettingsExpanderItem.Footer>
+        </fa:FASettingsExpanderItem>
+
+        <fa:FASettingsExpanderItem Content="循环指令"
+                                 Description="不断重复指令 确保可以连贯执行">
+          <fa:FASettingsExpanderItem.IconSource>
+            <fa:FASymbolIconSource Symbol="RepeatAll" />
+          </fa:FASettingsExpanderItem.IconSource>
+          <fa:FASettingsExpanderItem.Footer>
+            <ToggleSwitch x:Name="RepeatToggle"
+                          OnContent="开"
+                          OffContent="关"
+                          IsCheckedChanged="OnRepeatChanged" />
+          </fa:FASettingsExpanderItem.Footer>
+        </fa:FASettingsExpanderItem>
+
+        <fa:FASettingsExpanderItem Content="操作方式"
+                                 Description="仅影响自动战斗。如需使用手柄，请先安装虚拟手柄依赖。">
+          <fa:FASettingsExpanderItem.IconSource>
+            <fa:FAFontIconSource Glyph="&#xE7FC;" />
+          </fa:FASettingsExpanderItem.IconSource>
+          <fa:FASettingsExpanderItem.Footer>
+            <fa:FAComboBox x:Name="ControlMethodCombo"
+                           MinWidth="220"
+                           SelectionChanged="OnControlMethodChanged">
+              <fa:FAComboBox.ItemTemplate>
+                <DataTemplate x:DataType="local:ZzzOperationDebugOption">
+                  <TextBlock Text="{Binding Label}" />
+                </DataTemplate>
+              </fa:FAComboBox.ItemTemplate>
+            </fa:FAComboBox>
+          </fa:FASettingsExpanderItem.Footer>
+        </fa:FASettingsExpanderItem>
+      </fa:FASettingsExpander>
+
+      <ContentControl x:Name="RunPanelHost"
+                      HorizontalContentAlignment="Stretch" />
+    </StackPanel>
+  </ScrollViewer>
+</UserControl>

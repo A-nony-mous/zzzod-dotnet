@@ -1,0 +1,7 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <Thickness x:Key="SampleAppPageMargin">20 20 20 0</Thickness>
+  <x:Double x:Key="SampleAppSectionSpacing">8</x:Double>
+  <Thickness x:Key="SampleAppHeaderMargin">0 0 0 10</Thickness>
+  <x:Double x:Key="SampleAppScrollBarSize">10</x:Double>
+</ResourceDictionary>

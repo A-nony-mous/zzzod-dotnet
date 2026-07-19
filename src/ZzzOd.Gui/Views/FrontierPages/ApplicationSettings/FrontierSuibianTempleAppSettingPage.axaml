@@ -1,0 +1,57 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:fa="using:FluentAvalonia.UI.Controls"
+             x:Class="ZzzOd.Gui.Views.FrontierPages.ApplicationSettings.FrontierSuibianTempleAppSettingPage">
+  <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+    <StackPanel Margin="{DynamicResource SampleAppPageMargin}"
+                Spacing="{DynamicResource SampleAppSectionSpacing}">
+      <fa:FAInfoBar x:Name="ErrorBar" IsOpen="False" IsClosable="True" Severity="Error" />
+      <fa:FASettingsExpander Header="自动托管"
+                               Description="启用后选择游戏内自动托管经营随便观相关任务，随便观35级后可用">
+        <fa:FASettingsExpander.Footer>
+          <ToggleSwitch x:Name="AutoManageToggle" Click="OnAutoManageChanged" />
+        </fa:FASettingsExpander.Footer>
+      </fa:FASettingsExpander>
+      <fa:FASettingsExpander x:Name="YumChaItem" Header="饮茶仙">
+        <fa:FASettingsExpander.Footer><ToggleSwitch x:Name="YumChaToggle" Tag="yum_cha_sin" Click="OnBoolChanged" /></fa:FASettingsExpander.Footer>
+      </fa:FASettingsExpander>
+      <fa:FASettingsExpander x:Name="YumChaRefreshItem" Header="饮茶仙-委托刷新">
+        <fa:FASettingsExpander.Footer><ToggleSwitch x:Name="YumChaRefreshToggle" Tag="yum_cha_sin_period_refresh" Click="OnBoolChanged" /></fa:FASettingsExpander.Footer>
+      </fa:FASettingsExpander>
+      <fa:FASettingsExpander x:Name="AdventureDurationItem" Header="派遣-时长">
+        <fa:FASettingsExpander.Footer><fa:FAComboBox x:Name="AdventureDurationCombo" Tag="adventure_duration" Width="180" SelectionChanged="OnComboChanged" /></fa:FASettingsExpander.Footer>
+      </fa:FASettingsExpander>
+      <fa:FASettingsExpander x:Name="AdventureMissionItem" Header="派遣-副本优先级" Description="按优先级将剩余小队派遣">
+        <fa:FASettingsExpander.Footer>
+          <StackPanel Orientation="Horizontal" Spacing="6">
+            <fa:FAComboBox x:Name="AdventureMission1Combo" Tag="adventure_mission_1" Width="150" SelectionChanged="OnComboChanged" />
+            <fa:FAComboBox x:Name="AdventureMission2Combo" Tag="adventure_mission_2" Width="150" SelectionChanged="OnComboChanged" />
+            <fa:FAComboBox x:Name="AdventureMission3Combo" Tag="adventure_mission_3" Width="150" SelectionChanged="OnComboChanged" />
+            <fa:FAComboBox x:Name="AdventureMission4Combo" Tag="adventure_mission_4" Width="150" SelectionChanged="OnComboChanged" />
+          </StackPanel>
+        </fa:FASettingsExpander.Footer>
+      </fa:FASettingsExpander>
+      <fa:FASettingsExpander x:Name="CraftDragItem" Header="制造坊-最大下拉次数" Description="跳过底部的低级商品">
+        <fa:FASettingsExpander.Footer><fa:FANumberBox x:Name="CraftDragNumber" Minimum="0" Maximum="99" SmallChange="1" ValueChanged="OnCraftDragChanged" /></fa:FASettingsExpander.Footer>
+      </fa:FASettingsExpander>
+      <fa:FASettingsExpander Header="好物铺购买" Description="自动购买好物铺中的指定商品">
+        <fa:FASettingsExpander.Footer><ToggleSwitch x:Name="GoodGoodsToggle" Tag="good_goods_purchase_enabled" Click="OnBoolChanged" /></fa:FASettingsExpander.Footer>
+      </fa:FASettingsExpander>
+      <fa:FASettingsExpander Header="邦巢-购买" Description="自动刷新购买S级别邦布。随便观25级后可用。">
+        <fa:FASettingsExpander.Footer><ToggleSwitch x:Name="BooBoxToggle" Tag="boo_box_purchase_enabled" Click="OnBoolChanged" /></fa:FASettingsExpander.Footer>
+      </fa:FASettingsExpander>
+      <fa:FASettingsExpander Header="邦巢-最低购买价格">
+        <fa:FASettingsExpander.Footer>
+          <StackPanel Orientation="Horizontal" Spacing="6">
+            <TextBlock VerticalAlignment="Center" Text="游历" />
+            <fa:FAComboBox x:Name="BooBoxAdventureCombo" Tag="boo_box_adventure_price" Width="110" SelectionChanged="OnComboChanged" />
+            <TextBlock VerticalAlignment="Center" Text="制造" />
+            <fa:FAComboBox x:Name="BooBoxCraftCombo" Tag="boo_box_craft_price" Width="110" SelectionChanged="OnComboChanged" />
+            <TextBlock VerticalAlignment="Center" Text="售卖" />
+            <fa:FAComboBox x:Name="BooBoxSellCombo" Tag="boo_box_sell_price" Width="110" SelectionChanged="OnComboChanged" />
+          </StackPanel>
+        </fa:FASettingsExpander.Footer>
+      </fa:FASettingsExpander>
+    </StackPanel>
+  </ScrollViewer>
+</UserControl>

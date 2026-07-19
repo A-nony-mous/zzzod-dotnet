@@ -148,16 +148,16 @@ public sealed class LostVoidAppSettingPageTests
 		string path = FindDirectory();
 		string text = File.ReadAllText(Path.Combine(path, "ZzzLostVoidAppSettingPage.axaml"));
 		string actualString = File.ReadAllText(Path.Combine(path, "ZzzLostVoidAppSettingPage.axaml.cs"));
-		Assert.Contains("fa:TabView", text, StringComparison.Ordinal);
+		Assert.Contains("fa:FATabView", text, StringComparison.Ordinal);
 		Assert.True(text.IndexOf("迷失之地配置", StringComparison.Ordinal) < text.IndexOf("挑战配置-迷", StringComparison.Ordinal));
 		Assert.True(text.IndexOf("挑战副本", StringComparison.Ordinal) < text.IndexOf("刷取目标", StringComparison.Ordinal));
 		Assert.True(text.IndexOf("运行记录", StringComparison.Ordinal) < text.IndexOf("挑战配置\"", StringComparison.Ordinal));
 		Assert.True(text.IndexOf("配置名称", StringComparison.Ordinal) < text.IndexOf("预备编队", StringComparison.Ordinal));
 		Assert.True(text.IndexOf("当期UP代理人", StringComparison.Ordinal) < text.IndexOf("矩阵行动 - 手动选择代理人", StringComparison.Ordinal));
 		Assert.True(text.IndexOf("藏品第一优先级", StringComparison.Ordinal) < text.IndexOf("区域类型优先级", StringComparison.Ordinal));
-		Assert.Contains("fa:SettingsExpanderItem", text, StringComparison.Ordinal);
-		Assert.Contains("fa:CommandBar", text, StringComparison.Ordinal);
-		Assert.Contains("fa:ContentDialog", text, StringComparison.Ordinal);
+		Assert.Contains("fa:FASettingsExpanderItem", text, StringComparison.Ordinal);
+		Assert.Contains("fa:FACommandBar", text, StringComparison.Ordinal);
+		Assert.Contains("fa:FAContentDialog", text, StringComparison.Ordinal);
 		Assert.DoesNotContain("new StackPanel", actualString, StringComparison.Ordinal);
 		Assert.DoesNotContain("Python", text, StringComparison.Ordinal);
 	}

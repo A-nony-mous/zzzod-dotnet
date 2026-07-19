@@ -4,7 +4,7 @@
              x:Class="ZzzOd.Gui.Controls.ZzzRunPanel">
   <Grid>
   <Grid RowDefinitions="Auto,Auto,Auto,Auto,*">
-    <fa:InfoBar x:Name="RunErrorBar"
+    <fa:FAInfoBar x:Name="RunErrorBar"
                 Grid.Row="0" Margin="0,0,0,8"
                 IsOpen="False"
                 IsClosable="False"
@@ -22,7 +22,7 @@
               Classes="accent">
         <StackPanel Orientation="Horizontal"
                     Spacing="8">
-          <fa:SymbolIcon x:Name="PrimaryIcon"
+          <fa:FASymbolIcon x:Name="PrimaryIcon"
                          Symbol="Play" />
           <TextBlock x:Name="PrimaryLabel"
                      Text="开始" />
@@ -33,7 +33,7 @@
               IsEnabled="False">
         <StackPanel Orientation="Horizontal"
                     Spacing="8">
-          <fa:SymbolIcon Symbol="Cancel" />
+          <fa:FASymbolIcon Symbol="Cancel" />
           <TextBlock x:Name="StopLabel"
                      Text="停止" />
         </StackPanel>
@@ -46,7 +46,7 @@
     <Border x:Name="RunOperationOverlay"
             Background="#66000000"
             IsVisible="False">
-      <fa:ProgressRing Width="32"
+      <fa:FAProgressRing Width="32"
                        Height="32"
                        IsActive="True"
                        HorizontalAlignment="Center"

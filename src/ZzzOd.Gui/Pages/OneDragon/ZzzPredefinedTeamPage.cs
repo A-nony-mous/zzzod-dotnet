@@ -155,7 +155,7 @@ internal sealed partial class ZzzPredefinedTeamPage : UserControl, IZzzPageLifec
     private readonly ObservableCollection<ZzzPredefinedTeamRowModel> _rows = [];
     private readonly ZzzRunPanel _runPanel;
     private readonly ItemsControl _teamList;
-    private readonly InfoBar _errorBar;
+    private readonly FAInfoBar _errorBar;
     private readonly Button _helpButton;
     private bool _loading;
 
@@ -164,7 +164,7 @@ internal sealed partial class ZzzPredefinedTeamPage : UserControl, IZzzPageLifec
         _backend = backend;
         AvaloniaXamlLoader.Load(this);
         _teamList = Required<ItemsControl>("TeamList");
-        _errorBar = Required<InfoBar>("TeamErrorBar");
+        _errorBar = Required<FAInfoBar>("TeamErrorBar");
         _helpButton = Required<Button>("HelpButton");
         _runPanel = new ZzzRunPanel(
             backend,
@@ -320,7 +320,7 @@ internal sealed partial class ZzzPredefinedTeamPage : UserControl, IZzzPageLifec
             return;
         }
 
-        ContentDialog dialog = new()
+        FAContentDialog dialog = new()
         {
             Title = "使用说明",
             Content = new TextBlock
@@ -330,7 +330,7 @@ internal sealed partial class ZzzPredefinedTeamPage : UserControl, IZzzPageLifec
                 MaxWidth = 560,
             },
             PrimaryButtonText = "确认",
-            DefaultButton = ContentDialogButton.Primary,
+            DefaultButton = FAContentDialogButton.Primary,
         };
         await dialog.ShowAsync(owner).ConfigureAwait(true);
     }

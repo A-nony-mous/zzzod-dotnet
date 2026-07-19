@@ -224,7 +224,7 @@ internal sealed class ZzzShiyuDefenseAppSettingState
 internal sealed partial class ZzzShiyuDefenseAppSettingPage : UserControl, IZzzPageLifecycle
 {
     private readonly ZzzShiyuDefenseAppSettingState _state;
-    private readonly InfoBar _errorBar;
+    private readonly FAInfoBar _errorBar;
     private readonly ListBox _teamList;
     private bool _loading;
 
@@ -232,7 +232,7 @@ internal sealed partial class ZzzShiyuDefenseAppSettingPage : UserControl, IZzzP
     {
         _state = new ZzzShiyuDefenseAppSettingState(backend, instanceIndex, groupId);
         AvaloniaXamlLoader.Load(this);
-        _errorBar = Required<InfoBar>("ErrorBar");
+        _errorBar = Required<FAInfoBar>("ErrorBar");
         _teamList = Required<ListBox>("TeamList");
         Reload();
     }
@@ -304,7 +304,7 @@ internal sealed partial class ZzzShiyuDefenseAppSettingPage : UserControl, IZzzP
 
         _errorBar.Title = "错误";
         _errorBar.Message = _state.LastError;
-        _errorBar.Severity = InfoBarSeverity.Error;
+        _errorBar.Severity = FAInfoBarSeverity.Error;
         _errorBar.IsOpen = true;
     }
 

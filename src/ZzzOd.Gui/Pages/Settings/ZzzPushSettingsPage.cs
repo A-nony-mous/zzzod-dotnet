@@ -4,6 +4,7 @@ using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.Json;
 using Avalonia.Controls;
+using Avalonia.Input.Platform;
 using Avalonia.Controls.Primitives;
 using Avalonia.Interactivity;
 using Avalonia.Markup.Xaml;
@@ -76,12 +77,12 @@ internal sealed partial class ZzzPushSettingsAxamlPage : UserControl, IZzzPageLi
     private readonly IZzzAppBackend _backend;
     private readonly IZzzPushNotificationService _pushService;
     private readonly ZzzGuiOperationTracker _operations;
-    private readonly InfoBar _resultBar;
+    private readonly FAInfoBar _resultBar;
     private readonly FAComboBox _proxyCombo;
     private readonly FAComboBox _channelCombo;
     private readonly FAComboBox _emailServiceCombo;
-    private readonly SettingsExpanderItem _personalProxyItem;
-    private readonly SettingsExpanderItem _curlItem;
+    private readonly FASettingsExpanderItem _personalProxyItem;
+    private readonly FASettingsExpanderItem _curlItem;
     private readonly StackPanel _emailServicePanel;
     private readonly ItemsControl _channelFieldList;
     private readonly Dictionary<string, ZzzPushFieldModel[]> _channelFields = new(StringComparer.Ordinal);
@@ -94,12 +95,12 @@ internal sealed partial class ZzzPushSettingsAxamlPage : UserControl, IZzzPageLi
         _operations = operations ?? new ZzzGuiOperationTracker();
         AvaloniaXamlLoader.Load(this);
 
-        _resultBar = Required<InfoBar>("ResultBar");
+        _resultBar = Required<FAInfoBar>("ResultBar");
         _proxyCombo = Required<FAComboBox>("ProxyCombo");
         _channelCombo = Required<FAComboBox>("ChannelCombo");
         _emailServiceCombo = Required<FAComboBox>("EmailServiceCombo");
-        _personalProxyItem = Required<SettingsExpanderItem>("PersonalProxyItem");
-        _curlItem = Required<SettingsExpanderItem>("CurlItem");
+        _personalProxyItem = Required<FASettingsExpanderItem>("PersonalProxyItem");
+        _curlItem = Required<FASettingsExpanderItem>("CurlItem");
         _emailServicePanel = Required<StackPanel>("EmailServicePanel");
         _channelFieldList = Required<ItemsControl>("ChannelFieldList");
 
@@ -409,7 +410,7 @@ internal sealed partial class ZzzPushSettingsAxamlPage : UserControl, IZzzPageLi
     {
         _resultBar.Title = "错误";
         _resultBar.Message = message;
-        _resultBar.Severity = InfoBarSeverity.Error;
+        _resultBar.Severity = FAInfoBarSeverity.Error;
         _resultBar.IsOpen = true;
     }
 
@@ -417,7 +418,7 @@ internal sealed partial class ZzzPushSettingsAxamlPage : UserControl, IZzzPageLi
     {
         _resultBar.Title = "成功";
         _resultBar.Message = message;
-        _resultBar.Severity = InfoBarSeverity.Success;
+        _resultBar.Severity = FAInfoBarSeverity.Success;
         _resultBar.IsOpen = true;
     }
 

@@ -5,57 +5,58 @@
              x:Class="ZzzOd.Gui.Pages.Settings.ZzzPushSettingsAxamlPage">
   <ScrollViewer HorizontalScrollBarVisibility="Disabled"
                 VerticalScrollBarVisibility="Auto">
-    <StackPanel Margin="11" Spacing="8">
-      <fa:InfoBar x:Name="ResultBar"
+    <StackPanel Margin="{DynamicResource SampleAppPageMargin}"
+                Spacing="{DynamicResource SampleAppSectionSpacing}">
+      <fa:FAInfoBar x:Name="ResultBar"
                   IsOpen="False"
                   IsClosable="True" />
 
-      <fa:SettingsExpanderItem Content="设置说明"
+      <fa:FASettingsExpanderItem Content="设置说明"
                                Description="配置运行通知的推送方式或渠道，所有已配置的渠道都会启用">
-        <fa:SettingsExpanderItem.IconSource>
-          <fa:SymbolIconSource Symbol="Help" />
-        </fa:SettingsExpanderItem.IconSource>
-        <fa:SettingsExpanderItem.Footer>
+        <fa:FASettingsExpanderItem.IconSource>
+          <fa:FASymbolIconSource Symbol="Help" />
+        </fa:FASettingsExpanderItem.IconSource>
+        <fa:FASettingsExpanderItem.Footer>
           <Button Content="查看" Click="OnHelpClicked" />
-        </fa:SettingsExpanderItem.Footer>
-      </fa:SettingsExpanderItem>
+        </fa:FASettingsExpanderItem.Footer>
+      </fa:FASettingsExpanderItem>
 
-      <fa:SettingsExpanderItem Content="自定义通知标题">
-        <fa:SettingsExpanderItem.Footer>
+      <fa:FASettingsExpanderItem Content="自定义通知标题">
+        <fa:FASettingsExpanderItem.Footer>
           <TextBox x:Name="TitleTextBox"
                    Width="320"
-                   Watermark="一条龙运行通知"
+                   PlaceholderText="一条龙运行通知"
                    LostFocus="OnTitleChanged" />
-        </fa:SettingsExpanderItem.Footer>
-      </fa:SettingsExpanderItem>
+        </fa:FASettingsExpanderItem.Footer>
+      </fa:FASettingsExpanderItem>
 
-      <fa:SettingsExpanderItem Content="通知中附带图片">
-        <fa:SettingsExpanderItem.Footer>
+      <fa:FASettingsExpanderItem Content="通知中附带图片">
+        <fa:FASettingsExpanderItem.Footer>
           <ToggleSwitch x:Name="SendImageToggle"
                         Click="OnSendImageChanged" />
-        </fa:SettingsExpanderItem.Footer>
-      </fa:SettingsExpanderItem>
+        </fa:FASettingsExpanderItem.Footer>
+      </fa:FASettingsExpanderItem>
 
-      <fa:SettingsExpanderItem Content="代理设置">
-        <fa:SettingsExpanderItem.Footer>
+      <fa:FASettingsExpanderItem Content="代理设置">
+        <fa:FASettingsExpanderItem.Footer>
           <fa:FAComboBox x:Name="ProxyCombo"
                          Width="200"
                          SelectionChanged="OnProxyChanged" />
-        </fa:SettingsExpanderItem.Footer>
-      </fa:SettingsExpanderItem>
+        </fa:FASettingsExpanderItem.Footer>
+      </fa:FASettingsExpanderItem>
 
-      <fa:SettingsExpanderItem x:Name="PersonalProxyItem"
+      <fa:FASettingsExpanderItem x:Name="PersonalProxyItem"
                                Content="个人代理地址">
-        <fa:SettingsExpanderItem.Footer>
+        <fa:FASettingsExpanderItem.Footer>
           <TextBox x:Name="PersonalProxyTextBox"
                    Width="320"
                    LostFocus="OnPersonalProxyChanged" />
-        </fa:SettingsExpanderItem.Footer>
-      </fa:SettingsExpanderItem>
+        </fa:FASettingsExpanderItem.Footer>
+      </fa:FASettingsExpanderItem>
 
-      <fa:SettingsExpanderItem Content="测试通知方式"
+      <fa:FASettingsExpanderItem Content="测试通知方式"
                                Description="发送测试消息验证通知配置">
-        <fa:SettingsExpanderItem.Footer>
+        <fa:FASettingsExpanderItem.Footer>
           <StackPanel Orientation="Horizontal" Spacing="8">
             <Button x:Name="TestCurrentButton"
                     Content="测试当前方式"
@@ -64,36 +65,36 @@
                     Content="测试全部"
                     Click="OnTestAllClicked" />
           </StackPanel>
-        </fa:SettingsExpanderItem.Footer>
-      </fa:SettingsExpanderItem>
+        </fa:FASettingsExpanderItem.Footer>
+      </fa:FASettingsExpanderItem>
 
-      <fa:SettingsExpander Header="通知方式">
-        <fa:SettingsExpander.Footer>
+      <fa:FASettingsExpander Header="通知方式">
+        <fa:FASettingsExpander.Footer>
           <fa:FAComboBox x:Name="ChannelCombo"
                          Width="240"
                          SelectionChanged="OnChannelChanged" />
-        </fa:SettingsExpander.Footer>
+        </fa:FASettingsExpander.Footer>
 
         <StackPanel x:Name="EmailServicePanel" Spacing="1">
-          <fa:SettingsExpanderItem Content="邮箱服务选择"
+          <fa:FASettingsExpanderItem Content="邮箱服务选择"
                                    Description="选择后自动填充相关配置">
-            <fa:SettingsExpanderItem.Footer>
+            <fa:FASettingsExpanderItem.Footer>
               <fa:FAComboBox x:Name="EmailServiceCombo"
                              Width="320"
                              IsEditable="True"
                              SelectionChanged="OnEmailServiceChanged" />
-            </fa:SettingsExpanderItem.Footer>
-          </fa:SettingsExpanderItem>
+            </fa:FASettingsExpanderItem.Footer>
+          </fa:FASettingsExpanderItem>
         </StackPanel>
         <ItemsControl x:Name="ChannelFieldList">
           <ItemsControl.ItemTemplate>
             <DataTemplate x:DataType="settings:ZzzPushFieldModel">
-              <fa:SettingsExpanderItem Content="{Binding DisplayTitle}">
-                <fa:SettingsExpanderItem.Footer>
+              <fa:FASettingsExpanderItem Content="{Binding DisplayTitle}">
+                <fa:FASettingsExpanderItem.Footer>
                   <Grid>
                     <TextBox Width="320"
                              Text="{Binding Value}"
-                             Watermark="{Binding Placeholder}"
+                             PlaceholderText="{Binding Placeholder}"
                              AcceptsReturn="{Binding AcceptsReturn}"
                              IsVisible="{Binding IsText}"
                              LostFocus="OnDynamicTextChanged" />
@@ -103,20 +104,20 @@
                                    IsVisible="{Binding IsCombo}"
                                    SelectionChanged="OnDynamicComboChanged" />
                   </Grid>
-                </fa:SettingsExpanderItem.Footer>
-              </fa:SettingsExpanderItem>
+                </fa:FASettingsExpanderItem.Footer>
+              </fa:FASettingsExpanderItem>
             </DataTemplate>
           </ItemsControl.ItemTemplate>
         </ItemsControl>
-        <fa:SettingsExpanderItem x:Name="CurlItem" Content="生成 cURL 命令">
-          <fa:SettingsExpanderItem.Footer>
+        <fa:FASettingsExpanderItem x:Name="CurlItem" Content="生成 cURL 命令">
+          <fa:FASettingsExpanderItem.Footer>
             <StackPanel Orientation="Horizontal" Spacing="8">
               <Button Content="PowerShell 风格" Click="OnPowerShellCurlClicked" />
               <Button Content="Unix 风格" Click="OnUnixCurlClicked" />
             </StackPanel>
-          </fa:SettingsExpanderItem.Footer>
-        </fa:SettingsExpanderItem>
-      </fa:SettingsExpander>
+          </fa:FASettingsExpanderItem.Footer>
+        </fa:FASettingsExpanderItem>
+      </fa:FASettingsExpander>
     </StackPanel>
   </ScrollViewer>
 </UserControl>

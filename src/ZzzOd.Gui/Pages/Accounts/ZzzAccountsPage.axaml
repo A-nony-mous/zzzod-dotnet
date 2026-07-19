@@ -6,45 +6,45 @@
   <Grid>
     <ScrollViewer HorizontalScrollBarVisibility="Disabled"
                   VerticalScrollBarVisibility="Auto">
-    <StackPanel Margin="11"
-                Spacing="8">
-      <fa:InfoBar x:Name="ActionBar"
+    <StackPanel Margin="{DynamicResource SampleAppPageMargin}"
+                Spacing="{DynamicResource SampleAppSectionSpacing}">
+      <fa:FAInfoBar x:Name="ActionBar"
                   IsOpen="False"
                   IsClosable="True" />
 
-      <fa:SettingsExpanderItem Content="使用说明"
+      <fa:FASettingsExpanderItem Content="使用说明"
                                Description="点击启用后到各模块进行设置，各账户之间的设置是独立的。">
-        <fa:SettingsExpanderItem.IconSource>
-          <fa:SymbolIconSource Symbol="Help" />
-        </fa:SettingsExpanderItem.IconSource>
-        <fa:SettingsExpanderItem.Footer>
+        <fa:FASettingsExpanderItem.IconSource>
+          <fa:FASymbolIconSource Symbol="Help" />
+        </fa:FASettingsExpanderItem.IconSource>
+        <fa:FASettingsExpanderItem.Footer>
           <Button Content="查看"
                   Click="OnHelpClicked" />
-        </fa:SettingsExpanderItem.Footer>
-      </fa:SettingsExpanderItem>
+        </fa:FASettingsExpanderItem.Footer>
+      </fa:FASettingsExpanderItem>
 
-      <fa:SettingsExpander Header="当前账户设置"
+      <fa:FASettingsExpander Header="当前账户设置"
                            IsExpanded="True">
-        <fa:SettingsExpander.IconSource>
-          <fa:SymbolIconSource Symbol="Contact" />
-        </fa:SettingsExpander.IconSource>
+        <fa:FASettingsExpander.IconSource>
+          <fa:FASymbolIconSource Symbol="Contact" />
+        </fa:FASettingsExpander.IconSource>
 
-        <fa:SettingsExpanderItem x:Name="GamePathItem"
+        <fa:FASettingsExpanderItem x:Name="GamePathItem"
                                  Content="游戏路径">
-          <fa:SettingsExpanderItem.IconSource>
-            <fa:SymbolIconSource Symbol="Folder" />
-          </fa:SettingsExpanderItem.IconSource>
-          <fa:SettingsExpanderItem.Footer>
+          <fa:FASettingsExpanderItem.IconSource>
+            <fa:FASymbolIconSource Symbol="Folder" />
+          </fa:FASettingsExpanderItem.IconSource>
+          <fa:FASettingsExpanderItem.Footer>
             <Button Content="选择"
                     Click="OnChooseGamePathClicked" />
-          </fa:SettingsExpanderItem.Footer>
-        </fa:SettingsExpanderItem>
+          </fa:FASettingsExpanderItem.Footer>
+        </fa:FASettingsExpanderItem>
 
-        <fa:SettingsExpanderItem Content="自定义窗口标题">
-          <fa:SettingsExpanderItem.IconSource>
-            <fa:SymbolIconSource Symbol="FullScreen" />
-          </fa:SettingsExpanderItem.IconSource>
-          <fa:SettingsExpanderItem.Footer>
+        <fa:FASettingsExpanderItem Content="自定义窗口标题">
+          <fa:FASettingsExpanderItem.IconSource>
+            <fa:FASymbolIconSource Symbol="FullScreen" />
+          </fa:FASettingsExpanderItem.IconSource>
+          <fa:FASettingsExpanderItem.Footer>
             <StackPanel Orientation="Horizontal"
                         Spacing="8">
               <TextBox x:Name="CustomWindowTitleInput"
@@ -55,14 +55,14 @@
                             OffContent=""
                             Click="OnUseCustomWindowTitleChanged" />
             </StackPanel>
-          </fa:SettingsExpanderItem.Footer>
-        </fa:SettingsExpanderItem>
+          </fa:FASettingsExpanderItem.Footer>
+        </fa:FASettingsExpanderItem>
 
-        <fa:SettingsExpanderItem Content="游戏区服">
-          <fa:SettingsExpanderItem.IconSource>
-            <fa:SymbolIconSource Symbol="Home" />
-          </fa:SettingsExpanderItem.IconSource>
-          <fa:SettingsExpanderItem.Footer>
+        <fa:FASettingsExpanderItem Content="游戏区服">
+          <fa:FASettingsExpanderItem.IconSource>
+            <fa:FASymbolIconSource Symbol="Home" />
+          </fa:FASettingsExpanderItem.IconSource>
+          <fa:FASettingsExpanderItem.Footer>
             <fa:FAComboBox x:Name="GameRegionCombo"
                            Width="180"
                            SelectionChanged="OnGameRegionChanged">
@@ -72,60 +72,60 @@
                 </DataTemplate>
               </fa:FAComboBox.ItemTemplate>
             </fa:FAComboBox>
-          </fa:SettingsExpanderItem.Footer>
-        </fa:SettingsExpanderItem>
+          </fa:FASettingsExpanderItem.Footer>
+        </fa:FASettingsExpanderItem>
 
-        <fa:SettingsExpanderItem x:Name="AccountItem"
+        <fa:FASettingsExpanderItem x:Name="AccountItem"
                                  Content="账号"
                                  Description="所有信息都明文保存在本地">
-          <fa:SettingsExpanderItem.IconSource>
-            <fa:SymbolIconSource Symbol="People" />
-          </fa:SettingsExpanderItem.IconSource>
-          <fa:SettingsExpanderItem.Footer>
+          <fa:FASettingsExpanderItem.IconSource>
+            <fa:FASymbolIconSource Symbol="People" />
+          </fa:FASettingsExpanderItem.IconSource>
+          <fa:FASettingsExpanderItem.Footer>
             <TextBox x:Name="AccountInput"
                      Width="260"
                      LostFocus="OnAccountLostFocus" />
-          </fa:SettingsExpanderItem.Footer>
-        </fa:SettingsExpanderItem>
+          </fa:FASettingsExpanderItem.Footer>
+        </fa:FASettingsExpanderItem>
 
-        <fa:SettingsExpanderItem x:Name="PasswordItem"
+        <fa:FASettingsExpanderItem x:Name="PasswordItem"
                                  Content="密码"
                                  Description="请自行妥善管理">
-          <fa:SettingsExpanderItem.IconSource>
-            <fa:SymbolIconSource Symbol="Permissions" />
-          </fa:SettingsExpanderItem.IconSource>
-          <fa:SettingsExpanderItem.Footer>
+          <fa:FASettingsExpanderItem.IconSource>
+            <fa:FASymbolIconSource Symbol="Permissions" />
+          </fa:FASettingsExpanderItem.IconSource>
+          <fa:FASettingsExpanderItem.Footer>
             <TextBox x:Name="PasswordInput"
                      Width="260"
                      PasswordChar="●"
                      LostFocus="OnPasswordLostFocus" />
-          </fa:SettingsExpanderItem.Footer>
-        </fa:SettingsExpanderItem>
+          </fa:FASettingsExpanderItem.Footer>
+        </fa:FASettingsExpanderItem>
 
-        <fa:SettingsExpanderItem x:Name="BilibiliHelpItem"
+        <fa:FASettingsExpanderItem x:Name="BilibiliHelpItem"
                                  Content="B服使用提示"
                                  Description="B服请在『设置 - 脚本环境 - 基础』中设置截图方法为BitBit，否则可能无法识别登录框。"
                                  IsVisible="False">
-          <fa:SettingsExpanderItem.IconSource>
-            <fa:SymbolIconSource Symbol="Important" />
-          </fa:SettingsExpanderItem.IconSource>
-        </fa:SettingsExpanderItem>
+          <fa:FASettingsExpanderItem.IconSource>
+            <fa:FASymbolIconSource Symbol="Important" />
+          </fa:FASettingsExpanderItem.IconSource>
+        </fa:FASettingsExpanderItem>
 
-        <fa:SettingsExpanderItem x:Name="BilibiliAccountItem"
+        <fa:FASettingsExpanderItem x:Name="BilibiliAccountItem"
                                  Content="B服用户名"
                                  Description="B服为选择已有登录记录的用户进行登录，需要先手动登录游戏"
                                  IsVisible="False">
-          <fa:SettingsExpanderItem.IconSource>
-            <fa:SymbolIconSource Symbol="People" />
-          </fa:SettingsExpanderItem.IconSource>
-          <fa:SettingsExpanderItem.Footer>
+          <fa:FASettingsExpanderItem.IconSource>
+            <fa:FASymbolIconSource Symbol="People" />
+          </fa:FASettingsExpanderItem.IconSource>
+          <fa:FASettingsExpanderItem.Footer>
             <TextBox x:Name="BilibiliAccountInput"
                      Width="300"
-                     Watermark="填写游戏中切换B服账号时显示的用户名"
+                     PlaceholderText="填写游戏中切换B服账号时显示的用户名"
                      LostFocus="OnBilibiliAccountLostFocus" />
-          </fa:SettingsExpanderItem.Footer>
-        </fa:SettingsExpanderItem>
-      </fa:SettingsExpander>
+          </fa:FASettingsExpanderItem.Footer>
+        </fa:FASettingsExpanderItem>
+      </fa:FASettingsExpander>
 
       <TextBlock Text="账户列表"
                  Margin="0,8,0,0"
@@ -134,12 +134,12 @@
       <ItemsControl x:Name="InstanceList">
         <ItemsControl.ItemTemplate>
           <DataTemplate x:DataType="local:ZzzAccountInstanceRow">
-            <fa:SettingsExpanderItem Content="{Binding DisplayIndex}"
+            <fa:FASettingsExpanderItem Content="{Binding DisplayIndex}"
                                      Margin="0,0,0,6">
-              <fa:SettingsExpanderItem.IconSource>
-                <fa:SymbolIconSource Symbol="People" />
-              </fa:SettingsExpanderItem.IconSource>
-              <fa:SettingsExpanderItem.Footer>
+              <fa:FASettingsExpanderItem.IconSource>
+                <fa:FASymbolIconSource Symbol="People" />
+              </fa:FASettingsExpanderItem.IconSource>
+              <fa:FASettingsExpanderItem.Footer>
                 <Grid ColumnDefinitions="120,8,180,8,Auto">
                   <TextBox Grid.Column="0"
                            Text="{Binding Name, Mode=TwoWay}"
@@ -156,27 +156,27 @@
                       </DataTemplate>
                     </fa:FAComboBox.ItemTemplate>
                   </fa:FAComboBox>
-                  <fa:CommandBar Grid.Column="4"
+                  <fa:FACommandBar Grid.Column="4"
                                  DefaultLabelPosition="Right">
-                    <fa:CommandBar.PrimaryCommands>
-                      <fa:CommandBarButton Label="启用"
+                    <fa:FACommandBar.PrimaryCommands>
+                      <fa:FACommandBarButton Label="启用"
                                            IsEnabled="{Binding CanActivate}"
                                            Click="OnActivateInstanceClicked" />
-                      <fa:CommandBarButton Label="登录"
+                      <fa:FACommandBarButton Label="登录"
                                            IsEnabled="{Binding CanEdit}"
                                            Click="OnLoginInstanceClicked" />
-                      <fa:CommandBarButton Label="删除"
+                      <fa:FACommandBarButton Label="删除"
                                            IsEnabled="{Binding CanDelete}"
                                            Click="OnDeleteInstanceClicked">
-                        <fa:CommandBarButton.IconSource>
-                          <fa:SymbolIconSource Symbol="Delete" />
-                        </fa:CommandBarButton.IconSource>
-                      </fa:CommandBarButton>
-                    </fa:CommandBar.PrimaryCommands>
-                  </fa:CommandBar>
+                        <fa:FACommandBarButton.IconSource>
+                          <fa:FASymbolIconSource Symbol="Delete" />
+                        </fa:FACommandBarButton.IconSource>
+                      </fa:FACommandBarButton>
+                    </fa:FACommandBar.PrimaryCommands>
+                  </fa:FACommandBar>
                 </Grid>
-              </fa:SettingsExpanderItem.Footer>
-            </fa:SettingsExpanderItem>
+              </fa:FASettingsExpanderItem.Footer>
+            </fa:FASettingsExpanderItem>
           </DataTemplate>
         </ItemsControl.ItemTemplate>
       </ItemsControl>
@@ -189,15 +189,15 @@
     </StackPanel>
     </ScrollViewer>
 
-    <fa:ContentDialog x:Name="ProtectionDialog"
+    <fa:FAContentDialog x:Name="ProtectionDialog"
                       Title="密码验证"
                       PrimaryButtonText="确定"
                       CloseButtonText="取消"
                       DefaultButton="Primary">
       <TextBox x:Name="ProtectionPasswordInput"
                Width="280"
-               Watermark="请输入密码"
+               PlaceholderText="请输入密码"
                PasswordChar="●" />
-    </fa:ContentDialog>
+    </fa:FAContentDialog>
   </Grid>
 </UserControl>

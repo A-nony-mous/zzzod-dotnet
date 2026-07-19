@@ -1,0 +1,40 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:fa="using:FluentAvalonia.UI.Controls"
+             x:Class="ZzzOd.Gui.Views.FrontierPages.ApplicationSettings.FrontierRandomPlaySettingsFlyoutContent"
+             MinWidth="420">
+  <StackPanel Margin="8" Spacing="1">
+    <fa:FAInfoBar x:Name="ErrorBar"
+                IsOpen="False"
+                IsClosable="True"
+                Severity="Error" />
+
+    <fa:FASettingsExpander Header="传送地点">
+      <fa:FASettingsExpander.Footer>
+        <fa:FAComboBox x:Name="TransportPointCombo"
+                       Width="220"
+                       SelectionChanged="OnTransportPointChanged" />
+      </fa:FASettingsExpander.Footer>
+    </fa:FASettingsExpander>
+
+    <fa:FASettingsExpander Header="影像店代理人-1">
+      <fa:FASettingsExpander.Footer>
+        <fa:FAComboBox x:Name="Agent1Combo"
+                       Width="220"
+                       IsEditable="True"
+                       SelectionChanged="OnAgent1Changed"
+                       LostFocus="OnAgent1LostFocus" />
+      </fa:FASettingsExpander.Footer>
+    </fa:FASettingsExpander>
+
+    <fa:FASettingsExpander Header="影像店代理人-2">
+      <fa:FASettingsExpander.Footer>
+        <fa:FAComboBox x:Name="Agent2Combo"
+                       Width="220"
+                       IsEditable="True"
+                       SelectionChanged="OnAgent2Changed"
+                       LostFocus="OnAgent2LostFocus" />
+      </fa:FASettingsExpander.Footer>
+    </fa:FASettingsExpander>
+  </StackPanel>
+</UserControl>

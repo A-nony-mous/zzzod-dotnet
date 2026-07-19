@@ -6,15 +6,15 @@ using ZzzOd.Gui.Shell;
 
 namespace ZzzOd.Gui.Controls;
 
-public class ZzzPivotPage : TabView, IZzzPageLifecycle, IZzzShellBackNavigationHost, IZzzPivotNavigationHost
+public class ZzzPivotPage : FATabView, IZzzPageLifecycle, IZzzShellBackNavigationHost, IZzzPivotNavigationHost
 {
     private readonly IReadOnlyList<ZzzPivotPageItem> _items;
     private readonly IReadOnlyList<ZzzPageStackHost> _pageHosts;
-    private readonly IReadOnlyList<TabViewItem> _tabItems;
+    private readonly IReadOnlyList<FATabViewItem> _tabItems;
     private ZzzPageStackHost? _currentHost;
     private int _lastNotifiedIndex = int.MinValue;
 
-    protected override Type StyleKeyOverride => typeof(TabView);
+    protected override Type StyleKeyOverride => typeof(FATabView);
 
     public ZzzPivotPage(IEnumerable<ZzzPivotPageItem> items)
     {
@@ -25,7 +25,7 @@ public class ZzzPivotPage : TabView, IZzzPageLifecycle, IZzzShellBackNavigationH
             host.BackNavigationStateChanged += OnHostBackNavigationStateChanged;
         }
 
-        _tabItems = _items.Select((item, index) => new TabViewItem
+        _tabItems = _items.Select((item, index) => new FATabViewItem
         {
             Header = item.Header,
             Content = _pageHosts[index],
@@ -35,7 +35,7 @@ public class ZzzPivotPage : TabView, IZzzPageLifecycle, IZzzShellBackNavigationH
         IsAddTabButtonVisible = false;
         CanDragTabs = false;
         CanReorderTabs = false;
-        foreach (TabViewItem tabItem in _tabItems)
+        foreach (FATabViewItem tabItem in _tabItems)
         {
             ((IList)TabItems).Add(tabItem);
         }
@@ -56,7 +56,7 @@ public class ZzzPivotPage : TabView, IZzzPageLifecycle, IZzzShellBackNavigationH
         base.SelectionChanged += (_, _) => ApplySelection(notifySelectionChanged: true);
     }
 
-    public string NavigationTargetKind => nameof(TabView);
+    public string NavigationTargetKind => nameof(FATabView);
 
     public IReadOnlyList<string> ItemHeaders => _items.Select(item => item.Header).ToArray();
 
@@ -92,7 +92,7 @@ public class ZzzPivotPage : TabView, IZzzPageLifecycle, IZzzShellBackNavigationH
         ? null
         : _pageHosts[SelectedIndex];
 
-    public ContentControl Frame => SelectedHost?.Frame
+    public ContentControl FAFrame => SelectedHost?.FAFrame
         ?? throw new InvalidOperationException("当前 Pivot 没有可用页面。");
 
     public bool SelectByHeader(string header)

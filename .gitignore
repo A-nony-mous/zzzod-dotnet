@@ -1,6 +1,8 @@
 **/bin/
 **/obj/
 .vs/
+.idea/
+*.sln.DotSettings.user
 TestResults/
 .log/
 .tmp/

@@ -48,11 +48,11 @@
              Stretch="UniformToFill" />
 
       <Grid Grid.Column="1">
-        <fa:TabView Background="Transparent"
+        <fa:FATabView Background="Transparent"
                     Foreground="White"
                     SelectedIndex="2"
                     IsAddTabButtonVisible="False">
-          <fa:TabViewItem Header="游戏攻略"
+          <fa:FATabViewItem Header="游戏攻略"
                           Background="Transparent"
                           IsClosable="False">
             <ListBox x:Name="GameGuidesList"
@@ -60,8 +60,8 @@
                      BorderThickness="0"
                      ItemTemplate="{StaticResource NoticePostTemplate}"
                      SelectionChanged="OnPostSelectionChanged" />
-          </fa:TabViewItem>
-          <fa:TabViewItem Header="软件科研"
+          </fa:FATabViewItem>
+          <fa:FATabViewItem Header="软件科研"
                           Background="Transparent"
                           IsClosable="False">
             <ListBox x:Name="SoftwareResearchList"
@@ -69,8 +69,8 @@
                      BorderThickness="0"
                      ItemTemplate="{StaticResource NoticePostTemplate}"
                      SelectionChanged="OnPostSelectionChanged" />
-          </fa:TabViewItem>
-          <fa:TabViewItem Header="公告要闻"
+          </fa:FATabViewItem>
+          <fa:FATabViewItem Header="公告要闻"
                           Background="Transparent"
                           IsClosable="False">
             <ListBox x:Name="AnnouncementsList"
@@ -78,10 +78,10 @@
                      BorderThickness="0"
                      ItemTemplate="{StaticResource NoticePostTemplate}"
                      SelectionChanged="OnPostSelectionChanged" />
-          </fa:TabViewItem>
-        </fa:TabView>
+          </fa:FATabViewItem>
+        </fa:FATabView>
 
-        <fa:InfoBar x:Name="FailureInfoBar"
+        <fa:FAInfoBar x:Name="FailureInfoBar"
                     Margin="8"
                     VerticalAlignment="Bottom"
                     Severity="Warning"

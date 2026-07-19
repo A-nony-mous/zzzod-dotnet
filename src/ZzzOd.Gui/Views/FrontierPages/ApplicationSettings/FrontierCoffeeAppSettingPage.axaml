@@ -1,0 +1,98 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:fa="using:FluentAvalonia.UI.Controls"
+             x:Class="ZzzOd.Gui.Views.FrontierPages.ApplicationSettings.FrontierCoffeeAppSettingPage">
+  <ScrollViewer HorizontalScrollBarVisibility="Disabled"
+                VerticalScrollBarVisibility="Auto">
+    <StackPanel Margin="{DynamicResource SampleAppPageMargin}"
+                Spacing="{DynamicResource SampleAppSectionSpacing}">
+      <fa:FAInfoBar x:Name="ErrorBar"
+                  IsOpen="False"
+                  IsClosable="True"
+                  Severity="Error" />
+
+      <fa:FASettingsExpander Header="传送地点">
+        <fa:FASettingsExpander.IconSource>
+          <fa:FASymbolIconSource Symbol="Send" />
+        </fa:FASettingsExpander.IconSource>
+        <fa:FASettingsExpander.Footer>
+          <fa:FAComboBox x:Name="TransportPointCombo"
+                         Tag="transport_point"
+                         Width="220"
+                         SelectionChanged="OnComboChanged" />
+        </fa:FASettingsExpander.Footer>
+      </fa:FASettingsExpander>
+
+      <fa:FASettingsExpander x:Name="ChooseWayItem" Header="咖啡选择">
+        <fa:FASettingsExpander.IconSource>
+          <fa:FASymbolIconSource Symbol="Calendar" />
+        </fa:FASettingsExpander.IconSource>
+        <fa:FASettingsExpander.Footer>
+          <fa:FAComboBox x:Name="ChooseWayCombo"
+                         Tag="choose_way"
+                         Width="220"
+                         SelectionChanged="OnComboChanged" />
+        </fa:FASettingsExpander.Footer>
+      </fa:FASettingsExpander>
+
+      <fa:FASettingsExpander Header="喝后挑战">
+        <fa:FASettingsExpander.IconSource>
+          <fa:FASymbolIconSource Symbol="Play" />
+        </fa:FASettingsExpander.IconSource>
+        <fa:FASettingsExpander.Footer>
+          <fa:FAComboBox x:Name="ChallengeWayCombo"
+                         Tag="challenge_way"
+                         Width="220"
+                         SelectionChanged="OnComboChanged" />
+        </fa:FASettingsExpander.Footer>
+      </fa:FASettingsExpander>
+
+      <fa:FASettingsExpander x:Name="CardNumItem" Header="体力计划外的数量">
+        <fa:FASettingsExpander.IconSource>
+          <fa:FASymbolIconSource Symbol="Play" />
+        </fa:FASettingsExpander.IconSource>
+        <fa:FASettingsExpander.Footer>
+          <fa:FAComboBox x:Name="CardNumCombo"
+                         Tag="card_num"
+                         Width="220"
+                         SelectionChanged="OnComboChanged" />
+        </fa:FASettingsExpander.Footer>
+      </fa:FASettingsExpander>
+
+      <fa:FASettingsExpander Header="预备编队">
+        <fa:FASettingsExpander.IconSource>
+          <fa:FASymbolIconSource Symbol="People" />
+        </fa:FASettingsExpander.IconSource>
+        <fa:FASettingsExpander.Footer>
+          <fa:FAComboBox x:Name="PredefinedTeamCombo"
+                         Tag="predefined_team_idx"
+                         Width="220"
+                         SelectionChanged="OnPredefinedTeamChanged" />
+        </fa:FASettingsExpander.Footer>
+      </fa:FASettingsExpander>
+
+      <fa:FASettingsExpander x:Name="AutoBattleItem" Header="自动战斗">
+        <fa:FASettingsExpander.IconSource>
+          <fa:FASymbolIconSource Symbol="Play" />
+        </fa:FASettingsExpander.IconSource>
+        <fa:FASettingsExpander.Footer>
+          <fa:FAComboBox x:Name="AutoBattleCombo"
+                         Tag="auto_battle"
+                         Width="220"
+                         SelectionChanged="OnComboChanged" />
+        </fa:FASettingsExpander.Footer>
+      </fa:FASettingsExpander>
+
+      <fa:FASettingsExpander Header="结束后运行体力计划"
+                               Description="咖啡店在体力计划后运行可开启">
+        <fa:FASettingsExpander.IconSource>
+          <fa:FASymbolIconSource Symbol="Calendar" />
+        </fa:FASettingsExpander.IconSource>
+        <fa:FASettingsExpander.Footer>
+          <ToggleSwitch x:Name="RunChargePlanAfterwardsToggle"
+                        Click="OnRunChargePlanAfterwardsChanged" />
+        </fa:FASettingsExpander.Footer>
+      </fa:FASettingsExpander>
+    </StackPanel>
+  </ScrollViewer>
+</UserControl>

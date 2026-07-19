@@ -1,0 +1,112 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:fa="using:FluentAvalonia.UI.Controls"
+             xmlns:local="using:ZzzOd.Gui.Pages.OneDragon"
+             x:Class="ZzzOd.Gui.Views.FrontierPages.OneDragon.FrontierPredefinedTeamPage">
+  <UserControl.Resources>
+    <DataTemplate x:Key="PredefinedTeamTemplate"
+                  x:DataType="local:ZzzPredefinedTeamRowModel">
+      <fa:FASettingsExpander Margin="0,0,0,6">
+        <fa:FASettingsExpander.IconSource>
+          <fa:FASymbolIconSource Symbol="People" />
+        </fa:FASettingsExpander.IconSource>
+        <fa:FASettingsExpander.Footer>
+          <StackPanel Spacing="8">
+            <Grid ColumnDefinitions="130,13,Auto,10,*"
+                  ColumnSpacing="0">
+              <TextBox Grid.Column="0"
+                       Text="{Binding Name, Mode=TwoWay}"
+                       TextChanged="OnTeamNameChanged" />
+              <TextBlock Grid.Column="2"
+                         Text="战斗配置"
+                         VerticalAlignment="Center" />
+              <fa:FAComboBox Grid.Column="4"
+                             MinWidth="180"
+                             ItemsSource="{Binding AutoBattleOptions}"
+                             SelectedItem="{Binding SelectedAutoBattle, Mode=TwoWay}"
+                             SelectionChanged="OnTeamSelectionChanged">
+                <fa:FAComboBox.ItemTemplate>
+                  <DataTemplate x:DataType="local:ZzzPredefinedTeamOption">
+                    <TextBlock Text="{Binding Label}" />
+                  </DataTemplate>
+                </fa:FAComboBox.ItemTemplate>
+              </fa:FAComboBox>
+            </Grid>
+            <StackPanel Orientation="Horizontal"
+                        Spacing="10">
+              <fa:FAComboBox Width="130"
+                             IsEditable="True"
+                             ItemsSource="{Binding AgentOptions}"
+                             SelectedItem="{Binding SelectedAgent1, Mode=TwoWay}"
+                             SelectionChanged="OnTeamSelectionChanged">
+                <fa:FAComboBox.ItemTemplate>
+                  <DataTemplate x:DataType="local:ZzzPredefinedTeamOption">
+                    <TextBlock Text="{Binding Label}" />
+                  </DataTemplate>
+                </fa:FAComboBox.ItemTemplate>
+              </fa:FAComboBox>
+              <fa:FAComboBox Width="130"
+                             IsEditable="True"
+                             ItemsSource="{Binding AgentOptions}"
+                             SelectedItem="{Binding SelectedAgent2, Mode=TwoWay}"
+                             SelectionChanged="OnTeamSelectionChanged">
+                <fa:FAComboBox.ItemTemplate>
+                  <DataTemplate x:DataType="local:ZzzPredefinedTeamOption">
+                    <TextBlock Text="{Binding Label}" />
+                  </DataTemplate>
+                </fa:FAComboBox.ItemTemplate>
+              </fa:FAComboBox>
+              <fa:FAComboBox Width="130"
+                             IsEditable="True"
+                             ItemsSource="{Binding AgentOptions}"
+                             SelectedItem="{Binding SelectedAgent3, Mode=TwoWay}"
+                             SelectionChanged="OnTeamSelectionChanged">
+                <fa:FAComboBox.ItemTemplate>
+                  <DataTemplate x:DataType="local:ZzzPredefinedTeamOption">
+                    <TextBlock Text="{Binding Label}" />
+                  </DataTemplate>
+                </fa:FAComboBox.ItemTemplate>
+              </fa:FAComboBox>
+            </StackPanel>
+          </StackPanel>
+        </fa:FASettingsExpander.Footer>
+      </fa:FASettingsExpander>
+    </DataTemplate>
+  </UserControl.Resources>
+
+  <Grid ColumnDefinitions="500,10,*">
+    <ScrollViewer Grid.Column="0"
+                  Padding="{DynamicResource SampleAppPageMargin}"
+                  HorizontalScrollBarVisibility="Disabled"
+                  VerticalScrollBarVisibility="Auto">
+      <fa:FASettingsExpander x:Name="TeamList"
+                             Header="预备编队"
+                             IsExpanded="True"
+                             ItemTemplate="{StaticResource PredefinedTeamTemplate}" />
+    </ScrollViewer>
+
+    <ScrollViewer Grid.Column="2"
+                  Padding="{DynamicResource SampleAppPageMargin}"
+                  HorizontalScrollBarVisibility="Disabled"
+                  VerticalScrollBarVisibility="Auto">
+      <StackPanel Spacing="8">
+        <fa:FAInfoBar x:Name="TeamErrorBar"
+                    IsOpen="False"
+                    IsClosable="False"
+                    Severity="Error" />
+        <fa:FASettingsExpander Header="预备编队识别">
+          <fa:FASettingsExpander.IconSource>
+            <fa:FASymbolIconSource Symbol="Help" />
+          </fa:FASettingsExpander.IconSource>
+          <fa:FASettingsExpander.Footer>
+            <Button x:Name="HelpButton"
+                    Content="使用说明"
+                    HorizontalAlignment="Stretch" />
+          </fa:FASettingsExpander.Footer>
+        </fa:FASettingsExpander>
+        <ContentControl x:Name="RunPanelHost"
+                        HorizontalContentAlignment="Stretch" />
+      </StackPanel>
+    </ScrollViewer>
+  </Grid>
+</UserControl>

@@ -13,6 +13,8 @@ using ZzzOd.AppHost.Backend;
 using ZzzOd.GameLogic.Application.WorldPatrol;
 using ZzzOd.GameLogic.Context;
 using ZzzOd.Gui.Pages.ApplicationSettings;
+using ZzzOd.Gui.Views.FrontierPages.ApplicationSettings;
+using ZzzOd.Gui.Views.FrontierPages.WorldPatrol;
 
 namespace ZzzOd.GameLogic.Tests.AppHost;
 
@@ -57,9 +59,9 @@ public sealed class WorldPatrolAppSettingPageTests
 		string actualString5 = File.ReadAllText(Path.Combine(path, "ZzzWorldPatrolImageViewer.axaml.cs"));
 		AssertOrder(text, "锄大地配置", "路线列表", "大地图录制", "锄地路线录制");
 		AssertOrder(text, "自动战斗", "界面消失预警时间", "单条路线重试上限", "锄地每日循环次数", "运行记录", "路线名单", "界面消失处理方式", "路线重试处理方式", "每轮最少占用时长（敌人刷新时间）");
-		Assert.Contains("fa:TabView", text, StringComparison.Ordinal);
-		Assert.Contains("fa:SettingsExpanderItem", text, StringComparison.Ordinal);
-		Assert.Contains("fa:CommandBar", text, StringComparison.Ordinal);
+		Assert.Contains("fa:FATabView", text, StringComparison.Ordinal);
+		Assert.Contains("fa:FASettingsExpanderItem", text, StringComparison.Ordinal);
+		Assert.Contains("fa:FACommandBar", text, StringComparison.Ordinal);
 		Assert.Contains("当前区域可用路线", text, StringComparison.Ordinal);
 		Assert.Contains("GetWorldPatrolCatalog", actualString, StringComparison.Ordinal);
 		Assert.Contains("ResetWorldPatrolRunRecord", actualString, StringComparison.Ordinal);
@@ -116,7 +118,7 @@ public sealed class WorldPatrolAppSettingPageTests
 		Assert.Contains("args.Cancel = true", actualString, StringComparison.Ordinal);
 		Assert.Contains("确定要删除第{index}个操作吗？", actualString, StringComparison.Ordinal);
 		Assert.Contains("x:Class=\"ZzzOd.Gui.Pages.ApplicationSettings.ZzzWorldPatrolLargeMapIconEditorWindow\"", actualString2, StringComparison.Ordinal);
-		Assert.Contains("Show()", actualString, StringComparison.Ordinal);
+		Assert.Contains("Show(owner)", actualString, StringComparison.Ordinal);
 		Assert.Contains("Activate()", actualString, StringComparison.Ordinal);
 		Assert.Contains("Saved", actualString3, StringComparison.Ordinal);
 		Assert.Contains("x:Class=\"ZzzOd.Gui.Pages.ApplicationSettings.ZzzWorldPatrolImageViewer\"", actualString4, StringComparison.Ordinal);
@@ -345,6 +347,36 @@ public sealed class WorldPatrolAppSettingPageTests
 			ZzzBackendResult<ZzzWorldPatrolRouteDebugDto> result = await session.Backend.DebugWorldPatrolRouteAsync(new ZzzDebugWorldPatrolRouteRequest(2, "daily", route.FullId, route.OperationCount + 1));
 			Assert.False(result.Success);
 			Assert.Equal(ZzzBackendErrorCode.Validation, result.ErrorCode);
+		}
+		finally
+		{
+			Directory.Delete(runRoot, recursive: true);
+		}
+	}
+
+	[Fact]
+	public void FrontierProviderNavigatorOpensDedicatedWorldPatrolInterface()
+	{
+		string runRoot = CreateRunRoot();
+		try
+		{
+			using BackendSession session = new(runRoot);
+			GuiParityAndFacadeTests.RunOnUiThread(() =>
+			{
+				FrontierAppSettingPageFactory pageFactory = new(session.Backend);
+				ZzzAppSettingNavigator navigator = new(session.Backend, pageFactory.Create);
+				Control? requested = null;
+
+				bool opened = navigator.Open(
+					"world_patrol",
+					"daily",
+					new Button(),
+					content => requested = content);
+
+				Assert.True(opened);
+				FrontierWorldPatrolPage page = Assert.IsType<FrontierWorldPatrolPage>(requested);
+				page.DisposePage();
+			});
 		}
 		finally
 		{

@@ -352,20 +352,20 @@ internal sealed partial class ZzzAccountsPage : UserControl, IZzzPageLifecycle
     private readonly ZzzGuiOperationTracker _operations;
     private readonly ObservableCollection<ZzzAccountInstanceRow> _rows = [];
     private readonly ItemsControl _instanceList;
-    private readonly InfoBar _actionBar;
-    private readonly SettingsExpanderItem _gamePathItem;
+    private readonly FAInfoBar _actionBar;
+    private readonly FASettingsExpanderItem _gamePathItem;
     private readonly ToggleSwitch _useCustomWindowTitleToggle;
     private readonly TextBox _customWindowTitleInput;
     private readonly FAComboBox _gameRegionCombo;
-    private readonly SettingsExpanderItem _accountItem;
+    private readonly FASettingsExpanderItem _accountItem;
     private readonly TextBox _accountInput;
-    private readonly SettingsExpanderItem _passwordItem;
+    private readonly FASettingsExpanderItem _passwordItem;
     private readonly TextBox _passwordInput;
-    private readonly SettingsExpanderItem _bilibiliHelpItem;
-    private readonly SettingsExpanderItem _bilibiliAccountItem;
+    private readonly FASettingsExpanderItem _bilibiliHelpItem;
+    private readonly FASettingsExpanderItem _bilibiliAccountItem;
     private readonly TextBox _bilibiliAccountInput;
     private readonly Button _addInstanceButton;
-    private readonly ContentDialog _protectionDialog;
+    private readonly FAContentDialog _protectionDialog;
     private readonly TextBox _protectionPasswordInput;
     private ChannelReader<ZzzBackendEvent>? _eventReader;
     private CancellationTokenSource? _eventCancellation;
@@ -379,20 +379,20 @@ internal sealed partial class ZzzAccountsPage : UserControl, IZzzPageLifecycle
         CurrentAccountSettings = new ZzzCurrentAccountSettingsPage(backend);
         AvaloniaXamlLoader.Load(this);
         _instanceList = Required<ItemsControl>("InstanceList");
-        _actionBar = Required<InfoBar>("ActionBar");
-        _gamePathItem = Required<SettingsExpanderItem>("GamePathItem");
+        _actionBar = Required<FAInfoBar>("ActionBar");
+        _gamePathItem = Required<FASettingsExpanderItem>("GamePathItem");
         _useCustomWindowTitleToggle = Required<ToggleSwitch>("UseCustomWindowTitleToggle");
         _customWindowTitleInput = Required<TextBox>("CustomWindowTitleInput");
         _gameRegionCombo = Required<FAComboBox>("GameRegionCombo");
-        _accountItem = Required<SettingsExpanderItem>("AccountItem");
+        _accountItem = Required<FASettingsExpanderItem>("AccountItem");
         _accountInput = Required<TextBox>("AccountInput");
-        _passwordItem = Required<SettingsExpanderItem>("PasswordItem");
+        _passwordItem = Required<FASettingsExpanderItem>("PasswordItem");
         _passwordInput = Required<TextBox>("PasswordInput");
-        _bilibiliHelpItem = Required<SettingsExpanderItem>("BilibiliHelpItem");
-        _bilibiliAccountItem = Required<SettingsExpanderItem>("BilibiliAccountItem");
+        _bilibiliHelpItem = Required<FASettingsExpanderItem>("BilibiliHelpItem");
+        _bilibiliAccountItem = Required<FASettingsExpanderItem>("BilibiliAccountItem");
         _bilibiliAccountInput = Required<TextBox>("BilibiliAccountInput");
         _addInstanceButton = Required<Button>("AddInstanceButton");
-        _protectionDialog = Required<ContentDialog>("ProtectionDialog");
+        _protectionDialog = Required<FAContentDialog>("ProtectionDialog");
         _protectionPasswordInput = Required<TextBox>("ProtectionPasswordInput");
         _instanceList.ItemsSource = _rows;
         _gameRegionCombo.ItemsSource = RegionOptions;
@@ -446,7 +446,7 @@ internal sealed partial class ZzzAccountsPage : UserControl, IZzzPageLifecycle
 
             if (!InstanceManagement.CanSwitch)
             {
-                ShowAction("一条龙运行中，不能切换实例。", InfoBarSeverity.Warning);
+                ShowAction("一条龙运行中，不能切换实例。", FAInfoBarSeverity.Warning);
             }
 
             _operations.Complete(operationId, ZzzGuiOperationState.Succeeded);
@@ -470,7 +470,7 @@ internal sealed partial class ZzzAccountsPage : UserControl, IZzzPageLifecycle
         TopLevel? topLevel = TopLevel.GetTopLevel(this);
         if (topLevel is null)
         {
-			ShowAction("当前窗口不可用。", InfoBarSeverity.Error);
+			ShowAction("当前窗口不可用。", FAInfoBarSeverity.Error);
             return;
         }
 
@@ -575,7 +575,7 @@ internal sealed partial class ZzzAccountsPage : UserControl, IZzzPageLifecycle
         if (sender is Control { DataContext: ZzzAccountInstanceRow row })
         {
             ZzzBackendResult<ZzzRunStatusDto> result = InstanceManagement.LoginInstance(row.Index);
-            ShowAction(result.Success ? $"实例 {row.Index:00} 登录已启动。" : result.Error ?? "登录失败。", result.Success ? InfoBarSeverity.Success : InfoBarSeverity.Error);
+            ShowAction(result.Success ? $"实例 {row.Index:00} 登录已启动。" : result.Error ?? "登录失败。", result.Success ? FAInfoBarSeverity.Success : FAInfoBarSeverity.Error);
         }
     }
 
@@ -599,13 +599,13 @@ internal sealed partial class ZzzAccountsPage : UserControl, IZzzPageLifecycle
         {
             if (TopLevel.GetTopLevel(this) is not Window owner)
             {
-				ShowAction("当前窗口不可用。", InfoBarSeverity.Error);
+				ShowAction("当前窗口不可用。", FAInfoBarSeverity.Error);
                 return;
             }
 
             _protectionPasswordInput.Text = string.Empty;
-            ContentDialogResult dialogResult = await _protectionDialog.ShowAsync(owner).ConfigureAwait(true);
-            if (dialogResult != ContentDialogResult.Primary)
+            FAContentDialogResult dialogResult = await _protectionDialog.ShowAsync(owner).ConfigureAwait(true);
+            if (dialogResult != FAContentDialogResult.Primary)
             {
                 return;
             }
@@ -627,7 +627,7 @@ internal sealed partial class ZzzAccountsPage : UserControl, IZzzPageLifecycle
         ZzzBackendResult<ZzzConfigScopeValuesDto> result = CurrentAccountSettings.Save(key, value);
         if (!result.Success)
         {
-            ShowAction(result.Error ?? "账户设置保存失败。", InfoBarSeverity.Error);
+            ShowAction(result.Error ?? "账户设置保存失败。", FAInfoBarSeverity.Error);
         }
     }
 
@@ -644,11 +644,11 @@ internal sealed partial class ZzzAccountsPage : UserControl, IZzzPageLifecycle
     {
         if (!result.Success)
         {
-            ShowAction(result.Error ?? "操作失败。", InfoBarSeverity.Error);
+            ShowAction(result.Error ?? "操作失败。", FAInfoBarSeverity.Error);
         }
     }
 
-    private void ShowAction(string message, InfoBarSeverity severity)
+    private void ShowAction(string message, FAInfoBarSeverity severity)
     {
         _actionBar.Message = message;
         _actionBar.Severity = severity;

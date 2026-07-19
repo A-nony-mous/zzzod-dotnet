@@ -1,0 +1,63 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:fa="using:FluentAvalonia.UI.Controls"
+             xmlns:local="using:ZzzOd.Gui.Pages.ApplicationSettings"
+             x:Class="ZzzOd.Gui.Views.FrontierPages.ApplicationSettings.FrontierRedemptionCodeAppSettingPage">
+  <ScrollViewer HorizontalScrollBarVisibility="Disabled"
+                VerticalScrollBarVisibility="Auto">
+    <StackPanel Margin="{DynamicResource SampleAppPageMargin}"
+                Spacing="{DynamicResource SampleAppSectionSpacing}">
+      <fa:FAInfoBar x:Name="MessageBar"
+                  IsOpen="False"
+                  IsClosable="True"
+                  Severity="Warning" />
+
+      <ItemsControl x:Name="CodeList">
+        <ItemsControl.ItemTemplate>
+          <DataTemplate x:DataType="local:ZzzRedemptionCodeRowModel">
+            <fa:FASettingsExpander Header="">
+              <fa:FASettingsExpander.IconSource>
+                <fa:FASymbolIconSource Symbol="Play" />
+              </fa:FASettingsExpander.IconSource>
+              <fa:FASettingsExpander.Footer>
+                <Grid ColumnDefinitions="Auto,*,Auto,110,Auto"
+                      ColumnSpacing="12">
+                  <TextBlock Grid.Column="0"
+                             VerticalAlignment="Center"
+                             Text="兑换码" />
+                  <TextBox Grid.Column="1"
+                           MinWidth="150"
+                           Text="{Binding Code, Mode=TwoWay}"
+                           PlaceholderText="{Binding Watermark}"
+                           IsReadOnly="{Binding IsReadOnly}"
+                           LostFocus="OnEditorLostFocus" />
+                  <TextBlock Grid.Column="2"
+                             VerticalAlignment="Center"
+                             Text="过期日期" />
+                  <TextBox Grid.Column="3"
+                           Width="100"
+                           MaxLength="8"
+                           Text="{Binding EndDateText, Mode=TwoWay}"
+                           IsReadOnly="{Binding IsReadOnly}"
+                           TextInput="OnEndDateTextInput"
+                           LostFocus="OnEditorLostFocus" />
+                  <Button Grid.Column="4"
+                          IsVisible="{Binding CanDelete}"
+                          Click="OnDeleteClicked">
+                    <fa:FASymbolIcon Symbol="Delete" />
+                  </Button>
+                </Grid>
+              </fa:FASettingsExpander.Footer>
+            </fa:FASettingsExpander>
+          </DataTemplate>
+        </ItemsControl.ItemTemplate>
+      </ItemsControl>
+
+      <Button x:Name="AddButton"
+              Classes="accent"
+              HorizontalAlignment="Left"
+              Content="新增"
+              Click="OnAddClicked" />
+    </StackPanel>
+  </ScrollViewer>
+</UserControl>

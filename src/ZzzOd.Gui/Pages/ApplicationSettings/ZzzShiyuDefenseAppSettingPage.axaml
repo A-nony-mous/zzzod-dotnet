@@ -6,19 +6,20 @@
   <Grid>
     <ScrollViewer HorizontalScrollBarVisibility="Auto"
                   VerticalScrollBarVisibility="Auto">
-      <StackPanel Margin="11" Spacing="6">
-        <fa:InfoBar x:Name="ErrorBar"
+      <StackPanel Margin="{DynamicResource SampleAppPageMargin}"
+                  Spacing="{DynamicResource SampleAppSectionSpacing}">
+        <fa:FAInfoBar x:Name="ErrorBar"
                     IsOpen="False"
                     IsClosable="True"
                     Severity="Error" />
-        <fa:SettingsExpanderItem Content="剧变节点 重置运行记录">
-          <fa:SettingsExpanderItem.IconSource>
-            <fa:FontIconSource Glyph="&#xE72C;" />
-          </fa:SettingsExpanderItem.IconSource>
-          <fa:SettingsExpanderItem.Footer>
+        <fa:FASettingsExpanderItem Content="剧变节点 重置运行记录">
+          <fa:FASettingsExpanderItem.IconSource>
+            <fa:FAFontIconSource Glyph="&#xE72C;" />
+          </fa:FASettingsExpanderItem.IconSource>
+          <fa:FASettingsExpanderItem.Footer>
             <Button Content="重置" Click="OnCriticalResetClicked" />
-          </fa:SettingsExpanderItem.Footer>
-        </fa:SettingsExpanderItem>
+          </fa:FASettingsExpanderItem.Footer>
+        </fa:FASettingsExpanderItem>
 
         <Grid ColumnDefinitions="200,70,70,70,70,70,70,70"
               Margin="8,8,8,0">

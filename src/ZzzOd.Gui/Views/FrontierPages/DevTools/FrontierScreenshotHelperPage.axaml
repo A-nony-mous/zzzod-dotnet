@@ -1,0 +1,103 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:fa="using:FluentAvalonia.UI.Controls"
+             x:Class="ZzzOd.Gui.Views.FrontierPages.DevTools.FrontierScreenshotHelperPage">
+  <ScrollViewer HorizontalScrollBarVisibility="Disabled"
+                VerticalScrollBarVisibility="Auto">
+    <StackPanel Margin="{DynamicResource SampleAppPageMargin}"
+                Spacing="8">
+      <fa:FAInfoBar x:Name="ConfigErrorBar"
+                  IsOpen="False"
+                  IsClosable="True"
+                  Severity="Error" />
+
+      <fa:FASettingsExpander Header="截图助手"
+                             IsExpanded="True">
+      <fa:FASettingsExpanderItem Content="截图间隔(秒)">
+        <fa:FASettingsExpanderItem.IconSource>
+          <fa:FASymbolIconSource Symbol="Play" />
+        </fa:FASettingsExpanderItem.IconSource>
+        <fa:FASettingsExpanderItem.Footer>
+          <fa:FANumberBox x:Name="FrequencyBox"
+                        Width="160"
+                        Minimum="0.01"
+                        Maximum="60"
+                        SmallChange="0.01"
+                        SpinButtonPlacementMode="Compact"
+                        ValueChanged="OnFrequencyChanged" />
+        </fa:FASettingsExpanderItem.Footer>
+      </fa:FASettingsExpanderItem>
+
+      <fa:FASettingsExpanderItem Content="持续时间(秒)">
+        <fa:FASettingsExpanderItem.IconSource>
+          <fa:FASymbolIconSource Symbol="Play" />
+        </fa:FASettingsExpanderItem.IconSource>
+        <fa:FASettingsExpanderItem.Footer>
+          <fa:FANumberBox x:Name="LengthBox"
+                        Width="160"
+                        Minimum="0.01"
+                        Maximum="3600"
+                        SmallChange="0.1"
+                        SpinButtonPlacementMode="Compact"
+                        ValueChanged="OnLengthChanged" />
+        </fa:FASettingsExpanderItem.Footer>
+      </fa:FASettingsExpanderItem>
+
+      <fa:FASettingsExpanderItem Content="保存截图按键"
+                               Description="按下后，保存 持续时间(秒) 内的截图，用于捕捉漏判">
+        <fa:FASettingsExpanderItem.IconSource>
+          <fa:FASymbolIconSource Symbol="Play" />
+        </fa:FASettingsExpanderItem.IconSource>
+        <fa:FASettingsExpanderItem.Footer>
+          <Button x:Name="SaveKeyButton"
+                  Width="160"
+                  Click="OnSaveKeyClicked" />
+        </fa:FASettingsExpanderItem.Footer>
+      </fa:FASettingsExpanderItem>
+
+      <fa:FASettingsExpanderItem Content="闪避检测"
+                               Description="脚本识别黄光红光时，自动截图，用于捕捉误判">
+        <fa:FASettingsExpanderItem.IconSource>
+          <fa:FASymbolIconSource Symbol="Play" />
+        </fa:FASettingsExpanderItem.IconSource>
+        <fa:FASettingsExpanderItem.Footer>
+          <ToggleSwitch x:Name="DodgeDetectToggle"
+                        OnContent=""
+                        OffContent=""
+                        Click="OnDodgeDetectChanged" />
+        </fa:FASettingsExpanderItem.Footer>
+      </fa:FASettingsExpanderItem>
+
+      <fa:FASettingsExpanderItem Content="按键前截图"
+                               Description="开启时截图按键之前的画面，关闭时截图按键之后的画面">
+        <fa:FASettingsExpanderItem.IconSource>
+          <fa:FASymbolIconSource Symbol="Play" />
+        </fa:FASettingsExpanderItem.IconSource>
+        <fa:FASettingsExpanderItem.Footer>
+          <ToggleSwitch x:Name="ScreenshotBeforeKeyToggle"
+                        OnContent=""
+                        OffContent=""
+                        Click="OnScreenshotBeforeKeyChanged" />
+        </fa:FASettingsExpanderItem.Footer>
+      </fa:FASettingsExpanderItem>
+
+      <fa:FASettingsExpanderItem Content="小地图朝向检测"
+                               Description="无法计算朝向时截图">
+        <fa:FASettingsExpanderItem.IconSource>
+          <fa:FASymbolIconSource Symbol="Play" />
+        </fa:FASettingsExpanderItem.IconSource>
+        <fa:FASettingsExpanderItem.Footer>
+          <ToggleSwitch x:Name="MiniMapAngleDetectToggle"
+                        OnContent=""
+                        OffContent=""
+                        Click="OnMiniMapAngleDetectChanged" />
+        </fa:FASettingsExpanderItem.Footer>
+      </fa:FASettingsExpanderItem>
+      </fa:FASettingsExpander>
+
+      <ContentControl x:Name="RunHost"
+                      HorizontalContentAlignment="Stretch"
+                      VerticalContentAlignment="Stretch" />
+    </StackPanel>
+  </ScrollViewer>
+</UserControl>

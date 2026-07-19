@@ -1,29 +1,30 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:fa="using:FluentAvalonia.UI.Controls"
+             xmlns:local="using:ZzzOd.Gui.Pages.Settings"
              x:Class="ZzzOd.Gui.Pages.Settings.ZzzCustomSettingsAxamlPage">
   <UserControl.Resources>
-    <fa:ContentDialog x:Key="ThemeColorDialog"
+    <fa:FAContentDialog x:Key="ThemeColorDialog"
                       Title="请选择主题色"
                       PrimaryButtonText="确定"
                       CloseButtonText="取消"
                       DefaultButton="Primary">
       <Grid ColumnDefinitions="Auto,96,Auto,96,Auto,96" ColumnSpacing="8">
         <TextBlock VerticalAlignment="Center" Text="R" />
-        <fa:NumberBox x:Name="RedNumber" Grid.Column="1" Minimum="0" Maximum="255" SmallChange="1" ValueChanged="OnThemeColorValueChanged" />
+        <fa:FANumberBox x:Name="RedNumber" Grid.Column="1" Minimum="0" Maximum="255" SmallChange="1" ValueChanged="OnThemeColorValueChanged" />
         <TextBlock Grid.Column="2" VerticalAlignment="Center" Text="G" />
-        <fa:NumberBox x:Name="GreenNumber" Grid.Column="3" Minimum="0" Maximum="255" SmallChange="1" ValueChanged="OnThemeColorValueChanged" />
+        <fa:FANumberBox x:Name="GreenNumber" Grid.Column="3" Minimum="0" Maximum="255" SmallChange="1" ValueChanged="OnThemeColorValueChanged" />
         <TextBlock Grid.Column="4" VerticalAlignment="Center" Text="B" />
-        <fa:NumberBox x:Name="BlueNumber" Grid.Column="5" Minimum="0" Maximum="255" SmallChange="1" ValueChanged="OnThemeColorValueChanged" />
+        <fa:FANumberBox x:Name="BlueNumber" Grid.Column="5" Minimum="0" Maximum="255" SmallChange="1" ValueChanged="OnThemeColorValueChanged" />
       </Grid>
-    </fa:ContentDialog>
-    <fa:ContentDialog x:Key="RestartDialog"
+    </fa:FAContentDialog>
+    <fa:FAContentDialog x:Key="RestartDialog"
                       Title="提示"
                       PrimaryButtonText="立即重启"
                       CloseButtonText="稍后重启"
                       DefaultButton="Primary"
                       Content="语言切换成功，需要重启应用程序以生效" />
-    <fa:ContentDialog x:Key="PasswordErrorDialog"
+    <fa:FAContentDialog x:Key="PasswordErrorDialog"
                       Title="嘻嘻~"
                       PrimaryButtonText="再试试吧"
                       DefaultButton="Primary"
@@ -32,77 +33,104 @@
 
   <ScrollViewer HorizontalScrollBarVisibility="Disabled"
                 VerticalScrollBarVisibility="Auto">
-    <StackPanel Margin="11" Spacing="8">
-      <fa:InfoBar x:Name="ErrorBar"
-                  IsOpen="False"
+    <StackPanel Margin="{DynamicResource SampleAppPageMargin}"
+                Spacing="{DynamicResource SampleAppSectionSpacing}"
+                x:DataType="local:ZzzCustomSettingsViewModel">
+      <fa:FAInfoBar x:Name="ErrorBar"
+                  IsOpen="{Binding HasError}"
+                  Message="{Binding ErrorMessage}"
                   IsClosable="True"
                   Severity="Error" />
-      <fa:SettingsExpander Header="外观">
-        <fa:SettingsExpanderItem Content="界面语言">
-          <fa:SettingsExpanderItem.IconSource>
-            <fa:FontIconSource Glyph="&#xF2B7;" />
-          </fa:SettingsExpanderItem.IconSource>
-          <fa:SettingsExpanderItem.Footer>
-            <fa:FAComboBox x:Name="LanguageCombo" Width="180" SelectionChanged="OnLanguageChanged" />
-          </fa:SettingsExpanderItem.Footer>
-        </fa:SettingsExpanderItem>
-        <fa:SettingsExpanderItem Content="界面主题">
-          <fa:SettingsExpanderItem.IconSource>
-            <fa:FontIconSource Glyph="&#xE790;" />
-          </fa:SettingsExpanderItem.IconSource>
-          <fa:SettingsExpanderItem.Footer>
-            <fa:FAComboBox x:Name="ThemeCombo" Width="180" SelectionChanged="OnThemeChanged" />
-          </fa:SettingsExpanderItem.Footer>
-        </fa:SettingsExpanderItem>
-        <fa:SettingsExpanderItem Content="界面样式">
-          <fa:SettingsExpanderItem.IconSource>
-            <fa:FontIconSource Glyph="&#xE790;" />
-          </fa:SettingsExpanderItem.IconSource>
-          <fa:SettingsExpanderItem.Footer>
-            <fa:FAComboBox x:Name="ShellPresetCombo" Width="180" SelectionChanged="OnShellPresetChanged" />
-          </fa:SettingsExpanderItem.Footer>
-        </fa:SettingsExpanderItem>
-        <fa:SettingsExpanderItem Content="自定义主题色"
+      <fa:FASettingsExpander Header="外观">
+        <fa:FASettingsExpanderItem Content="界面语言">
+          <fa:FASettingsExpanderItem.IconSource>
+            <fa:FAFontIconSource Glyph="&#xF2B7;" />
+          </fa:FASettingsExpanderItem.IconSource>
+          <fa:FASettingsExpanderItem.Footer>
+            <ComboBox x:Name="LanguageCombo"
+                      Width="180"
+                      ItemsSource="{Binding LanguageOptions}"
+                      SelectedItem="{Binding SelectedLanguage, Mode=TwoWay}" />
+          </fa:FASettingsExpanderItem.Footer>
+        </fa:FASettingsExpanderItem>
+        <fa:FASettingsExpanderItem Content="界面主题">
+          <fa:FASettingsExpanderItem.IconSource>
+            <fa:FAFontIconSource Glyph="&#xE790;" />
+          </fa:FASettingsExpanderItem.IconSource>
+          <fa:FASettingsExpanderItem.Footer>
+            <ComboBox x:Name="ThemeCombo"
+                      Width="180"
+                      ItemsSource="{Binding ThemeOptions}"
+                      SelectedItem="{Binding SelectedTheme, Mode=TwoWay}" />
+          </fa:FASettingsExpanderItem.Footer>
+        </fa:FASettingsExpanderItem>
+        <fa:FASettingsExpanderItem Content="界面样式">
+          <fa:FASettingsExpanderItem.IconSource>
+            <fa:FAFontIconSource Glyph="&#xE790;" />
+          </fa:FASettingsExpanderItem.IconSource>
+          <fa:FASettingsExpanderItem.Footer>
+            <ComboBox x:Name="ShellPresetCombo"
+                      Width="180"
+                      ItemsSource="{Binding ShellPresetOptions}"
+                      SelectedItem="{Binding SelectedShellPreset, Mode=TwoWay}" />
+          </fa:FASettingsExpanderItem.Footer>
+        </fa:FASettingsExpanderItem>
+        <fa:FASettingsExpanderItem Content="自定义主题色"
                                  Description="开启后可自定义主题色">
-          <fa:SettingsExpanderItem.IconSource>
-            <fa:FontIconSource Glyph="&#xE2B1;" />
-          </fa:SettingsExpanderItem.IconSource>
-          <fa:SettingsExpanderItem.Footer>
+          <fa:FASettingsExpanderItem.IconSource>
+            <fa:FAFontIconSource Glyph="&#xE2B1;" />
+          </fa:FASettingsExpanderItem.IconSource>
+          <fa:FASettingsExpanderItem.Footer>
             <StackPanel Orientation="Horizontal" Spacing="8">
               <TextBox x:Name="ThemeColorPassword"
                        Width="210"
                        PasswordChar="●"
-                       Watermark="使用此功能需要密码哦~" />
-              <ToggleSwitch x:Name="CustomThemeColorToggle" Click="OnCustomThemeColorChanged" />
-              <Button x:Name="ChooseThemeColorButton" Content="自定义主题色" Classes="accent" Click="OnChooseThemeColorClicked" />
+                       PlaceholderText="使用此功能需要密码哦~" />
+              <ToggleSwitch x:Name="CustomThemeColorToggle"
+                            IsChecked="{Binding CustomThemeColor, Mode=TwoWay}"
+                            Click="OnCustomThemeColorChanged" />
+              <Button x:Name="ChooseThemeColorButton"
+                      Content="自定义主题色"
+                      Classes="accent"
+                      IsEnabled="{Binding CustomThemeColor}"
+                      Command="{Binding RequestThemeColorEditorCommand}" />
             </StackPanel>
-          </fa:SettingsExpanderItem.Footer>
-        </fa:SettingsExpanderItem>
-        <fa:SettingsExpanderItem Content="主页背景类型"
+          </fa:FASettingsExpanderItem.Footer>
+        </fa:FASettingsExpanderItem>
+        <fa:FASettingsExpanderItem Content="主页背景类型"
                                  Description="选择主页显示的背景">
-          <fa:SettingsExpanderItem.IconSource>
-            <fa:FontIconSource Glyph="&#xE91B;" />
-          </fa:SettingsExpanderItem.IconSource>
-          <fa:SettingsExpanderItem.Footer>
-            <fa:FAComboBox x:Name="BackgroundTypeCombo" Width="180" SelectionChanged="OnBackgroundTypeChanged" />
-          </fa:SettingsExpanderItem.Footer>
-        </fa:SettingsExpanderItem>
-        <fa:SettingsExpanderItem Content="自定义主页背景">
-          <fa:SettingsExpanderItem.IconSource>
-            <fa:FontIconSource Glyph="&#xEB9F;" />
-          </fa:SettingsExpanderItem.IconSource>
-          <fa:SettingsExpanderItem.Footer>
+          <fa:FASettingsExpanderItem.IconSource>
+            <fa:FAFontIconSource Glyph="&#xE91B;" />
+          </fa:FASettingsExpanderItem.IconSource>
+          <fa:FASettingsExpanderItem.Footer>
+            <ComboBox x:Name="BackgroundTypeCombo"
+                      Width="180"
+                      ItemsSource="{Binding BackgroundTypeOptions}"
+                      SelectedItem="{Binding SelectedBackgroundType, Mode=TwoWay}" />
+          </fa:FASettingsExpanderItem.Footer>
+        </fa:FASettingsExpanderItem>
+        <fa:FASettingsExpanderItem Content="自定义主页背景">
+          <fa:FASettingsExpanderItem.IconSource>
+            <fa:FAFontIconSource Glyph="&#xEB9F;" />
+          </fa:FASettingsExpanderItem.IconSource>
+          <fa:FASettingsExpanderItem.Footer>
             <StackPanel Orientation="Horizontal" Spacing="8">
               <TextBox x:Name="CustomBannerPassword"
                        Width="210"
                        PasswordChar="●"
-                       Watermark="使用此功能需要密码哦~" />
-              <ToggleSwitch x:Name="CustomBannerToggle" Click="OnCustomBannerChanged" />
-              <Button x:Name="SelectBannerButton" Content="选择" Classes="accent" Click="OnSelectBannerClicked" />
+                       PlaceholderText="使用此功能需要密码哦~" />
+              <ToggleSwitch x:Name="CustomBannerToggle"
+                            IsChecked="{Binding CustomBanner, Mode=TwoWay}"
+                            Click="OnCustomBannerChanged" />
+              <Button x:Name="SelectBannerButton"
+                      Content="选择"
+                      Classes="accent"
+                      IsEnabled="{Binding CustomBanner}"
+                      Command="{Binding RequestCustomBannerSelectionCommand}" />
             </StackPanel>
-          </fa:SettingsExpanderItem.Footer>
-        </fa:SettingsExpanderItem>
-      </fa:SettingsExpander>
+          </fa:FASettingsExpanderItem.Footer>
+        </fa:FASettingsExpanderItem>
+      </fa:FASettingsExpander>
     </StackPanel>
   </ScrollViewer>
 </UserControl>

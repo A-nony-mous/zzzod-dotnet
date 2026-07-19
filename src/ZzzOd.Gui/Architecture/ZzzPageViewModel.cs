@@ -1,14 +1,11 @@
-using System.ComponentModel;
-using System.Runtime.CompilerServices;
+using CommunityToolkit.Mvvm.ComponentModel;
 using ZzzOd.Gui.Shell;
 
 namespace ZzzOd.Gui.Architecture;
 
-public abstract class ZzzPageViewModel : INotifyPropertyChanged, IZzzPageLifecycle
+public abstract class ZzzPageViewModel : ObservableObject, IZzzPageLifecycle
 {
     private bool _disposed;
-
-    public event PropertyChangedEventHandler? PropertyChanged;
 
     public virtual void OnPageLeave()
     {
@@ -38,15 +35,4 @@ public abstract class ZzzPageViewModel : INotifyPropertyChanged, IZzzPageLifecyc
     {
     }
 
-    protected bool SetProperty<T>(ref T field, T value, [CallerMemberName] string? propertyName = null)
-    {
-        if (EqualityComparer<T>.Default.Equals(field, value))
-        {
-            return false;
-        }
-
-        field = value;
-        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
-        return true;
-    }
 }

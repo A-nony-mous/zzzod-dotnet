@@ -6,16 +6,16 @@
   <UserControl.Resources>
     <DataTemplate x:Key="NotoriousHuntPlanTemplate"
                   x:DataType="local:ZzzNotoriousHuntPlanRowModel">
-      <fa:SettingsExpanderItem Margin="0,0,0,6"
+      <fa:FASettingsExpanderItem Margin="0,0,0,6"
                                DragDrop.AllowDrop="True"
                                PointerPressed="OnPlanPointerPressed"
                                PointerMoved="OnPlanPointerMoved"
                                DragDrop.DragOver="OnPlanDragOver"
                                DragDrop.Drop="OnPlanDrop">
-        <fa:SettingsExpanderItem.IconSource>
-          <fa:FontIconSource Glyph="&#xE787;" />
-        </fa:SettingsExpanderItem.IconSource>
-        <fa:SettingsExpanderItem.Footer>
+        <fa:FASettingsExpanderItem.IconSource>
+          <fa:FAFontIconSource Glyph="&#xE787;" />
+        </fa:FASettingsExpanderItem.IconSource>
+        <fa:FASettingsExpanderItem.Footer>
           <StackPanel Spacing="6">
             <StackPanel Orientation="Horizontal" Spacing="6">
               <fa:FAComboBox Width="180"
@@ -87,7 +87,7 @@
                       ToolTip.Tip="置顶"
                       IsVisible="{Binding ShowCommands}"
                       Click="OnMoveTopClicked">
-                <fa:FontIcon Glyph="&#xE74A;" />
+                <fa:FAFontIcon Glyph="&#xE74A;" />
               </Button>
               <Button Width="36"
                       Height="32"
@@ -95,48 +95,49 @@
                       ToolTip.Tip="删除"
                       IsVisible="{Binding ShowCommands}"
                       Click="OnDeleteClicked">
-                <fa:SymbolIcon Symbol="Delete" />
+                <fa:FASymbolIcon Symbol="Delete" />
               </Button>
             </StackPanel>
           </StackPanel>
-        </fa:SettingsExpanderItem.Footer>
-      </fa:SettingsExpanderItem>
+        </fa:FASettingsExpanderItem.Footer>
+      </fa:FASettingsExpanderItem>
     </DataTemplate>
   </UserControl.Resources>
 
   <Grid>
     <ScrollViewer HorizontalScrollBarVisibility="Auto"
                   VerticalScrollBarVisibility="Auto">
-      <StackPanel Margin="11" Spacing="6">
-        <fa:InfoBar x:Name="ErrorBar"
+      <StackPanel Margin="{DynamicResource SampleAppPageMargin}"
+                  Spacing="{DynamicResource SampleAppSectionSpacing}">
+        <fa:FAInfoBar x:Name="ErrorBar"
                     IsOpen="False"
                     IsClosable="True"
                     Severity="Error" />
         <Grid ColumnDefinitions="*,6,*">
-          <fa:SettingsExpanderItem Content="恶名狩猎（周期挑战）开始日"
+          <fa:FASettingsExpanderItem Content="恶名狩猎（周期挑战）开始日"
                                    Description="从开始日起才会自动运行。当日未完成会顺延到次日，直到当周完成/结束">
-            <fa:SettingsExpanderItem.IconSource>
-              <fa:FontIconSource Glyph="&#xE787;" />
-            </fa:SettingsExpanderItem.IconSource>
-            <fa:SettingsExpanderItem.Footer>
+            <fa:FASettingsExpanderItem.IconSource>
+              <fa:FAFontIconSource Glyph="&#xE787;" />
+            </fa:FASettingsExpanderItem.IconSource>
+            <fa:FASettingsExpanderItem.Footer>
               <fa:FAComboBox x:Name="WeekdayCombo"
                              Width="132"
                              SelectionChanged="OnWeekdayChanged" />
-            </fa:SettingsExpanderItem.Footer>
-          </fa:SettingsExpanderItem>
-          <fa:SettingsExpanderItem Grid.Column="2"
+            </fa:FASettingsExpanderItem.Footer>
+          </fa:FASettingsExpanderItem>
+          <fa:FASettingsExpanderItem Grid.Column="2"
                                    Content="循环执行"
                                    Description="开启后，全部计划均达到计划次数后，已运行次数会清零并开始下一轮">
-            <fa:SettingsExpanderItem.IconSource>
-              <fa:FontIconSource Glyph="&#xE72C;" />
-            </fa:SettingsExpanderItem.IconSource>
-            <fa:SettingsExpanderItem.Footer>
+            <fa:FASettingsExpanderItem.IconSource>
+              <fa:FAFontIconSource Glyph="&#xE72C;" />
+            </fa:FASettingsExpanderItem.IconSource>
+            <fa:FASettingsExpanderItem.Footer>
               <ToggleSwitch x:Name="LoopToggle"
                             OnContent=""
                             OffContent=""
                             Click="OnLoopChanged" />
-            </fa:SettingsExpanderItem.Footer>
-          </fa:SettingsExpanderItem>
+            </fa:FASettingsExpanderItem.Footer>
+          </fa:FASettingsExpanderItem>
         </Grid>
         <ItemsControl x:Name="PlanList"
                       ItemTemplate="{StaticResource NotoriousHuntPlanTemplate}" />
@@ -146,13 +147,13 @@
       </StackPanel>
     </ScrollViewer>
 
-    <fa:ContentDialog x:Name="AddPlanDialog"
+    <fa:FAContentDialog x:Name="AddPlanDialog"
                       Title="新增恶名狩猎计划"
                       PrimaryButtonText="确定"
                       CloseButtonText="取消"
                       DefaultButton="Primary">
       <ContentControl x:Name="DialogPlanHost"
                       ContentTemplate="{StaticResource NotoriousHuntPlanTemplate}" />
-    </fa:ContentDialog>
+    </fa:FAContentDialog>
   </Grid>
 </UserControl>

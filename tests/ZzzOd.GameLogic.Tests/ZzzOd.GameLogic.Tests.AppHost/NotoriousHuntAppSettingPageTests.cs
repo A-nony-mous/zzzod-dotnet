@@ -25,9 +25,9 @@ public sealed class NotoriousHuntAppSettingPageTests
 		string actualString = File.ReadAllText(Path.Combine(path, "ZzzNotoriousHuntAppSettingPage.axaml.cs"));
 		AssertOrder(text, "恶名狩猎（周期挑战）开始日", "循环执行", "<ItemsControl x:Name=\"PlanList\"", "Content=\"新增\"");
 		AssertOrder(text, "MissionTypeOptions", "LevelOptions", "TeamOptions", "AutoBattleOptions", "BuffOptions", "已运行次数", "计划次数", "置顶", "删除");
-		Assert.Contains("fa:SettingsExpanderItem", text, StringComparison.Ordinal);
+		Assert.Contains("fa:FASettingsExpanderItem", text, StringComparison.Ordinal);
 		Assert.Contains("fa:FAComboBox", text, StringComparison.Ordinal);
-		Assert.Contains("fa:ContentDialog", text, StringComparison.Ordinal);
+		Assert.Contains("fa:FAContentDialog", text, StringComparison.Ordinal);
 		Assert.Contains("GetChargePlanCatalog()", actualString, StringComparison.Ordinal);
 		Assert.Contains("GetConfigScope(", actualString, StringComparison.Ordinal);
 		Assert.Contains("SaveConfigScope", actualString, StringComparison.Ordinal);

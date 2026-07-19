@@ -1,5 +1,4 @@
 using ZzzOd.Gui.Shell;
-using ZzzOd.Gui.Services.Windows;
 using ZzzOd.Gui.Views;
 using Xunit;
 
@@ -9,7 +8,7 @@ public sealed class GuiShellPresetTests
 {
     [Theory]
     [InlineData("classic", ZzzGuiShellPreset.Classic)]
-    [InlineData("mixed", ZzzGuiShellPreset.Mixed)]
+    [InlineData("mixed", ZzzGuiShellPreset.Frontier)]
     [InlineData("frontier", ZzzGuiShellPreset.Frontier)]
     [InlineData(" FRONTIER ", ZzzGuiShellPreset.Frontier)]
     public void TryParse_ValidConfiguredValue_ReturnsPreset(string value, ZzzGuiShellPreset expected)
@@ -43,7 +42,6 @@ public sealed class GuiShellPresetTests
 
     [Theory]
     [InlineData(ZzzGuiShellPreset.Classic, "classic")]
-    [InlineData(ZzzGuiShellPreset.Mixed, "mixed")]
     [InlineData(ZzzGuiShellPreset.Frontier, "frontier")]
     public void ToConfigValue_MapsEachPresetToPersistentValue(ZzzGuiShellPreset preset, string expected)
     {
@@ -62,7 +60,6 @@ public sealed class GuiShellPresetTests
 
     [Theory]
     [InlineData(ZzzGuiShellPreset.Classic, typeof(MainWindow))]
-    [InlineData(ZzzGuiShellPreset.Mixed, typeof(MixedShellWindow))]
     [InlineData(ZzzGuiShellPreset.Frontier, typeof(FrontierShellWindow))]
     public void ShellWindowFactory_MapsEachPresetToDedicatedWindow(ZzzGuiShellPreset preset, Type expected)
     {
@@ -70,25 +67,19 @@ public sealed class GuiShellPresetTests
     }
 
     [Fact]
-    public void WindowBackdropPolicy_KeepsClassicSolidAndOtherShellsDegradable()
+    public void ShellsDoNotDeclareUnusedMaterialOrTransparencyObservation()
     {
-        Assert.Equal([Avalonia.Controls.WindowTransparencyLevel.None], ZzzWindowBackdropService.GetTransparencyLevels(ZzzGuiShellPreset.Classic));
-        Assert.Equal(
-            [Avalonia.Controls.WindowTransparencyLevel.Mica, Avalonia.Controls.WindowTransparencyLevel.AcrylicBlur, Avalonia.Controls.WindowTransparencyLevel.Blur, Avalonia.Controls.WindowTransparencyLevel.None],
-            ZzzWindowBackdropService.GetTransparencyLevels(ZzzGuiShellPreset.Mixed));
-        Assert.Equal(
-            [Avalonia.Controls.WindowTransparencyLevel.Mica, Avalonia.Controls.WindowTransparencyLevel.AcrylicBlur, Avalonia.Controls.WindowTransparencyLevel.Blur, Avalonia.Controls.WindowTransparencyLevel.None],
-            ZzzWindowBackdropService.GetTransparencyLevels(ZzzGuiShellPreset.Frontier));
-    }
+        string guiRoot = FindGuiRoot();
+        string text = string.Join(
+            Environment.NewLine,
+            File.ReadAllText(Path.Combine(guiRoot, "Views", "MainWindow.axaml")),
+            File.ReadAllText(Path.Combine(guiRoot, "Views", "FrontierShellWindow.axaml")),
+            File.ReadAllText(Path.Combine(guiRoot, "Shell", "ZzzShellWindowRuntime.cs")));
 
-    [Fact]
-    public void WindowBackdropService_ExposesActualTransparencyLevelObservation()
-    {
-        string source = File.ReadAllText(Path.Combine(FindGuiRoot(), "Services", "Windows", "ZzzWindowBackdropService.cs"));
-
-        Assert.Contains("ActualLevelChanged", source, StringComparison.Ordinal);
-        Assert.Contains("TopLevel.ActualTransparencyLevelProperty", source, StringComparison.Ordinal);
-        Assert.Contains("UpdateActualLevel(window.ActualTransparencyLevel)", source, StringComparison.Ordinal);
+        Assert.DoesNotContain("Mica", text, StringComparison.Ordinal);
+        Assert.DoesNotContain("AcrylicBlur", text, StringComparison.Ordinal);
+        Assert.DoesNotContain("ActualTransparencyLevel", text, StringComparison.Ordinal);
+        Assert.False(File.Exists(Path.Combine(guiRoot, "Services", "Windows", "ZzzWindowBackdropService.cs")));
     }
 
     private static string FindGuiRoot()

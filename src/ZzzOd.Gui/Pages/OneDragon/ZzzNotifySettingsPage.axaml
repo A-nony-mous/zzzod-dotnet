@@ -5,27 +5,27 @@
              x:Class="ZzzOd.Gui.Pages.OneDragon.ZzzNotifySettingsPage">
   <ScrollViewer HorizontalScrollBarVisibility="Disabled"
                 VerticalScrollBarVisibility="Auto">
-    <StackPanel Margin="11"
+    <StackPanel Margin="{DynamicResource SampleAppPageMargin}"
                 Spacing="8">
-      <fa:InfoBar x:Name="ErrorBar"
+      <fa:FAInfoBar x:Name="ErrorBar"
                   IsOpen="False"
                   IsClosable="True"
                   Severity="Error" />
       <TextBlock Text="通用"
                  FontSize="18"
                  FontWeight="SemiBold" />
-      <fa:SettingsExpanderItem Content="合并模式失败节点立即通知"
+      <fa:FASettingsExpanderItem Content="合并模式失败节点立即通知"
                                Description="节点通知为全部合并时，失败节点会额外立即推送">
-        <fa:SettingsExpanderItem.IconSource>
-          <fa:SymbolIconSource Symbol="Message" />
-        </fa:SettingsExpanderItem.IconSource>
-        <fa:SettingsExpanderItem.Footer>
+        <fa:FASettingsExpanderItem.IconSource>
+          <fa:FASymbolIconSource Symbol="Message" />
+        </fa:FASettingsExpanderItem.IconSource>
+        <fa:FASettingsExpanderItem.Footer>
           <ToggleSwitch x:Name="MergeErrorToggle"
                         OnContent="开启"
                         OffContent="关闭"
                         Click="OnMergeErrorChanged" />
-        </fa:SettingsExpanderItem.Footer>
-      </fa:SettingsExpanderItem>
+        </fa:FASettingsExpanderItem.Footer>
+      </fa:FASettingsExpanderItem>
 
       <TextBlock Text="应用通知"
                  Margin="0,8,0,0"
@@ -39,9 +39,9 @@
         </ItemsControl.ItemsPanel>
         <ItemsControl.ItemTemplate>
           <DataTemplate x:DataType="local:ZzzNotifyAppRowModel">
-            <fa:SettingsExpanderItem Content="{Binding Name}"
+            <fa:FASettingsExpanderItem Content="{Binding Name}"
                                      Margin="0,0,6,6">
-              <fa:SettingsExpanderItem.Footer>
+              <fa:FASettingsExpanderItem.Footer>
                 <StackPanel Orientation="Horizontal"
                             Spacing="6">
                   <TextBlock Text="应用"
@@ -69,8 +69,8 @@
                     </fa:FAComboBox.ItemTemplate>
                   </fa:FAComboBox>
                 </StackPanel>
-              </fa:SettingsExpanderItem.Footer>
-            </fa:SettingsExpanderItem>
+              </fa:FASettingsExpanderItem.Footer>
+            </fa:FASettingsExpanderItem>
           </DataTemplate>
         </ItemsControl.ItemTemplate>
       </ItemsControl>

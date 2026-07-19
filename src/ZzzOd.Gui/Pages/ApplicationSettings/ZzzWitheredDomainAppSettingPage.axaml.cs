@@ -265,20 +265,20 @@ internal sealed class ZzzWitheredDomainAppSettingState
 internal sealed partial class ZzzWitheredDomainAppSettingPage : UserControl, IZzzPageLifecycle
 {
     private readonly ZzzWitheredDomainAppSettingState _state;
-    private readonly InfoBar _baseErrorBar;
-    private readonly InfoBar _challengeErrorBar;
+    private readonly FAInfoBar _baseErrorBar;
+    private readonly FAInfoBar _challengeErrorBar;
     private readonly FAComboBox _missionCombo;
-    private readonly NumberBox _weeklyTimesNumber;
+    private readonly FANumberBox _weeklyTimesNumber;
     private readonly FAComboBox _extraTaskCombo;
-    private readonly SettingsExpanderItem _runRecordItem;
+    private readonly FASettingsExpanderItem _runRecordItem;
     private readonly FAComboBox _baseChallengeCombo;
-    private readonly NumberBox _dailyTimesNumber;
+    private readonly FANumberBox _dailyTimesNumber;
     private readonly FAComboBox _extraExitCombo;
     private readonly FAComboBox _existingChallengeCombo;
-    private readonly CommandBarButton _createButton;
-    private readonly CommandBarButton _copyButton;
-    private readonly CommandBarButton _deleteButton;
-    private readonly CommandBarButton _closeButton;
+    private readonly FACommandBarButton _createButton;
+    private readonly FACommandBarButton _copyButton;
+    private readonly FACommandBarButton _deleteButton;
+    private readonly FACommandBarButton _closeButton;
     private readonly TextBox _challengeNameText;
     private readonly FAComboBox[] _agentCombos;
     private readonly ToggleSwitch _buyOnlyPriorityToggle;
@@ -289,27 +289,27 @@ internal sealed partial class ZzzWitheredDomainAppSettingPage : UserControl, IZz
     private readonly TextBox _waypointText;
     private readonly TextBox _avoidText;
     private readonly TextBox _resoniumPriorityText;
-    private readonly ContentDialog _deleteDialog;
+    private readonly FAContentDialog _deleteDialog;
     private bool _loading;
 
     public ZzzWitheredDomainAppSettingPage(IZzzAppBackend backend, int instanceIndex, string groupId)
     {
         _state = new ZzzWitheredDomainAppSettingState(backend, instanceIndex, groupId);
         AvaloniaXamlLoader.Load(this);
-        _baseErrorBar = Required<InfoBar>("BaseErrorBar");
-        _challengeErrorBar = Required<InfoBar>("ChallengeErrorBar");
+        _baseErrorBar = Required<FAInfoBar>("BaseErrorBar");
+        _challengeErrorBar = Required<FAInfoBar>("ChallengeErrorBar");
         _missionCombo = Required<FAComboBox>("MissionCombo");
-        _weeklyTimesNumber = Required<NumberBox>("WeeklyTimesNumber");
+        _weeklyTimesNumber = Required<FANumberBox>("WeeklyTimesNumber");
         _extraTaskCombo = Required<FAComboBox>("ExtraTaskCombo");
-        _runRecordItem = Required<SettingsExpanderItem>("RunRecordItem");
+        _runRecordItem = Required<FASettingsExpanderItem>("RunRecordItem");
         _baseChallengeCombo = Required<FAComboBox>("BaseChallengeCombo");
-        _dailyTimesNumber = Required<NumberBox>("DailyTimesNumber");
+        _dailyTimesNumber = Required<FANumberBox>("DailyTimesNumber");
         _extraExitCombo = Required<FAComboBox>("ExtraExitCombo");
         _existingChallengeCombo = Required<FAComboBox>("ExistingChallengeCombo");
-        _createButton = Required<CommandBarButton>("CreateButton");
-        _copyButton = Required<CommandBarButton>("CopyButton");
-        _deleteButton = Required<CommandBarButton>("DeleteButton");
-        _closeButton = Required<CommandBarButton>("CloseButton");
+        _createButton = Required<FACommandBarButton>("CreateButton");
+        _copyButton = Required<FACommandBarButton>("CopyButton");
+        _deleteButton = Required<FACommandBarButton>("DeleteButton");
+        _closeButton = Required<FACommandBarButton>("CloseButton");
         _challengeNameText = Required<TextBox>("ChallengeNameText");
         _agentCombos = [Required<FAComboBox>("Agent1Combo"), Required<FAComboBox>("Agent2Combo"), Required<FAComboBox>("Agent3Combo")];
         _buyOnlyPriorityToggle = Required<ToggleSwitch>("BuyOnlyPriorityToggle");
@@ -320,7 +320,7 @@ internal sealed partial class ZzzWitheredDomainAppSettingPage : UserControl, IZz
         _waypointText = Required<TextBox>("WaypointText");
         _avoidText = Required<TextBox>("AvoidText");
         _resoniumPriorityText = Required<TextBox>("ResoniumPriorityText");
-        _deleteDialog = Required<ContentDialog>("DeleteDialog");
+        _deleteDialog = Required<FAContentDialog>("DeleteDialog");
         Reload();
     }
 
@@ -411,7 +411,7 @@ internal sealed partial class ZzzWitheredDomainAppSettingPage : UserControl, IZz
         }
     }
 
-    private void OnBaseNumberChanged(NumberBox sender, NumberBoxValueChangedEventArgs args)
+    private void OnBaseNumberChanged(FANumberBox sender, FANumberBoxValueChangedEventArgs args)
     {
         if (!_loading && sender.Tag is string key)
         {
@@ -446,7 +446,7 @@ internal sealed partial class ZzzWitheredDomainAppSettingPage : UserControl, IZz
     private async void OnDeleteClicked(object? sender, RoutedEventArgs args)
     {
         if (TopLevel.GetTopLevel(this) is Window owner
-            && await _deleteDialog.ShowAsync(owner).ConfigureAwait(true) == ContentDialogResult.Primary)
+            && await _deleteDialog.ShowAsync(owner).ConfigureAwait(true) == FAContentDialogResult.Primary)
         {
             _state.DeleteChallenge();
             RefreshChallengeChoices();
@@ -498,7 +498,7 @@ internal sealed partial class ZzzWitheredDomainAppSettingPage : UserControl, IZz
         _baseErrorBar.Message = _state.LastError;
         _challengeErrorBar.IsOpen = _state.SelectedChallenge?.IsSample == true || (!string.IsNullOrWhiteSpace(_state.LastError) && _state.SelectedChallenge is not null);
         _challengeErrorBar.Severity = _state.SelectedChallenge?.IsSample == true && string.IsNullOrWhiteSpace(_state.LastError)
-            ? InfoBarSeverity.Informational : InfoBarSeverity.Error;
+            ? FAInfoBarSeverity.Informational : FAInfoBarSeverity.Error;
         _challengeErrorBar.Message = _state.SelectedChallenge?.IsSample == true && string.IsNullOrWhiteSpace(_state.LastError)
             ? "当前为默认配置，点击复制后可修改" : _state.LastError;
     }

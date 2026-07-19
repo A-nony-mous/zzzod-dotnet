@@ -27,7 +27,7 @@
     </Style>
   </UserControl.Styles>
 
-  <Grid Margin="11"
+  <Grid Margin="{DynamicResource SampleAppPageMargin}"
         RowDefinitions="*,12,Auto">
     <ContentControl x:Name="CommissionSettingsHost"
                     HorizontalContentAlignment="Stretch"

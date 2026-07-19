@@ -3,13 +3,13 @@
              xmlns:fa="using:FluentAvalonia.UI.Controls"
              x:Class="ZzzOd.Gui.Pages.ApplicationSettings.ZzzWorldPatrolImageViewer">
   <Grid RowDefinitions="Auto,*" RowSpacing="8">
-    <fa:CommandBar Grid.Row="0">
-      <fa:CommandBar.Content>
+    <fa:FACommandBar Grid.Row="0">
+      <fa:FACommandBar.Content>
         <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
           <TextBlock Text="模式:" VerticalAlignment="Center" />
           <fa:FAComboBox x:Name="ModeCombo" Width="110" SelectionChanged="OnModeChanged" />
           <TextBlock Text="缩放比例:" VerticalAlignment="Center" />
-          <fa:NumberBox x:Name="ScaleBox"
+          <fa:FANumberBox x:Name="ScaleBox"
                         Width="110"
                         Minimum="10"
                         Maximum="1000"
@@ -21,18 +21,18 @@
                      Text="选择区域: 未选择"
                      VerticalAlignment="Center" />
         </StackPanel>
-      </fa:CommandBar.Content>
-      <fa:CommandBar.PrimaryCommands>
-        <fa:CommandBarButton Label="缩小" Click="OnZoomOutClicked" />
-        <fa:CommandBarButton Label="放大" Click="OnZoomInClicked" />
-        <fa:CommandBarButton Label="适应窗口" Click="OnFitClicked" />
-        <fa:CommandBarButton Label="原图" Click="OnOriginalClicked" />
-        <fa:CommandBarButton x:Name="ClearSelectionButton"
+      </fa:FACommandBar.Content>
+      <fa:FACommandBar.PrimaryCommands>
+        <fa:FACommandBarButton Label="缩小" Click="OnZoomOutClicked" />
+        <fa:FACommandBarButton Label="放大" Click="OnZoomInClicked" />
+        <fa:FACommandBarButton Label="适应窗口" Click="OnFitClicked" />
+        <fa:FACommandBarButton Label="原图" Click="OnOriginalClicked" />
+        <fa:FACommandBarButton x:Name="ClearSelectionButton"
                              Label="清除选择"
                              IsVisible="False"
                              Click="OnClearSelectionClicked" />
-      </fa:CommandBar.PrimaryCommands>
-    </fa:CommandBar>
+      </fa:FACommandBar.PrimaryCommands>
+    </fa:FACommandBar>
 
     <ScrollViewer x:Name="ImageScrollViewer"
                   Grid.Row="1"

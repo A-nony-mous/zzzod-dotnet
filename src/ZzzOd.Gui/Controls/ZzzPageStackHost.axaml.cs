@@ -8,7 +8,7 @@ namespace ZzzOd.Gui.Controls;
 public sealed partial class ZzzPageStackHost : UserControl, IZzzPageLifecycle
 {
     private readonly Control _rootContent;
-    private readonly Frame _frame;
+    private readonly FAFrame _frame;
     private Control? _secondaryContent;
 
     public ZzzPageStackHost()
@@ -20,14 +20,14 @@ public sealed partial class ZzzPageStackHost : UserControl, IZzzPageLifecycle
     {
         _rootContent = rootContent;
         AvaloniaXamlLoader.Load(this);
-        _frame = this.FindControl<Frame>("PageFrame")
+        _frame = this.FindControl<FAFrame>("PageFrame")
             ?? throw new InvalidOperationException("ZzzPageStackHost 缺少 Frame。");
         _frame.Content = rootContent;
     }
 
     public event EventHandler? BackNavigationStateChanged;
 
-    public Frame Frame => _frame;
+    public FAFrame FAFrame => _frame;
 
     public bool CanGoBack => _secondaryContent is not null;
 

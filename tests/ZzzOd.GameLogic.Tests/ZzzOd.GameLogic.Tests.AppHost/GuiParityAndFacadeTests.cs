@@ -800,7 +800,7 @@ public sealed class GuiParityAndFacadeTests
 		RunOnUiThread(delegate
 		{
 			ZzzGameAssistantPage zzzGameAssistantPage = new ZzzGameAssistantPage(new FakeBackend(), new ZzzGuiRunIntentService());
-			Assert.Equal("TabView", zzzGameAssistantPage.NavigationTargetKind);
+			Assert.Equal("FATabView", zzzGameAssistantPage.NavigationTargetKind);
 			Assert.Equal(new string[2] { "战斗助手", "委托助手" }, zzzGameAssistantPage.ItemHeaders);
 			Assert.Equal("战斗助手", zzzGameAssistantPage.SelectedHeader);
 			Assert.True(zzzGameAssistantPage.SelectByHeader("委托助手"));
@@ -828,7 +828,7 @@ public sealed class GuiParityAndFacadeTests
 		RunOnUiThread(delegate
 		{
 			ZzzOneDragonPage zzzOneDragonPage = new ZzzOneDragonPage(new FakeBackend(), new ZzzGuiRunIntentService());
-			Assert.Equal("TabView", zzzOneDragonPage.NavigationTargetKind);
+			Assert.Equal("FATabView", zzzOneDragonPage.NavigationTargetKind);
 			Assert.Equal(new string[4] { "一条龙运行", "体力计划", "预备编队", "灵敏度校准" }, zzzOneDragonPage.ItemHeaders);
 			Assert.Equal("一条龙运行", zzzOneDragonPage.SelectedHeader);
 			Assert.True(zzzOneDragonPage.SelectByHeader("体力计划"));
@@ -860,6 +860,7 @@ public sealed class GuiParityAndFacadeTests
 		Assert.Equal("绝区零 一条龙", zzzShellViewModel.ProjectName);
 		Assert.False(string.IsNullOrWhiteSpace(zzzShellViewModel.ActiveInstanceName));
 		Assert.Equal("绝区零 一条龙 " + zzzShellViewModel.ActiveInstanceName, zzzShellViewModel.WindowTitle);
+		Assert.Equal(zzzShellViewModel.ActiveInstanceName + " × 绝区零 一条龙", zzzShellViewModel.FrontierWindowTitle);
 		Assert.Equal("https://github.com/OneDragon-Anything/ZenlessZoneZero-OneDragon/issues", zzzShellViewModel.IssueUrl);
 		Assert.True(zzzShellViewModel.HasLauncherVersion);
 		Assert.True(zzzShellViewModel.HasCodeVersion);
@@ -895,6 +896,7 @@ public sealed class GuiParityAndFacadeTests
 				Assert.True(zzzBackendResult.Success);
 				Assert.True(changed.Wait(TimeSpan.FromSeconds(2L)));
 				Assert.Equal("绝区零 一条龙 第二实例", viewModel.WindowTitle);
+				Assert.Equal("第二实例 × 绝区零 一条龙", viewModel.FrontierWindowTitle);
 			}
 			finally
 			{
@@ -1941,8 +1943,8 @@ public sealed class GuiParityAndFacadeTests
 		Assert.Contains("ResourceDownloadService", unavailable.ToStatus().Message, StringComparison.Ordinal);
 		RunOnUiThread(delegate
 		{
-			InfoBar infoBar = Assert.IsType<InfoBar>(unavailable.ToControl());
-			Assert.Equal(InfoBarSeverity.Warning, infoBar.Severity);
+			FAInfoBar infoBar = Assert.IsType<FAInfoBar>(unavailable.ToControl());
+			Assert.Equal(FAInfoBarSeverity.Warning, infoBar.Severity);
 			Assert.True(infoBar.IsOpen);
 		});
 	}
@@ -1964,7 +1966,7 @@ public sealed class GuiParityAndFacadeTests
 			ToggleSwitch toggleSwitch = Assert.IsType<ToggleSwitch>(zzzSwitchSettingCard.SettingContent);
 			toggleSwitch.IsChecked = true;
 			Assert.True(value);
-			Assert.IsAssignableFrom<SettingsExpanderItem>(zzzSwitchSettingCard);
+			Assert.IsAssignableFrom<FASettingsExpanderItem>(zzzSwitchSettingCard);
 			Assert.DoesNotContain("zzz-card", (IEnumerable<string>)zzzSwitchSettingCard.Classes);
 		});
 	}
@@ -1983,22 +1985,22 @@ public sealed class GuiParityAndFacadeTests
 			Assert.False(zzzTextSettingCard.IsEnabled);
 			Assert.Equal(ZzzSettingCardStatus.Disabled, zzzTextSettingCard.Status);
 			Assert.Equal("运行中不可修改", zzzTextSettingCard.StatusText);
-			Assert.Contains("运行中不可修改", ((SettingsExpanderItem)zzzTextSettingCard).Description?.ToString(), StringComparison.Ordinal);
+			Assert.Contains("运行中不可修改", ((FASettingsExpanderItem)zzzTextSettingCard).Description?.ToString(), StringComparison.Ordinal);
 			zzzTextSettingCard.SetDisabled(disabled: false);
 			zzzTextSettingCard.SetWaiting(waiting: true, "保存中");
 			Assert.True(zzzTextSettingCard.IsEnabled);
 			Assert.False(zzzTextSettingCard.SettingContent.IsEnabled);
 			Assert.Equal(ZzzSettingCardStatus.Waiting, zzzTextSettingCard.Status);
-			Assert.Contains("保存中", ((SettingsExpanderItem)zzzTextSettingCard).Description?.ToString(), StringComparison.Ordinal);
+			Assert.Contains("保存中", ((FASettingsExpanderItem)zzzTextSettingCard).Description?.ToString(), StringComparison.Ordinal);
 			zzzTextSettingCard.SetWaiting(waiting: false);
 			zzzTextSettingCard.SetError("代理地址无效");
 			Assert.Equal(ZzzSettingCardStatus.Error, zzzTextSettingCard.Status);
 			Assert.Equal("代理地址无效", zzzTextSettingCard.StatusText);
-			Assert.Contains("代理地址无效", ((SettingsExpanderItem)zzzTextSettingCard).Description?.ToString(), StringComparison.Ordinal);
+			Assert.Contains("代理地址无效", ((FASettingsExpanderItem)zzzTextSettingCard).Description?.ToString(), StringComparison.Ordinal);
 			zzzTextSettingCard.SetValidation("需要填写端口");
 			Assert.Equal(ZzzSettingCardStatus.Validation, zzzTextSettingCard.Status);
 			Assert.Equal("需要填写端口", zzzTextSettingCard.StatusText);
-			Assert.Contains("需要填写端口", ((SettingsExpanderItem)zzzTextSettingCard).Description?.ToString(), StringComparison.Ordinal);
+			Assert.Contains("需要填写端口", ((FASettingsExpanderItem)zzzTextSettingCard).Description?.ToString(), StringComparison.Ordinal);
 			zzzTextSettingCard.ClearStatus();
 			Assert.Equal(ZzzSettingCardStatus.Normal, zzzTextSettingCard.Status);
 			Assert.Equal(string.Empty, zzzTextSettingCard.StatusText);
@@ -2026,19 +2028,19 @@ public sealed class GuiParityAndFacadeTests
 					new ZzzPivotPageItem("第一页", lifecycleControl),
 					new ZzzPivotPageItem("第二页", lifecycleControl2)
 				});
-				Assert.Equal("TabView", zzzPivotPage.NavigationTargetKind);
+				Assert.Equal("FATabView", zzzPivotPage.NavigationTargetKind);
 				Assert.Equal(new string[2] { "第一页", "第二页" }, zzzPivotPage.ItemHeaders);
 				Assert.Equal(new string[2] { "第一页 选项卡", "第二页 选项卡" }, zzzPivotPage.ItemAutomationNames);
 				Assert.All(zzzPivotPage.ItemFocusableStates, Assert.True);
 				Assert.Equal(1, zzzPivotPage.SelectedIndex);
 				Assert.Equal("第二页", zzzPivotPage.SelectedHeader);
 				Assert.Same(lifecycleControl2, zzzPivotPage.SelectedContent);
-				Assert.Same(lifecycleControl2, zzzPivotPage.Frame.Content);
+				Assert.Same(lifecycleControl2, zzzPivotPage.FAFrame.Content);
 				zzzPivotPage.OnPageShown();
 				Assert.Equal(1, lifecycleControl2.Shown);
 				zzzPivotPage.SelectedIndex = 0;
 				Assert.Equal("第一页", zzzPivotPage.SelectedHeader);
-				Assert.Same(lifecycleControl, zzzPivotPage.Frame.Content);
+				Assert.Same(lifecycleControl, zzzPivotPage.FAFrame.Content);
 				Assert.Equal(1, lifecycleControl2.Left);
 				Assert.Equal(1, lifecycleControl2.Hidden);
 				Assert.Equal(1, lifecycleControl.Shown);
@@ -2107,18 +2109,18 @@ public sealed class GuiParityAndFacadeTests
 			{
 				Content = "处理"
 			};
-			InfoBar infoBar = new InfoBar
+			FAInfoBar infoBar = new FAInfoBar
 			{
 				Title = "警告",
 				Message = "需要处理",
-				Severity = InfoBarSeverity.Warning,
+				Severity = FAInfoBarSeverity.Warning,
 				IsOpen = true,
 				IsClosable = true,
 				ActionButton = button,
 			};
 			Assert.Equal("警告", infoBar.Title);
 			Assert.Equal("需要处理", infoBar.Message);
-			Assert.Equal(InfoBarSeverity.Warning, infoBar.Severity);
+			Assert.Equal(FAInfoBarSeverity.Warning, infoBar.Severity);
 			Assert.True(infoBar.IsOpen);
 			Assert.True(infoBar.IsClosable);
 			Assert.Same(button, infoBar.ActionButton);
@@ -2142,13 +2144,13 @@ public sealed class GuiParityAndFacadeTests
 			{
 				Content = "更多"
 			};
-			CommandBar commandBar = new CommandBar();
-			commandBar.PrimaryCommands.Add(new CommandBarElementContainer { Content = item });
-			commandBar.SecondaryCommands.Add(new CommandBarElementContainer { Content = item2 });
+			FACommandBar commandBar = new FACommandBar();
+			commandBar.PrimaryCommands.Add(new FACommandBarElementContainer { Content = item });
+			commandBar.SecondaryCommands.Add(new FACommandBarElementContainer { Content = item2 });
 			Assert.Single(commandBar.PrimaryCommands);
 			Assert.Single(commandBar.SecondaryCommands);
-			Assert.IsType<CommandBarElementContainer>(commandBar.PrimaryCommands[0]);
-			Assert.IsType<CommandBarElementContainer>(commandBar.SecondaryCommands[0]);
+			Assert.IsType<FACommandBarElementContainer>(commandBar.PrimaryCommands[0]);
+			Assert.IsType<FACommandBarElementContainer>(commandBar.SecondaryCommands[0]);
 		});
 	}
 
@@ -2166,11 +2168,11 @@ public sealed class GuiParityAndFacadeTests
 			{
 				Content = "目标"
 			};
-			ContentDialog contentDialog = zzzDialogService.CreateMessageDialog("标题", "内容");
-			TeachingTip teachingTip = zzzDialogService.CreateTeachingTip("提示", "说明", button);
+			FAContentDialog contentDialog = zzzDialogService.CreateMessageDialog("标题", "内容");
+			FATeachingTip teachingTip = zzzDialogService.CreateTeachingTip("提示", "说明", button);
 			Assert.Equal("标题", contentDialog.Title);
 			Assert.Equal("确定", contentDialog.CloseButtonText);
-			Assert.Equal(ContentDialogButton.Close, contentDialog.DefaultButton);
+			Assert.Equal(FAContentDialogButton.Close, contentDialog.DefaultButton);
 			Assert.IsType<TextBlock>(contentDialog.Content);
 			Assert.Equal("提示", teachingTip.Title);
 			Assert.Equal("说明", teachingTip.Subtitle);
@@ -2406,7 +2408,7 @@ public sealed class GuiParityAndFacadeTests
 			Assert.True(zzzHomePage.LastReadiness.Ready);
 			Assert.True(zzzGuiRunIntentService.ConsumeStartOneDragon());
 			Assert.Equal("one-dragon", navigationKey);
-			Assert.Equal(Symbol.PlayFilled, zzzHomePage.FindControl<SymbolIcon>("StartButtonIcon").Symbol);
+			Assert.Equal(FASymbol.PlayFilled, zzzHomePage.FindControl<FASymbolIcon>("StartButtonIcon").Symbol);
 			zzzHomePage.DisposePage();
 		});
 	}
@@ -2697,7 +2699,7 @@ public sealed class GuiParityAndFacadeTests
 			}, 0));
 			ZzzNotifySettingsPage zzzNotifySettingsPage = new ZzzNotifySettingsPage(fakeBackend, 0);
 			zzzNotifySettingsPage.OnPageShown();
-			Assert.False(zzzNotifySettingsPage.FindControl<InfoBar>("ErrorBar").IsOpen);
+			Assert.False(zzzNotifySettingsPage.FindControl<FAInfoBar>("ErrorBar").IsOpen);
 			zzzNotifySettingsPage.DisposePage();
 		});
 	}
@@ -3147,7 +3149,7 @@ public sealed class GuiParityAndFacadeTests
 			{
 				yield return buttonText;
 			}
-			if (current is SettingsExpanderItem settingsItem)
+			if (current is FASettingsExpanderItem settingsItem)
 			{
 				object content = settingsItem.Content;
 				if (content is string itemContent)
@@ -3159,7 +3161,7 @@ public sealed class GuiParityAndFacadeTests
 					yield return settingsItem.Description;
 				}
 			}
-			if (current is SettingsExpander settingsExpander)
+			if (current is FASettingsExpander settingsExpander)
 			{
 				object content = settingsExpander.Header;
 				if (content is string expanderHeader)
@@ -3171,7 +3173,7 @@ public sealed class GuiParityAndFacadeTests
 					yield return settingsExpander.Description;
 				}
 			}
-			if (current is InfoBar infoBar)
+			if (current is FAInfoBar infoBar)
 			{
 				if (!string.IsNullOrWhiteSpace(infoBar.Title))
 				{
@@ -3230,11 +3232,11 @@ public sealed class GuiParityAndFacadeTests
 
 	private static IEnumerable<Control> GetChildren(Control control)
 	{
-		if (!(control is SettingsExpanderItem settingsItem))
+		if (!(control is FASettingsExpanderItem settingsItem))
 		{
-			if (!(control is SettingsExpander { Footer: var footer } settingsExpander))
+			if (!(control is FASettingsExpander { Footer: var footer } settingsExpander))
 			{
-				if (!(control is TabView tabView))
+				if (!(control is FATabView tabView))
 				{
 					if (control is Border border)
 					{

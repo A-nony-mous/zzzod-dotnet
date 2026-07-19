@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using Avalonia.Controls;
 using Avalonia.Input;
+using Avalonia.Input.Platform;
 using Avalonia.Interactivity;
 using Avalonia.Markup.Xaml;
 using Avalonia.Media.Imaging;
@@ -20,9 +21,9 @@ public partial class MainWindow : Window
     private readonly ZzzShellViewModel _shellViewModel;
     private readonly IZzzShellWindowRuntime _windowRuntime;
     private string? _evidenceRoute;
-    private InfoBar _toastBar = null!;
-    private Frame _contentFrame = null!;
-    private NavigationView _navigation = null!;
+    private FAInfoBar _toastBar = null!;
+    private FAFrame _contentFrame = null!;
+    private FANavigationView _navigation = null!;
     private Grid _titleBar = null!;
     private Image _titleBarIcon = null!;
     private IZzzShellPageHost _pageHost = null!;
@@ -38,7 +39,7 @@ public partial class MainWindow : Window
 
     protected virtual string ToastBarControlName => "ToastBar";
 
-    protected NavigationView NavigationControl => _navigation;
+    protected FANavigationView NavigationControl => _navigation;
 
     public MainWindow()
     {
@@ -86,15 +87,15 @@ public partial class MainWindow : Window
         ZzzShellNavigationService navigationService,
         ZzzRunRoot runRoot)
     {
-        _navigation = this.FindControl<NavigationView>(NavigationControlName)
+        _navigation = this.FindControl<FANavigationView>(NavigationControlName)
             ?? throw new InvalidOperationException("MainWindow 缺少 NavigationView?");
-        _contentFrame = this.FindControl<Frame>(ContentFrameControlName)
+        _contentFrame = this.FindControl<FAFrame>(ContentFrameControlName)
             ?? throw new InvalidOperationException("MainWindow 缺少 Frame?");
         _titleBar = this.FindControl<Grid>(TitleBarControlName)
             ?? throw new InvalidOperationException("MainWindow 缺少标题栏。");
         _titleBarIcon = this.FindControl<Image>(TitleBarIconControlName)
             ?? throw new InvalidOperationException("MainWindow 缺少标题栏图标。");
-        _toastBar = this.FindControl<InfoBar>(ToastBarControlName)
+        _toastBar = this.FindControl<FAInfoBar>(ToastBarControlName)
             ?? throw new InvalidOperationException("MainWindow 缺少 InfoBar?");
         LoadTitleBarIcon(runRoot.Path);
 
@@ -127,15 +128,25 @@ public partial class MainWindow : Window
         };
         _navigationService.NavigationRequested += OnNavigationRequested;
         _windowRuntime.Attach(this, _toastBar);
+        Opened += OnWindowOpened;
     }
 
-    protected void OnNavigationSelectionChanged(object? sender, NavigationViewSelectionChangedEventArgs args)
+    private void OnWindowOpened(object? sender, EventArgs args)
+    {
+        Opened -= OnWindowOpened;
+        if (_shellViewModel.ConsumeStartupError() is { Length: > 0 } error)
+        {
+            _windowRuntime.ShowToast("界面配置错误", error, TimeSpan.FromSeconds(8), FAInfoBarSeverity.Error);
+        }
+    }
+
+    protected void OnNavigationSelectionChanged(object? sender, FANavigationViewSelectionChangedEventArgs args)
     {
         string? tag = args.SelectedItem switch
         {
             ZzzNavigationEntry entry => entry.Key,
-            NavigationViewItem item when item.Tag is string itemTag => itemTag,
-            _ => (args.SelectedItemContainer as NavigationViewItem)?.Tag as string,
+            FANavigationViewItem item when item.Tag is string itemTag => itemTag,
+            _ => (args.SelectedItemContainer as FANavigationViewItem)?.Tag as string,
         };
         if (string.IsNullOrWhiteSpace(tag))
         {
@@ -151,7 +162,7 @@ public partial class MainWindow : Window
         _pageHost.ShowPage(tag);
     }
 
-    protected void OnNavigationBackRequested(object? sender, NavigationViewBackRequestedEventArgs args)
+    protected void OnNavigationBackRequested(object? sender, FANavigationViewBackRequestedEventArgs args)
     {
         _pageHost.GoBack();
     }
@@ -192,7 +203,7 @@ public partial class MainWindow : Window
         }
 
         await clipboard.SetTextAsync(version).ConfigureAwait(true);
-        _windowRuntime.ShowToast("已复制版本号", string.Empty, TimeSpan.FromSeconds(2), InfoBarSeverity.Success);
+        _windowRuntime.ShowToast("已复制版本号", string.Empty, TimeSpan.FromSeconds(2), FAInfoBarSeverity.Success);
     }
 
     protected void OnMinimizeClicked(object? sender, RoutedEventArgs args) =>
@@ -257,7 +268,7 @@ public partial class MainWindow : Window
         Height = Math.Max(MinHeight, height);
     }
 
-    private static void ApplyEvidencePaneState(NavigationView navigation, ZzzGuiEvidenceSelection evidenceSelection)
+    private static void ApplyEvidencePaneState(FANavigationView navigation, ZzzGuiEvidenceSelection evidenceSelection)
     {
         if (string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("ZZZOD_GUI_EVIDENCE_PANE")))
         {
@@ -266,14 +277,14 @@ public partial class MainWindow : Window
 
         if (string.Equals(evidenceSelection.Pane, "compact", StringComparison.OrdinalIgnoreCase))
         {
-            navigation.PaneDisplayMode = NavigationViewPaneDisplayMode.LeftCompact;
+            navigation.PaneDisplayMode = FANavigationViewPaneDisplayMode.LeftCompact;
             navigation.IsPaneOpen = false;
             return;
         }
 
         if (string.Equals(evidenceSelection.Pane, "expanded", StringComparison.OrdinalIgnoreCase))
         {
-            navigation.PaneDisplayMode = NavigationViewPaneDisplayMode.Left;
+            navigation.PaneDisplayMode = FANavigationViewPaneDisplayMode.Left;
             navigation.IsPaneOpen = true;
         }
     }

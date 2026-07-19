@@ -3,123 +3,123 @@
              xmlns:fa="using:FluentAvalonia.UI.Controls"
              x:Class="ZzzOd.Gui.Pages.Settings.ZzzSettingsPage">
   <UserControl.Styles>
-    <Style Selector="fa|TabView#SettingsPivot /template/ Rectangle#LeftBottomBorderLine">
+    <Style Selector="fa|FATabView#SettingsPivot /template/ Rectangle#LeftBottomBorderLine">
       <Setter Property="IsVisible" Value="False" />
     </Style>
-    <Style Selector="fa|TabView#SettingsPivot /template/ Rectangle#RightBottomBorderLine">
+    <Style Selector="fa|FATabView#SettingsPivot /template/ Rectangle#RightBottomBorderLine">
       <Setter Property="IsVisible" Value="False" />
     </Style>
-    <Style Selector="fa|TabViewItem.settings-pivot-item">
+    <Style Selector="fa|FATabViewItem.settings-pivot-item">
       <Setter Property="Background" Value="Transparent" />
       <Setter Property="BorderThickness" Value="0" />
       <Setter Property="Padding" Value="0" />
       <Setter Property="HorizontalContentAlignment" Value="Center" />
       <Setter Property="VerticalContentAlignment" Value="Center" />
     </Style>
-    <Style Selector="fa|TabViewItem.settings-pivot-item /template/ Border#BottomBorderLine">
+    <Style Selector="fa|FATabViewItem.settings-pivot-item /template/ Border#BottomBorderLine">
       <Setter Property="IsVisible" Value="False" />
     </Style>
-    <Style Selector="fa|TabViewItem.settings-pivot-item /template/ Path#LeftRadiusRenderArc">
+    <Style Selector="fa|FATabViewItem.settings-pivot-item /template/ Path#LeftRadiusRenderArc">
       <Setter Property="IsVisible" Value="False" />
     </Style>
-    <Style Selector="fa|TabViewItem.settings-pivot-item /template/ Path#RightRadiusRenderArc">
+    <Style Selector="fa|FATabViewItem.settings-pivot-item /template/ Path#RightRadiusRenderArc">
       <Setter Property="IsVisible" Value="False" />
     </Style>
-    <Style Selector="fa|TabViewItem.settings-pivot-item /template/ Path#SelectedBackgroundPath">
+    <Style Selector="fa|FATabViewItem.settings-pivot-item /template/ Path#SelectedBackgroundPath">
       <Setter Property="IsVisible" Value="False" />
     </Style>
-    <Style Selector="fa|TabViewItem.settings-pivot-item /template/ Border#TabSeparator">
+    <Style Selector="fa|FATabViewItem.settings-pivot-item /template/ Border#TabSeparator">
       <Setter Property="IsVisible" Value="False" />
     </Style>
-    <Style Selector="fa|TabViewItem.settings-pivot-item /template/ Border#TabContainerBorder">
+    <Style Selector="fa|FATabViewItem.settings-pivot-item /template/ Border#TabContainerBorder">
       <Setter Property="Background" Value="Transparent" />
       <Setter Property="BorderThickness" Value="0" />
       <Setter Property="Margin" Value="0" />
       <Setter Property="Padding" Value="0" />
     </Style>
-    <Style Selector="fa|TabViewItem.settings-pivot-item /template/ ContentPresenter#ContentPresenter">
+    <Style Selector="fa|FATabViewItem.settings-pivot-item /template/ ContentPresenter#ContentPresenter">
       <Setter Property="FontSize" Value="16" />
     </Style>
-    <Style Selector="fa|TabViewItem.settings-pivot-item Border.settings-pivot-indicator">
+    <Style Selector="fa|FATabViewItem.settings-pivot-item Border.settings-pivot-indicator">
       <Setter Property="Opacity" Value="0" />
     </Style>
-    <Style Selector="fa|TabViewItem.settings-pivot-item:selected Border.settings-pivot-indicator">
+    <Style Selector="fa|FATabViewItem.settings-pivot-item:selected Border.settings-pivot-indicator">
       <Setter Property="Opacity" Value="1" />
     </Style>
   </UserControl.Styles>
 
-  <fa:TabView x:Name="SettingsPivot"
+  <fa:FATabView x:Name="SettingsPivot"
               IsAddTabButtonVisible="False"
               CanDragTabs="False"
               CanReorderTabs="False"
               TabWidthMode="SizeToContent"
               Margin="0,7,0,0"
               Padding="0">
-    <fa:TabViewItem x:Name="GameTab" Header="游戏设置" IsClosable="False" Classes="settings-pivot-item" Focusable="True">
-      <fa:TabViewItem.HeaderTemplate>
+    <fa:FATabViewItem x:Name="GameTab" Header="游戏设置" IsClosable="False" Classes="settings-pivot-item" Focusable="True">
+      <fa:FATabViewItem.HeaderTemplate>
         <DataTemplate>
           <Grid MinWidth="72" Height="32" RowDefinitions="*,3">
             <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" Text="{Binding}" />
             <Border Grid.Row="1" Classes="settings-pivot-indicator" Width="16" Height="3" CornerRadius="2" HorizontalAlignment="Center" Background="{DynamicResource SystemAccentColor}" />
           </Grid>
         </DataTemplate>
-      </fa:TabViewItem.HeaderTemplate>
-      <fa:Frame x:Name="GameFrame" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch" IsNavigationStackEnabled="False" />
-    </fa:TabViewItem>
-    <fa:TabViewItem x:Name="OverlayTab" Header="Overlay" IsClosable="False" Classes="settings-pivot-item" Focusable="True">
-      <fa:TabViewItem.HeaderTemplate>
+      </fa:FATabViewItem.HeaderTemplate>
+      <fa:FAFrame x:Name="GameFrame" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch" IsNavigationStackEnabled="False" />
+    </fa:FATabViewItem>
+    <fa:FATabViewItem x:Name="OverlayTab" Header="Overlay" IsClosable="False" Classes="settings-pivot-item" Focusable="True">
+      <fa:FATabViewItem.HeaderTemplate>
         <DataTemplate>
           <Grid MinWidth="64" Height="32" RowDefinitions="*,3">
             <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" Text="{Binding}" />
             <Border Grid.Row="1" Classes="settings-pivot-indicator" Width="16" Height="3" CornerRadius="2" HorizontalAlignment="Center" Background="{DynamicResource SystemAccentColor}" />
           </Grid>
         </DataTemplate>
-      </fa:TabViewItem.HeaderTemplate>
-      <fa:Frame x:Name="OverlayFrame" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch" IsNavigationStackEnabled="False" />
-    </fa:TabViewItem>
-    <fa:TabViewItem x:Name="ResourceDownloadTab" Header="资源下载" IsClosable="False" Classes="settings-pivot-item" Focusable="True">
-      <fa:TabViewItem.HeaderTemplate>
+      </fa:FATabViewItem.HeaderTemplate>
+      <fa:FAFrame x:Name="OverlayFrame" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch" IsNavigationStackEnabled="False" />
+    </fa:FATabViewItem>
+    <fa:FATabViewItem x:Name="ResourceDownloadTab" Header="资源下载" IsClosable="False" Classes="settings-pivot-item" Focusable="True">
+      <fa:FATabViewItem.HeaderTemplate>
         <DataTemplate>
           <Grid MinWidth="72" Height="32" RowDefinitions="*,3">
             <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" Text="{Binding}" />
             <Border Grid.Row="1" Classes="settings-pivot-indicator" Width="16" Height="3" CornerRadius="2" HorizontalAlignment="Center" Background="{DynamicResource SystemAccentColor}" />
           </Grid>
         </DataTemplate>
-      </fa:TabViewItem.HeaderTemplate>
-      <fa:Frame x:Name="ResourceDownloadFrame" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch" IsNavigationStackEnabled="False" />
-    </fa:TabViewItem>
-    <fa:TabViewItem x:Name="EnvironmentTab" Header="脚本环境" IsClosable="False" Classes="settings-pivot-item" Focusable="True">
-      <fa:TabViewItem.HeaderTemplate>
+      </fa:FATabViewItem.HeaderTemplate>
+      <fa:FAFrame x:Name="ResourceDownloadFrame" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch" IsNavigationStackEnabled="False" />
+    </fa:FATabViewItem>
+    <fa:FATabViewItem x:Name="EnvironmentTab" Header="脚本环境" IsClosable="False" Classes="settings-pivot-item" Focusable="True">
+      <fa:FATabViewItem.HeaderTemplate>
         <DataTemplate>
           <Grid MinWidth="72" Height="32" RowDefinitions="*,3">
             <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" Text="{Binding}" />
             <Border Grid.Row="1" Classes="settings-pivot-indicator" Width="16" Height="3" CornerRadius="2" HorizontalAlignment="Center" Background="{DynamicResource SystemAccentColor}" />
           </Grid>
         </DataTemplate>
-      </fa:TabViewItem.HeaderTemplate>
-      <fa:Frame x:Name="EnvironmentFrame" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch" IsNavigationStackEnabled="False" />
-    </fa:TabViewItem>
-    <fa:TabViewItem x:Name="PushTab" Header="通知设置" IsClosable="False" Classes="settings-pivot-item" Focusable="True">
-      <fa:TabViewItem.HeaderTemplate>
+      </fa:FATabViewItem.HeaderTemplate>
+      <fa:FAFrame x:Name="EnvironmentFrame" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch" IsNavigationStackEnabled="False" />
+    </fa:FATabViewItem>
+    <fa:FATabViewItem x:Name="PushTab" Header="通知设置" IsClosable="False" Classes="settings-pivot-item" Focusable="True">
+      <fa:FATabViewItem.HeaderTemplate>
         <DataTemplate>
           <Grid MinWidth="72" Height="32" RowDefinitions="*,3">
             <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" Text="{Binding}" />
             <Border Grid.Row="1" Classes="settings-pivot-indicator" Width="16" Height="3" CornerRadius="2" HorizontalAlignment="Center" Background="{DynamicResource SystemAccentColor}" />
           </Grid>
         </DataTemplate>
-      </fa:TabViewItem.HeaderTemplate>
-      <fa:Frame x:Name="PushFrame" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch" IsNavigationStackEnabled="False" />
-    </fa:TabViewItem>
-    <fa:TabViewItem x:Name="CustomTab" Header="自定义设置" IsClosable="False" Classes="settings-pivot-item" Focusable="True">
-      <fa:TabViewItem.HeaderTemplate>
+      </fa:FATabViewItem.HeaderTemplate>
+      <fa:FAFrame x:Name="PushFrame" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch" IsNavigationStackEnabled="False" />
+    </fa:FATabViewItem>
+    <fa:FATabViewItem x:Name="CustomTab" Header="自定义设置" IsClosable="False" Classes="settings-pivot-item" Focusable="True">
+      <fa:FATabViewItem.HeaderTemplate>
         <DataTemplate>
           <Grid MinWidth="88" Height="32" RowDefinitions="*,3">
             <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" Text="{Binding}" />
             <Border Grid.Row="1" Classes="settings-pivot-indicator" Width="16" Height="3" CornerRadius="2" HorizontalAlignment="Center" Background="{DynamicResource SystemAccentColor}" />
           </Grid>
         </DataTemplate>
-      </fa:TabViewItem.HeaderTemplate>
-      <fa:Frame x:Name="CustomFrame" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch" IsNavigationStackEnabled="False" />
-    </fa:TabViewItem>
-  </fa:TabView>
+      </fa:FATabViewItem.HeaderTemplate>
+      <fa:FAFrame x:Name="CustomFrame" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch" IsNavigationStackEnabled="False" />
+    </fa:FATabViewItem>
+  </fa:FATabView>
 </UserControl>

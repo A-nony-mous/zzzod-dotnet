@@ -16,11 +16,11 @@ public sealed class AccountsPageParityTests
 	public void AccountsPageUsesAxamlFluentControlsInPythonOrder()
 	{
 		string text = File.ReadAllText(Path.Combine(FindGuiRoot(), "Pages", "Accounts", "ZzzAccountsPage.axaml"));
-		Assert.Contains("fa:SettingsExpander", text, StringComparison.Ordinal);
-		Assert.Contains("fa:SettingsExpanderItem", text, StringComparison.Ordinal);
+		Assert.Contains("fa:FASettingsExpander", text, StringComparison.Ordinal);
+		Assert.Contains("fa:FASettingsExpanderItem", text, StringComparison.Ordinal);
 		Assert.Contains("fa:FAComboBox", text, StringComparison.Ordinal);
-		Assert.Contains("fa:CommandBarButton", text, StringComparison.Ordinal);
-		Assert.Contains("fa:ContentDialog", text, StringComparison.Ordinal);
+		Assert.Contains("fa:FACommandBarButton", text, StringComparison.Ordinal);
+		Assert.Contains("fa:FAContentDialog", text, StringComparison.Ordinal);
 		Assert.Contains("Text=\"{Binding Name, Mode=TwoWay}\"", text, StringComparison.Ordinal);
 		Assert.DoesNotContain("ComboBox x:Name=\"InstanceName", text, StringComparison.Ordinal);
 		int num = text.IndexOf("Content=\"使用说明\"", StringComparison.Ordinal);

@@ -4,37 +4,37 @@
              x:Class="ZzzOd.Gui.Pages.ApplicationSettings.ZzzLifeOnLineSettingsFlyoutContent"
              MinWidth="420">
   <StackPanel Margin="8" Spacing="1">
-    <fa:InfoBar x:Name="ErrorBar"
+    <fa:FAInfoBar x:Name="ErrorBar"
                 IsOpen="False"
                 IsClosable="True"
                 Severity="Error" />
 
-    <fa:SettingsExpanderItem Content="每日次数">
-      <fa:SettingsExpanderItem.Footer>
-        <fa:NumberBox x:Name="DailyPlanTimesNumber"
+    <fa:FASettingsExpanderItem Content="每日次数">
+      <fa:FASettingsExpanderItem.Footer>
+        <fa:FANumberBox x:Name="DailyPlanTimesNumber"
                       Width="160"
                       Minimum="0"
                       Maximum="20000"
                       SpinButtonPlacementMode="Compact"
                       ValueChanged="OnDailyPlanTimesChanged" />
-      </fa:SettingsExpanderItem.Footer>
-    </fa:SettingsExpanderItem>
+      </fa:FASettingsExpanderItem.Footer>
+    </fa:FASettingsExpanderItem>
 
     <Grid ColumnDefinitions="*,8,*">
-      <fa:SettingsExpanderItem Grid.Column="0" Content="完成次数" />
-      <fa:SettingsExpanderItem Grid.Column="2">
-        <fa:SettingsExpanderItem.Content>
+      <fa:FASettingsExpanderItem Grid.Column="0" Content="完成次数" />
+      <fa:FASettingsExpanderItem Grid.Column="2">
+        <fa:FASettingsExpanderItem.Content>
           <TextBlock x:Name="DoneValueText" />
-        </fa:SettingsExpanderItem.Content>
-      </fa:SettingsExpanderItem>
+        </fa:FASettingsExpanderItem.Content>
+      </fa:FASettingsExpanderItem>
     </Grid>
 
-    <fa:SettingsExpanderItem Content="预备编队">
-      <fa:SettingsExpanderItem.Footer>
+    <fa:FASettingsExpanderItem Content="预备编队">
+      <fa:FASettingsExpanderItem.Footer>
         <fa:FAComboBox x:Name="PredefinedTeamCombo"
                        Width="220"
                        SelectionChanged="OnPredefinedTeamChanged" />
-      </fa:SettingsExpanderItem.Footer>
-    </fa:SettingsExpanderItem>
+      </fa:FASettingsExpanderItem.Footer>
+    </fa:FASettingsExpanderItem>
   </StackPanel>
 </UserControl>

@@ -6,7 +6,7 @@ using ZzzOd.Gui.Services.Config;
 
 namespace ZzzOd.Gui.Controls;
 
-public class ZzzSettingCard : SettingsExpanderItem
+public class ZzzSettingCard : FASettingsExpanderItem
 {
     private readonly Control _settingContent;
     private string _description;
@@ -223,11 +223,11 @@ public sealed class ZzzEditableComboBoxSettingCard : ZzzSettingCard
 
 public class ZzzNumberSettingCard : ZzzSettingCard
 {
-    private readonly NumberBox _number;
+    private readonly FANumberBox _number;
     private readonly IZzzConfigBinding<double>? _binding;
 
     public ZzzNumberSettingCard(string title, double minimum, double maximum, string? description = null, IZzzConfigBinding<double>? binding = null)
-        : base(title, description, CreateNumber(minimum, maximum, binding, out NumberBox number))
+        : base(title, description, CreateNumber(minimum, maximum, binding, out FANumberBox number))
     {
         _number = number;
         _binding = binding;
@@ -240,9 +240,9 @@ public class ZzzNumberSettingCard : ZzzSettingCard
         };
     }
 
-    private static NumberBox CreateNumber(double minimum, double maximum, IZzzConfigBinding<double>? binding, out NumberBox number)
+    private static FANumberBox CreateNumber(double minimum, double maximum, IZzzConfigBinding<double>? binding, out FANumberBox number)
     {
-        number = new NumberBox
+        number = new FANumberBox
         {
             Minimum = minimum,
             Maximum = maximum,
@@ -308,9 +308,9 @@ public sealed class ZzzPushSettingCard : ZzzSettingCard
     {
     }
 
-    private static CommandBarButton CreateButton(string buttonText, Action clicked)
+    private static FACommandBarButton CreateButton(string buttonText, Action clicked)
     {
-        CommandBarButton button = new() { Label = buttonText };
+        FACommandBarButton button = new() { Label = buttonText };
         button.Click += (_, _) => clicked();
         return button;
     }
@@ -323,12 +323,12 @@ public sealed class ZzzMultiPushSettingCard : ZzzSettingCard
     {
     }
 
-    private static CommandBar CreateButtons(IEnumerable<(string Text, Action Clicked)> buttons)
+    private static FACommandBar CreateButtons(IEnumerable<(string Text, Action Clicked)> buttons)
     {
-        CommandBar commandBar = new();
+        FACommandBar commandBar = new();
         foreach ((string text, Action clicked) in buttons)
         {
-            CommandBarButton button = new() { Label = text };
+            FACommandBarButton button = new() { Label = text };
             button.Click += (_, _) => clicked();
             commandBar.PrimaryCommands.Add(button);
         }
@@ -363,7 +363,7 @@ public sealed class ZzzKeyCaptureSettingCard : ZzzSettingCard
         keyBox = new TextBox
         {
             Text = binding?.Read() ?? string.Empty,
-            Watermark = "按下按键",
+            PlaceholderText = "按下按键",
             MinWidth = 160,
         };
         return keyBox;

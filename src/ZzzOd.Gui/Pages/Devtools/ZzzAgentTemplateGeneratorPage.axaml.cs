@@ -21,7 +21,7 @@ internal sealed partial class ZzzAgentTemplateGeneratorPage : UserControl, IZzzP
     private readonly TextBox _agentIdBox;
     private readonly Button _generateAllButton;
     private readonly ItemsControl _templateCards;
-    private readonly InfoBar _statusBar;
+    private readonly FAInfoBar _statusBar;
     private readonly List<Bitmap> _previews = [];
 
     public ZzzAgentTemplateGeneratorPage(IZzzAppBackend backend)
@@ -31,7 +31,7 @@ internal sealed partial class ZzzAgentTemplateGeneratorPage : UserControl, IZzzP
         _agentIdBox = Required<TextBox>("AgentIdBox");
         _generateAllButton = Required<Button>("GenerateAllButton");
         _templateCards = Required<ItemsControl>("TemplateCards");
-        _statusBar = Required<InfoBar>("StatusBar");
+        _statusBar = Required<FAInfoBar>("StatusBar");
         Refresh();
     }
 
@@ -163,7 +163,7 @@ internal sealed partial class ZzzAgentTemplateGeneratorPage : UserControl, IZzzP
         string status = _state.LastStatusText;
         _statusBar.IsOpen = !string.IsNullOrWhiteSpace(status);
         _statusBar.Title = status;
-        _statusBar.Severity = status == "全部模板已生成" ? InfoBarSeverity.Success : InfoBarSeverity.Warning;
+        _statusBar.Severity = status == "全部模板已生成" ? FAInfoBarSeverity.Success : FAInfoBarSeverity.Warning;
     }
 
     private static Bitmap? LoadBitmap(byte[] bytes)
