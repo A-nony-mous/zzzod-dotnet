@@ -71,6 +71,7 @@ public sealed class GuiStaticAuditTests
 	{
 		string path = FindGuiRoot();
 		string window = File.ReadAllText(Path.Combine(path, "Views", "FrontierShellWindow.axaml"));
+		string windowCode = File.ReadAllText(Path.Combine(path, "Views", "FrontierShellWindow.cs"));
 		string mainView = File.ReadAllText(Path.Combine(path, "Views", "FrontierMainView.axaml"));
 		string mainViewCode = File.ReadAllText(Path.Combine(path, "Views", "FrontierMainView.cs"));
 		string navigationResources = File.ReadAllText(Path.Combine(path, "Theme", "FrontierNavigationResources.axaml"));
@@ -97,7 +98,13 @@ public sealed class GuiStaticAuditTests
 		Assert.Contains("Height=\"48\"", mainView, StringComparison.Ordinal);
 		Assert.Contains("Width=\"18\"", mainView, StringComparison.Ordinal);
 		Assert.Contains("Text=\"{Binding FrontierWindowTitle}\"", mainView, StringComparison.Ordinal);
-		Assert.Contains("ExtendClientAreaTitleBarHeightHint=\"48\"", window, StringComparison.Ordinal);
+		Assert.Contains("TitleBar.Height = 48", windowCode, StringComparison.Ordinal);
+		Assert.Contains("TitleBar.ExtendsContentIntoTitleBar = true", windowCode, StringComparison.Ordinal);
+		Assert.DoesNotContain("ExtendClientAreaToDecorationsHint", window, StringComparison.Ordinal);
+		Assert.DoesNotContain("ExtendClientAreaTitleBarHeightHint", window, StringComparison.Ordinal);
+		Assert.DoesNotContain("OnMinimizeClicked", mainView, StringComparison.Ordinal);
+		Assert.DoesNotContain("OnMaximizeClicked", mainView, StringComparison.Ordinal);
+		Assert.DoesNotContain("OnCloseClicked", mainView, StringComparison.Ordinal);
 		Assert.Contains("ThicknessTransition Property=\"Margin\" Duration=\"0:0:0.25\"", mainView, StringComparison.Ordinal);
 		Assert.Contains("animation.RunAsync(icon, cancellationToken)", mainViewCode, StringComparison.Ordinal);
 		Assert.DoesNotContain("RunAsync(scale)", mainViewCode, StringComparison.Ordinal);

@@ -3,7 +3,6 @@ using Avalonia;
 using Avalonia.Animation;
 using Avalonia.Automation;
 using Avalonia.Controls;
-using Avalonia.Input;
 using Avalonia.Input.Platform;
 using Avalonia.Interactivity;
 using Avalonia.Markup.Xaml;
@@ -26,7 +25,6 @@ internal sealed partial class FrontierMainView : UserControl, IDisposable
     private readonly ZzzShellNavigationService _navigationService;
     private readonly ZzzShellViewModel _shellViewModel;
     private readonly IZzzShellWindowRuntime _windowRuntime;
-    private readonly Window _window;
     private readonly ZzzFrontierPageFactory _pageFactory;
     private readonly ZzzFrontierRoute _rootRoute;
     private readonly FANavigationView _navigation;
@@ -57,7 +55,6 @@ internal sealed partial class FrontierMainView : UserControl, IDisposable
         _navigationService = navigationService;
         _shellViewModel = shellViewModel;
         _windowRuntime = windowRuntime;
-        _window = window;
         _pageFactory = new ZzzFrontierPageFactory(services, navigationRegistry);
         _rootRoute = _pageFactory.FindRoute("home") ?? _pageFactory.Routes[0];
 
@@ -442,45 +439,6 @@ internal sealed partial class FrontierMainView : UserControl, IDisposable
         await clipboard.SetTextAsync(version).ConfigureAwait(true);
         _windowRuntime.ShowToast("已复制版本号", string.Empty, TimeSpan.FromSeconds(2), FAInfoBarSeverity.Success);
     }
-
-    private void OnTitleBarPointerPressed(object? sender, PointerPressedEventArgs args)
-    {
-        if (args.Source is Button)
-        {
-            return;
-        }
-
-        PointerPoint point = args.GetCurrentPoint(_window);
-        if (point.Properties.PointerUpdateKind is not PointerUpdateKind.LeftButtonPressed)
-        {
-            return;
-        }
-
-        if (args.ClickCount == 2)
-        {
-            _window.WindowState = _window.WindowState is WindowState.Maximized
-                ? WindowState.Normal
-                : WindowState.Maximized;
-            return;
-        }
-
-        if (!_window.IsActive)
-        {
-            _window.Activate();
-        }
-
-        _window.BeginMoveDrag(args);
-    }
-
-    private void OnMinimizeClicked(object? sender, RoutedEventArgs args) =>
-        _window.WindowState = WindowState.Minimized;
-
-    private void OnMaximizeClicked(object? sender, RoutedEventArgs args) =>
-        _window.WindowState = _window.WindowState is WindowState.Maximized
-            ? WindowState.Normal
-            : WindowState.Maximized;
-
-    private void OnCloseClicked(object? sender, RoutedEventArgs args) => _window.Close();
 
     private void LoadWindowIcon(string runRoot)
     {

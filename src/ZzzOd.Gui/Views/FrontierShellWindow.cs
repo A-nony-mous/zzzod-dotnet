@@ -1,15 +1,21 @@
+using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Media;
 using Avalonia.Markup.Xaml;
+using Avalonia.Styling;
+using FluentAvalonia.Styling;
 using FluentAvalonia.UI.Controls;
+using FluentAvalonia.UI.Windowing;
 using Microsoft.Extensions.DependencyInjection;
 using ZzzOd.AppHost;
 using ZzzOd.Gui.Shell;
 
 namespace ZzzOd.Gui.Views;
 
-public sealed partial class FrontierShellWindow : Window
+public sealed partial class FrontierShellWindow : FAAppWindow
 {
     private readonly FrontierMainView _mainView;
+    private Application? _themeApplication;
 
     public FrontierShellWindow()
     {
@@ -28,6 +34,16 @@ public sealed partial class FrontierShellWindow : Window
     {
         DataContext = shellViewModel;
         AvaloniaXamlLoader.Load(this);
+
+        TitleBar.ExtendsContentIntoTitleBar = true;
+        TitleBar.Height = 48;
+        ApplyWindowMaterial();
+
+        _themeApplication = Application.Current;
+        if (_themeApplication is not null)
+        {
+            _themeApplication.ActualThemeVariantChanged += OnActualThemeVariantChanged;
+        }
 
         ContentControl host = this.FindControl<ContentControl>("MainViewHost")
             ?? throw new InvalidOperationException("前卫 Shell 缺少 MainView Host。");
@@ -56,6 +72,7 @@ public sealed partial class FrontierShellWindow : Window
     private void OnOpened(object? sender, EventArgs args)
     {
         Opened -= OnOpened;
+        ApplyWindowMaterial();
         if (((ZzzShellViewModel)DataContext!).ConsumeStartupError() is { Length: > 0 } error)
         {
             _mainView.ShowToast("界面配置错误", error, TimeSpan.FromSeconds(8), FAInfoBarSeverity.Error);
@@ -66,6 +83,58 @@ public sealed partial class FrontierShellWindow : Window
     {
         Opened -= OnOpened;
         Closed -= OnClosed;
+        if (_themeApplication is not null)
+        {
+            _themeApplication.ActualThemeVariantChanged -= OnActualThemeVariantChanged;
+            _themeApplication = null;
+        }
+
         _mainView.Dispose();
+    }
+
+    protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
+    {
+        base.OnPropertyChanged(change);
+        if (change.Property == ActualThemeVariantProperty)
+        {
+            ApplyWindowMaterial();
+        }
+    }
+
+    private void OnActualThemeVariantChanged(object? sender, EventArgs args) => ApplyWindowMaterial();
+
+    private void ApplyWindowMaterial()
+    {
+        IBrush fallback = ResolveTransparencyFallback();
+        TransparencyBackgroundFallback = fallback;
+
+        if (ActualThemeVariant == FluentAvaloniaTheme.HighContrastTheme)
+        {
+            Background = fallback;
+            TransparencyLevelHint = [WindowTransparencyLevel.None];
+            return;
+        }
+
+        Background = Brushes.Transparent;
+        TransparencyLevelHint = [WindowTransparencyLevel.Mica, WindowTransparencyLevel.AcrylicBlur];
+    }
+
+    private IBrush ResolveTransparencyFallback()
+    {
+        if (TryGetResource("ZzzFrontierWindowBackgroundBrush", ActualThemeVariant, out object? resource)
+            && resource is ISolidColorBrush brush)
+        {
+            Color color = brush.Color;
+            if (color.A == byte.MaxValue && brush.Opacity == 1d)
+            {
+                return brush;
+            }
+
+            return new SolidColorBrush(Color.FromArgb(byte.MaxValue, color.R, color.G, color.B));
+        }
+
+        return ActualThemeVariant == ThemeVariant.Dark
+            ? new SolidColorBrush(Color.Parse("#202020"))
+            : new SolidColorBrush(Color.Parse("#F3F3F3"));
     }
 }

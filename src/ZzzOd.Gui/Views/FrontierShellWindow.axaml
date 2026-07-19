@@ -8,11 +8,7 @@
         Height="760"
         MinWidth="960"
         MinHeight="640"
-        ShowActivated="True"
-        WindowDecorations="None"
-        ExtendClientAreaToDecorationsHint="True"
-        ExtendClientAreaTitleBarHeightHint="48"
-        Background="{DynamicResource ZzzFrontierWindowBackgroundBrush}">
+        ShowActivated="True">
   <Window.Resources>
     <ResourceDictionary>
       <ResourceDictionary.MergedDictionaries>

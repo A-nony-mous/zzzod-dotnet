@@ -67,18 +67,21 @@ public sealed class GuiShellPresetTests
     }
 
     [Fact]
-    public void ShellsDoNotDeclareUnusedMaterialOrTransparencyObservation()
+    public void FrontierShellUsesSampleMaterialWithoutLegacyBackdropService()
     {
         string guiRoot = FindGuiRoot();
+        string frontierCode = File.ReadAllText(Path.Combine(guiRoot, "Views", "FrontierShellWindow.cs"));
         string text = string.Join(
             Environment.NewLine,
             File.ReadAllText(Path.Combine(guiRoot, "Views", "MainWindow.axaml")),
             File.ReadAllText(Path.Combine(guiRoot, "Views", "FrontierShellWindow.axaml")),
             File.ReadAllText(Path.Combine(guiRoot, "Shell", "ZzzShellWindowRuntime.cs")));
 
+        Assert.Contains("FAAppWindow", frontierCode, StringComparison.Ordinal);
+        Assert.Contains("WindowTransparencyLevel.Mica", frontierCode, StringComparison.Ordinal);
+        Assert.Contains("WindowTransparencyLevel.AcrylicBlur", frontierCode, StringComparison.Ordinal);
+        Assert.Contains("TransparencyBackgroundFallback", frontierCode, StringComparison.Ordinal);
         Assert.DoesNotContain("Mica", text, StringComparison.Ordinal);
-        Assert.DoesNotContain("AcrylicBlur", text, StringComparison.Ordinal);
-        Assert.DoesNotContain("ActualTransparencyLevel", text, StringComparison.Ordinal);
         Assert.False(File.Exists(Path.Combine(guiRoot, "Services", "Windows", "ZzzWindowBackdropService.cs")));
     }
 

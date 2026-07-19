@@ -2,8 +2,6 @@
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
   <SolidColorBrush x:Key="ZzzFrontierWindowBackgroundBrush"
                    Color="{DynamicResource SolidBackgroundFillColorBase}" />
-  <SolidColorBrush x:Key="ZzzFrontierTitleBarBackgroundBrush"
-                   Color="{DynamicResource SolidBackgroundFillColorSecondary}" />
   <SolidColorBrush x:Key="ZzzFrontierTitleBarForegroundBrush"
                    Color="{DynamicResource TextFillColorPrimary}" />
 </ResourceDictionary>

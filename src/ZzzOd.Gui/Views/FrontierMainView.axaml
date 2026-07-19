@@ -91,13 +91,12 @@
     </Style>
   </UserControl.Styles>
 
-  <Grid RowDefinitions="Auto,*"
-        Background="{DynamicResource ZzzFrontierContentSurfaceBrush}">
+  <Grid RowDefinitions="Auto,*">
     <Grid x:Name="TitleBarHost"
           Height="48"
-          ColumnDefinitions="Auto,Auto,*,Auto"
+          ColumnDefinitions="Auto,Auto,*,Auto,140"
           Panel.ZIndex="100"
-          Background="{DynamicResource ZzzFrontierTitleBarBackgroundBrush}"
+          Background="Transparent"
           ClipToBounds="True"
           WindowDecorationProperties.ElementRole="TitleBar">
       <Image x:Name="WindowIcon"
@@ -122,8 +121,7 @@
                  Text="{Binding FrontierWindowTitle}" />
       <Border x:Name="TitleBarDragRegion"
               Grid.Column="2"
-              Background="Transparent"
-              PointerPressed="OnTitleBarPointerPressed" />
+              Background="Transparent" />
 
       <StackPanel Grid.Column="3"
                   Orientation="Horizontal"
@@ -146,19 +144,10 @@
             <TextBlock Text="问题反馈" />
           </StackPanel>
         </Button>
-        <Button Classes="zzz-window-control" Click="OnMinimizeClicked">
-          <fa:FAFontIcon Glyph="&#xE921;"
-                         FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" />
-        </Button>
-        <Button Classes="zzz-window-control" Click="OnMaximizeClicked">
-          <fa:FAFontIcon Glyph="&#xE922;"
-                         FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" />
-        </Button>
-        <Button Classes="zzz-window-control" Click="OnCloseClicked">
-          <fa:FAFontIcon Glyph="&#xE8BB;"
-                         FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" />
-        </Button>
       </StackPanel>
+      <Border Grid.Column="4"
+              Width="140"
+              IsHitTestVisible="False" />
     </Grid>
 
     <fa:FANavigationView x:Name="NavView"
@@ -172,7 +161,6 @@
                          IsSettingsVisible="False"
                          IsBackButtonVisible="False"
                          IsBackEnabled="False"
-                         Background="{DynamicResource ZzzFrontierNavigationSurfaceBrush}"
                          WindowDecorationProperties.ElementRole="User">
       <fa:FANavigationView.PaneHeader>
         <Border x:Name="PaneTitleSpacer"
@@ -184,8 +172,7 @@
                     CacheSize="16"
                     IsNavigationStackEnabled="True"
                     HorizontalContentAlignment="Stretch"
-                    VerticalContentAlignment="Stretch"
-                    Background="{DynamicResource ZzzFrontierContentSurfaceBrush}" />
+                    VerticalContentAlignment="Stretch" />
       </fa:FANavigationView.Content>
     </fa:FANavigationView>
 

@@ -9,6 +9,7 @@ using Avalonia.Threading;
 using Avalonia.VisualTree;
 using FluentAvalonia.Styling;
 using FluentAvalonia.UI.Controls;
+using FluentAvalonia.UI.Windowing;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 using ZzzOd.AppHost;
@@ -291,6 +292,7 @@ public sealed class FrontierShellTests
                 Assert.Equal(12, windowIcon.Margin.Left);
                 Assert.False(view.NavigationView.IsBackButtonVisible);
                 Assert.True(paneTitleSpacer.IsVisible);
+                Assert.Equal(40, paneTitleSpacer.Height);
 
                 FANavigationViewItem homeItem = view.NavigationItems["test-home"];
                 Assert.Equal("主页仪表盘", Avalonia.Automation.AutomationProperties.GetName(homeItem));
@@ -376,6 +378,7 @@ public sealed class FrontierShellTests
                 ContentControl host = Assert.IsType<ContentControl>(window.FindControl<ContentControl>("MainViewHost"));
                 Assert.IsType<FrontierMainView>(host.Content);
                 Assert.IsNotType<MainWindow>(window);
+                Assert.IsAssignableFrom<FAAppWindow>(window);
                 window.Show();
                 Assert.True(window.IsVisible);
             }
@@ -389,7 +392,7 @@ public sealed class FrontierShellTests
     }
 
     [Fact]
-    public void FrontierShellSurfacesFollowLightAndDarkThemeWithoutTransparency()
+    public void FrontierShellUsesSampleMaterialAndThemeAwareFallback()
     {
         GuiParityAndFacadeTests.RunOnUiThread(() =>
         {
@@ -415,17 +418,17 @@ public sealed class FrontierShellTests
                 Grid titleBar = Assert.IsType<Grid>(view.FindControl<Grid>("TitleBarHost"));
 
                 window.RequestedThemeVariant = ThemeVariant.Light;
-                Assert.Equal(Color.Parse("#F3F3F3"), GetOpaqueColor(window.Background));
-                Assert.Equal(Color.Parse("#EEEEEE"), GetOpaqueColor(titleBar.Background));
-                Assert.Equal(Color.Parse("#EEEEEE"), GetOpaqueColor(view.NavigationView.Background));
-                Assert.Equal(Color.Parse("#F3F3F3"), GetOpaqueColor(view.NavigationFrame.Background));
+                Assert.Equal(Colors.Transparent, GetColor(window.Background));
+                Assert.Equal(Color.Parse("#F3F3F3"), GetOpaqueColor(window.TransparencyBackgroundFallback));
+                Assert.Equal([WindowTransparencyLevel.Mica, WindowTransparencyLevel.AcrylicBlur], window.TransparencyLevelHint);
+                Assert.Equal(48, window.TitleBar.Height);
+                Assert.Equal(48, titleBar.Height);
+                Assert.Equal(100, titleBar.GetValue(Panel.ZIndexProperty));
 
                 window.RequestedThemeVariant = ThemeVariant.Dark;
-                Assert.Equal(Color.Parse("#202020"), GetOpaqueColor(window.Background));
-                Assert.Equal(Color.Parse("#1C1C1C"), GetOpaqueColor(titleBar.Background));
-                Assert.Equal(Color.Parse("#1C1C1C"), GetOpaqueColor(view.NavigationView.Background));
-                Assert.Equal(Color.Parse("#202020"), GetOpaqueColor(view.NavigationFrame.Background));
-                Assert.Equal(100, titleBar.GetValue(Panel.ZIndexProperty));
+                Assert.Equal(Colors.Transparent, GetColor(window.Background));
+                Assert.Equal(byte.MaxValue, GetColor(window.TransparencyBackgroundFallback).A);
+                Assert.Equal([WindowTransparencyLevel.Mica, WindowTransparencyLevel.AcrylicBlur], window.TransparencyLevelHint);
             }
             finally
             {
@@ -576,6 +579,12 @@ public sealed class FrontierShellTests
         ISolidColorBrush solid = Assert.IsAssignableFrom<ISolidColorBrush>(brush);
         Assert.Equal(1d, solid.Opacity);
         Assert.Equal(byte.MaxValue, solid.Color.A);
+        return solid.Color;
+    }
+
+    private static Color GetColor(IBrush? brush)
+    {
+        ISolidColorBrush solid = Assert.IsAssignableFrom<ISolidColorBrush>(brush);
         return solid.Color;
     }
 }
