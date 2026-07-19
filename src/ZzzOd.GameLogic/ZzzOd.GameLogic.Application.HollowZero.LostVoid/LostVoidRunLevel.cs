@@ -16,6 +16,8 @@ namespace ZzzOd.GameLogic.Application.HollowZero.LostVoid;
 /// </summary>
 public sealed class LostVoidRunLevel : ZOperation
 {
+	private const int NoInBattleThreshold = 3;
+
 	public const string StatusNextLevel = "进入下层";
 
 	public const string StatusComplete = "通关";
@@ -511,7 +513,7 @@ public sealed class LostVoidRunLevel : ZOperation
 		}
 		if (logRoundDiagnostic)
 		{
-			base.ZContext.Logger.Information("[.NET诊断] 迷失之地战斗轮次: Phase=GetBattleState.End, ElapsedMilliseconds={ElapsedMilliseconds:F2}, CurrentFrameInBattle={CurrentFrameInBattle}, TransitionCheckPerformed={TransitionCheckPerformed}, DetectorChecked={DetectorChecked}, NoLongerInBattleByDetection={NoLongerInBattleByDetection}, FinishScreenChecked={FinishScreenChecked}, NoInBattleTimes={NoInBattleTimes}, NoInBattleThreshold={NoInBattleThreshold}, LastDetectTimeUtc={LastDetectTimeUtc}, LastCheckFinishTimeUtc={LastCheckFinishTimeUtc}", Stopwatch.GetElapsedTime(battleStateStartedAt).TotalMilliseconds, state.CurrentFrameInBattle, state.TransitionCheckPerformed, state.DetectorChecked, state.NoLongerInBattleByDetection, state.FinishScreenChecked, _noInBattleTimes, 10, _lastDetectTimeUtc, _lastCheckFinishTimeUtc);
+			base.ZContext.Logger.Information("[.NET诊断] 迷失之地战斗轮次: Phase=GetBattleState.End, ElapsedMilliseconds={ElapsedMilliseconds:F2}, CurrentFrameInBattle={CurrentFrameInBattle}, TransitionCheckPerformed={TransitionCheckPerformed}, DetectorChecked={DetectorChecked}, NoLongerInBattleByDetection={NoLongerInBattleByDetection}, FinishScreenChecked={FinishScreenChecked}, NoInBattleTimes={NoInBattleTimes}, NoInBattleThreshold={NoInBattleThreshold}, LastDetectTimeUtc={LastDetectTimeUtc}, LastCheckFinishTimeUtc={LastCheckFinishTimeUtc}", Stopwatch.GetElapsedTime(battleStateStartedAt).TotalMilliseconds, state.CurrentFrameInBattle, state.TransitionCheckPerformed, state.DetectorChecked, state.NoLongerInBattleByDetection, state.FinishScreenChecked, _noInBattleTimes, NoInBattleThreshold, _lastDetectTimeUtc, _lastCheckFinishTimeUtc);
 		}
 		_currentFrameInBattle = state.CurrentFrameInBattle;
 		DateTimeOffset frameTime = base.LastScreenshotTimeUtc ?? DateTimeOffset.UtcNow;
@@ -536,7 +538,7 @@ public sealed class LostVoidRunLevel : ZOperation
 				return RoundSuccess("识别需移动交互");
 			}
 			_noInBattleTimes = (state.NoLongerInBattleByDetection ? (_noInBattleTimes + 1) : 0);
-			if (_noInBattleTimes >= 10)
+			if (_noInBattleTimes >= NoInBattleThreshold)
 			{
 				_runtime.StopAutoBattle(this);
 				_noInBattleTimes = 0;
@@ -546,7 +548,7 @@ public sealed class LostVoidRunLevel : ZOperation
 		else if (state.InInteractScreen)
 		{
 			_noInBattleTimes++;
-			if (_noInBattleTimes >= 10)
+			if (_noInBattleTimes >= NoInBattleThreshold)
 			{
 				_runtime.StopAutoBattle(this);
 				_noInBattleTimes = 0;

@@ -1915,8 +1915,10 @@ public sealed class LostVoidContextTests
 		}
 	}
 
-	[Fact]
-	public async Task RunLevel_InBattleRequiresTenDetectionFramesBeforeStoppingAutoBattle()
+	[Theory]
+	[InlineData(true, false, "识别需移动交互")]
+	[InlineData(false, true, "识别正在交互")]
+	public async Task RunLevel_InBattleRequiresThreeNonBattleFramesBeforeStoppingAutoBattle(bool currentFrameInBattle, bool inInteractScreen, string expectedStatus)
 	{
 		string rootDirectory = CreateTempRoot();
 		try
@@ -1924,17 +1926,17 @@ public sealed class LostVoidContextTests
 			using ZContext context = new ZContext(new OneDragonEnvironment(rootDirectory));
 			ScriptedLostVoidRunLevelRuntime runtime = new ScriptedLostVoidRunLevelRuntime
 			{
-				BattleState = new LostVoidBattleState(CurrentFrameInBattle: true, NextRegionHint: false, NoLongerInBattleByDetection: true)
+				BattleState = new LostVoidBattleState(CurrentFrameInBattle: currentFrameInBattle, NextRegionHint: false, NoLongerInBattleByDetection: currentFrameInBattle, InInteractScreen: inInteractScreen)
 			};
 			LostVoidRunLevel operation = new LostVoidRunLevel(context, new LostVoidRunRecord(new LostVoidConfig()), "挚交会谈", runtime);
-			for (int i = 0; i < 9; i++)
+			for (int i = 0; i < 2; i++)
 			{
 				Assert.Equal(OperationRoundResultKind.Wait, (await InvokeInBattleAsync(operation)).Kind);
 				Assert.Equal(0, runtime.StopAutoBattleCount);
 			}
 			OperationRoundResult completed = await InvokeInBattleAsync(operation);
 			Assert.True(completed.IsSuccess);
-			Assert.Equal("识别需移动交互", completed.Status);
+			Assert.Equal(expectedStatus, completed.Status);
 			Assert.Equal(1, runtime.StopAutoBattleCount);
 		}
 		finally
