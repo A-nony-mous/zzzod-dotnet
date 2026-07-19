@@ -13,7 +13,7 @@ using ZzzOd.GameLogic.Context;
 namespace ZzzOd.GameLogic.Operations;
 
 /// <summary>
-/// 处理菜单态和副本内的恢复电量弹窗。
+/// 处理副本内的恢复电量弹窗。
 /// </summary>
 public sealed class RestoreCharge : ZOperation
 {
@@ -31,10 +31,6 @@ public sealed class RestoreCharge : ZOperation
 
 	private readonly ChargePlanConfig _config;
 
-	private readonly int? _requiredCharge;
-
-	private readonly bool _isMenu;
-
 	private readonly TimeSpan _retryDelay;
 
 	private readonly TimeSpan _preClickDelay;
@@ -49,11 +45,9 @@ public sealed class RestoreCharge : ZOperation
 	/// <summary>
 	/// 初始化恢复电量操作。
 	/// </summary>
-	public RestoreCharge(ZContext context, int? requiredCharge = null, bool isMenu = false, ChargePlanConfig? config = null, TimeSpan? retryDelay = null, TimeSpan? preClickDelay = null)
+	public RestoreCharge(ZContext context, ChargePlanConfig? config = null, TimeSpan? retryDelay = null, TimeSpan? preClickDelay = null)
 		: base(context, "恢复电量")
 	{
-		_requiredCharge = requiredCharge;
-		_isMenu = isMenu;
 		_config = config ?? ChargePlanConfig.Load(context.Environment, context.RunContext.CurrentInstanceIndex.GetValueOrDefault(), context.RunContext.CurrentGroupId ?? "one_dragon");
 		_retryDelay = retryDelay ?? TimeSpan.FromMilliseconds(500L);
 		_preClickDelay = preClickDelay ?? TimeSpan.FromMilliseconds(300L);
@@ -74,10 +68,6 @@ public sealed class RestoreCharge : ZOperation
 		if (operationRoundResult.IsSuccess)
 		{
 			return RoundSuccess();
-		}
-		if (_isMenu)
-		{
-			return RoundByFindAndClickArea(base.LastScreenshot, "菜单", "文本-电量", _preClickDelay, _retryDelay, _retryDelay);
 		}
 		if (IsAfterBattleRetry)
 		{
@@ -115,31 +105,10 @@ public sealed class RestoreCharge : ZOperation
 		{
 			return RoundRetry("未识别到电量来源", null, _retryDelay);
 		}
-		if (ShouldProbeSourceInMenu())
-		{
-			OperationRoundResult operationRoundResult = RoundByFindArea(base.LastScreenshot, "恢复电量", "标题-快捷使用");
-			if (!operationRoundResult.IsSuccess)
-			{
-				return RoundRetry("未识别到快捷使用", null, _retryDelay);
-			}
-		}
 		int? amountByArea = GetAmountByArea("当前数量");
 		if (!amountByArea.HasValue)
 		{
 			return RoundRetry("未识别到当前数量", null, _retryDelay);
-		}
-		if (ShouldProbeSourceInMenu())
-		{
-			if (IsSourceChargeEnough(status, amountByArea.Value))
-			{
-				return RoundSuccess("继续前往副本", amountByArea.Value, _retryDelay);
-			}
-			if (ShouldReselectSource(status))
-			{
-				_skipBackupCharge = true;
-				return RoundSuccess("重新选择电量来源", amountByArea.Value, _retryDelay);
-			}
-			return RoundSuccess("电量不足", amountByArea.Value, _retryDelay);
 		}
 		int? amountByArea2 = GetAmountByArea("兑换数量-数字输入框");
 		if (!amountByArea2.HasValue)
@@ -162,7 +131,6 @@ public sealed class RestoreCharge : ZOperation
 		return RoundSuccess(status, amountByArea2.Value, _retryDelay);
 	}
 
-	[NodeFrom("识别当前数量", Status = "继续前往副本")]
 	[NodeFrom("识别当前数量", Status = "重新选择电量来源")]
 	[NodeFrom("识别当前数量", Status = "电量不足")]
 	[OperationNode("关闭快捷使用")]
@@ -231,41 +199,9 @@ public sealed class RestoreCharge : ZOperation
 		return Array.Empty<string>();
 	}
 
-	private bool ShouldProbeSourceInMenu()
-	{
-		int result;
-		if (_isMenu)
-		{
-			int? requiredCharge = _requiredCharge;
-			result = (requiredCharge.HasValue ? 1 : 0);
-		}
-		else
-		{
-			result = 0;
-		}
-		return (byte)result != 0;
-	}
-
 	private static bool ShouldConfirmRestore(int currentAmount, int exchangeAmount)
 	{
 		return exchangeAmount <= currentAmount && exchangeAmount < currentAmount;
-	}
-
-	private bool IsSourceChargeEnough(string source, int currentAmount)
-	{
-		int? requiredCharge = _requiredCharge;
-		if (!requiredCharge.HasValue)
-		{
-			return true;
-		}
-		if (1 == 0)
-		{
-		}
-		bool result = ((source == "储蓄电量") ? (currentAmount >= _requiredCharge.Value) : (!(source == "以太电池") || currentAmount * 60 >= _requiredCharge.Value));
-		if (1 == 0)
-		{
-		}
-		return result;
 	}
 
 	private bool ShouldReselectSource(string source)

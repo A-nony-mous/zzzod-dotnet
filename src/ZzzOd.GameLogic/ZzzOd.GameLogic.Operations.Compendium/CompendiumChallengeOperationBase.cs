@@ -129,7 +129,7 @@ public abstract class CompendiumChallengeOperationBase : ZOperation
 			ChargePlanConfig config = Config;
 			TimeSpan? retryDelay = _retryDelay;
 			TimeSpan? preClickDelay = _preClickDelay;
-			operationResult = await new RestoreCharge(zContext, null, isMenu: false, config, retryDelay, preClickDelay).ExecuteAsync().ConfigureAwait(continueOnCapturedContext: false);
+			operationResult = await new RestoreCharge(zContext, config, retryDelay, preClickDelay).ExecuteAsync().ConfigureAwait(continueOnCapturedContext: false);
 		}
 		OperationResult result = operationResult;
 		return RoundByOperationResult(result);

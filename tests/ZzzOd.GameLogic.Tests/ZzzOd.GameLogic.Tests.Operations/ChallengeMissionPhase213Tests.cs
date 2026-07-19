@@ -117,6 +117,42 @@ public sealed class ChallengeMissionPhase213Tests : IDisposable
 		}
 	}
 
+	private sealed class RestorePopupOcrMatcher : IOcrMatcher
+	{
+		public void UpdateUseGpu(bool useGpu)
+		{
+		}
+
+		public bool IsUseGpu()
+		{
+			return false;
+		}
+
+		public bool InitModel(string? proxyUrl = null, string? ghProxyUrl = null, bool skipIfExisted = true, Action<double, string>? progressCallback = null)
+		{
+			return true;
+		}
+
+		public string RunOcrSingleLine(Mat image, double? threshold = null, bool strictOneLine = true)
+		{
+			return Ocr(image).Single().Text;
+		}
+
+		public IReadOnlyDictionary<string, MatchResultList> RunOcr(Mat image, double? threshold = null, double mergeLineDistance = -1.0)
+		{
+			OcrMatchResult match = Ocr(image).Single();
+			MatchResultList matches = new MatchResultList(onlyBest: false);
+			matches.Append(match, autoMerge: false);
+			return new Dictionary<string, MatchResultList>(StringComparer.Ordinal) { [match.Text] = matches };
+		}
+
+		public IReadOnlyList<OcrMatchResult> Ocr(Mat image, double threshold = 0.0, double mergeLineDistance = -1.0)
+		{
+			string text = image.Width <= 20 ? "取消" : "恢复电量";
+			return new OcrMatchResult[] { new OcrMatchResult(0.99, 4, 4, 12, 12, text) };
+		}
+	}
+
 	private readonly string _rootDirectory;
 
 	public ChallengeMissionPhase213Tests()
@@ -313,7 +349,10 @@ public sealed class ChallengeMissionPhase213Tests : IDisposable
 			}
 			return result2;
 		});
-		ChooseNextOrFinishAfterBattle operation = new ChooseNextOrFinishAfterBattle(context, tryNext: true, isAgentPlan: false, new ChargePlanConfig(), TimeSpan.Zero, TimeSpan.Zero);
+		ChooseNextOrFinishAfterBattle operation = new ChooseNextOrFinishAfterBattle(context, tryNext: true, isAgentPlan: false, new ChargePlanConfig
+		{
+			RestoreCharge = RestoreChargeMode.None.DisplayName
+		}, TimeSpan.Zero, TimeSpan.Zero);
 		OperationResult result = await operation.ExecuteAsync();
 		Assert.True(result.IsSuccess);
 		Assert.Equal("战斗结果-再来一次", result.Status);
@@ -327,28 +366,19 @@ public sealed class ChallengeMissionPhase213Tests : IDisposable
 			return;
 		}
 		using StageController controller = new StageController();
-		using ZContext context = CreateContext(controller, delegate(int stage)
+		using ZContext context = CreateContext(controller, (int _) => Array.Empty<string>());
+		context.OcrService.Matcher = new RestorePopupOcrMatcher();
+		ChooseNextOrFinishAfterBattle operation = new ChooseNextOrFinishAfterBattle(context, tryNext: true, isAgentPlan: false, new ChargePlanConfig
 		{
-			if (1 == 0)
-			{
-			}
-			IReadOnlyList<string> result2 = stage switch
-			{
-				1 => new string[] { "再来一次" }, 
-				2 => new string[] { "恢复电量" }, 
-				3 => new string[] { "完成" }, 
-				_ => Array.Empty<string>(), 
-			};
-			if (1 == 0)
-			{
-			}
-			return result2;
-		});
-		ChooseNextOrFinishAfterBattle operation = new ChooseNextOrFinishAfterBattle(context, tryNext: true, isAgentPlan: false, new ChargePlanConfig(), TimeSpan.Zero, TimeSpan.Zero);
-		OperationResult result = await operation.ExecuteAsync();
-		Assert.True(result.IsSuccess);
+			RestoreCharge = RestoreChargeMode.None.DisplayName
+		}, TimeSpan.Zero, TimeSpan.Zero);
+		using Mat screenshot = new Mat(new Size(320, 240), MatType.CV_8UC3, Scalar.Black);
+		SetLastScreenshot(operation, screenshot);
+		MethodInfo method = typeof(ChooseNextOrFinishAfterBattle).GetMethod("RestoreChargeAfterRetry", BindingFlags.Instance | BindingFlags.NonPublic);
+		OperationRoundResult result = await Assert.IsType<Task<OperationRoundResult>>(method.Invoke(operation, null));
+		Assert.True(result.IsSuccess, result.Status);
 		Assert.Equal("战斗结果-完成", result.Status);
-		Assert.Equal(2, controller.Clicks.Count);
+		Assert.Single(controller.Clicks);
 	}
 
 	[Fact]
@@ -402,7 +432,7 @@ public sealed class ChallengeMissionPhase213Tests : IDisposable
 		buffer[2] = "game_data";
 		buffer[3] = "screen_info";
 		buffer[4] = "_od_merged.yml";
-		File.WriteAllText(Path.Combine(buffer), "- screen_id: battle\n  screen_name: 战斗画面\n  area_list:\n    - area_name: 菜单\n      pc_rect: [10, 10, 30, 30]\n    - area_name: 战斗结果-已达成\n      pc_rect: [0, 0, 200, 40]\n      text: 已达成\n      lcs_percent: 0.8\n    - area_name: 战斗结果-再来一次\n      pc_rect: [0, 0, 200, 40]\n      text: 再来一次\n      lcs_percent: 0.8\n    - area_name: 战斗结果-完成\n      pc_rect: [0, 0, 200, 40]\n      text: 完成\n      lcs_percent: 0.8\n- screen_id: battle_menu\n  screen_name: 战斗-菜单\n  area_list:\n    - area_name: 按钮-退出战斗\n      pc_rect: [0, 0, 200, 40]\n      text: 退出战斗\n      lcs_percent: 0.8\n    - area_name: 按钮-重新开始\n      pc_rect: [0, 0, 200, 40]\n      text: 重新开始\n      lcs_percent: 0.8\n    - area_name: 按钮-退出战斗-确认\n      pc_rect: [0, 0, 200, 40]\n      text: 退出战斗确认\n      lcs_percent: 0.8\n- screen_id: restore_charge\n  screen_name: 恢复电量\n  area_list:\n    - area_name: 标题-恢复电量\n      pc_rect: [0, 0, 200, 40]\n      text: 恢复电量\n      lcs_percent: 0.8\n- screen_id: battle_fail_result\n  screen_name: 战斗-挑战结果-失败\n  area_list:\n    - area_name: 按钮-退出\n      pc_rect: [0, 0, 200, 40]\n      text: 街区\n      lcs_percent: 0.8");
+		File.WriteAllText(Path.Combine(buffer), "- screen_id: battle\n  screen_name: 战斗画面\n  area_list:\n    - area_name: 菜单\n      pc_rect: [10, 10, 30, 30]\n    - area_name: 战斗结果-已达成\n      pc_rect: [0, 0, 200, 40]\n      text: 已达成\n      lcs_percent: 0.8\n    - area_name: 战斗结果-再来一次\n      pc_rect: [0, 0, 200, 40]\n      text: 再来一次\n      lcs_percent: 0.8\n    - area_name: 战斗结果-完成\n      pc_rect: [0, 0, 200, 40]\n      text: 完成\n      lcs_percent: 0.8\n- screen_id: battle_menu\n  screen_name: 战斗-菜单\n  area_list:\n    - area_name: 按钮-退出战斗\n      pc_rect: [0, 0, 200, 40]\n      text: 退出战斗\n      lcs_percent: 0.8\n    - area_name: 按钮-重新开始\n      pc_rect: [0, 0, 200, 40]\n      text: 重新开始\n      lcs_percent: 0.8\n    - area_name: 按钮-退出战斗-确认\n      pc_rect: [0, 0, 200, 40]\n      text: 退出战斗确认\n      lcs_percent: 0.8\n- screen_id: restore_charge\n  screen_name: 恢复电量\n  area_list:\n    - area_name: 标题-恢复电量\n      pc_rect: [0, 0, 200, 40]\n      text: 恢复电量\n      lcs_percent: 0.8\n    - area_name: 取消\n      pc_rect: [30, 0, 50, 20]\n      text: 取消\n      lcs_percent: 0.8\n- screen_id: battle_fail_result\n  screen_name: 战斗-挑战结果-失败\n  area_list:\n    - area_name: 按钮-退出\n      pc_rect: [0, 0, 200, 40]\n      text: 街区\n      lcs_percent: 0.8");
 	}
 
 	private static bool CanUseOpenCv()

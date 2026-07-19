@@ -23,9 +23,6 @@ public sealed class ChargePlanOperation : ZOperation
 	/// <summary>已完成一轮计划。</summary>
 	public const string StatusRoundFinished = "已完成一轮计划";
 
-	/// <summary>尝试恢复电量。</summary>
-	public const string StatusTryRestoreCharge = "尝试恢复电量";
-
 	private readonly ChargePlanConfig _config;
 
 	private readonly ChargePlanRunRecord _runRecord;
@@ -42,8 +39,6 @@ public sealed class ChargePlanOperation : ZOperation
 
 	private readonly Func<ZContext, ChargePlanItem, Task<OperationResult>> _notoriousHuntAsync;
 
-	private readonly Func<ZContext, int, Task<OperationResult>> _restoreChargeAsync;
-
 	private readonly Func<ZContext, Task<OperationResult>> _backToWorldAsync;
 
 	private readonly Func<ZContext, int?> _chargePowerReader;
@@ -56,8 +51,6 @@ public sealed class ChargePlanOperation : ZOperation
 
 	private int _chargePower;
 
-	private int _requiredCharge;
-
 	private ChargePlanItem? _tempPlan;
 
 	private ChargePlanItem? _lastTriedPlan;
@@ -67,7 +60,7 @@ public sealed class ChargePlanOperation : ZOperation
 	/// <summary>
 	/// 初始化电量计划流程。
 	/// </summary>
-	public ChargePlanOperation(ZContext context, ChargePlanConfig config, ChargePlanRunRecord runRecord, Func<ZContext, Task<OperationResult>>? gotoMenuAsync = null, Func<ZContext, ChargePlanItem, Task<OperationResult>>? transportAsync = null, Func<ZContext, ChargePlanItem, Task<OperationResult>>? combatSimulationAsync = null, Func<ZContext, ChargePlanItem, Task<OperationResult>>? areaPatrolAsync = null, Func<ZContext, ChargePlanItem, Task<OperationResult>>? expertChallengeAsync = null, Func<ZContext, ChargePlanItem, Task<OperationResult>>? notoriousHuntAsync = null, Func<ZContext, int, Task<OperationResult>>? restoreChargeAsync = null, Func<ZContext, Task<OperationResult>>? backToWorldAsync = null, Func<ZContext, int?>? chargePowerReader = null, Func<ZContext, int, Task<ChargePlanDoubleRewardResult>>? doubleRewardPlanAsync = null, Func<ZContext, Task<OperationResult>>? doubleRewardTransportAsync = null, Func<DateTimeOffset>? now = null)
+	public ChargePlanOperation(ZContext context, ChargePlanConfig config, ChargePlanRunRecord runRecord, Func<ZContext, Task<OperationResult>>? gotoMenuAsync = null, Func<ZContext, ChargePlanItem, Task<OperationResult>>? transportAsync = null, Func<ZContext, ChargePlanItem, Task<OperationResult>>? combatSimulationAsync = null, Func<ZContext, ChargePlanItem, Task<OperationResult>>? areaPatrolAsync = null, Func<ZContext, ChargePlanItem, Task<OperationResult>>? expertChallengeAsync = null, Func<ZContext, ChargePlanItem, Task<OperationResult>>? notoriousHuntAsync = null, Func<ZContext, Task<OperationResult>>? backToWorldAsync = null, Func<ZContext, int?>? chargePowerReader = null, Func<ZContext, int, Task<ChargePlanDoubleRewardResult>>? doubleRewardPlanAsync = null, Func<ZContext, Task<OperationResult>>? doubleRewardTransportAsync = null, Func<DateTimeOffset>? now = null)
 		: base(context, "体力刷本")
 	{
 		_config = config;
@@ -78,7 +71,6 @@ public sealed class ChargePlanOperation : ZOperation
 		_areaPatrolAsync = areaPatrolAsync ?? ((Func<ZContext, ChargePlanItem, Task<OperationResult>>)((ZContext ctx, ChargePlanItem plan) => new AreaPatrol(ctx, plan, _config).ExecuteAsync()));
 		_expertChallengeAsync = expertChallengeAsync ?? ((Func<ZContext, ChargePlanItem, Task<OperationResult>>)((ZContext ctx, ChargePlanItem plan) => new ExpertChallenge(ctx, plan, _config).ExecuteAsync()));
 		_notoriousHuntAsync = notoriousHuntAsync ?? ((Func<ZContext, ChargePlanItem, Task<OperationResult>>)((ZContext ctx, ChargePlanItem plan) => new ZzzOd.GameLogic.Operations.Compendium.NotoriousHunt(ctx, plan, _config, null, useChargePower: true).ExecuteAsync()));
-		_restoreChargeAsync = restoreChargeAsync ?? ((Func<ZContext, int, Task<OperationResult>>)((ZContext ctx, int requiredCharge) => new RestoreCharge(ctx, requiredCharge, isMenu: true, _config).ExecuteAsync()));
 		_backToWorldAsync = backToWorldAsync ?? ((Func<ZContext, Task<OperationResult>>)((ZContext ctx) => new BackToNormalWorld(ctx).ExecuteAsync()));
 		_chargePowerReader = chargePowerReader ?? new Func<ZContext, int?>(ReadChargePowerFromMenu);
 		_doubleRewardPlanAsync = doubleRewardPlanAsync ?? new Func<ZContext, int, Task<ChargePlanDoubleRewardResult>>(DefaultDoubleRewardPlanAsync);
@@ -108,8 +100,6 @@ public sealed class ChargePlanOperation : ZOperation
 	[NodeFrom("挑战完成")]
 	[NodeFrom("开始体力计划")]
 	[NodeFrom("跳过或结束计划")]
-	[NodeFrom("恢复电量", Success = true)]
-	[NodeFrom("恢复电量", Success = false)]
 	[OperationNode("打开菜单")]
 	public async Task<OperationRoundResult> GotoMenu()
 	{
@@ -191,24 +181,15 @@ public sealed class ChargePlanOperation : ZOperation
 				return RoundFail("没有可运行的计划");
 			}
 			int estimatedChargePower = nextPlan.EstimatedChargePower;
-			NodeStateProxy value;
-			bool flag = base.NodeStatus.TryGetValue("恢复电量", out value) && value.IsFail;
 			if (estimatedChargePower <= 0 || _chargePower >= estimatedChargePower)
 			{
 				break;
 			}
-			if (!_config.IsRestoreChargeEnabled || flag)
+			if (!_config.SkipPlan)
 			{
-				if (!_config.SkipPlan)
-				{
-					return RoundSuccess("已完成一轮计划");
-				}
-				_lastTriedPlan = nextPlan;
-				continue;
+				return RoundSuccess("已完成一轮计划");
 			}
-			_currentPlan = nextPlan;
-			_requiredCharge = estimatedChargePower - _chargePower;
-			return RoundSuccess("尝试恢复电量");
+			_lastTriedPlan = nextPlan;
 		}
 		_currentPlan = nextPlan;
 		return RoundSuccess();
@@ -218,7 +199,6 @@ public sealed class ChargePlanOperation : ZOperation
 	/// 传送到计划副本。
 	/// </summary>
 	[NodeFrom("查找并选择下一个可执行任务")]
-	[NodeFrom("恢复电量", Status = "继续前往副本")]
 	[OperationNode("传送")]
 	public async Task<OperationRoundResult> Transport()
 	{
@@ -325,7 +305,6 @@ public sealed class ChargePlanOperation : ZOperation
 	[NodeFrom("区域巡防", Status = "特训目标已达成")]
 	[NodeFrom("专业挑战室", Status = "特训目标已达成")]
 	[NodeFrom("恶名狩猎", Status = "特训目标已达成")]
-	[NodeFrom("恢复电量", Status = "电量不足")]
 	[NodeFrom("传送", Success = false, Status = "找不到 代理人方案培养")]
 	[OperationNode("跳过或结束计划")]
 	public OperationRoundResult SkipPlanOrFinish()
@@ -351,16 +330,6 @@ public sealed class ChargePlanOperation : ZOperation
 			_tempPlan = null;
 		}
 		return RoundSuccess("已完成一轮计划");
-	}
-
-	/// <summary>
-	/// 恢复电量。
-	/// </summary>
-	[NodeFrom("查找并选择下一个可执行任务", Status = "尝试恢复电量")]
-	[OperationNode("恢复电量", SaveStatus = true)]
-	public async Task<OperationRoundResult> RestoreCharge()
-	{
-		return RoundByOperationResult(await _restoreChargeAsync(base.ZContext, _requiredCharge).ConfigureAwait(continueOnCapturedContext: false));
 	}
 
 	/// <summary>

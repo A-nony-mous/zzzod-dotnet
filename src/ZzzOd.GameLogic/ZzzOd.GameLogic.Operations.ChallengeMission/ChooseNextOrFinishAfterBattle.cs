@@ -76,7 +76,7 @@ public sealed class ChooseNextOrFinishAfterBattle : ZOperation
 			ChargePlanConfig config = _config;
 			TimeSpan? retryDelay = _retryDelay;
 			TimeSpan? preClickDelay = _preClickDelay;
-			RestoreCharge operation = new RestoreCharge(zContext, null, isMenu: false, config, retryDelay, preClickDelay)
+			RestoreCharge operation = new RestoreCharge(zContext, config, retryDelay, preClickDelay)
 			{
 				IsAfterBattleRetry = true
 			};
@@ -90,6 +90,11 @@ public sealed class ChooseNextOrFinishAfterBattle : ZOperation
 		else
 		{
 			_tryNext = false;
+			OperationRoundResult cancel = RoundByFindAndClickArea(base.LastScreenshot, "恢复电量", "取消", _preClickDelay, TimeSpan.FromSeconds(1L), _retryDelay);
+			if (!cancel.IsSuccess)
+			{
+				return cancel;
+			}
 		}
 		return RoundSuccess("战斗结果-完成", null, TimeSpan.FromMilliseconds(500L));
 	}

@@ -361,21 +361,21 @@ public sealed class ChargePlanAppTests
 			int menuCount = 0;
 			int transportCount = 0;
 			int combatCount = 0;
-			ChargePlanOperation operation = new ChargePlanOperation(context, config, runRecord, delegate
+			ChargePlanOperation operation = new ChargePlanOperation(context, config, runRecord, gotoMenuAsync: delegate
 			{
 				menuCount++;
 				return Task.FromResult(new OperationResult(IsSuccess: true, "菜单"));
-			}, delegate(ZContext _, ChargePlanItem actualPlan)
+			}, transportAsync: delegate(ZContext _, ChargePlanItem actualPlan)
 			{
 				transportCount++;
 				Assert.Same(plan, actualPlan);
 				return Task.FromResult(new OperationResult(IsSuccess: true, "传送完成"));
-			}, delegate(ZContext _, ChargePlanItem actualPlan)
+			}, combatSimulationAsync: delegate(ZContext _, ChargePlanItem actualPlan)
 			{
 				combatCount++;
 				Assert.Same(plan, actualPlan);
 				return Task.FromResult(new OperationResult(IsSuccess: true, "挑战完成"));
-			}, null, null, null, null, null, (ZContext _) => 100);
+			}, chargePowerReader: (ZContext _) => 100);
 			Assert.True(operation.StartChargePlan().IsSuccess);
 			Assert.True((await operation.GotoMenu().WaitAsync(TimeSpan.FromSeconds(2L))).IsSuccess);
 			OperationRoundResult charge = operation.CheckChargePower();
@@ -408,7 +408,7 @@ public sealed class ChargePlanAppTests
 	}
 
 	[Fact]
-	public async Task ChargePlanOperation_TriesRestoreChargeWhenPowerIsNotEnough()
+	public void ChargePlanOperation_FinishesWhenPowerIsNotEnough()
 	{
 		string rootDirectory = CreateTempRoot();
 		try
@@ -417,7 +417,6 @@ public sealed class ChargePlanAppTests
 			context.AttachController(new ReadyController());
 			ChargePlanConfig config = new ChargePlanConfig
 			{
-				RestoreCharge = RestoreChargeMode.EtherOnly.DisplayName,
 				PlanList = new List<ChargePlanItem>(1)
 				{
 					new ChargePlanItem
@@ -429,21 +428,12 @@ public sealed class ChargePlanAppTests
 					}
 				}
 			};
-			int requiredCharge = 0;
-			ChargePlanOperation operation = new ChargePlanOperation(context, config, new ChargePlanRunRecord(), null, null, null, null, null, null, delegate(ZContext _, int required)
-			{
-				requiredCharge = required;
-				return Task.FromResult(new OperationResult(IsSuccess: true, "继续前往副本"));
-			}, null, (ZContext _) => 20);
+			ChargePlanOperation operation = new ChargePlanOperation(context, config, new ChargePlanRunRecord(), chargePowerReader: (ZContext _) => 20);
 			operation.StartChargePlan();
 			operation.CheckChargePower();
 			OperationRoundResult select = operation.FindAndSelectNextPlan();
-			OperationRoundResult restore = await operation.RestoreCharge().WaitAsync(TimeSpan.FromSeconds(2L));
 			Assert.True(select.IsSuccess);
-			Assert.Equal("尝试恢复电量", select.Status);
-			Assert.True(restore.IsSuccess);
-			Assert.Equal("继续前往副本", restore.Status);
-			Assert.Equal(40, requiredCharge);
+			Assert.Equal(ChargePlanOperation.StatusRoundFinished, select.Status);
 		}
 		finally
 		{
@@ -530,7 +520,7 @@ public sealed class ChargePlanAppTests
 		try
 		{
 			using ZContext context = new ZContext(new OneDragonEnvironment(rootDirectory));
-			ChargePlanOperation operation = new ChargePlanOperation(context, new ChargePlanConfig(), new ChargePlanRunRecord(), null, null, null, null, null, null, null, null, null, null, (ZContext _) => Task.FromResult(new OperationResult(IsSuccess: false, "传送失败")));
+			ChargePlanOperation operation = new ChargePlanOperation(context, new ChargePlanConfig(), new ChargePlanRunRecord(), doubleRewardTransportAsync: (ZContext _) => Task.FromResult(new OperationResult(IsSuccess: false, "传送失败")));
 			OperationRoundResult result = await operation.CheckDoubleRewardEvent().WaitAsync(TimeSpan.FromSeconds(2L));
 			Assert.True(result.IsFail);
 			Assert.Equal("传送失败", result.Status);
@@ -548,7 +538,7 @@ public sealed class ChargePlanAppTests
 		try
 		{
 			using ZContext context = new ZContext(new OneDragonEnvironment(rootDirectory));
-			ChargePlanOperation operation = new ChargePlanOperation(context, new ChargePlanConfig(), new ChargePlanRunRecord(), null, null, null, null, null, null, null, null, null, (ZContext _, int _) => Task.FromResult(ChargePlanDoubleRewardResult.Retry("双倍活动识别出错")));
+			ChargePlanOperation operation = new ChargePlanOperation(context, new ChargePlanConfig(), new ChargePlanRunRecord(), doubleRewardPlanAsync: (ZContext _, int _) => Task.FromResult(ChargePlanDoubleRewardResult.Retry("双倍活动识别出错")));
 			OperationRoundResult result = await operation.CheckDoubleRewardEvent().WaitAsync(TimeSpan.FromSeconds(2L));
 			Assert.Equal(OperationRoundResultKind.Retry, result.Kind);
 			Assert.Equal("双倍活动识别出错", result.Status);

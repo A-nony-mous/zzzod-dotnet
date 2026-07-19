@@ -63,6 +63,12 @@ public sealed class TransportByCompendium : ZOperation
 	[OperationNode("返回大世界", IsStartNode = true)]
 	private async Task<OperationRoundResult> BackToWorld()
 	{
+		string targetScreen = "快捷手册-" + TabName;
+		string? currentScreen = CheckAndUpdateCurrentScreen(base.LastScreenshot);
+		if (string.Equals(currentScreen, targetScreen, StringComparison.Ordinal) || (currentScreen != null && base.ZContext.ScreenContext.GetScreenRoute(currentScreen, targetScreen)?.CanGo == true))
+		{
+			return RoundSuccess();
+		}
 		return RoundByOperationResult(await _backToWorldAsync(base.ZContext).ConfigureAwait(continueOnCapturedContext: false));
 	}
 

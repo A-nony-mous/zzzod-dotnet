@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using OneDragon.Core.Abstractions.Geometry;
@@ -433,94 +434,21 @@ public sealed class OperationPhase26Tests : IDisposable
 	}
 
 	[Fact]
-	public async Task RestoreCharge_MenuProbeReselectsEtherWhenBackupChargeIsNotEnough()
+	public void RestoreCharge_InChallengeClicksNextWithoutMenuPreflight()
 	{
 		if (!CanUseOpenCv())
 		{
 			return;
 		}
 		using StageController controller = new StageController();
-		using ZContext context = CreateContext(controller, delegate(int stage)
-		{
-			if (1 == 0)
-			{
-			}
-			IReadOnlyList<string> result2 = stage switch
-			{
-				1 => new string[] { "电量" }, 
-				2 => new string[2] { "储蓄电量", "以太电池" }, 
-				3 => new string[] { "确认" }, 
-				4 => new string[] { "快捷使用" }, 
-				5 => new string[2] { "快捷使用", "关闭" }, 
-				7 => new string[] { "恢复电量" }, 
-				8 => new string[2] { "储蓄电量", "以太电池" }, 
-				9 => new string[] { "确认" }, 
-				10 => new string[] { "快捷使用" }, 
-				11 => new string[2] { "快捷使用", "关闭" }, 
-				_ => Array.Empty<string>(), 
-			};
-			if (1 == 0)
-			{
-			}
-			return result2;
-		}, new Dictionary<int, Queue<string>>
-		{
-			[4] = new Queue<string>(new string[] { "10" }),
-			[10] = new Queue<string>(new string[] { "2" })
-		});
-		RestoreCharge operation = new RestoreCharge(config: new ChargePlanConfig
-		{
-			RestoreCharge = RestoreChargeMode.Both.DisplayName
-		}, context: context, requiredCharge: 80, isMenu: true, retryDelay: TimeSpan.Zero, preClickDelay: TimeSpan.Zero);
-		OperationResult result = await operation.ExecuteAsync();
-		Assert.True(result.IsSuccess);
-		Assert.Equal("继续前往副本", result.Status);
-		Assert.Equal(2, Assert.IsType<int>(result.Data));
-		Assert.Contains(new OneDragon.Core.Abstractions.Geometry.Point(20, 350), (IEnumerable<OneDragon.Core.Abstractions.Geometry.Point>)controller.Clicks);
-		Assert.Contains((IEnumerable<OneDragon.Core.Abstractions.Geometry.Point>)controller.Clicks, (Predicate<OneDragon.Core.Abstractions.Geometry.Point>)((OneDragon.Core.Abstractions.Geometry.Point point) => point == new OneDragon.Core.Abstractions.Geometry.Point(20, 310)));
-	}
-
-	[Fact]
-	public async Task RestoreCharge_InChallengeConfirmsRestoreAndRewardLayers()
-	{
-		if (!CanUseOpenCv())
-		{
-			return;
-		}
-		using StageController controller = new StageController();
-		using ZContext context = CreateContext(controller, delegate(int stage)
-		{
-			if (1 == 0)
-			{
-			}
-			IReadOnlyList<string> result2 = stage switch
-			{
-				1 => new string[] { "下一步" }, 
-				2 => new string[] { "储蓄电量" }, 
-				3 => new string[] { "确认" }, 
-				5 => new string[] { "确认" }, 
-				6 => new string[2] { "快捷使用", "确认" }, 
-				7 => new string[2] { "获得", "确认" }, 
-				_ => Array.Empty<string>(), 
-			};
-			if (1 == 0)
-			{
-			}
-			return result2;
-		}, new Dictionary<int, Queue<string>> { [4] = new Queue<string>(new string[2] { "100", "60" }) });
-		ChargePlanConfig config = new ChargePlanConfig
-		{
-			RestoreCharge = RestoreChargeMode.BackupOnly.DisplayName
-		};
-		ChargePlanConfig config2 = config;
-		TimeSpan? retryDelay = TimeSpan.Zero;
-		TimeSpan? preClickDelay = TimeSpan.Zero;
-		RestoreCharge operation = new RestoreCharge(context, null, isMenu: false, config2, retryDelay, preClickDelay);
-		OperationResult result = await operation.ExecuteAsync();
-		Assert.True(result.IsSuccess);
-		Assert.Equal("恢复电量成功", result.Status);
+		using ZContext context = CreateContext(controller, (int _) => new string[] { "下一步" });
+		RestoreCharge operation = new RestoreCharge(context, new ChargePlanConfig(), TimeSpan.Zero, TimeSpan.Zero);
+		using Mat screenshot = new Mat(new Size(800, 650), MatType.CV_8UC3, Scalar.Black);
+		SetLastScreenshot(operation, screenshot);
+		MethodInfo method = typeof(RestoreCharge).GetMethod("ClickChargeText", BindingFlags.Instance | BindingFlags.NonPublic);
+		OperationRoundResult result = Assert.IsType<OperationRoundResult>(method.Invoke(operation, null));
+		Assert.True(result.IsSuccess, result.Status);
 		Assert.Contains(new OneDragon.Core.Abstractions.Geometry.Point(20, 170), (IEnumerable<OneDragon.Core.Abstractions.Geometry.Point>)controller.Clicks);
-		Assert.Contains(new OneDragon.Core.Abstractions.Geometry.Point(20, 350), (IEnumerable<OneDragon.Core.Abstractions.Geometry.Point>)controller.Clicks);
 	}
 
 	public void Dispose()
@@ -561,5 +489,11 @@ public sealed class OperationPhase26Tests : IDisposable
 	{
 		OpenCvTestRuntime.RequireAvailable();
 		return true;
+	}
+
+	private static void SetLastScreenshot(ZOperation operation, Mat screen)
+	{
+		PropertyInfo property = typeof(ZOperation).GetProperty("LastScreenshot", BindingFlags.Instance | BindingFlags.NonPublic);
+		property.SetValue(operation, screen);
 	}
 }
