@@ -42,9 +42,15 @@ public sealed class AutoBattleApp : ZApplication
 	}
 
 	/// <inheritdoc />
-	public override Task OnStopAsync(CancellationToken cancellationToken)
+	public override async Task OnStopAsync(CancellationToken cancellationToken)
 	{
-		_flow.Stop(base.Context);
-		return Task.CompletedTask;
+		try
+		{
+			_flow.Stop(base.Context);
+		}
+		finally
+		{
+			await base.OnStopAsync(cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
+		}
 	}
 }
