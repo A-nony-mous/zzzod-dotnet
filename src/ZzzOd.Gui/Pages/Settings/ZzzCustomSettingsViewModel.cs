@@ -24,7 +24,7 @@ internal sealed partial class ZzzCustomSettingsViewModel : ZzzPageViewModel
     private string _selectedThemeValue = "Auto";
 
     [ObservableProperty]
-    private string _selectedShellPresetValue = "classic";
+    private string _selectedShellPresetValue = "frontier";
 
     [ObservableProperty]
     private string _selectedBackgroundTypeValue = "version_poster";
@@ -174,10 +174,10 @@ internal sealed partial class ZzzCustomSettingsViewModel : ZzzPageViewModel
             IReadOnlyDictionary<string, object?> values = result.Value.Values;
             SelectedLanguageValue = OptionValue(LanguageOptions, ReadString(values, "ui_language", "auto"));
             SelectedThemeValue = OptionValue(ThemeOptions, ReadString(values, "theme", "Auto"));
-            string shellPreset = ReadString(values, ZzzGuiShellPresetService.ConfigKey, "classic");
+            string shellPreset = ReadString(values, ZzzGuiShellPresetService.ConfigKey, "frontier");
             SelectedShellPresetValue = ZzzGuiShellPresetService.TryParse(shellPreset, out ZzzGuiShellPreset preset)
                 ? ZzzGuiShellPresetService.ToConfigValue(preset)
-                : "classic";
+                : "frontier";
             SelectedBackgroundTypeValue = OptionValue(BackgroundTypeOptions, ReadString(values, "background_type", "version_poster"));
             CustomThemeColor = ReadBool(values, "custom_theme_color", false);
             CustomBanner = ReadBool(values, "custom_banner", false);

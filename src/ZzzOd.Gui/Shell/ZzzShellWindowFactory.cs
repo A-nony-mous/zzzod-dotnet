@@ -25,9 +25,9 @@ public sealed class ZzzShellWindowFactory
         if (!resolution.Success)
         {
             string error = resolution.Error ?? "GUI Shell 配置读取失败。";
-            _logger.LogError("{ShellPresetError} 使用经典 Shell 启动", error);
+            _logger.LogError("{ShellPresetError} 使用前卫 Shell 启动", error);
             _services.GetRequiredService<ZzzShellViewModel>().ReportStartupError(error);
-            preset = ZzzGuiShellPreset.Classic;
+            preset = ZzzGuiShellPreset.Frontier;
         }
 
         Type windowType = GetWindowType(preset);

@@ -20,12 +20,12 @@ public sealed class GuiShellPresetTests
     }
 
     [Fact]
-    public void FromValues_KeyMissing_UsesClassicPythonParityBaseline()
+    public void FromValues_KeyMissing_UsesFrontierDefault()
     {
         ZzzGuiShellPresetResolution resolution = ZzzGuiShellPresetResolution.FromValues(new Dictionary<string, object?>());
 
         Assert.True(resolution.Success);
-        Assert.Equal(ZzzGuiShellPreset.Classic, resolution.Preset);
+        Assert.Equal(ZzzGuiShellPreset.Frontier, resolution.Preset);
         Assert.Null(resolution.Error);
     }
 
@@ -36,7 +36,7 @@ public sealed class GuiShellPresetTests
             new Dictionary<string, object?> { [ZzzGuiShellPresetService.ConfigKey] = "store-fluent" });
 
         Assert.False(resolution.Success);
-        Assert.Equal(ZzzGuiShellPreset.Classic, resolution.Preset);
+        Assert.Equal(ZzzGuiShellPreset.Frontier, resolution.Preset);
         Assert.Contains("gui_shell_preset", resolution.Error, StringComparison.Ordinal);
     }
 

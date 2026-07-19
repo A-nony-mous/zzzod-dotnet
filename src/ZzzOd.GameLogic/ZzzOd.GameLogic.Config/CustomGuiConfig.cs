@@ -14,7 +14,7 @@ public sealed class CustomGuiConfig
 	public string Theme { get; set; } = "Auto";
 
 	[YamlMember(Alias = "gui_shell_preset", ApplyNamingConventions = false)]
-	public string GuiShellPreset { get; set; } = "classic";
+	public string GuiShellPreset { get; set; } = "frontier";
 
 	[YamlMember(Alias = "custom_theme_color", ApplyNamingConventions = false)]
 	public bool CustomThemeColor { get; set; }

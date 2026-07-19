@@ -20,13 +20,13 @@ public readonly record struct ZzzGuiShellPresetResolution(
 
         if (!values.TryGetValue(ZzzGuiShellPresetService.ConfigKey, out object? raw))
         {
-            return new ZzzGuiShellPresetResolution(true, ZzzGuiShellPreset.Classic, null);
+            return new ZzzGuiShellPresetResolution(true, ZzzGuiShellPreset.Frontier, null);
         }
 
         string value = Convert.ToString(raw, CultureInfo.InvariantCulture)?.Trim() ?? string.Empty;
         return ZzzGuiShellPresetService.TryParse(value, out ZzzGuiShellPreset preset)
             ? new ZzzGuiShellPresetResolution(true, preset, null)
-            : new ZzzGuiShellPresetResolution(false, ZzzGuiShellPreset.Classic, $"gui_shell_preset 的值无效: {value}。");
+            : new ZzzGuiShellPresetResolution(false, ZzzGuiShellPreset.Frontier, $"gui_shell_preset 的值无效: {value}。");
     }
 }
 
@@ -48,7 +48,7 @@ public sealed class ZzzGuiShellPresetService
         {
             return new ZzzGuiShellPresetResolution(
                 false,
-                ZzzGuiShellPreset.Classic,
+                ZzzGuiShellPreset.Frontier,
                 custom.Error ?? "自定义设置读取失败。");
         }
 
@@ -69,7 +69,7 @@ public sealed class ZzzGuiShellPresetService
                 preset = ZzzGuiShellPreset.Frontier;
                 return true;
             default:
-                preset = ZzzGuiShellPreset.Classic;
+                preset = ZzzGuiShellPreset.Frontier;
                 return false;
         }
     }
