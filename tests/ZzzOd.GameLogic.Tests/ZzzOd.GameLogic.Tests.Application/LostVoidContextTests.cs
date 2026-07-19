@@ -584,6 +584,37 @@ public sealed class LostVoidContextTests
 	}
 
 	[Fact]
+	public void Detector_MaskBattleAvatarsKeepsCallerImageUnchanged()
+	{
+		Vec3b original = new(30, 20, 10);
+		using Mat source = new(new OpenCvSharp.Size(1920, 1080), MatType.CV_8UC3, new Scalar(original.Item0, original.Item1, original.Item2));
+		using Mat masked = LostVoidDetector.MaskBattleAvatars(source);
+
+		Assert.Equal(original, source.At<Vec3b>(40, 104));
+		Assert.Equal(original, source.At<Vec3b>(110, 844));
+		Assert.Equal(new Vec3b(), masked.At<Vec3b>(40, 104));
+		Assert.Equal(new Vec3b(), masked.At<Vec3b>(110, 844));
+		Assert.Equal(original, masked.At<Vec3b>(39, 103));
+	}
+
+	[Fact]
+	public void Detector_ProductionPathsUseMaskedRunEntry()
+	{
+		string sourceDirectory = Path.Combine(FindRepoRoot(), "src", "ZzzOd.GameLogic", "ZzzOd.GameLogic.Application.HollowZero.LostVoid");
+		string detectorSource = File.ReadAllText(Path.Combine(sourceDirectory, "LostVoidDetector.cs"));
+		Assert.Contains("CoreDetector.Run(maskedImage", detectorSource, StringComparison.Ordinal);
+
+		string[] callerFiles = ["ScreenLostVoidRunLevelRuntime.cs", "LostVoidMoveByDetectionOperation.cs"];
+		foreach (string callerFile in callerFiles)
+		{
+			string callerSource = File.ReadAllText(Path.Combine(sourceDirectory, callerFile));
+			Assert.DoesNotContain("CoreDetector.Run(", callerSource, StringComparison.Ordinal);
+			Assert.Contains(".Detector", callerSource, StringComparison.Ordinal);
+			Assert.Contains(".Run(", callerSource, StringComparison.Ordinal);
+		}
+	}
+
+	[Fact]
 	public void Context_LoadsArtifactChallengeAndInvestigationData()
 	{
 		string text = CreateTempRoot();

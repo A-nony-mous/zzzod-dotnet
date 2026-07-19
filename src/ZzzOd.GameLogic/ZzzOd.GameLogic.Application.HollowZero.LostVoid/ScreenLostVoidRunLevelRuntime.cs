@@ -89,7 +89,7 @@ public sealed class ScreenLostVoidRunLevelRuntime : ILostVoidRunLevelRuntime
 		if (screen != null && operation.GameContext.LostVoid.Detector != null)
 		{
 			IReadOnlyList<string> labelList = BuildLabelList(operation.GameContext.LostVoid.Detector, ignoreList);
-			detectResult = operation.GameContext.LostVoid.Detector.CoreDetector.Run(screen, 0.6f, 0.5f, (double?)screenshotTimeUtc?.ToUnixTimeMilliseconds() / 1000.0, labelList);
+			detectResult = operation.GameContext.LostVoid.Detector.Run(screen, 0.6f, 0.5f, (double?)screenshotTimeUtc?.ToUnixTimeMilliseconds() / 1000.0, labelList);
 		}
 		return Task.FromResult(new LostVoidRunLevelFrame(InNormalWorld: true, ChallengeConfirmAvailable: false, flag2, flag, detectResult));
 	}
@@ -385,7 +385,7 @@ public sealed class ScreenLostVoidRunLevelRuntime : ILostVoidRunLevelRuntime
 			try
 			{
 				long timestamp = Stopwatch.GetTimestamp();
-				YoloDetectFrameResult frameResult = _inBattleDetectorOverride?.Invoke(screen, (double)dateTimeOffset.ToUnixTimeMilliseconds() / 1000.0) ?? operation.GameContext.LostVoid.Detector.CoreDetector.Run(screen, 0.9f, 0.5f, (double)dateTimeOffset.ToUnixTimeMilliseconds() / 1000.0);
+				YoloDetectFrameResult frameResult = _inBattleDetectorOverride?.Invoke(screen, (double)dateTimeOffset.ToUnixTimeMilliseconds() / 1000.0) ?? operation.GameContext.LostVoid.Detector.Run(screen, 0.9f, 0.5f, (double)dateTimeOffset.ToUnixTimeMilliseconds() / 1000.0);
 				num2 = Stopwatch.GetElapsedTime(timestamp).TotalMilliseconds;
 				(bool WithInteract, bool WithDistance, bool WithEntry) tuple = LostVoidDetectorResultHelper.IsFrameWithAll(frameResult);
 				bool item = tuple.WithInteract;

@@ -303,7 +303,7 @@ public sealed class LostVoidMoveByDetectionOperation : ZOperation
 		}
 		if (base.LastScreenshot != null)
 		{
-			YoloDetectFrameResult frameResult = base.ZContext.LostVoid.Detector?.CoreDetector.Run(base.LastScreenshot, 0.6f, 0.5f, (double?)base.LastScreenshotTimeUtc?.ToUnixTimeMilliseconds() / 1000.0, _service.BuildLabelList(base.ZContext.LostVoid.Detector, _ignoreEntryList)) ?? new YoloDetectFrameResult(Array.Empty<YoloDetectObjectResult>(), 0.0);
+			YoloDetectFrameResult frameResult = base.ZContext.LostVoid.Detector?.Run(base.LastScreenshot, 0.6f, 0.5f, (double?)base.LastScreenshotTimeUtc?.ToUnixTimeMilliseconds() / 1000.0, _service.BuildLabelList(base.ZContext.LostVoid.Detector, _ignoreEntryList)) ?? new YoloDetectFrameResult(Array.Empty<YoloDetectObjectResult>(), 0.0);
 			WriteTargetedNoTargetEvidence("脱困后重新识别", frameResult, afterEscape: true);
 			if (base.ZContext.LostVoid.Detector?.GetResultByX(frameResult, "0001-距离") != null)
 			{
@@ -371,7 +371,7 @@ public sealed class LostVoidMoveByDetectionOperation : ZOperation
 
 	private YoloDetectFrameResult RunDetection(Mat screen)
 	{
-		return DetectFrameOverride?.Invoke() ?? base.ZContext.LostVoid.Detector?.CoreDetector.Run(screen, 0.6f, 0.5f, (double?)base.LastScreenshotTimeUtc?.ToUnixTimeMilliseconds() / 1000.0, _service.BuildLabelList(base.ZContext.LostVoid.Detector, _ignoreEntryList)) ?? new YoloDetectFrameResult(Array.Empty<YoloDetectObjectResult>(), 0.0);
+		return DetectFrameOverride?.Invoke() ?? base.ZContext.LostVoid.Detector?.Run(screen, 0.6f, 0.5f, (double?)base.LastScreenshotTimeUtc?.ToUnixTimeMilliseconds() / 1000.0, _service.BuildLabelList(base.ZContext.LostVoid.Detector, _ignoreEntryList)) ?? new YoloDetectFrameResult(Array.Empty<YoloDetectObjectResult>(), 0.0);
 	}
 
 	private void LogDetectionSummary(string nodeName, YoloDetectFrameResult frameResult)

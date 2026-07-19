@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using OneDragon.Core.Runtime;
 using OneDragon.Core.Yolo;
+using OpenCvSharp;
 using ZzzOd.GameLogic.Const;
 using ZzzOd.GameLogic.Context;
 
@@ -23,6 +24,10 @@ public sealed class LostVoidDetector : IDisposable
 	public const string ClassEntry = "xxxx-入口";
 
 	public const double DefaultKeepResultSeconds = 2.0;
+
+	public static readonly Point BattleAvatarMaskTopLeft = new(104, 40);
+
+	public static readonly Point BattleAvatarMaskBottomRight = new(844, 110);
 
 	private readonly OneDragonEnvironment _environment;
 
@@ -64,6 +69,27 @@ public sealed class LostVoidDetector : IDisposable
 	public bool InitModel(string? proxyUrl = null, string? ghProxyUrl = null, bool skipIfExisted = true, Action<double, string>? progressCallback = null)
 	{
 		return CoreDetector.InitModel(proxyUrl, ghProxyUrl, skipIfExisted, progressCallback);
+	}
+
+	public static Mat MaskBattleAvatars(Mat image)
+	{
+		ArgumentNullException.ThrowIfNull(image);
+		Mat maskedImage = image.Clone();
+		Cv2.Rectangle(maskedImage, BattleAvatarMaskTopLeft, BattleAvatarMaskBottomRight, Scalar.All(0), -1);
+		return maskedImage;
+	}
+
+	public YoloDetectFrameResult Run(
+		Mat image,
+		float conf = 0.6f,
+		float iou = 0.5f,
+		double? runTime = null,
+		IReadOnlyList<string>? labelList = null,
+		IReadOnlyList<string>? categoryList = null,
+		YoloOverlayCoordinateContext? overlayCoordinateContext = null)
+	{
+		using Mat maskedImage = MaskBattleAvatars(image);
+		return CoreDetector.Run(maskedImage, conf, iou, runTime, labelList, categoryList, overlayCoordinateContext);
 	}
 
 	public (bool WithInteract, bool WithDistance, bool WithEntry) IsFrameWithAll(YoloDetectFrameResult? frameResult = null)
