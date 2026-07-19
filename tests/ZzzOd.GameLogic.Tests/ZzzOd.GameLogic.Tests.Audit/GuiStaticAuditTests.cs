@@ -93,6 +93,7 @@ public sealed class GuiStaticAuditTests
 		Assert.Contains("x:Name=\"PaneTitleSpacer\"", mainView, StringComparison.Ordinal);
 		Assert.Contains("Height=\"40\"", mainView, StringComparison.Ordinal);
 		Assert.DoesNotContain("ZIndex=\"10\"", mainView, StringComparison.Ordinal);
+		Assert.DoesNotContain("Panel.ZIndex", mainView, StringComparison.Ordinal);
 		Assert.DoesNotContain("FANavigationViewItemPresenter:selected /template/ Border#SelectionIndicator", mainView, StringComparison.Ordinal);
 		Assert.Contains("FocusAdorner\" Value=\"{x:Null}\"", mainView, StringComparison.Ordinal);
 		Assert.Contains("Height=\"48\"", mainView, StringComparison.Ordinal);

@@ -423,7 +423,7 @@ public sealed class FrontierShellTests
                 Assert.Equal([WindowTransparencyLevel.Mica, WindowTransparencyLevel.AcrylicBlur], window.TransparencyLevelHint);
                 Assert.Equal(48, window.TitleBar.Height);
                 Assert.Equal(48, titleBar.Height);
-                Assert.Equal(100, titleBar.GetValue(Panel.ZIndexProperty));
+                Assert.Equal(0, titleBar.GetValue(Panel.ZIndexProperty));
 
                 window.RequestedThemeVariant = ThemeVariant.Dark;
                 Assert.Equal(Colors.Transparent, GetColor(window.Background));

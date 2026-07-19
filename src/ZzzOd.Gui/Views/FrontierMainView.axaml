@@ -95,7 +95,6 @@
     <Grid x:Name="TitleBarHost"
           Height="48"
           ColumnDefinitions="Auto,Auto,*,Auto,140"
-          Panel.ZIndex="100"
           Background="Transparent"
           ClipToBounds="True"
           WindowDecorationProperties.ElementRole="TitleBar">
