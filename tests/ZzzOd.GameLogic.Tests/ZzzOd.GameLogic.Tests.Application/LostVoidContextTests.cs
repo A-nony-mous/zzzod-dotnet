@@ -1361,6 +1361,33 @@ public sealed class LostVoidContextTests
 	}
 
 	[Fact]
+	public void MoveByDetection_EscapeReDetectionKeepsDetectTransition()
+	{
+		MethodInfo turnAtFirst = typeof(LostVoidMoveByDetectionOperation).GetMethod("TurnAtFirst", BindingFlags.Instance | BindingFlags.NonPublic);
+		IReadOnlyList<NodeFromAttribute> edges = turnAtFirst.GetCustomAttributes(typeof(NodeFromAttribute), inherit: false).OfType<NodeFromAttribute>().ToArray();
+		Assert.Contains(edges, edge => edge.FromName == "脱困" && edge.Status == LostVoidMoveByDetectionOperation.StatusContinue);
+
+		string sourcePath = Path.Combine(FindRepoRoot(), "src", "ZzzOd.GameLogic", "ZzzOd.GameLogic.Application.HollowZero.LostVoid", "LostVoidMoveByDetectionOperation.cs");
+		string source = File.ReadAllText(sourcePath);
+		int escapeStart = source.IndexOf("private OperationRoundResult GetOutOfStuck()", StringComparison.Ordinal);
+		int detectRun = source.IndexOf("LostVoid.Detector?.Run", escapeStart, StringComparison.Ordinal);
+		int detectFallback = source.IndexOf("return RoundSuccess(\"需要重新识别\")", detectRun, StringComparison.Ordinal);
+		Assert.True(escapeStart >= 0 && detectRun > escapeStart && detectFallback > detectRun);
+	}
+
+	[Fact]
+	public void ChooseCommon_NoDetailFallbackPrecedesGenericCandidateFallback()
+	{
+		string sourcePath = Path.Combine(FindRepoRoot(), "src", "ZzzOd.GameLogic", "ZzzOd.GameLogic.Application.HollowZero.LostVoid", "LostVoidChooseCommonOperation.cs");
+		string source = File.ReadAllText(sourcePath);
+		int chooseArtifact = source.IndexOf("public OperationRoundResult ChooseArtifact()", StringComparison.Ordinal);
+		int answerFallback = source.IndexOf("TryFillByAnswerFallback", chooseArtifact, StringComparison.Ordinal);
+		int genericFallback = source.IndexOf("TryFillByCanChoose", chooseArtifact, StringComparison.Ordinal);
+		Assert.True(chooseArtifact >= 0 && answerFallback > chooseArtifact && genericFallback > answerFallback);
+		Assert.Contains("item.Artifact.Category == \"无详情\"", source, StringComparison.Ordinal);
+	}
+
+	[Fact]
 	public async Task RunLevel_TargetMissingChecksCurrentFrameBattleBeforeTurning()
 	{
 		using ZContext context = new ZContext(new OneDragonEnvironment(CreateTempRoot()));
@@ -1834,7 +1861,7 @@ public sealed class LostVoidContextTests
 			Assert.Equal("挚交会谈", completeResult.Data);
 			Assert.Equal("等待加载", completeRuntime.Calls[0]);
 			Assert.Equal("准备自动战斗", completeRuntime.Calls[1]);
-			Assert.Equal(10, completeRuntime.Calls.Count((string call) => call == "战斗中"));
+			Assert.Equal(3, completeRuntime.Calls.Count((string call) => call == "战斗中"));
 			Assert.Contains("停止自动战斗", (IEnumerable<string>)completeRuntime.Calls);
 			Assert.Contains("交互处理:战后", (IEnumerable<string>)completeRuntime.Calls);
 			Assert.Contains("交互后处理:挑战结果", (IEnumerable<string>)completeRuntime.Calls);
@@ -1872,7 +1899,7 @@ public sealed class LostVoidContextTests
 			Assert.Equal("入口", result.Data);
 			Assert.Equal("等待加载", runtime.Calls[0]);
 			Assert.Equal("准备自动战斗", runtime.Calls[1]);
-			Assert.Equal(10, runtime.Calls.Count((string call) => call == "战斗中"));
+			Assert.Equal(3, runtime.Calls.Count((string call) => call == "战斗中"));
 			Assert.Contains("停止自动战斗", (IEnumerable<string>)runtime.Calls);
 			Assert.Equal(2, controller.ClickCount);
 		}
