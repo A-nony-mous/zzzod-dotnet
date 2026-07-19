@@ -206,7 +206,7 @@ public class AutoBattleContextLifecycleTests
 	}
 
 	[Fact]
-	public void RunSessionEmergencyStop_StopsAutoBattleParticipant()
+	public async Task RunSessionEmergencyStop_StopsAutoBattleParticipant()
 	{
 		string text = CreateTempRoot();
 		try
@@ -220,7 +220,7 @@ public class AutoBattleContextLifecycleTests
 			Assert.True(autoBattleContext.IsRuntimeRunning);
 			Assert.True(autoBattleContext.AutoOp!.IsRunning);
 
-			ctx.RunContext.StopRunningAsync().GetAwaiter().GetResult();
+			await ctx.RunContext.StopRunningAsync();
 
 			Assert.False(autoBattleContext.IsRuntimeRunning);
 			Assert.False(autoBattleContext.AutoOp.IsRunning);
