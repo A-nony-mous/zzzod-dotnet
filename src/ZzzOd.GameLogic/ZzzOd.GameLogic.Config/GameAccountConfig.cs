@@ -38,6 +38,11 @@ public sealed class GameAccountConfig
 	public string BilibiliAccountName { get; set; } = string.Empty;
 
 	[YamlIgnore]
+	public bool HasLoginInfo => string.Equals(GameRegion, "cn_b", StringComparison.Ordinal)
+		? !string.IsNullOrWhiteSpace(BilibiliAccountName)
+		: !string.IsNullOrWhiteSpace(Account) && !string.IsNullOrWhiteSpace(Password);
+
+	[YamlIgnore]
 	public int GameRefreshHourOffset
 	{
 		get

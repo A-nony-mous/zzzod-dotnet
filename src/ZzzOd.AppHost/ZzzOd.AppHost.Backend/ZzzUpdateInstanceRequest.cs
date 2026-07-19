@@ -6,4 +6,5 @@ namespace ZzzOd.AppHost.Backend;
 /// <param name="Index">实例编号。</param>
 /// <param name="Name">实例显示名。</param>
 /// <param name="ActiveInOneDragon">是否参与一条龙。</param>
-public sealed record ZzzUpdateInstanceRequest(int Index, string? Name = null, bool? ActiveInOneDragon = null);
+/// <param name="ForceLoginBeforeRun">运行前是否强制重新登录。</param>
+public sealed record ZzzUpdateInstanceRequest(int Index, string? Name = null, bool? ActiveInOneDragon = null, bool? ForceLoginBeforeRun = null);

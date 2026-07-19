@@ -147,6 +147,16 @@
                        LostFocus="OnBilibiliAccountLostFocus" />
             </fa:FASettingsExpanderItem.Footer>
           </fa:FASettingsExpanderItem>
+
+          <fa:FASettingsExpanderItem Content="强制重新登录"
+                                     Description="单账号运行且自动打开游戏时，开启后会使用当前账号配置重登，关闭时则直接使用游戏当前登录状态">
+            <fa:FASettingsExpanderItem.Footer>
+              <ToggleSwitch x:Name="ForceLoginBeforeRunToggle"
+                            OnContent=""
+                            OffContent=""
+                            Click="OnForceLoginBeforeRunChanged" />
+            </fa:FASettingsExpanderItem.Footer>
+          </fa:FASettingsExpanderItem>
         </fa:FASettingsExpander>
 
         <fa:FASettingsExpander x:Name="InstanceList"

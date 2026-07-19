@@ -157,6 +157,16 @@ public class ZContext : OneDragonContext
 	/// <summary>当前实例编号。</summary>
 	public int InstanceIndex => _instanceIndex;
 
+	/// <summary>当前实例是否在运行前强制重新登录。</summary>
+	public bool ForceLoginBeforeRun
+	{
+		get
+		{
+			YamlConfig<OneDragonConfig> config = new YamlConfig<OneDragonConfig>(base.Environment, "one_dragon", null, null, Array.Empty<string>());
+			return config.Current.InstanceList.Any((OneDragonInstanceConfigItem item) => item.Idx == _instanceIndex && item.ForceLoginBeforeRun);
+		}
+	}
+
 	/// <summary>
 	/// 当前实例实际使用的游戏窗口标题。
 	/// </summary>

@@ -61,7 +61,13 @@ public sealed class EnterGame : ZOperation
 	public EnterGame(ZContext context, bool switchAccount = false, bool runAllInstances = false, int instanceCount = 1, Func<DateTimeOffset>? now = null, TimeSpan? maxResourceDownload = null, TimeSpan? retryDelay = null, TimeSpan? waitDelay = null)
 		: base(context, "进入游戏")
 	{
-		_forceLogin = ShouldForceLogin(switchAccount, context.GameAccountConfig, runAllInstances, instanceCount);
+		bool forceLoginBeforeRun = context.ForceLoginBeforeRun;
+		bool requestedForceLogin = switchAccount || (runAllInstances && instanceCount > 1) || forceLoginBeforeRun;
+		if (!switchAccount && requestedForceLogin && !context.GameAccountConfig.HasLoginInfo)
+		{
+			context.Logger.Warning("登录信息未配置完整，跳过强制重新登录，将使用游戏当前登录状态");
+		}
+		_forceLogin = ShouldForceLogin(switchAccount, context.GameAccountConfig, runAllInstances, instanceCount, forceLoginBeforeRun);
 		_now = now ?? ((Func<DateTimeOffset>)(() => DateTimeOffset.UtcNow));
 		_maxResourceDownload = maxResourceDownload ?? TimeSpan.FromSeconds(1200L);
 		_retryDelay = retryDelay ?? TimeSpan.FromSeconds(1L);
@@ -71,15 +77,14 @@ public sealed class EnterGame : ZOperation
 	/// <summary>
 	/// Resolve whether this login flow should force account login.
 	/// </summary>
-	public static bool ShouldForceLogin(bool switchAccount, GameAccountConfig accountConfig, bool runAllInstances = false, int instanceCount = 1)
+	public static bool ShouldForceLogin(bool switchAccount, GameAccountConfig accountConfig, bool runAllInstances = false, int instanceCount = 1, bool forceLoginBeforeRun = false)
 	{
 		ArgumentNullException.ThrowIfNull(accountConfig, "accountConfig");
 		if (switchAccount)
 		{
 			return true;
 		}
-		bool flag = !string.IsNullOrWhiteSpace(accountConfig.Account) || !string.IsNullOrWhiteSpace(accountConfig.Password) || !string.IsNullOrWhiteSpace(accountConfig.BilibiliAccountName);
-		return flag && runAllInstances && instanceCount > 1;
+		return ((runAllInstances && instanceCount > 1) || forceLoginBeforeRun) && accountConfig.HasLoginInfo;
 	}
 
 	/// <summary>

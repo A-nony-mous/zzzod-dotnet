@@ -319,6 +319,10 @@ public sealed class ZzzRuntimeManager : IDisposable
 				{
 					oneDragonInstanceConfigItem.ActiveInOneDragon = request.ActiveInOneDragon.Value;
 				}
+				if (request.ForceLoginBeforeRun.HasValue)
+				{
+					oneDragonInstanceConfigItem.ForceLoginBeforeRun = request.ForceLoginBeforeRun.Value;
+				}
 				yamlConfig.Save();
 				return ZzzBackendResult<IReadOnlyList<ZzzInstanceDto>>.Ok(ListInstances());
 			}
@@ -381,7 +385,7 @@ public sealed class ZzzRuntimeManager : IDisposable
 	public IReadOnlyList<ZzzInstanceDto> ListInstances()
 	{
 		return (from item in ReadInstanceMetadata()
-			select new ZzzInstanceDto(item.Idx, item.Name, item.Idx == ActiveInstanceIndex, GetInstanceDirectory(item.Idx), item.ActiveInOneDragon)).ToArray();
+			select new ZzzInstanceDto(item.Idx, item.Name, item.Idx == ActiveInstanceIndex, GetInstanceDirectory(item.Idx), item.ActiveInOneDragon, item.ForceLoginBeforeRun)).ToArray();
 	}
 
 	/// <inheritdoc />

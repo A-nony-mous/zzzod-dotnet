@@ -46,6 +46,7 @@ internal sealed partial class ZzzFrontierAccountsPage : UserControl, IZzzPageLif
     private readonly FASettingsExpanderItem _bilibiliHelpItem;
     private readonly FASettingsExpanderItem _bilibiliAccountItem;
     private readonly TextBox _bilibiliAccountInput;
+    private readonly ToggleSwitch _forceLoginBeforeRunToggle;
     private readonly Button _addInstanceButton;
     private readonly FAContentDialog _protectionDialog;
     private readonly TextBox _protectionPasswordInput;
@@ -74,6 +75,7 @@ internal sealed partial class ZzzFrontierAccountsPage : UserControl, IZzzPageLif
         _bilibiliHelpItem = Required<FASettingsExpanderItem>("BilibiliHelpItem");
         _bilibiliAccountItem = Required<FASettingsExpanderItem>("BilibiliAccountItem");
         _bilibiliAccountInput = Required<TextBox>("BilibiliAccountInput");
+        _forceLoginBeforeRunToggle = Required<ToggleSwitch>("ForceLoginBeforeRunToggle");
         _addInstanceButton = Required<Button>("AddInstanceButton");
         _protectionDialog = Required<FAContentDialog>("ProtectionDialog");
         _protectionPasswordInput = Required<TextBox>("ProtectionPasswordInput");
@@ -126,6 +128,7 @@ internal sealed partial class ZzzFrontierAccountsPage : UserControl, IZzzPageLif
             _accountInput.Text = CurrentAccountSettings.ReadString("account");
             _passwordInput.Text = CurrentAccountSettings.ReadString("password");
             _bilibiliAccountInput.Text = CurrentAccountSettings.ReadString("bilibili_account_name");
+            _forceLoginBeforeRunToggle.IsChecked = InstanceManagement.Instances.FirstOrDefault(instance => instance.Active)?.ForceLoginBeforeRun ?? false;
             ApplyRegionVisibility();
 
             if (!InstanceManagement.CanSwitch)
@@ -210,6 +213,32 @@ internal sealed partial class ZzzFrontierAccountsPage : UserControl, IZzzPageLif
 
     private void OnBilibiliAccountLostFocus(object? sender, RoutedEventArgs args) =>
         SaveAccountValue("bilibili_account_name", _bilibiliAccountInput.Text ?? string.Empty);
+
+    private void OnForceLoginBeforeRunChanged(object? sender, RoutedEventArgs args)
+    {
+        if (_loading)
+        {
+            return;
+        }
+
+        ZzzInstanceDto? current = InstanceManagement.Instances.FirstOrDefault(instance => instance.Active);
+        if (current is null)
+        {
+            return;
+        }
+
+        ZzzBackendResult<IReadOnlyList<ZzzInstanceDto>> result = InstanceManagement.UpdateInstance(
+            current.Index,
+            null,
+            null,
+            _forceLoginBeforeRunToggle.IsChecked == true);
+        if (!result.Success)
+        {
+            _forceLoginBeforeRunToggle.IsChecked = current.ForceLoginBeforeRun;
+        }
+
+        ShowResult(result);
+    }
 
     private void OnInstanceNameChanged(object? sender, TextChangedEventArgs args)
     {

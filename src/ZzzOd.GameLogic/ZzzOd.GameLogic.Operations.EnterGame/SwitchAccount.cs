@@ -32,6 +32,10 @@ public sealed class SwitchAccount : ZOperation
 	[OperationNode("打开菜单", IsStartNode = true)]
 	private OperationRoundResult OpenMenu()
 	{
+		if (!base.ZContext.GameAccountConfig.HasLoginInfo)
+		{
+			base.ZContext.Logger.Warning("多账户切换未配置完整登录信息，后续登录可能失败");
+		}
 		TimeSpan? successDelay = _successDelay;
 		TimeSpan? retryDelay = _retryDelay;
 		return RoundByGotoScreen(null, "菜单", null, successDelay, retryDelay);

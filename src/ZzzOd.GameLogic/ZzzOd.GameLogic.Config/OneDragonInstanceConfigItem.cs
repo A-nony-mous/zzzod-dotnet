@@ -18,4 +18,7 @@ public sealed class OneDragonInstanceConfigItem
 
 	[YamlMember(Alias = "active_in_od", ApplyNamingConventions = false)]
 	public bool ActiveInOneDragon { get; set; } = true;
+
+	[YamlMember(Alias = "force_login_before_run", ApplyNamingConventions = false)]
+	public bool ForceLoginBeforeRun { get; set; }
 }

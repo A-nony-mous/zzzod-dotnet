@@ -8,4 +8,5 @@ namespace ZzzOd.AppHost.Backend;
 /// <param name="Active">是否当前实例。</param>
 /// <param name="ConfigDirectory">实例配置目录。</param>
 /// <param name="ActiveInOneDragon">是否参与一条龙。</param>
-public sealed record ZzzInstanceDto(int Index, string Name, bool Active, string ConfigDirectory, bool ActiveInOneDragon = true);
+/// <param name="ForceLoginBeforeRun">运行前是否强制重新登录。</param>
+public sealed record ZzzInstanceDto(int Index, string Name, bool Active, string ConfigDirectory, bool ActiveInOneDragon = true, bool ForceLoginBeforeRun = false);

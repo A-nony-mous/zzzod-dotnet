@@ -2550,7 +2550,8 @@ public sealed class ZzzAppBackend : IZzzAppBackend, IZzzIntelBoardProgressBacken
 			? null
 			: string.IsNullOrWhiteSpace(request.Name) ? request.Index.ToString("00") : request.Name.Trim();
 		return (name is null || string.Equals(current.Name, name, StringComparison.Ordinal))
-			&& (!request.ActiveInOneDragon.HasValue || current.ActiveInOneDragon == request.ActiveInOneDragon.Value);
+			&& (!request.ActiveInOneDragon.HasValue || current.ActiveInOneDragon == request.ActiveInOneDragon.Value)
+			&& (!request.ForceLoginBeforeRun.HasValue || current.ForceLoginBeforeRun == request.ForceLoginBeforeRun.Value);
 	}
 
 	private void PublishInstanceListChanged(ZzzBackendResult<IReadOnlyList<ZzzInstanceDto>> result)
