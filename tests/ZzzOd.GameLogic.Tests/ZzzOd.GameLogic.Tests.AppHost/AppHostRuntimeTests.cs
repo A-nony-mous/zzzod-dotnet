@@ -48,10 +48,10 @@ public sealed class AppHostRuntimeTests
 			Application = application;
 		}
 
-		public static BackendHarness Create(bool failOnCreate = false, bool ignoreCancellation = false)
+		public static BackendHarness Create(bool failOnCreate = false, bool ignoreCancellation = false, bool seedInstances = true)
 		{
 			string runRoot = Path.Combine(Path.GetTempPath(), "zzzod-apphost-tests", Guid.NewGuid().ToString("N"));
-			CreateRequiredAssets(runRoot);
+			CreateRequiredAssets(runRoot, seedInstances);
 			TestApplication application = new TestApplication(ignoreCancellation);
 			ZzzRuntimeManager runtime = new ZzzRuntimeManager(runRoot, NullLogger<ZzzRuntimeManager>.Instance, (int instanceIndex) => CreateContext(runRoot, instanceIndex, new TestApplicationFactory(application, failOnCreate)));
 			ZzzBackendEventBus eventBus = new ZzzBackendEventBus();
@@ -479,6 +479,32 @@ public sealed class AppHostRuntimeTests
 	}
 
 	/// <summary>
+	/// 空运行目录应按 Python 初始化语义生成可用的 01 实例。
+	/// </summary>
+	[Fact]
+	public void BackendInitializesDefaultInstanceForEmptyRunRoot()
+	{
+		using BackendHarness harness = BackendHarness.Create(seedInstances: false);
+
+		ZzzBackendResult<ZzzInstanceDto> current = harness.Backend.GetCurrentInstance();
+		ZzzInstanceDto instance = Assert.IsType<ZzzInstanceDto>(current.Value);
+		string configPath = Path.Combine(harness.RunRoot, "config", "one_dragon.yml");
+
+		Assert.True(current.Success, current.Error);
+		Assert.Equal(1, instance.Index);
+		Assert.Equal("01", instance.Name);
+		Assert.True(instance.Active);
+		Assert.True(instance.ActiveInOneDragon);
+		Assert.False(instance.ForceLoginBeforeRun);
+		Assert.Equal(1, harness.Runtime.ActiveInstanceIndex);
+		Assert.True(Directory.Exists(Path.Combine(harness.RunRoot, "config", "01")));
+		Assert.True(File.Exists(configPath));
+		string yaml = File.ReadAllText(configPath);
+		Assert.Contains("instance_run: 全部实例", yaml, StringComparison.Ordinal);
+		Assert.Contains("after_done: 无", yaml, StringComparison.Ordinal);
+	}
+
+	/// <summary>
 	/// 后端服务应拒绝运行中实例切换，并允许空闲实例切换。
 	/// </summary>
 	[Fact]
@@ -657,11 +683,16 @@ public sealed class AppHostRuntimeTests
 		return zContext;
 	}
 
-	private static void CreateRequiredAssets(string runRoot)
+	private static void CreateRequiredAssets(string runRoot, bool seedInstances)
 	{
 		Directory.CreateDirectory(Path.Combine(runRoot, "assets", "models"));
 		Directory.CreateDirectory(Path.Combine(runRoot, "assets", "template"));
 		Directory.CreateDirectory(Path.Combine(runRoot, "assets", "game_data", "screen_info"));
+		if (!seedInstances)
+		{
+			return;
+		}
+
 		Directory.CreateDirectory(Path.Combine(runRoot, "config", "00"));
 		Directory.CreateDirectory(Path.Combine(runRoot, "config", "01"));
 		File.WriteAllText(Path.Combine(runRoot, "config", "one_dragon.yml"), "instance_list:\n- idx: 0\n  name: '00'\n  active: true\n  active_in_od: true\n- idx: 1\n  name: '01'\n  active: false\n  active_in_od: true");

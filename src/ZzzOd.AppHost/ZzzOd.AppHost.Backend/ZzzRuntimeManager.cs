@@ -91,7 +91,7 @@ public sealed class ZzzRuntimeManager : IDisposable
 		_logger = logger;
 		_contextFactory = contextFactory;
 		_pushNotificationService = ((pushNotificationService == null) ? null : new AppHostPushNotificationAdapter(pushNotificationService));
-		ActiveInstanceIndex = ReadConfiguredActiveInstanceIndex();
+		ActiveInstanceIndex = InitializeActiveInstance();
 	}
 
 	/// <summary>
@@ -477,11 +477,36 @@ public sealed class ZzzRuntimeManager : IDisposable
 		return new YamlConfig<OneDragonConfig>(environment, "one_dragon", null, null, subDirectories);
 	}
 
-	private int ReadConfiguredActiveInstanceIndex()
+	private int InitializeActiveInstance()
 	{
 		try
 		{
-			return CreateOneDragonConfig().Current.InstanceList.FirstOrDefault((OneDragonInstanceConfigItem item) => item.Active)?.Idx ?? 0;
+			YamlConfig<OneDragonConfig> yamlConfig = CreateOneDragonConfig();
+			OneDragonInstanceConfigItem? activeInstance = yamlConfig.Current.InstanceList.FirstOrDefault((OneDragonInstanceConfigItem item) => item.Active);
+			if (activeInstance != null)
+			{
+				return activeInstance.Idx;
+			}
+
+			HashSet<int> existingIndices = yamlConfig.Current.InstanceList.Select((OneDragonInstanceConfigItem item) => item.Idx).ToHashSet();
+			int instanceIndex = 0;
+			do
+			{
+				instanceIndex++;
+			}
+			while (existingIndices.Contains(instanceIndex));
+
+			yamlConfig.Current.InstanceList.Add(new OneDragonInstanceConfigItem
+			{
+				Idx = instanceIndex,
+				Name = instanceIndex.ToString("00"),
+				Active = true,
+				ActiveInOneDragon = true,
+				ForceLoginBeforeRun = false
+			});
+			Directory.CreateDirectory(GetInstanceDirectory(instanceIndex));
+			yamlConfig.Save();
+			return instanceIndex;
 		}
 		catch
 		{

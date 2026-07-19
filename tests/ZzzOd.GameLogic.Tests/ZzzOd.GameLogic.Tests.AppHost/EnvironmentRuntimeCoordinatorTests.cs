@@ -397,7 +397,7 @@ public sealed class EnvironmentRuntimeCoordinatorTests
 			Assert.True(zzzBackendResult.Success, zzzBackendResult.Error);
 			Assert.Equal(2, createCalls);
 			Assert.NotSame(expected, zzzRuntimeManager.TryGetContext());
-			Assert.Equal(0, zzzRuntimeManager.TryGetContext()?.InstanceIndex);
+			Assert.Equal(1, zzzRuntimeManager.TryGetContext()?.InstanceIndex);
 		}
 		finally
 		{
