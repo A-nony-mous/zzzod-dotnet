@@ -66,7 +66,7 @@ public sealed class SuibianTempleGoodGoods : SuibianTempleSubOperation
 		}
 		Mat? lastScreenshot2 = base.LastScreenshot;
 		retryDelay = SuibianTempleSubOperation.ShortDelay;
-		if (RoundByOcr(lastScreenshot2, "兑换确认", null, 0.5, null, retryDelay).IsSuccess)
+		if (RoundByOcr(lastScreenshot2, "兑换确认", null, 0.75, null, retryDelay).IsSuccess)
 		{
 			base.ZContext.Controller?.DragTo(new OneDragon.Core.Abstractions.Geometry.Point(1300, 672), new OneDragon.Core.Abstractions.Geometry.Point(755, 672), TimeSpan.FromSeconds(2L));
 			OperationRoundResult operationRoundResult2 = ClickConfirmText();
