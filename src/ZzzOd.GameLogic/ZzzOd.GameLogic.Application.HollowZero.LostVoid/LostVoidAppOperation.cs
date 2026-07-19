@@ -31,8 +31,6 @@ internal sealed class LostVoidAppOperation : ZOperation
 
 	private List<Agent> _priorityAgentList = new List<Agent>();
 
-	private DateTimeOffset _entryNavigationLastClickUtc;
-
 	private string _nextRegionType = "入口";
 
 	private CancellationToken _cancellationToken;
@@ -54,7 +52,6 @@ internal sealed class LostVoidAppOperation : ZOperation
 	[OperationNode("初始化加载", IsStartNode = true)]
 	private OperationRoundResult Initialize()
 	{
-		_entryNavigationLastClickUtc = DateTimeOffset.MinValue;
 		_usePriorityAgent = false;
 		_priorityAgentList = new List<Agent>();
 		_nextRegionType = "入口";
@@ -137,10 +134,6 @@ internal sealed class LostVoidAppOperation : ZOperation
 		{
 			return RoundRetry(operationRoundResult.Status, null, TimeSpan.FromMilliseconds(500L));
 		}
-		if (IsMatrixExploreMission() && RoundByFindArea(base.LastScreenshot, "迷失之地-入口", "按钮-常规").IsSuccess)
-		{
-			return RoundSuccess("迷失之地-入口");
-		}
 		return string.Equals(CheckAndUpdateCurrentScreen(base.LastScreenshot, new string[] { "迷失之地-入口" }), "迷失之地-入口", StringComparison.Ordinal) ? RoundSuccess("迷失之地-入口") : RoundWait("等待画面加载", null, OneSecond);
 	}
 
@@ -161,6 +154,10 @@ internal sealed class LostVoidAppOperation : ZOperation
 		if (base.LastScreenshot == null)
 		{
 			return RoundRetry("未获取截图", null, TimeSpan.FromMilliseconds(500L));
+		}
+		if (!RoundByFindArea(base.LastScreenshot, "迷失之地-入口", "按钮-常规").IsSuccess)
+		{
+			return RoundRetry("未识别到常规按钮", null, TimeSpan.FromMilliseconds(500L));
 		}
 		OneDragon.Core.Screen.ScreenArea area = base.ZContext.ScreenContext.GetArea("迷失之地-入口", "区域-悬赏委托-进度");
 		if (area == null)
@@ -193,15 +190,16 @@ internal sealed class LostVoidAppOperation : ZOperation
 	}
 
 	[NodeFrom("矩阵行动-前往入口")]
-	[OperationNode("入口OCR-点击周期", NodeMaxRetryTimes = 300)]
+	[OperationNode("入口OCR-点击周期")]
 	private OperationRoundResult ClickPeriodInEntry()
 	{
 		if (RoundByFindArea(base.LastScreenshot, "迷失之地-入口", "按钮-前往挑战").IsSuccess)
 		{
-			ResetEntryNavigationCooldown();
 			return RoundSuccess("已开放前往挑战");
 		}
-		return ClickEntryNavigation("按钮-周期", "点击周期", TimeSpan.FromMilliseconds(300L));
+		IReadOnlyList<(string ScreenName, string AreaName)> untilFindAll = new (string, string)[] { ("迷失之地-入口", "按钮-前往挑战") };
+		OperationRoundResult result = RoundByFindAndClickArea(base.LastScreenshot, "迷失之地-入口", "按钮-周期", null, TimeSpan.FromMilliseconds(300L), TimeSpan.FromMilliseconds(100L), untilFindAll: untilFindAll);
+		return result.IsSuccess ? RoundSuccess("已开放前往挑战", null, result.Delay) : result;
 	}
 
 	[NodeFrom("入口OCR-点击周期", Status = "已开放前往挑战")]
@@ -505,33 +503,28 @@ internal sealed class LostVoidAppOperation : ZOperation
 	}
 
 	[NodeFrom("前往副本画面", Status = "需OCR入口导航")]
-	[OperationNode("入口OCR-点击常规", NodeMaxRetryTimes = 300)]
+	[OperationNode("入口OCR-点击常规")]
 	private OperationRoundResult ClickRegularInMatrixExplore()
 	{
 		string areaName = "按钮-" + _config.MissionName;
 		if (RoundByFindArea(base.LastScreenshot, "迷失之地-入口", areaName).IsSuccess)
 		{
-			ResetEntryNavigationCooldown();
 			return RoundSuccess("已显示目标副本入口");
 		}
-		return ClickEntryNavigation("按钮-常规", "点击常规", TimeSpan.FromMilliseconds(300L));
+		IReadOnlyList<(string ScreenName, string AreaName)> untilFindAll = new (string, string)[] { ("迷失之地-入口", areaName) };
+		OperationRoundResult result = RoundByFindAndClickArea(base.LastScreenshot, "迷失之地-入口", "按钮-常规", null, TimeSpan.FromMilliseconds(300L), TimeSpan.FromMilliseconds(100L), untilFindAll: untilFindAll);
+		return result.IsSuccess ? RoundSuccess("已显示目标副本入口", null, result.Delay) : result;
 	}
 
 	[NodeFrom("入口OCR-点击常规", Status = "已显示目标副本入口")]
-	[OperationNode("入口OCR-点击目标副本", NodeMaxRetryTimes = 300)]
+	[OperationNode("入口OCR-点击目标副本")]
 	private OperationRoundResult ClickTargetMissionInMatrixExplore()
 	{
-		string text = "迷失之地-" + _config.MissionName;
-		if (string.Equals(CheckAndUpdateCurrentScreen(base.LastScreenshot, new string[] { text }), text, StringComparison.Ordinal))
-		{
-			ResetEntryNavigationCooldown();
-			return RoundSuccess("已进入目标副本");
-		}
-		return ClickEntryNavigation("按钮-" + _config.MissionName, "点击目标副本", TimeSpan.FromMilliseconds(500L));
+		return RoundByGotoScreen(screenName: "迷失之地-" + _config.MissionName, retryDelay: TimeSpan.FromMilliseconds(500L));
 	}
 
 	[NodeFrom("前往副本画面")]
-	[NodeFrom("入口OCR-点击目标副本", Status = "已进入目标副本")]
+	[NodeFrom("入口OCR-点击目标副本")]
 	[OperationNode("副本画面识别")]
 	private OperationRoundResult CheckForMission()
 	{
@@ -818,28 +811,6 @@ internal sealed class LostVoidAppOperation : ZOperation
 			return true;
 		}
 		return false;
-	}
-
-	private OperationRoundResult ClickEntryNavigation(string areaName, string status, TimeSpan successDelay)
-	{
-		if (DateTimeOffset.UtcNow - _entryNavigationLastClickUtc < OneSecond)
-		{
-			return RoundRetry(status + "冷却", null, TimeSpan.FromMilliseconds(100L));
-		}
-		Mat? lastScreenshot = base.LastScreenshot;
-		TimeSpan? retryDelay = TimeSpan.FromMilliseconds(100L);
-		OperationRoundResult operationRoundResult = RoundByFindAndClickArea(lastScreenshot, "迷失之地-入口", areaName, null, null, retryDelay);
-		if (!operationRoundResult.IsSuccess)
-		{
-			return RoundRetry(status + "失败", null, TimeSpan.FromMilliseconds(100L));
-		}
-		_entryNavigationLastClickUtc = DateTimeOffset.UtcNow;
-		return RoundWait(status, null, successDelay);
-	}
-
-	private void ResetEntryNavigationCooldown()
-	{
-		_entryNavigationLastClickUtc = DateTimeOffset.MinValue;
 	}
 
 	private OperationRoundResult ClickStrategyAndConfirm(OneDragon.Core.Abstractions.Geometry.Point target)

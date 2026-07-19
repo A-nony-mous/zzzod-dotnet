@@ -183,7 +183,7 @@ public sealed class LostVoidAppTests
 			Edge("前往副本画面", "入口OCR-点击常规", success: true, "需OCR入口导航"),
 			Edge("入口OCR-点击常规", "入口OCR-点击目标副本", success: true, "已显示目标副本入口"),
 			Edge("前往副本画面", "副本画面识别"),
-			Edge("入口OCR-点击目标副本", "副本画面识别", success: true, "已进入目标副本"),
+			Edge("入口OCR-点击目标副本", "副本画面识别"),
 			Edge("副本画面识别", "打开调查战略列表"),
 			Edge("打开调查战略列表", "选择调查战略"),
 			Edge("选择调查战略", "选择周期增益"),
@@ -279,6 +279,22 @@ public sealed class LostVoidAppTests
 		MethodInfo methodInfo = Assert.IsAssignableFrom<MethodInfo>(typeof(LostVoidAppOperation).GetMethod("RunLevel", BindingFlags.Instance | BindingFlags.NonPublic));
 		IReadOnlyList<NodeFromAttribute> collection = methodInfo.GetCustomAttributes(typeof(NodeFromAttribute), inherit: false).Cast<NodeFromAttribute>().ToArray();
 		Assert.Contains((IEnumerable<NodeFromAttribute>)collection, (Predicate<NodeFromAttribute>)((NodeFromAttribute edge) => edge.FromName == "层间移动" && edge.Status == null && edge.IgnoreStatus));
+	}
+
+	[Fact]
+	public void EntryNavigation_UsesTargetConfirmationWithoutCooldownOrExtendedRetries()
+	{
+		string[] nodeNames = ["入口OCR-点击周期", "入口OCR-点击常规", "入口OCR-点击目标副本"];
+		foreach (string nodeName in nodeNames)
+		{
+			MethodInfo method = typeof(LostVoidAppOperation).GetMethods(BindingFlags.Instance | BindingFlags.NonPublic)
+				.Single(candidate => candidate.GetCustomAttributes(typeof(OperationNodeAttribute), inherit: false).OfType<OperationNodeAttribute>().SingleOrDefault()?.Name == nodeName);
+			OperationNodeAttribute node = method.GetCustomAttributes(typeof(OperationNodeAttribute), inherit: false).OfType<OperationNodeAttribute>().Single();
+			Assert.Equal(3, node.NodeMaxRetryTimes);
+		}
+
+		Assert.Null(typeof(LostVoidAppOperation).GetMethod("ClickEntryNavigation", BindingFlags.Instance | BindingFlags.NonPublic));
+		Assert.DoesNotContain(typeof(LostVoidAppOperation).GetFields(BindingFlags.Instance | BindingFlags.NonPublic), field => field.Name.Contains("entryNavigation", StringComparison.OrdinalIgnoreCase));
 	}
 
 	[Fact]
