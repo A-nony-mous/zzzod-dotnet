@@ -110,6 +110,7 @@ public sealed class ChargePlanOperation : ZOperation
 	/// 识别当前电量。
 	/// </summary>
 	[NodeFrom("打开菜单")]
+	[OperationNodeNotify(OperationNodeNotifyTiming.CurrentFail)]
 	[OperationNode("识别电量")]
 	public OperationRoundResult CheckChargePower()
 	{
