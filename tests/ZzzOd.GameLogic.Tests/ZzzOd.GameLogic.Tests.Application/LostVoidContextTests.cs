@@ -92,6 +92,16 @@ public sealed class LostVoidContextTests
 
 		public int AppendAgentTypePriorityCallCount { get; private set; }
 
+		public bool CurrentFrameBattleEncounter { get; init; }
+
+		public int CurrentFrameBattleEncounterCheckCount { get; private set; }
+
+		public int PeriodBattleEncounterCheckCount { get; private set; }
+
+		public float? LastPeriodBattleCheckSeconds { get; private set; }
+
+		public int TurnToFindTargetCount { get; private set; }
+
 		public Mat? LastBattleScreen { get; private set; }
 
 		public DateTimeOffset? LastBattleScreenshotTimeUtc { get; private set; }
@@ -114,8 +124,16 @@ public sealed class LostVoidContextTests
 			return Task.FromResult((NonBattleFrames.Count > 1) ? NonBattleFrames.Dequeue() : NonBattleFrames.Peek());
 		}
 
+		public bool CheckBattleEncounterInCurrentFrame(LostVoidRunLevel operation, Mat? screen, DateTimeOffset? screenshotTimeUtc)
+		{
+			CurrentFrameBattleEncounterCheckCount++;
+			return CurrentFrameBattleEncounter;
+		}
+
 		public bool CheckBattleEncounterInPeriod(LostVoidRunLevel operation, float totalCheckSeconds)
 		{
+			PeriodBattleEncounterCheckCount++;
+			LastPeriodBattleCheckSeconds = totalCheckSeconds;
 			return false;
 		}
 
@@ -126,6 +144,7 @@ public sealed class LostVoidContextTests
 
 		public void TurnToFindTarget(LostVoidRunLevel operation)
 		{
+			TurnToFindTargetCount++;
 		}
 
 		public Task<OperationResult> MoveByDetectionAsync(LostVoidRunLevel operation, string regionType, string targetType, bool stopWhenInteract, bool stopWhenDisappear, bool allowArrivalByInteractButton, IReadOnlyList<string> ignoreEntries, CancellationToken cancellationToken)
@@ -238,6 +257,11 @@ public sealed class LostVoidContextTests
 			Calls.Add("非战斗详细识别");
 			_nonBattleFrameIndex++;
 			return Task.FromResult(new LostVoidRunLevelFrame(InNormalWorld: true, ChallengeConfirmAvailable: false, BossBattleStarted: false, BossInteractAvailable: false, new YoloDetectFrameResult(new YoloDetectObjectResult[] { Object((scenario == GraphScenario.NodeTimeoutFailure) ? "0000-感叹号" : "战斗-鸣徽", 100) }, 0.0)));
+		}
+
+		public bool CheckBattleEncounterInCurrentFrame(LostVoidRunLevel operation, Mat? screen, DateTimeOffset? screenshotTimeUtc)
+		{
+			return false;
 		}
 
 		public bool CheckBattleEncounterInPeriod(LostVoidRunLevel operation, float totalCheckSeconds)
@@ -1334,6 +1358,48 @@ public sealed class LostVoidContextTests
 		LostVoidRunLevel operation = new LostVoidRunLevel(context, new LostVoidRunRecord(new LostVoidConfig()), "战斗-终结之役", runtime);
 		await InvokeNonBattleCheckAsync(operation);
 		Assert.Equal(new List<bool>(1) { true }, runtime.MoveAllowArrivalByInteractButton);
+	}
+
+	[Fact]
+	public async Task RunLevel_TargetMissingChecksCurrentFrameBattleBeforeTurning()
+	{
+		using ZContext context = new ZContext(new OneDragonEnvironment(CreateTempRoot()));
+		context.LostVoid.PriorityUpdated = true;
+		ScriptedLostVoidRunLevelRuntime runtime = new ScriptedLostVoidRunLevelRuntime
+		{
+			CurrentFrameBattleEncounter = true,
+			NonBattleFrames = new Queue<LostVoidRunLevelFrame>(new LostVoidRunLevelFrame[] { new LostVoidRunLevelFrame(InNormalWorld: true) })
+		};
+		LostVoidRunLevel operation = new LostVoidRunLevel(context, new LostVoidRunRecord(new LostVoidConfig()), "入口", runtime);
+
+		OperationRoundResult result = await InvokeNonBattleCheckAsync(operation);
+
+		Assert.True(result.IsSuccess);
+		Assert.Equal("进入战斗", result.Status);
+		Assert.Equal(1, runtime.CurrentFrameBattleEncounterCheckCount);
+		Assert.Equal(0, runtime.TurnToFindTargetCount);
+		Assert.Equal(0, runtime.PeriodBattleEncounterCheckCount);
+	}
+
+	[Fact]
+	public async Task RunLevel_TargetMissingKeepsPeriodBattleCheckAfterTurning()
+	{
+		using ZContext context = new ZContext(new OneDragonEnvironment(CreateTempRoot()));
+		context.LostVoid.PriorityUpdated = true;
+		ScriptedLostVoidRunLevelRuntime runtime = new ScriptedLostVoidRunLevelRuntime
+		{
+			NonBattleFrames = new Queue<LostVoidRunLevelFrame>(new LostVoidRunLevelFrame[] { new LostVoidRunLevelFrame(InNormalWorld: true) })
+		};
+		LostVoidRunLevel operation = new LostVoidRunLevel(context, new LostVoidRunRecord(new LostVoidConfig()), "入口", runtime);
+
+		OperationRoundResult result = await InvokeNonBattleCheckAsync(operation);
+
+		Assert.Equal(OperationRoundResultKind.Wait, result.Kind);
+		Assert.Equal("转动识别目标", result.Status);
+		Assert.Equal(1, runtime.CurrentFrameBattleEncounterCheckCount);
+		Assert.Equal(1, runtime.TurnToFindTargetCount);
+		Assert.Equal(1, runtime.PeriodBattleEncounterCheckCount);
+		Assert.Equal(0.5f, runtime.LastPeriodBattleCheckSeconds);
 	}
 
 	[Fact]

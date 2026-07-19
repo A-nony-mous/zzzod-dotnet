@@ -360,6 +360,10 @@ public sealed class LostVoidRunLevel : ZOperation
 		{
 			return await MoveByDetectionAsync("xxxx-入口", stopWhenInteract: true, stopWhenDisappear: false, allowArrivalByInteractButton: false, _hadBeenList).ConfigureAwait(continueOnCapturedContext: false);
 		}
+		if (_runtime.CheckBattleEncounterInCurrentFrame(this, base.LastScreenshot, base.LastScreenshotTimeUtc))
+		{
+			return EnterBattle(base.LastScreenshotTimeUtc, _bossPreBattle);
+		}
 		_runtime.TurnToFindTarget(this);
 		_nothingTimes++;
 		if (_nothingTimes >= 50)

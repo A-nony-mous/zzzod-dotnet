@@ -117,6 +117,11 @@ public sealed class ScreenLostVoidRunLevelRuntime : ILostVoidRunLevelRuntime
 		return false;
 	}
 
+	public bool CheckBattleEncounterInCurrentFrame(LostVoidRunLevel operation, Mat? screen, DateTimeOffset? screenshotTimeUtc)
+	{
+		return CheckBattleEncounter(operation.GameContext, screen, screenshotTimeUtc);
+	}
+
 	public OperationRoundResult? HandleFriendlyTalkInit(LostVoidRunLevel operation, int roomInitedTimes)
 	{
 		switch (roomInitedTimes)

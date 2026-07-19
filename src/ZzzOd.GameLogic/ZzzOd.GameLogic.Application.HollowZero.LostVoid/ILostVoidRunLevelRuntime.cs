@@ -15,6 +15,8 @@ public interface ILostVoidRunLevelRuntime
 
 	Task<LostVoidRunLevelFrame> GetNonBattleFrameAsync(LostVoidRunLevel operation, Mat? screen, DateTimeOffset? screenshotTimeUtc, IReadOnlyList<string> ignoreList, CancellationToken cancellationToken);
 
+	bool CheckBattleEncounterInCurrentFrame(LostVoidRunLevel operation, Mat? screen, DateTimeOffset? screenshotTimeUtc);
+
 	bool CheckBattleEncounterInPeriod(LostVoidRunLevel operation, float totalCheckSeconds);
 
 	OperationRoundResult? HandleFriendlyTalkInit(LostVoidRunLevel operation, int roomInitedTimes);
