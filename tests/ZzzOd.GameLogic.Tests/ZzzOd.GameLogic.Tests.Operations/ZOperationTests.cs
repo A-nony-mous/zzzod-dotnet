@@ -117,6 +117,11 @@ public sealed class ZOperationTests : IDisposable
 			return RoundByGotoScreen(screen, screenName, TimeSpan.Zero);
 		}
 
+		public string? CheckScreen(Mat screen, IReadOnlyList<string>? screenNameList = null)
+		{
+			return CheckAndUpdateCurrentScreen(screen, screenNameList);
+		}
+
 		[OperationNode("完成", IsStartNode = true, ScreenshotBeforeRound = false)]
 		private OperationRoundResult Complete()
 		{
@@ -739,6 +744,30 @@ public sealed class ZOperationTests : IDisposable
 		OperationRoundResult operationRoundResult = helperProbeOperation.GotoScreen(screen, "目标界面");
 		Assert.Equal(OperationRoundResultKind.Fail, operationRoundResult.Kind);
 		Assert.Equal("无法从 当前界面 前往 目标界面", operationRoundResult.Status);
+	}
+
+	[Fact]
+	public void ScreenRecognitionFailure_ClearsStaleCurrentScreen()
+	{
+		if (!CanUseOpenCv())
+		{
+			return;
+		}
+		WriteGotoScreenYaml();
+		using ZContext zContext = CreateContextWithScreenConfig();
+		zContext.OcrService.Matcher = new FakeOcrMatcher(Array.Empty<OcrMatchResult>());
+		using Mat screen = CreateScreen();
+		HelperProbeOperation helperProbeOperation = new HelperProbeOperation(zContext);
+
+		zContext.ScreenContext.UpdateCurrentScreenName("当前界面");
+		OperationRoundResult operationRoundResult = helperProbeOperation.GotoScreen(screen, "目标界面");
+		Assert.Equal(OperationRoundResultKind.Retry, operationRoundResult.Kind);
+		Assert.Equal("未能识别当前画面", operationRoundResult.Status);
+		Assert.Null(zContext.ScreenContext.CurrentScreenName);
+
+		zContext.ScreenContext.UpdateCurrentScreenName("当前界面");
+		Assert.Null(helperProbeOperation.CheckScreen(screen, new string[] { "目标界面" }));
+		Assert.Null(zContext.ScreenContext.CurrentScreenName);
 	}
 
 	public void Dispose()

@@ -663,13 +663,11 @@ public sealed class ScreenLostVoidRunLevelRuntime : ILostVoidRunLevelRuntime
 	{
 		if (screen == null)
 		{
+			context.ScreenContext.UpdateCurrentScreenName(null);
 			return null;
 		}
-		string matchScreenName = ScreenUtils.GetMatchScreenName(context, screen, screenNames);
-		if (matchScreenName != null)
-		{
-			context.ScreenContext.UpdateCurrentScreenName(matchScreenName);
-		}
+		string? matchScreenName = ScreenUtils.GetMatchScreenName(context, screen, screenNames);
+		context.ScreenContext.UpdateCurrentScreenName(matchScreenName);
 		return matchScreenName;
 	}
 

@@ -383,17 +383,15 @@ public abstract class ZOperation : Operation
 		}
 		if (screen == null)
 		{
+			ZContext.ScreenContext.UpdateCurrentScreenName(null);
 			return RoundRetry("未获取截图", null, retryDelay);
 		}
 		if (string.IsNullOrWhiteSpace(screenName))
 		{
 			return RoundFail("未指定目标画面");
 		}
-		string matchScreenName = ScreenUtils.GetMatchScreenName(ZContext, screen, null, cropFirst);
-		if (matchScreenName != null)
-		{
-			ZContext.ScreenContext.UpdateCurrentScreenName(matchScreenName);
-		}
+		string? matchScreenName = ScreenUtils.GetMatchScreenName(ZContext, screen, null, cropFirst);
+		ZContext.ScreenContext.UpdateCurrentScreenName(matchScreenName);
 		if (matchScreenName == null)
 		{
 			return RoundRetry("未能识别当前画面", null, retryDelay);
@@ -428,13 +426,11 @@ public abstract class ZOperation : Operation
 		}
 		if (screen == null)
 		{
+			ZContext.ScreenContext.UpdateCurrentScreenName(null);
 			return null;
 		}
-		string matchScreenName = ScreenUtils.GetMatchScreenName(ZContext, screen, screenNameList, cropFirst);
-		if (matchScreenName != null)
-		{
-			ZContext.ScreenContext.UpdateCurrentScreenName(matchScreenName);
-		}
+		string? matchScreenName = ScreenUtils.GetMatchScreenName(ZContext, screen, screenNameList, cropFirst);
+		ZContext.ScreenContext.UpdateCurrentScreenName(matchScreenName);
 		return matchScreenName;
 	}
 

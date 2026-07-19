@@ -72,13 +72,11 @@ public sealed class DefaultTransportBy3dMapServices : ITransportBy3dMapServices
 	{
 		if (screen == null)
 		{
+			context.ScreenContext.UpdateCurrentScreenName(null);
 			return null;
 		}
-		string matchScreenName = ScreenUtils.GetMatchScreenName(context, screen, screenNameList);
-		if (matchScreenName != null)
-		{
-			context.ScreenContext.UpdateCurrentScreenName(matchScreenName);
-		}
+		string? matchScreenName = ScreenUtils.GetMatchScreenName(context, screen, screenNameList);
+		context.ScreenContext.UpdateCurrentScreenName(matchScreenName);
 		return matchScreenName;
 	}
 

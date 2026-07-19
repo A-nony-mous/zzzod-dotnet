@@ -199,6 +199,7 @@ public sealed class GotoMenuTests : IDisposable
 			}
 			return result2;
 		});
+		context.ScreenContext.UpdateCurrentScreenName("大世界-普通");
 		GotoMenu operation = new GotoMenu(context, delegate
 		{
 			backCalls++;
