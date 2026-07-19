@@ -3,6 +3,7 @@ using Avalonia.Controls;
 using Avalonia.Media;
 using Avalonia.Markup.Xaml;
 using Avalonia.Styling;
+using Avalonia.Threading;
 using FluentAvalonia.Styling;
 using FluentAvalonia.UI.Controls;
 using FluentAvalonia.UI.Windowing;
@@ -14,7 +15,10 @@ namespace ZzzOd.Gui.Views;
 
 public sealed partial class FrontierShellWindow : FAAppWindow
 {
-    private readonly FrontierMainView _mainView;
+    private readonly ContentControl _mainViewHost;
+    private readonly FrontierStartupSplashScreen? _startupSplash;
+    private Func<FrontierMainView>? _mainViewFactory;
+    private FrontierMainView? _mainView;
     private Application? _themeApplication;
 
     public FrontierShellWindow()
@@ -31,6 +35,27 @@ public sealed partial class FrontierShellWindow : FAAppWindow
         ZzzShellViewModel shellViewModel,
         IZzzShellWindowRuntime windowRuntime,
         ZzzRunRoot runRoot)
+        : this(
+            services,
+            navigationRegistry,
+            pageLifecycle,
+            navigationService,
+            shellViewModel,
+            windowRuntime,
+            runRoot,
+            enableSplash: true)
+    {
+    }
+
+    internal FrontierShellWindow(
+        IServiceProvider services,
+        ZzzNavigationRegistry navigationRegistry,
+        ZzzPageLifecycleService pageLifecycle,
+        ZzzShellNavigationService navigationService,
+        ZzzShellViewModel shellViewModel,
+        IZzzShellWindowRuntime windowRuntime,
+        ZzzRunRoot runRoot,
+        bool enableSplash)
     {
         DataContext = shellViewModel;
         AvaloniaXamlLoader.Load(this);
@@ -45,18 +70,25 @@ public sealed partial class FrontierShellWindow : FAAppWindow
             _themeApplication.ActualThemeVariantChanged += OnActualThemeVariantChanged;
         }
 
-        ContentControl host = this.FindControl<ContentControl>("MainViewHost")
+        _mainViewHost = this.FindControl<ContentControl>("MainViewHost")
             ?? throw new InvalidOperationException("前卫 Shell 缺少 MainView Host。");
-        _mainView = new FrontierMainView(
-            services,
-            navigationRegistry,
-            pageLifecycle,
-            navigationService,
-            shellViewModel,
-            windowRuntime,
-            runRoot,
-            this);
-        host.Content = _mainView;
+        _mainViewFactory = () => new FrontierMainView(
+                services,
+                navigationRegistry,
+                pageLifecycle,
+                navigationService,
+                shellViewModel,
+                windowRuntime,
+                runRoot,
+                this);
+        if (enableSplash)
+        {
+            _startupSplash = new FrontierStartupSplashScreen(
+                runRoot.Path,
+                CreateMainView,
+                StartInitialNavigation);
+            SplashScreen = _startupSplash;
+        }
 
         ZzzGuiEvidenceSelection evidence = ZzzGuiEvidenceSelection.FromEnvironment();
         if (evidence.Width is double width && evidence.Height is double height)
@@ -75,8 +107,34 @@ public sealed partial class FrontierShellWindow : FAAppWindow
         ApplyWindowMaterial();
         if (((ZzzShellViewModel)DataContext!).ConsumeStartupError() is { Length: > 0 } error)
         {
-            _mainView.ShowToast("界面配置错误", error, TimeSpan.FromSeconds(8), FAInfoBarSeverity.Error);
+            _mainView?.ShowToast("界面配置错误", error, TimeSpan.FromSeconds(8), FAInfoBarSeverity.Error);
         }
+    }
+
+    private void CreateMainView()
+    {
+        Dispatcher.UIThread.VerifyAccess();
+        if (_mainView is not null || _mainViewFactory is null)
+        {
+            return;
+        }
+
+        FrontierMainView mainView = _mainViewFactory();
+        _mainViewFactory = null;
+        _mainView = mainView;
+        _mainViewHost.Content = mainView;
+    }
+
+    private void StartInitialNavigation()
+    {
+        Dispatcher.UIThread.VerifyAccess();
+        _mainView?.StartInitialNavigation();
+    }
+
+    internal void InitializeMainViewForTesting()
+    {
+        CreateMainView();
+        StartInitialNavigation();
     }
 
     private void OnClosed(object? sender, EventArgs args)
@@ -89,7 +147,11 @@ public sealed partial class FrontierShellWindow : FAAppWindow
             _themeApplication = null;
         }
 
-        _mainView.Dispose();
+        _mainViewFactory = null;
+        _mainView?.Dispose();
+        _mainView = null;
+        _mainViewHost.Content = null;
+        _startupSplash?.Dispose();
     }
 
     protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)

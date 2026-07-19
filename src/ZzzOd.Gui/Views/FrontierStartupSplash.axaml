@@ -1,0 +1,21 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:fa="using:FluentAvalonia.UI.Controls"
+             x:Class="ZzzOd.Gui.Views.FrontierStartupSplashContent"
+             Background="{DynamicResource ZzzFrontierWindowBackgroundBrush}">
+  <Grid>
+    <StackPanel HorizontalAlignment="Center"
+                VerticalAlignment="Center"
+                Spacing="20">
+      <Image x:Name="LogoImage"
+             Width="132"
+             Height="132"
+             HorizontalAlignment="Center"
+             Stretch="Uniform" />
+      <fa:FAProgressRing Width="32"
+                         Height="32"
+                         HorizontalAlignment="Center"
+                         IsActive="True" />
+    </StackPanel>
+  </Grid>
+</UserControl>

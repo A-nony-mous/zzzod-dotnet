@@ -74,6 +74,8 @@ public sealed class GuiStaticAuditTests
 		string windowCode = File.ReadAllText(Path.Combine(path, "Views", "FrontierShellWindow.cs"));
 		string mainView = File.ReadAllText(Path.Combine(path, "Views", "FrontierMainView.axaml"));
 		string mainViewCode = File.ReadAllText(Path.Combine(path, "Views", "FrontierMainView.cs"));
+		string splash = File.ReadAllText(Path.Combine(path, "Views", "FrontierStartupSplash.axaml"));
+		string splashCode = File.ReadAllText(Path.Combine(path, "Views", "FrontierStartupSplash.axaml.cs"));
 		string navigationResources = File.ReadAllText(Path.Combine(path, "Theme", "FrontierNavigationResources.axaml"));
 		string text = window + Environment.NewLine + mainView;
 		Assert.Contains("x:Name=\"MainViewHost\"", window, StringComparison.Ordinal);
@@ -101,6 +103,15 @@ public sealed class GuiStaticAuditTests
 		Assert.Contains("Text=\"{Binding FrontierWindowTitle}\"", mainView, StringComparison.Ordinal);
 		Assert.Contains("TitleBar.Height = 48", windowCode, StringComparison.Ordinal);
 		Assert.Contains("TitleBar.ExtendsContentIntoTitleBar = true", windowCode, StringComparison.Ordinal);
+		Assert.Contains("SplashScreen = _startupSplash", windowCode, StringComparison.Ordinal);
+		Assert.Contains("IFAApplicationSplashScreen", splashCode, StringComparison.Ordinal);
+		Assert.Contains("DispatcherPriority.Background", splashCode, StringComparison.Ordinal);
+		Assert.Contains("StartInitialNavigation", mainViewCode, StringComparison.Ordinal);
+		Assert.Contains("<fa:FAProgressRing", splash, StringComparison.Ordinal);
+		Assert.Contains("Width=\"132\"", splash, StringComparison.Ordinal);
+		Assert.DoesNotContain("AppTitleText", splash, StringComparison.Ordinal);
+		Assert.DoesNotContain("FrontierWindowTitle", splashCode, StringComparison.Ordinal);
+		Assert.DoesNotContain("Loading", splash, StringComparison.OrdinalIgnoreCase);
 		Assert.DoesNotContain("ExtendClientAreaToDecorationsHint", window, StringComparison.Ordinal);
 		Assert.DoesNotContain("ExtendClientAreaTitleBarHeightHint", window, StringComparison.Ordinal);
 		Assert.DoesNotContain("OnMinimizeClicked", mainView, StringComparison.Ordinal);

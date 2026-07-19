@@ -215,7 +215,8 @@ public sealed class FrontierShellTests
                 new ZzzShellNavigationService(),
                 frontierViewModel,
                 new RecordingWindowRuntime(),
-                new ZzzRunRoot(Path.GetTempPath()));
+                new ZzzRunRoot(Path.GetTempPath()),
+                enableSplash: false);
             IZzzAppBackend classicBackend = DispatchProxy.Create<IZzzAppBackend, ShellBackendProxy>();
             using ServiceProvider classicServices = new ServiceCollection().BuildServiceProvider();
             using ZzzShellViewModel classicViewModel = new(classicBackend, new ImmediateDispatcher());
@@ -280,6 +281,10 @@ public sealed class FrontierShellTests
                 window);
             try
             {
+                Assert.Null(view.ActiveRoute);
+                Assert.Equal(0, view.CreatedPageCount);
+                Assert.Equal(0, home.Shown);
+                view.StartInitialNavigation();
                 Assert.Equal("test-home", view.ActiveRoute);
                 Assert.Equal(1, view.CreatedPageCount);
                 Assert.Equal(2, view.NavigationItems.Count);
@@ -372,13 +377,16 @@ public sealed class FrontierShellTests
                 new ZzzShellNavigationService(),
                 shellViewModel,
                 runtime,
-                new ZzzRunRoot(Path.GetTempPath()));
+                new ZzzRunRoot(Path.GetTempPath()),
+                enableSplash: false);
             try
             {
                 ContentControl host = Assert.IsType<ContentControl>(window.FindControl<ContentControl>("MainViewHost"));
-                Assert.IsType<FrontierMainView>(host.Content);
+                Assert.Null(host.Content);
                 Assert.IsNotType<MainWindow>(window);
                 Assert.IsAssignableFrom<FAAppWindow>(window);
+                window.InitializeMainViewForTesting();
+                Assert.IsType<FrontierMainView>(host.Content);
                 window.Show();
                 Assert.True(window.IsVisible);
             }
@@ -408,10 +416,12 @@ public sealed class FrontierShellTests
                 new ZzzShellNavigationService(),
                 shellViewModel,
                 new RecordingWindowRuntime(),
-                new ZzzRunRoot(Path.GetTempPath()));
+                new ZzzRunRoot(Path.GetTempPath()),
+                enableSplash: false);
 
             try
             {
+                window.InitializeMainViewForTesting();
                 window.Show();
                 ContentControl host = Assert.IsType<ContentControl>(window.FindControl<ContentControl>("MainViewHost"));
                 FrontierMainView view = Assert.IsType<FrontierMainView>(host.Content);
@@ -456,10 +466,12 @@ public sealed class FrontierShellTests
                 new ZzzShellNavigationService(),
                 shellViewModel,
                 new RecordingWindowRuntime(),
-                new ZzzRunRoot(Path.GetTempPath()));
+                new ZzzRunRoot(Path.GetTempPath()),
+                enableSplash: false);
 
             try
             {
+                window.InitializeMainViewForTesting();
                 window.Show();
                 ContentControl host = Assert.IsType<ContentControl>(window.FindControl<ContentControl>("MainViewHost"));
                 FrontierMainView view = Assert.IsType<FrontierMainView>(host.Content);

@@ -27,6 +27,7 @@ internal sealed partial class FrontierMainView : UserControl, IDisposable
     private readonly IZzzShellWindowRuntime _windowRuntime;
     private readonly ZzzFrontierPageFactory _pageFactory;
     private readonly ZzzFrontierRoute _rootRoute;
+    private readonly ZzzFrontierRoute _initialRoute;
     private readonly FANavigationView _navigation;
     private readonly FAFrame _frame;
     private readonly Border _paneTitleSpacer;
@@ -77,9 +78,8 @@ internal sealed partial class FrontierMainView : UserControl, IDisposable
         _windowRuntime.Attach(window, toastBar);
 
         string initialRoute = ZzzGuiEvidenceSelection.FromEnvironment().Page;
-        ZzzFrontierRoute initial = _pageFactory.FindRoute(initialRoute)
+        _initialRoute = _pageFactory.FindRoute(initialRoute)
             ?? _rootRoute;
-        NavigateRoute(initial);
     }
 
     internal FAFrame NavigationFrame => _frame;
@@ -94,6 +94,16 @@ internal sealed partial class FrontierMainView : UserControl, IDisposable
         _backNavigationHost?.CanGoBack == true || _frame.CanGoBack || CanReturnToRoot;
 
     internal IReadOnlyDictionary<string, FANavigationViewItem> NavigationItems => _navigationItems;
+
+    internal void StartInitialNavigation()
+    {
+        if (_disposed || _activeRoute is not null)
+        {
+            return;
+        }
+
+        NavigateRoute(_initialRoute);
+    }
 
     internal void ShowToast(string title, string message, TimeSpan duration, FAInfoBarSeverity severity) =>
         _windowRuntime.ShowToast(title, message, duration, severity);
