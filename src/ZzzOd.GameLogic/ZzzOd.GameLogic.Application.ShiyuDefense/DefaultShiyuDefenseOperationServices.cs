@@ -50,7 +50,7 @@ public sealed class DefaultShiyuDefenseOperationServices : IShiyuDefenseOperatio
 		{
 			return Task.FromResult(runRecord.NextNodeIndex());
 		}
-		return Task.FromResult(ParseProgress(context, screen, config) ?? runRecord.NextNodeIndex());
+		return Task.FromResult(TryParseProgress(context, screen, config, out int? nextNodeIndex) ? nextNodeIndex : runRecord.NextNodeIndex());
 	}
 
 	/// <inheritdoc />
@@ -299,37 +299,36 @@ public sealed class DefaultShiyuDefenseOperationServices : IShiyuDefenseOperatio
 		return new BackToNormalWorld(context).ExecuteAsync();
 	}
 
-	private static int? ParseProgress(ZContext context, Mat screen, ShiyuDefenseConfig config)
+	private static bool TryParseProgress(ZContext context, Mat screen, ShiyuDefenseConfig config, out int? nextNodeIndex)
 	{
 		OneDragon.Core.Screen.ScreenArea area = context.ScreenContext.GetArea("式舆防卫战", "剧变节点进度");
 		IReadOnlyList<OcrMatchResult> ocrResultList = context.OcrService.GetOcrResultList(screen, area?.ColorRange, area?.Rect);
 		if (ocrResultList.Count == 0)
 		{
-			return null;
+			nextNodeIndex = null;
+			return false;
 		}
 		string input = ocrResultList.FirstOrDefault((OcrMatchResult result) => Regex.IsMatch(result.Text, "\\d"))?.Text ?? ocrResultList[0].Text;
-		Match match = Regex.Match(input, "(\\d+)\\s*/\\s*(\\d+)");
-		if (match.Success)
+		MatchCollection digits = Regex.Matches(input, "\\d");
+		if (digits.Count >= 2)
 		{
-			int num = int.Parse(match.Groups[1].Value);
-			int num2 = (config.CriticalMaxNodeIndex = int.Parse(match.Groups[2].Value));
-			int num4 = num + 1;
-			return (num4 > num2) ? ((int?)null) : new int?(num4);
+			int current = int.Parse(digits[0].Value);
+			int total = config.CriticalMaxNodeIndex = int.Parse(digits[^1].Value);
+			context.Logger.Information("剧变节点进度 {Current}/{Total}", current, total);
+			int next = current + 1;
+			nextNodeIndex = (next > total) ? null : new int?(next);
+			return true;
 		}
-		MatchCollection matchCollection = Regex.Matches(input, "\\d+");
-		if (matchCollection.Count >= 2)
+		if (digits.Count == 1)
 		{
-			int num5 = int.Parse(matchCollection[0].Value);
-			int num6 = (config.CriticalMaxNodeIndex = int.Parse(matchCollection[1].Value));
-			int num8 = num5 + 1;
-			return (num8 > num6) ? ((int?)null) : new int?(num8);
+			int total = config.CriticalMaxNodeIndex = int.Parse(digits[0].Value);
+			context.Logger.Information("剧变节点进度 已完成 {Total}", total);
+			nextNodeIndex = null;
+			return true;
 		}
-		if (matchCollection.Count == 1)
-		{
-			config.CriticalMaxNodeIndex = int.Parse(matchCollection[0].Value);
-			return null;
-		}
-		return 1;
+		context.Logger.Information("OCR 进度解析失败: {ProgressText}", input);
+		nextNodeIndex = null;
+		return false;
 	}
 
 	private static IReadOnlyList<DefensePhaseTeamInfo> DetectPhaseTeams(ZContext context, Mat screen, string screenName, int phaseCount, int typeCount)
