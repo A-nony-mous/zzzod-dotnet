@@ -5,6 +5,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using OneDragon.Core.Abstractions.Operations;
+using OneDragon.Core.Controller;
 using OneDragon.Core.Runtime;
 using Xunit;
 using ZzzOd.GameLogic.Application;
@@ -75,6 +76,31 @@ public sealed class ZOneDragonAppTests
 
 	private sealed class EmptyConfig : IApplicationConfig
 	{
+	}
+
+	private sealed class RecordingCompletionPlatform : IZOneDragonCompletionPlatform
+	{
+		public OperationResult CloseResult { get; set; } = new OperationResult(IsSuccess: true, "游戏已关闭");
+
+		public OperationResult ShutdownResult { get; set; } = new OperationResult(IsSuccess: true, "已请求关机");
+
+		public List<ControllerBase?> ClosedControllers { get; } = new List<ControllerBase?>();
+
+		public int ShutdownCallCount { get; private set; }
+
+		public Task<OperationResult> CloseGameAsync(ControllerBase? controller, CancellationToken cancellationToken)
+		{
+			cancellationToken.ThrowIfCancellationRequested();
+			ClosedControllers.Add(controller);
+			return Task.FromResult(CloseResult);
+		}
+
+		public Task<OperationResult> ShutdownAsync(CancellationToken cancellationToken)
+		{
+			cancellationToken.ThrowIfCancellationRequested();
+			ShutdownCallCount++;
+			return Task.FromResult(ShutdownResult);
+		}
 	}
 
 	[Fact]
@@ -240,13 +266,14 @@ public sealed class ZOneDragonAppTests
 	}
 
 	[Fact]
-	public async Task OneDragonApp_ContinuesConfiguredGroupWhenApplicationFails()
+	public async Task OneDragonApp_ContinuesConfiguredGroupThenReturnsFailureAndSkipsAfterDone()
 	{
 		string rootDirectory = CreateTempRoot();
 		try
 		{
 			using ZContext context = new ZContext(new OneDragonEnvironment(rootDirectory));
 			context.AttachController(new ReadyController());
+			RecordingCompletionPlatform platform = new RecordingCompletionPlatform();
 			List<string> executionOrder = new List<string>();
 			TestFactory failed = new TestFactory(context, "daily-failed", "失败应用", delegate
 			{
@@ -259,16 +286,237 @@ public sealed class ZOneDragonAppTests
 				return Task.FromResult(new OperationResult(IsSuccess: true, "skipped"));
 			});
 			context.ApplicationFactoryRegistry.RegisterApplications(new IApplicationFactory[2] { failed, skipped }, defaultGroup: true);
-			WriteOneDragonConfig(rootDirectory, "仅运行当前", (0, true, true));
+			WriteOneDragonConfigWithAfterDone(rootDirectory, "仅运行当前", "关机", (0, true, true));
 			WriteGroupConfig(rootDirectory, 0, ("daily-failed", true), ("daily-skipped", true));
-			ZOneDragonApp app = new ZOneDragonApp(context, 0);
+			ZOneDragonApp app = new ZOneDragonApp(context, 0, completionPlatform: platform);
 			OperationResult result = await app.ExecuteAsync(CancellationToken.None).WaitAsync(TimeSpan.FromSeconds(2L));
-			Assert.True(result.IsSuccess);
-			Assert.Equal("全部结束", result.Status);
+			Assert.False(result.IsSuccess);
+			Assert.Equal("一条龙应用执行失败", result.Status);
 			Assert.Equal<List<string>>(new List<string>(2) { "daily-failed", "daily-skipped" }, executionOrder);
 			ZOneDragonRunSummary summary = Assert.IsType<ZOneDragonRunSummary>(result.Data);
 			Assert.Equal(2, summary.Results.Count);
 			Assert.False(summary.Results[0].IsSuccess);
+			Assert.Empty(platform.ClosedControllers);
+			Assert.Equal(0, platform.ShutdownCallCount);
+		}
+		finally
+		{
+			Directory.Delete(rootDirectory, recursive: true);
+		}
+	}
+
+	[Theory]
+	[InlineData("无", 0, 0)]
+	[InlineData("关闭游戏", 1, 0)]
+	[InlineData("关机", 1, 1)]
+	public async Task OneDragonApp_ReadsPersistedAfterDoneAndRunsConfiguredAction(string afterDone, int expectedCloseCalls, int expectedShutdownCalls)
+	{
+		string rootDirectory = CreateTempRoot();
+		try
+		{
+			using ZContext context = new ZContext(new OneDragonEnvironment(rootDirectory));
+			context.AttachController(new ReadyController());
+			RecordingCompletionPlatform platform = new RecordingCompletionPlatform();
+			WriteOneDragonConfigWithAfterDone(rootDirectory, "仅运行当前", afterDone, (0, true, true));
+			WriteGroupConfig(rootDirectory, 0, ("music_game_26", false));
+
+			OperationResult result = await new ZOneDragonApp(context, 0, completionPlatform: platform)
+				.ExecuteAsync(CancellationToken.None)
+				.WaitAsync(TimeSpan.FromSeconds(2L));
+
+			Assert.True(result.IsSuccess);
+			Assert.Equal(ZOneDragonApp.StatusAllDone, result.Status);
+			Assert.Equal(expectedCloseCalls, platform.ClosedControllers.Count);
+			Assert.Equal(expectedShutdownCalls, platform.ShutdownCallCount);
+		}
+		finally
+		{
+			Directory.Delete(rootDirectory, recursive: true);
+		}
+	}
+
+	[Fact]
+	public async Task OneDragonApp_ReadsAfterDoneWrittenWhileApplicationsAreRunning()
+	{
+		string rootDirectory = CreateTempRoot();
+		try
+		{
+			using ZContext context = new ZContext(new OneDragonEnvironment(rootDirectory));
+			context.AttachController(new ReadyController());
+			RecordingCompletionPlatform platform = new RecordingCompletionPlatform();
+			TestFactory application = new TestFactory(context, "update-after-done", "更新结束动作", delegate
+			{
+				WriteOneDragonConfigWithAfterDone(rootDirectory, "仅运行当前", "关闭游戏", (0, true, true));
+				return Task.FromResult(new OperationResult(IsSuccess: true, "done"));
+			});
+			context.ApplicationFactoryRegistry.RegisterApplications(new[] { application }, defaultGroup: true);
+			WriteOneDragonConfigWithAfterDone(rootDirectory, "仅运行当前", "无", (0, true, true));
+			WriteGroupConfig(rootDirectory, 0, ("update-after-done", true));
+
+			OperationResult result = await new ZOneDragonApp(context, 0, completionPlatform: platform)
+				.ExecuteAsync(CancellationToken.None)
+				.WaitAsync(TimeSpan.FromSeconds(2L));
+
+			Assert.True(result.IsSuccess);
+			Assert.Single(platform.ClosedControllers);
+			Assert.Equal(0, platform.ShutdownCallCount);
+		}
+		finally
+		{
+			Directory.Delete(rootDirectory, recursive: true);
+		}
+	}
+
+	[Fact]
+	public async Task OneDragonApp_MultipleDifferentGamePathsCloseEachControllerAndCompleteLoop()
+	{
+		string rootDirectory = CreateTempRoot();
+		try
+		{
+			using ZContext context = new ZContext(new OneDragonEnvironment(rootDirectory));
+			ReadyController controller = new ReadyController();
+			context.AttachController(controller);
+			RecordingCompletionPlatform platform = new RecordingCompletionPlatform();
+			WriteOneDragonConfigWithAfterDone(rootDirectory, "全部实例", "无", (0, true, true), (1, false, true));
+			WriteGroupConfig(rootDirectory, 0, ("daily_shop_sign", false));
+			WriteGroupConfig(rootDirectory, 1, ("daily_signin", false));
+			WriteGameAccountConfig(rootDirectory, 0, "D:/Games/A.exe");
+			WriteGameAccountConfig(rootDirectory, 1, "D:/Games/B.exe");
+
+			OperationResult result = await new ZOneDragonApp(
+				context,
+				0,
+				completionPlatform: platform,
+				enterGameAsync: static (_, cancellationToken) =>
+				{
+					cancellationToken.ThrowIfCancellationRequested();
+					return Task.FromResult(new OperationResult(IsSuccess: true));
+				})
+				.ExecuteAsync(CancellationToken.None)
+				.WaitAsync(TimeSpan.FromSeconds(2L));
+
+			Assert.True(result.IsSuccess);
+			ZOneDragonRunSummary summary = Assert.IsType<ZOneDragonRunSummary>(result.Data);
+			Assert.Equal(new[] { 0, 1 }, summary.Results.Select(resultItem => resultItem.InstanceIndex));
+			Assert.Equal(2, platform.ClosedControllers.Count);
+			Assert.All(platform.ClosedControllers, closedController => Assert.Same(controller, closedController));
+			Assert.Equal(0, platform.ShutdownCallCount);
+		}
+		finally
+		{
+			Directory.Delete(rootDirectory, recursive: true);
+		}
+	}
+
+	[Fact]
+	public async Task OneDragonApp_CloseFailureReturnsFailureAndDoesNotRequestShutdown()
+	{
+		string rootDirectory = CreateTempRoot();
+		try
+		{
+			using ZContext context = new ZContext(new OneDragonEnvironment(rootDirectory));
+			context.AttachController(new ReadyController());
+			RecordingCompletionPlatform platform = new RecordingCompletionPlatform
+			{
+				CloseResult = new OperationResult(IsSuccess: false, "检查是否关闭成功"),
+			};
+			WriteOneDragonConfigWithAfterDone(rootDirectory, "仅运行当前", "关机", (0, true, true));
+			WriteGroupConfig(rootDirectory, 0, ("daily_signin", false));
+
+			OperationResult result = await new ZOneDragonApp(context, 0, completionPlatform: platform)
+				.ExecuteAsync(CancellationToken.None)
+				.WaitAsync(TimeSpan.FromSeconds(2L));
+
+			Assert.False(result.IsSuccess);
+			Assert.Equal("检查是否关闭成功", result.Status);
+			Assert.Single(platform.ClosedControllers);
+			Assert.Equal(0, platform.ShutdownCallCount);
+		}
+		finally
+		{
+			Directory.Delete(rootDirectory, recursive: true);
+		}
+	}
+
+	[Fact]
+	public async Task OneDragonApp_CancellationSkipsAfterDonePlatformActions()
+	{
+		string rootDirectory = CreateTempRoot();
+		try
+		{
+			using ZContext context = new ZContext(new OneDragonEnvironment(rootDirectory));
+			context.AttachController(new ReadyController());
+			RecordingCompletionPlatform platform = new RecordingCompletionPlatform();
+			WriteOneDragonConfigWithAfterDone(rootDirectory, "仅运行当前", "关机", (0, true, true));
+			WriteGroupConfig(rootDirectory, 0, ("music_game_26", false));
+			using CancellationTokenSource cancellation = new CancellationTokenSource();
+			cancellation.Cancel();
+
+			await Assert.ThrowsAsync<OperationCanceledException>(() =>
+				new ZOneDragonApp(context, 0, completionPlatform: platform).ExecuteAsync(cancellation.Token));
+
+			Assert.Empty(platform.ClosedControllers);
+			Assert.Equal(0, platform.ShutdownCallCount);
+		}
+		finally
+		{
+			Directory.Delete(rootDirectory, recursive: true);
+		}
+	}
+
+	[Theory]
+	[InlineData("music_game_26")]
+	[InlineData("daily_shop_sign")]
+	[InlineData("daily_signin")]
+	public async Task OneDragonApp_DisabledLegacyPluginEntryIsSkippedWithoutRegistrationError(string appId)
+	{
+		string rootDirectory = CreateTempRoot();
+		try
+		{
+			using ZContext context = new ZContext(new OneDragonEnvironment(rootDirectory));
+			context.AttachController(new ReadyController());
+			RecordingCompletionPlatform platform = new RecordingCompletionPlatform();
+			WriteOneDragonConfig(rootDirectory, "仅运行当前", (0, true, true));
+			WriteGroupConfig(rootDirectory, 0, (appId, false));
+
+			OperationResult result = await new ZOneDragonApp(context, 0, completionPlatform: platform)
+				.ExecuteAsync(CancellationToken.None)
+				.WaitAsync(TimeSpan.FromSeconds(2L));
+
+			Assert.True(result.IsSuccess);
+			ZOneDragonRunSummary summary = Assert.IsType<ZOneDragonRunSummary>(result.Data);
+			ZOneDragonApplicationResult appResult = Assert.Single(summary.Results);
+			Assert.Equal(appId, appResult.AppId);
+			Assert.True(appResult.IsSuccess);
+			Assert.Contains("应用未启用", appResult.Status, StringComparison.Ordinal);
+		}
+		finally
+		{
+			Directory.Delete(rootDirectory, recursive: true);
+		}
+	}
+
+	[Theory]
+	[InlineData("music_game_26")]
+	[InlineData("daily_shop_sign")]
+	[InlineData("daily_signin")]
+	public async Task OneDragonApp_EnabledUnknownAppReturnsRegistrationError(string appId)
+	{
+		string rootDirectory = CreateTempRoot();
+		try
+		{
+			using ZContext context = new ZContext(new OneDragonEnvironment(rootDirectory));
+			context.AttachController(new ReadyController());
+			RecordingCompletionPlatform platform = new RecordingCompletionPlatform();
+			WriteOneDragonConfigWithAfterDone(rootDirectory, "仅运行当前", "关机", (0, true, true));
+			WriteGroupConfig(rootDirectory, 0, (appId, true));
+
+			InvalidOperationException exception = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+				new ZOneDragonApp(context, 0, completionPlatform: platform).ExecuteAsync(CancellationToken.None));
+
+			Assert.Equal("未找到应用 " + appId, exception.Message);
+			Assert.Empty(platform.ClosedControllers);
+			Assert.Equal(0, platform.ShutdownCallCount);
 		}
 		finally
 		{
@@ -325,10 +573,15 @@ public sealed class ZOneDragonAppTests
 
 	private static void WriteOneDragonConfig(string rootDirectory, string instanceRun, params (int Index, bool Active, bool ActiveInOneDragon)[] instances)
 	{
+		WriteOneDragonConfigWithAfterDone(rootDirectory, instanceRun, "无", instances);
+	}
+
+	private static void WriteOneDragonConfigWithAfterDone(string rootDirectory, string instanceRun, string afterDone, params (int Index, bool Active, bool ActiveInOneDragon)[] instances)
+	{
 		string text = Path.Combine(rootDirectory, "config");
 		Directory.CreateDirectory(text);
 		string value = string.Join("\n", instances.Select(((int Index, bool Active, bool ActiveInOneDragon) instance) => $"- idx: {instance.Index}\n  name: '{instance.Index:00}'\n  active: {instance.Active.ToString().ToLowerInvariant()}\n  active_in_od: {instance.ActiveInOneDragon.ToString().ToLowerInvariant()}"));
-		File.WriteAllText(Path.Combine(text, "one_dragon.yml"), $"instance_list:\n{value}\ninstance_run: {instanceRun}\n");
+		File.WriteAllText(Path.Combine(text, "one_dragon.yml"), $"instance_list:\n{value}\ninstance_run: {instanceRun}\nafter_done: {afterDone}\n");
 	}
 
 	private static void WriteGroupConfig(string rootDirectory, int instanceIndex, params (string AppId, bool Enabled)[] apps)
@@ -337,6 +590,13 @@ public sealed class ZOneDragonAppTests
 		Directory.CreateDirectory(text);
 		string text2 = string.Join("\n", apps.Select(((string AppId, bool Enabled) app) => "- app_id: " + app.AppId + "\n  enabled: " + app.Enabled.ToString().ToLowerInvariant()));
 		File.WriteAllText(Path.Combine(text, "_group.yml"), "app_list:\n" + text2 + "\n");
+	}
+
+	private static void WriteGameAccountConfig(string rootDirectory, int instanceIndex, string gamePath)
+	{
+		string directory = Path.Combine(rootDirectory, "config", instanceIndex.ToString("00"));
+		Directory.CreateDirectory(directory);
+		File.WriteAllText(Path.Combine(directory, "game_account.yml"), "game_path: " + gamePath + "\n");
 	}
 
 	private static void RegisterAllBuiltInApplications(ApplicationFactoryRegistry registry)

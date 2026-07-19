@@ -2450,7 +2450,7 @@ public sealed class ZzzAppBackend : IZzzAppBackend, IZzzIntelBoardProgressBacken
 	/// <inheritdoc />
 	public ChannelReader<ZzzBackendEvent> SubscribeEvents()
 	{
-		return _eventBus.Subscribe();
+		return _eventBus.Subscribe(1024);
 	}
 
 	/// <inheritdoc />

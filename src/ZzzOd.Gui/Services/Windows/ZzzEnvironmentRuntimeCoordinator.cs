@@ -5,6 +5,7 @@ using Microsoft.Extensions.Logging;
 using OneDragon.Core.Screening;
 using OpenCvSharp;
 using ZzzOd.AppHost.Backend;
+using ZzzOd.GameLogic.Application.OneDragonApp;
 using ZzzOd.Gui.Services.RunIntent;
 
 namespace ZzzOd.Gui.Services.Windows;
@@ -210,7 +211,7 @@ internal sealed class ZzzEnvironmentRuntimeCoordinator : IHostedService, IZzzEnv
 
             if (string.Equals(settings.StartRunning, key, StringComparison.OrdinalIgnoreCase))
             {
-                TogglePauseAndResume();
+                await TogglePauseAndResumeAsync(cancellationToken).ConfigureAwait(false);
             }
             else if (string.Equals(settings.StopRunning, key, StringComparison.OrdinalIgnoreCase))
             {
@@ -229,12 +230,18 @@ internal sealed class ZzzEnvironmentRuntimeCoordinator : IHostedService, IZzzEnv
         }
     }
 
-    private void TogglePauseAndResume()
+    private async Task TogglePauseAndResumeAsync(CancellationToken cancellationToken)
     {
         ZzzBackendResult<ZzzRunStatusDto> current = _backend.GetCurrentRun();
         if (!current.Success || current.Value is null)
         {
             _logger.LogWarning("读取当前运行状态失败：{Error}", current.Error);
+            return;
+        }
+
+        if (current.Value.State is ZzzRunState.Idle or ZzzRunState.Succeeded or ZzzRunState.Cancelled or ZzzRunState.Failed)
+        {
+            await StartIdleRunAsync(cancellationToken).ConfigureAwait(false);
             return;
         }
 
@@ -311,6 +318,37 @@ internal sealed class ZzzEnvironmentRuntimeCoordinator : IHostedService, IZzzEnv
             await _clipboard.CopyPngAsync(clipboardBytes, cancellationToken).ConfigureAwait(false);
         }
     }
+
+    private async Task StartIdleRunAsync(CancellationToken cancellationToken)
+    {
+        ZzzGuiRunTarget? target = _runIntent.CurrentRunTarget;
+        if (target is null)
+        {
+            ZzzBackendResult<ZzzConfigScopeValuesDto> config = _backend.GetConfigScope("standalone-app");
+            string? activeAppId = config.Success && config.Value is not null
+                ? ReadString(config.Value.Values, "active_app_id")
+                : null;
+            if (string.IsNullOrWhiteSpace(activeAppId))
+            {
+                _logger.LogWarning("F9 启动失败：未选择运行应用。");
+                return;
+            }
+
+            target = new ZzzGuiRunTarget(activeAppId, ZOneDragonAppConstants.DefaultGroupId, null);
+        }
+
+        ZzzBackendResult<ZzzRunStatusDto> result = await _backend.StartRunAsync(
+            new ZzzStartRunRequest(target.AppId, target.InstanceIndex, target.GroupId)).ConfigureAwait(false);
+        if (!result.Success)
+        {
+            _logger.LogWarning("F9 启动应用失败：{Error}", result.Error);
+        }
+    }
+
+    private static string? ReadString(IReadOnlyDictionary<string, object?> values, string key) =>
+        values.TryGetValue(key, out object? value) && value is string text && !string.IsNullOrWhiteSpace(text)
+            ? text
+            : null;
 
     private bool TryGetPatchedCaptureSettings(out string suffix)
     {

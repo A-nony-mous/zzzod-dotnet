@@ -27,22 +27,34 @@ public sealed class ZOneDragonApp : ZApplication
 	/// <summary>未登录时继续下一个实例。</summary>
 	public const string StatusNoLogin = "下一个";
 
-	private static readonly TimeSpan CloseGameRetryDelay = TimeSpan.FromSeconds(3L);
-
-	private static readonly TimeSpan AfterCloseGameDelay = TimeSpan.FromSeconds(10L);
-
 	private readonly int _requestedInstanceIndex;
 
 	private readonly string _groupId;
 
+	private readonly IZOneDragonCompletionPlatform _completionPlatform;
+
+	private readonly Func<ZContext, CancellationToken, Task<OperationResult>>? _enterGameAsync;
+
+	private readonly Func<ZContext, CancellationToken, Task<OperationResult>>? _switchAccountAsync;
+
 	/// <summary>
 	/// 初始化一条龙应用。
 	/// </summary>
-	public ZOneDragonApp(ZContext context, int instanceIndex, string groupId = "one_dragon", ZApplicationRunRecord? runRecord = null)
+	public ZOneDragonApp(
+		ZContext context,
+		int instanceIndex,
+		string groupId = "one_dragon",
+		ZApplicationRunRecord? runRecord = null,
+		IZOneDragonCompletionPlatform? completionPlatform = null,
+		Func<ZContext, CancellationToken, Task<OperationResult>>? enterGameAsync = null,
+		Func<ZContext, CancellationToken, Task<OperationResult>>? switchAccountAsync = null)
 		: base(context, "one_dragon", runRecord, "一条龙")
 	{
 		_requestedInstanceIndex = instanceIndex;
 		_groupId = (string.IsNullOrWhiteSpace(groupId) ? "one_dragon" : groupId);
+		_completionPlatform = completionPlatform ?? new WindowsOneDragonCompletionPlatform();
+		_enterGameAsync = enterGameAsync;
+		_switchAccountAsync = switchAccountAsync;
 	}
 
 	/// <inheritdoc />
@@ -62,8 +74,9 @@ public sealed class ZOneDragonApp : ZApplication
 	/// <inheritdoc />
 	protected override async Task<OperationResult> ExecuteCoreAsync(CancellationToken cancellationToken)
 	{
+		OneDragonConfig oneDragonConfig = LoadOneDragonConfig();
 		int startIndex;
-		OneDragonInstanceConfigItem[] instances = ResolveInstances(out startIndex);
+		OneDragonInstanceConfigItem[] instances = ResolveInstances(oneDragonConfig, out startIndex);
 		int currentIndex = startIndex;
 		if (base.Context.InstanceIndex != instances[currentIndex].Idx)
 		{
@@ -75,7 +88,12 @@ public sealed class ZOneDragonApp : ZApplication
 		{
 			cancellationToken.ThrowIfCancellationRequested();
 			int currentInstanceIndex = instances[currentIndex].Idx;
+			int resultCountBeforeGroup = results.Count;
 			await RunGroupAsync(currentInstanceIndex, results, cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
+			if (results.Skip(resultCountBeforeGroup).Any((ZOneDragonApplicationResult result) => !result.IsSuccess))
+			{
+				return ZApplication.Fail("一条龙应用执行失败", new ZOneDragonRunSummary(currentInstanceIndex, _groupId, results));
+			}
 			int nextIndex = currentIndex + 1;
 			if (nextIndex >= instances.Length)
 			{
@@ -85,7 +103,7 @@ public sealed class ZOneDragonApp : ZApplication
 			if (GameAccountConfig.IsDifferentGamePath(base.Context.Environment, currentInstanceIndex, nextInstanceIndex))
 			{
 				ControllerBase lastController = base.Context.Controller;
-				OperationResult closeResult = await CloseGameAndWaitAsync(lastController, cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
+				OperationResult closeResult = await _completionPlatform.CloseGameAsync(lastController, cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
 				if (!closeResult.IsSuccess)
 				{
 					return ZApplication.Fail(closeResult.Status, new ZOneDragonRunSummary(currentInstanceIndex, _groupId, results));
@@ -94,9 +112,9 @@ public sealed class ZOneDragonApp : ZApplication
 				currentIndex = nextIndex;
 				if (currentIndex == startIndex)
 				{
-					return ZApplication.Success("全部结束", new ZOneDragonRunSummary(nextInstanceIndex, _groupId, results));
+					return await CompleteNaturallyAsync(nextInstanceIndex, results, cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
 				}
-				OperationResult enterResult = await new OpenAndEnterGame(base.Context).ExecuteAsync(cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
+				OperationResult enterResult = await ExecuteEnterGameAsync(cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
 				if (!enterResult.IsSuccess)
 				{
 					return ZApplication.Fail(enterResult.Status, new ZOneDragonRunSummary(nextInstanceIndex, _groupId, results));
@@ -107,7 +125,7 @@ public sealed class ZOneDragonApp : ZApplication
 			currentIndex = nextIndex;
 			if (instances.Length > 1)
 			{
-				OperationResult switchResult = await new SwitchAccount(base.Context).ExecuteAsync(cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
+				OperationResult switchResult = await ExecuteSwitchAccountAsync(cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
 				if (!switchResult.IsSuccess)
 				{
 					return ZApplication.Fail(switchResult.Status, new ZOneDragonRunSummary(nextInstanceIndex, _groupId, results));
@@ -118,20 +136,24 @@ public sealed class ZOneDragonApp : ZApplication
 				break;
 			}
 		}
-		return ZApplication.Success("全部结束", new ZOneDragonRunSummary(nextInstanceIndex, _groupId, results));
+		return await CompleteNaturallyAsync(nextInstanceIndex, results, cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
 	}
 
-	private OneDragonInstanceConfigItem[] ResolveInstances(out int startIndex)
+	private OneDragonConfig LoadOneDragonConfig()
 	{
 		OneDragonEnvironment environment = base.Context.Environment;
 		IReadOnlyList<string> subDirectories = Array.Empty<string>();
-		YamlConfig<OneDragonConfig> yamlConfig = new YamlConfig<OneDragonConfig>(environment, "one_dragon", null, null, subDirectories);
-		OneDragonInstanceConfigItem current = yamlConfig.Current.InstanceList.FirstOrDefault((OneDragonInstanceConfigItem item) => item.Active);
+		return new YamlConfig<OneDragonConfig>(environment, "one_dragon", null, null, subDirectories).Current;
+	}
+
+	private OneDragonInstanceConfigItem[] ResolveInstances(OneDragonConfig oneDragonConfig, out int startIndex)
+	{
+		OneDragonInstanceConfigItem current = oneDragonConfig.InstanceList.FirstOrDefault((OneDragonInstanceConfigItem item) => item.Active);
 		if (current == null)
 		{
 			throw new InvalidOperationException("未找到当前启用的实例。");
 		}
-		IReadOnlyList<OneDragonInstanceConfigItem> readOnlyList = (string.Equals(yamlConfig.Current.InstanceRun, "全部实例", StringComparison.Ordinal) ? ((IReadOnlyList<OneDragonInstanceConfigItem>)yamlConfig.Current.InstanceList.Where((OneDragonInstanceConfigItem item) => item.ActiveInOneDragon).ToArray()) : ((IReadOnlyList<OneDragonInstanceConfigItem>)new OneDragonInstanceConfigItem[1] { current }));
+		IReadOnlyList<OneDragonInstanceConfigItem> readOnlyList = (string.Equals(oneDragonConfig.InstanceRun, "全部实例", StringComparison.Ordinal) ? ((IReadOnlyList<OneDragonInstanceConfigItem>)oneDragonConfig.InstanceList.Where((OneDragonInstanceConfigItem item) => item.ActiveInOneDragon).ToArray()) : ((IReadOnlyList<OneDragonInstanceConfigItem>)new OneDragonInstanceConfigItem[1] { current }));
 		if (readOnlyList.Count == 0)
 		{
 			readOnlyList = new OneDragonInstanceConfigItem[] { current };
@@ -151,10 +173,7 @@ public sealed class ZOneDragonApp : ZApplication
 
 	private void EnsureActiveInstanceSelected()
 	{
-		OneDragonEnvironment environment = base.Context.Environment;
-		IReadOnlyList<string> subDirectories = Array.Empty<string>();
-		YamlConfig<OneDragonConfig> yamlConfig = new YamlConfig<OneDragonConfig>(environment, "one_dragon", null, null, subDirectories);
-		OneDragonInstanceConfigItem oneDragonInstanceConfigItem = yamlConfig.Current.InstanceList.FirstOrDefault((OneDragonInstanceConfigItem item) => item.Active);
+		OneDragonInstanceConfigItem oneDragonInstanceConfigItem = LoadOneDragonConfig().InstanceList.FirstOrDefault((OneDragonInstanceConfigItem item) => item.Active);
 		if (oneDragonInstanceConfigItem == null)
 		{
 			throw new InvalidOperationException("未找到当前启用的实例。");
@@ -175,17 +194,17 @@ public sealed class ZOneDragonApp : ZApplication
 			{
 				continue;
 			}
+			if (!item.Enabled)
+			{
+				results.Add(new ZOneDragonApplicationResult(instanceIndex, item.AppId, IsSuccess: true, "应用未启用 " + item.AppId));
+				continue;
+			}
 			if (!base.Context.RunContext.IsAppRegistered(item.AppId))
 			{
 				throw new InvalidOperationException("未找到应用 " + item.AppId);
 			}
 			IApplication application = base.Context.RunContext.GetApplication(item.AppId, instanceIndex, _groupId);
 			string appName = base.Context.RunContext.GetApplicationName(item.AppId);
-			if (!item.Enabled)
-			{
-				results.Add(new ZOneDragonApplicationResult(instanceIndex, item.AppId, IsSuccess: true, "应用未启用 " + appName));
-				continue;
-			}
 			IApplicationRunRecord runRecord = base.Context.RunContext.GetRunRecord(item.AppId, instanceIndex);
 			runRecord.CheckAndUpdateStatus();
 			if (runRecord is ZApplicationRunRecord zRunRecord && zRunRecord.IsDone)
@@ -198,24 +217,59 @@ public sealed class ZOneDragonApp : ZApplication
 		}
 	}
 
-	private static async Task<OperationResult> CloseGameAndWaitAsync(ControllerBase? controller, CancellationToken cancellationToken)
+	private async Task<OperationResult> ExecuteEnterGameAsync(CancellationToken cancellationToken)
 	{
-		if (controller == null)
+		return _enterGameAsync != null
+			? await _enterGameAsync(base.Context, cancellationToken).ConfigureAwait(continueOnCapturedContext: false)
+			: await new OpenAndEnterGame(base.Context).ExecuteAsync(cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
+	}
+
+	private async Task<OperationResult> ExecuteSwitchAccountAsync(CancellationToken cancellationToken)
+	{
+		return _switchAccountAsync != null
+			? await _switchAccountAsync(base.Context, cancellationToken).ConfigureAwait(continueOnCapturedContext: false)
+			: await new SwitchAccount(base.Context).ExecuteAsync(cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
+	}
+
+	private async Task<OperationResult> CompleteNaturallyAsync(int instanceIndex, ICollection<ZOneDragonApplicationResult> results, CancellationToken cancellationToken)
+	{
+		cancellationToken.ThrowIfCancellationRequested();
+		string afterDone = LoadOneDragonConfig().AfterDone;
+		OperationResult afterDoneResult = await ExecuteAfterDoneAsync(afterDone, cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
+		if (!afterDoneResult.IsSuccess)
 		{
-			return new OperationResult(IsSuccess: false, "未初始化游戏控制器。");
+			return ZApplication.Fail(afterDoneResult.Status, new ZOneDragonRunSummary(instanceIndex, _groupId, results.ToArray()));
 		}
-		int retryCount = 0;
-		while (controller.IsGameWindowReady && retryCount <= 3)
+		return ZApplication.Success(StatusAllDone, new ZOneDragonRunSummary(instanceIndex, _groupId, results.ToArray()));
+	}
+
+	private async Task<OperationResult> ExecuteAfterDoneAsync(string? afterDone, CancellationToken cancellationToken)
+	{
+		cancellationToken.ThrowIfCancellationRequested();
+		switch (afterDone)
 		{
-			controller.CloseGame();
-			await Task.Delay(CloseGameRetryDelay, cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
-			retryCount++;
+		case null:
+		case "":
+		case "无":
+			base.Context.Logger.Information("一条龙自然完成，结束后操作为无");
+			return new OperationResult(IsSuccess: true, "无");
+		case "关闭游戏":
+		case "关机":
+			OperationResult closeResult = await _completionPlatform.CloseGameAsync(base.Context.Controller, cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
+			base.Context.Logger.Information("一条龙结束后关闭游戏，结果 {IsSuccess}，状态 {Status}", closeResult.IsSuccess, closeResult.Status ?? "无");
+			if (!closeResult.IsSuccess)
+			{
+				return closeResult;
+			}
+			if (afterDone == "关闭游戏")
+			{
+				return closeResult;
+			}
+			OperationResult shutdownResult = await _completionPlatform.ShutdownAsync(cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
+			base.Context.Logger.Information("一条龙结束后关机，结果 {IsSuccess}，状态 {Status}", shutdownResult.IsSuccess, shutdownResult.Status ?? "无");
+			return shutdownResult;
+		default:
+			return new OperationResult(IsSuccess: false, "不支持的结束后操作 " + afterDone);
 		}
-		if (controller.IsGameWindowReady)
-		{
-			return new OperationResult(IsSuccess: false, "检查是否关闭成功");
-		}
-		await Task.Delay(AfterCloseGameDelay, cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
-		return new OperationResult(IsSuccess: true);
 	}
 }

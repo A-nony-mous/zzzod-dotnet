@@ -82,6 +82,8 @@ public sealed class EnvironmentRuntimeCoordinatorTests
 
 		public ZzzRunState State { get; set; } = ZzzRunState.Idle;
 
+		public string? ActiveAppId { get; set; }
+
 		public bool CopyScreenshot { get; set; }
 
 		public bool PatchedCaptureEnabled { get; set; }
@@ -95,6 +97,12 @@ public sealed class EnvironmentRuntimeCoordinatorTests
 		public int ResumeCalls { get; private set; }
 
 		public int StopCalls { get; private set; }
+
+		public string? StartedAppId { get; private set; }
+
+		public string? StartedGroupId { get; private set; }
+
+		public int? StartedInstanceIndex { get; private set; }
 
 		protected override object? Invoke(MethodInfo? targetMethod, object?[]? args)
 		{
@@ -110,7 +118,7 @@ public sealed class EnvironmentRuntimeCoordinatorTests
 				"PauseRun" => Pause(), 
 				"ResumeRun" => Resume(), 
 				"StopRunAsync" => StopAsync(), 
-				"StartRunAsync" => StartAsync(), 
+				"StartRunAsync" => StartAsync((ZzzStartRunRequest)args![0]!),
 				"GetScreenshot" => ZzzBackendResult<ZzzScreenshotDto>.Ok(new ZzzScreenshotDto("image/png", ScreenshotBytes)), 
 				_ => throw new NotSupportedException(targetMethod.Name), 
 			};
@@ -129,6 +137,18 @@ public sealed class EnvironmentRuntimeCoordinatorTests
 					["patched_capture_enabled"] = PatchedCaptureEnabled,
 					["patched_capture_suffix"] = "_overlay",
 				}));
+			}
+
+			if (string.Equals(scope, "standalone-app", StringComparison.Ordinal))
+			{
+				return ZzzBackendResult<ZzzConfigScopeValuesDto>.Ok(new ZzzConfigScopeValuesDto(
+					new ZzzConfigScopeDescriptorDto("standalone-app", "独立运行", false, false, true, Array.Empty<ZzzConfigSettingDescriptorDto>()),
+					null,
+					null,
+					new Dictionary<string, object>(StringComparer.Ordinal)
+					{
+						["active_app_id"] = ActiveAppId ?? string.Empty,
+					}));
 			}
 
 			return ZzzBackendResult<ZzzConfigScopeValuesDto>.Ok(new ZzzConfigScopeValuesDto(Descriptor, null, null, new Dictionary<string, object>(StringComparer.Ordinal)
@@ -162,9 +182,13 @@ public sealed class EnvironmentRuntimeCoordinatorTests
 			return Task.FromResult(ZzzBackendResult<ZzzRunStatusDto>.Ok(new ZzzRunStatusDto(State)));
 		}
 
-		private Task<ZzzBackendResult<ZzzRunStatusDto>> StartAsync()
+		private Task<ZzzBackendResult<ZzzRunStatusDto>> StartAsync(ZzzStartRunRequest request)
 		{
 			StartCalls++;
+			StartedAppId = request.AppId;
+			StartedGroupId = request.GroupId;
+			StartedInstanceIndex = request.InstanceIndex;
+			State = ZzzRunState.Starting;
 			return Task.FromResult(ZzzBackendResult<ZzzRunStatusDto>.Ok(new ZzzRunStatusDto(State)));
 		}
 	}
@@ -190,26 +214,94 @@ public sealed class EnvironmentRuntimeCoordinatorTests
 	}
 
 	[Fact]
-	public async Task StartHotkeyOnlyTogglesAnExistingRunAndNeverChoosesAnIdleApplication()
+	public void RunIntentRegistersAndClearsTheCurrentTargetByOwner()
+	{
+		ZzzGuiRunIntentService runIntent = new();
+		object owner = new();
+		object otherOwner = new();
+
+		runIntent.RegisterRunTarget(owner, "coffee", "daily", 2);
+
+		Assert.Equal(new ZzzGuiRunTarget("coffee", "daily", 2), runIntent.CurrentRunTarget);
+		runIntent.ClearRunTarget(otherOwner);
+		Assert.NotNull(runIntent.CurrentRunTarget);
+		runIntent.ClearRunTarget(owner);
+		Assert.Null(runIntent.CurrentRunTarget);
+	}
+
+	[Fact]
+	public async Task StartHotkeyStartsTheRegisteredPageTargetWhenIdle()
 	{
 		using TestHarness harness = TestHarness.Create();
-		List<string> pressed = new List<string>();
+		object owner = new();
+		harness.RunIntent.RegisterRunTarget(owner, "coffee", "daily", 2);
+
+		await harness.Coordinator.HandleInputPressedForTestAsync("f9");
+
+		Assert.Equal(1, harness.BackendProxy.StartCalls);
+		Assert.Equal("coffee", harness.BackendProxy.StartedAppId);
+		Assert.Equal("daily", harness.BackendProxy.StartedGroupId);
+		Assert.Equal(2, harness.BackendProxy.StartedInstanceIndex);
+	}
+
+	[Fact]
+	public async Task StartHotkeyUsesTheStandaloneActiveAppWithoutAVisiblePageTarget()
+	{
+		using TestHarness harness = TestHarness.Create();
+		harness.BackendProxy.ActiveAppId = "scratch_card";
+
+		await harness.Coordinator.HandleInputPressedForTestAsync("f9");
+
+		Assert.Equal(1, harness.BackendProxy.StartCalls);
+		Assert.Equal("scratch_card", harness.BackendProxy.StartedAppId);
+		Assert.Equal("one_dragon", harness.BackendProxy.StartedGroupId);
+		Assert.Null(harness.BackendProxy.StartedInstanceIndex);
+	}
+
+	[Fact]
+	public async Task StartHotkeyDoesNotStartWithoutARealTarget()
+	{
+		using TestHarness harness = TestHarness.Create();
+
+		await harness.Coordinator.HandleInputPressedForTestAsync("f9");
+
+		Assert.Equal(0, harness.BackendProxy.StartCalls);
+	}
+
+	[Fact]
+	public async Task StartHotkeyPausesAndResumesAnExistingRun()
+	{
+		using TestHarness harness = TestHarness.Create();
+		List<string> pressed = new();
 		harness.RunIntent.GlobalInputPressed += delegate(object? _, string key)
 		{
 			pressed.Add(key);
 		};
-		harness.BackendProxy.State = ZzzRunState.Idle;
-		await harness.Coordinator.HandleInputPressedForTestAsync("f9");
-		Assert.Equal(0, harness.BackendProxy.PauseCalls);
-		Assert.Equal(0, harness.BackendProxy.ResumeCalls);
-		Assert.Equal(0, harness.BackendProxy.StartCalls);
+
 		harness.BackendProxy.State = ZzzRunState.Running;
 		await harness.Coordinator.HandleInputPressedForTestAsync("f9");
-		Assert.Equal(1, harness.BackendProxy.PauseCalls);
 		harness.BackendProxy.State = ZzzRunState.Paused;
 		await harness.Coordinator.HandleInputPressedForTestAsync("f9");
+
+		Assert.Equal(1, harness.BackendProxy.PauseCalls);
 		Assert.Equal(1, harness.BackendProxy.ResumeCalls);
-		Assert.Equal<List<string>>(new List<string>(3) { "f9", "f9", "f9" }, pressed);
+		Assert.Equal(new[] { "f9", "f9" }, pressed);
+	}
+
+	[Theory]
+	[InlineData(ZzzRunState.Starting)]
+	[InlineData(ZzzRunState.Stopping)]
+	public async Task StartHotkeyIgnoresDuplicateRequestsDuringTransitions(ZzzRunState state)
+	{
+		using TestHarness harness = TestHarness.Create();
+		harness.BackendProxy.State = state;
+		harness.RunIntent.RegisterRunTarget(new object(), "coffee");
+
+		await harness.Coordinator.HandleInputPressedForTestAsync("f9");
+
+		Assert.Equal(0, harness.BackendProxy.StartCalls);
+		Assert.Equal(0, harness.BackendProxy.PauseCalls);
+		Assert.Equal(0, harness.BackendProxy.ResumeCalls);
 	}
 
 	[Fact]

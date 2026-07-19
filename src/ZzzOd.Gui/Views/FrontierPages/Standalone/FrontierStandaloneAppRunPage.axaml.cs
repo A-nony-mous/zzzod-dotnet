@@ -386,6 +386,8 @@ internal sealed partial class FrontierStandaloneAppRunPage : UserControl, IZzzPa
                 IsSelected = string.Equals(row.AppId, SelectedAppId, StringComparison.Ordinal),
             };
         }
+
+        RunPanel.RefreshRunTargetForCurrentSelection();
     }
 
     private void SaveConfig()

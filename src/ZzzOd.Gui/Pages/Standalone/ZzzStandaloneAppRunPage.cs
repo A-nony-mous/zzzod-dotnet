@@ -382,6 +382,8 @@ internal sealed partial class ZzzStandaloneAppRunPage : UserControl, IZzzPageLif
                 IsSelected = string.Equals(row.AppId, SelectedAppId, StringComparison.Ordinal),
             };
         }
+
+        RunPanel.RefreshRunTargetForCurrentSelection();
     }
 
     private void SaveConfig()

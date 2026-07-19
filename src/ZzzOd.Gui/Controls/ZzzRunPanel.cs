@@ -38,6 +38,7 @@ internal sealed partial class ZzzRunPanel : UserControl, IZzzPageLifecycle
     private string _displayedLastStatus = "-";
     private string _primaryAction = "开始";
     private bool _stopActionAvailable;
+    private bool _runIntentEventsStarted;
 
     public ZzzRunPanel(
         IZzzAppBackend backend,
@@ -76,10 +77,12 @@ internal sealed partial class ZzzRunPanel : UserControl, IZzzPageLifecycle
         _logCard = new ZzzLogDisplayCard(backend);
         logHost.Content = _logCard;
         _apps.IsVisible = string.IsNullOrWhiteSpace(fixedAppId) && appIdProvider is null;
+        _apps.SelectionChanged += OnAppSelectionChanged;
         _primaryButton.Click += OnPrimaryButtonClicked;
         _stopButton.Click += OnStopButtonClicked;
         RefreshApps();
         RefreshHotkeys();
+        RefreshRunTarget();
         Refresh();
     }
 
@@ -113,6 +116,8 @@ internal sealed partial class ZzzRunPanel : UserControl, IZzzPageLifecycle
 
     public void RefreshState() => Refresh();
 
+    internal void RefreshRunTargetForCurrentSelection() => RefreshRunTarget();
+
     public Task InvokePrimaryActionAsync() => OnPrimaryClickedAsync();
 
     public async Task InvokeStopActionAsync()
@@ -139,6 +144,8 @@ internal sealed partial class ZzzRunPanel : UserControl, IZzzPageLifecycle
     {
         RefreshApps();
         RefreshHotkeys();
+        RefreshRunTarget();
+        StartRunIntentEvents();
         StartRunEvents();
         _logCard.OnPageShown();
         if (_fixedAppId == ZzzApplicationIds.OneDragon && _runIntent?.ConsumeStartOneDragon() == true)
@@ -152,6 +159,8 @@ internal sealed partial class ZzzRunPanel : UserControl, IZzzPageLifecycle
 
     public void OnPageHidden()
     {
+        _runIntent?.ClearRunTarget(this);
+        StopRunIntentEvents();
         StopRunEvents();
         _logCard.OnPageHidden();
     }
@@ -160,7 +169,10 @@ internal sealed partial class ZzzRunPanel : UserControl, IZzzPageLifecycle
 
     public void DisposePage()
     {
+        _runIntent?.ClearRunTarget(this);
+        StopRunIntentEvents();
         StopRunEvents();
+        _apps.SelectionChanged -= OnAppSelectionChanged;
         _primaryButton.Click -= OnPrimaryButtonClicked;
         _stopButton.Click -= OnStopButtonClicked;
         _logCard.DisposePage();
@@ -206,6 +218,23 @@ internal sealed partial class ZzzRunPanel : UserControl, IZzzPageLifecycle
         _startHotkey = ReadHotkey(result.Value.Values, "key_start_running");
         _stopHotkey = ReadHotkey(result.Value.Values, "key_stop_running");
         ApplyButtonLabels(PrimaryActionText);
+    }
+
+    private void RefreshRunTarget()
+    {
+        if (_runIntent is null)
+        {
+            return;
+        }
+
+        string? appId = SelectedAppId;
+        if (string.IsNullOrWhiteSpace(appId))
+        {
+            _runIntent.ClearRunTarget(this);
+            return;
+        }
+
+        _runIntent.RegisterRunTarget(this, appId, _fixedGroupId);
     }
 
     private async Task OnPrimaryClickedAsync()
@@ -366,6 +395,47 @@ internal sealed partial class ZzzRunPanel : UserControl, IZzzPageLifecycle
         _eventCancellation = null;
         _eventReader = null;
     }
+
+    private void StartRunIntentEvents()
+    {
+        if (_runIntent is null || _runIntentEventsStarted)
+        {
+            return;
+        }
+
+        _runIntent.GlobalInputPressed += OnGlobalInputPressed;
+        _runIntentEventsStarted = true;
+    }
+
+    private void StopRunIntentEvents()
+    {
+        if (_runIntent is null || !_runIntentEventsStarted)
+        {
+            return;
+        }
+
+        _runIntent.GlobalInputPressed -= OnGlobalInputPressed;
+        _runIntentEventsStarted = false;
+    }
+
+    private void OnGlobalInputPressed(object? sender, string key)
+    {
+        if (!string.Equals(key, _startHotkey, StringComparison.OrdinalIgnoreCase)
+            && !string.Equals(key, _stopHotkey, StringComparison.OrdinalIgnoreCase))
+        {
+            return;
+        }
+
+        if (Dispatcher.UIThread.CheckAccess())
+        {
+            Refresh();
+            return;
+        }
+
+        Dispatcher.UIThread.Post(Refresh);
+    }
+
+    private void OnAppSelectionChanged(object? sender, SelectionChangedEventArgs args) => RefreshRunTarget();
 
     private void ShowError(string message)
     {

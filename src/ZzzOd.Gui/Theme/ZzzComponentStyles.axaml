@@ -141,6 +141,15 @@
     <Setter Property="MinWidth" Value="92" />
     <Setter Property="MinHeight" Value="{DynamicResource ZzzCommandHeight}" />
   </Style>
+  <Style Selector="Button.zzz-run-command">
+    <Setter Property="MinWidth" Value="0" />
+    <Setter Property="MinHeight" Value="{DynamicResource ZzzRunCommandMinHeight}" />
+    <Setter Property="Padding" Value="{DynamicResource ZzzRunCommandPadding}" />
+    <Setter Property="Margin" Value="0" />
+    <Setter Property="HorizontalAlignment" Value="Stretch" />
+    <Setter Property="HorizontalContentAlignment" Value="Center" />
+    <Setter Property="VerticalContentAlignment" Value="Center" />
+  </Style>
   <Style Selector="Border.zzz-home-media-scrim">
     <Setter Property="Background" Value="{DynamicResource ZzzMediaOverlayBrush}" />
   </Style>

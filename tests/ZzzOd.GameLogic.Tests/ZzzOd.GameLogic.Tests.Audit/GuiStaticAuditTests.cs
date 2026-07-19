@@ -141,6 +141,43 @@ public sealed class GuiStaticAuditTests
 	}
 
 	[Fact]
+	public void RunToastAndCommandLayoutAreSharedAcrossBothShells()
+	{
+		string root = FindGuiRoot();
+		string classic = File.ReadAllText(Path.Combine(root, "Views", "MainWindow.axaml"));
+		string frontier = File.ReadAllText(Path.Combine(root, "Views", "FrontierMainView.axaml"));
+		string shellRuntime = File.ReadAllText(Path.Combine(root, "Shell", "ZzzShellWindowRuntime.cs"));
+		string runPanel = File.ReadAllText(Path.Combine(root, "Controls", "ZzzRunPanel.axaml"));
+		string componentStyles = File.ReadAllText(Path.Combine(root, "Theme", "ZzzComponentStyles.axaml"));
+		string spacing = File.ReadAllText(Path.Combine(root, "Theme", "ZzzSpacing.axaml"));
+
+		Assert.Contains("x:Name=\"ToastBar\"", classic, StringComparison.Ordinal);
+		Assert.Contains("x:Name=\"ToastBar\"", frontier, StringComparison.Ordinal);
+		Assert.Contains("run.stateChanged", shellRuntime, StringComparison.Ordinal);
+		Assert.Contains("ShowToast", shellRuntime, StringComparison.Ordinal);
+		Assert.Contains("Classes=\"accent zzz-run-command\"", runPanel, StringComparison.Ordinal);
+		Assert.Contains("ColumnSpacing=\"{DynamicResource ZzzRunCommandSpacing}\"", runPanel, StringComparison.Ordinal);
+		Assert.Contains("ZzzRunCommandMinHeight", componentStyles, StringComparison.Ordinal);
+		Assert.Contains("<x:Double x:Key=\"ZzzRunCommandMinHeight\">40</x:Double>", spacing, StringComparison.Ordinal);
+
+		string[] localOverrides =
+		[
+			Path.Combine(root, "Pages", "GameAssistant", "ZzzBattleAssistantPage.axaml"),
+			Path.Combine(root, "Pages", "GameAssistant", "ZzzCommissionAssistantPage.axaml"),
+			Path.Combine(root, "Views", "FrontierPages", "GameAssistant", "FrontierBattleAssistantPage.axaml"),
+			Path.Combine(root, "Views", "FrontierPages", "GameAssistant", "FrontierCommissionAssistantPage.axaml"),
+		];
+		foreach (string path in localOverrides)
+		{
+			string source = File.ReadAllText(path);
+			Assert.DoesNotContain("Value=\"327\"", source, StringComparison.Ordinal);
+			Assert.DoesNotContain("Value=\"508\"", source, StringComparison.Ordinal);
+			Assert.DoesNotContain("Selector=\"Button#PrimaryButton\"", source, StringComparison.Ordinal);
+			Assert.DoesNotContain("Selector=\"Button#StopButton\"", source, StringComparison.Ordinal);
+		}
+	}
+
+	[Fact]
 	public void ShellResourcesDoNotContainExplanatoryProductCopy()
 	{
 		string path = FindGuiRoot();

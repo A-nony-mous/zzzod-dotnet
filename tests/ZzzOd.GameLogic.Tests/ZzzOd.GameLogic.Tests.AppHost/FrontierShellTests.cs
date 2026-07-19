@@ -115,6 +115,31 @@ public sealed class FrontierShellTests
         public void DisposePage() => Disposed++;
     }
 
+    [Fact]
+    public void ShellRunToastUsesRealStateAndTerminalDetails()
+    {
+        Assert.Null(ZzzShellWindowRuntime.CreateRunToast(new ZzzRunStatusDto(ZzzRunState.Idle)));
+
+        ZzzRunToast paused = Assert.IsType<ZzzRunToast>(ZzzShellWindowRuntime.CreateRunToast(new ZzzRunStatusDto(
+            ZzzRunState.Paused,
+            "coffee",
+            "咖啡店")));
+        Assert.Equal("已暂停 咖啡店", paused.Title);
+        Assert.Equal(string.Empty, paused.Message);
+        Assert.Equal(TimeSpan.FromSeconds(3), paused.Duration);
+        Assert.Equal(FAInfoBarSeverity.Warning, paused.Severity);
+
+        ZzzRunToast failed = Assert.IsType<ZzzRunToast>(ZzzShellWindowRuntime.CreateRunToast(new ZzzRunStatusDto(
+            ZzzRunState.Failed,
+            "coffee",
+            "咖啡店",
+            LastStatus: "执行异常",
+            Error: "真实失败")));
+        Assert.Equal("运行异常 咖啡店", failed.Title);
+        Assert.Equal("真实失败", failed.Message);
+        Assert.Equal(FAInfoBarSeverity.Error, failed.Severity);
+    }
+
     public class ShellBackendProxy : DispatchProxy
     {
         private readonly Channel<ZzzBackendEvent> _events = Channel.CreateUnbounded<ZzzBackendEvent>();

@@ -44,6 +44,7 @@ using ZzzOd.Gui.Services.LauncherMedia;
 using ZzzOd.Gui.Services.Notices;
 using ZzzOd.Gui.Services.RunIntent;
 using ZzzOd.Gui.Shell;
+using ZzzOd.Gui.Views.FrontierPages.OneDragon;
 
 namespace ZzzOd.GameLogic.Tests.AppHost;
 
@@ -1108,6 +1109,95 @@ public sealed class GuiParityAndFacadeTests
 			zzzRunPanel.InvokeStopActionAsync().GetAwaiter().GetResult();
 			Assert.Equal("开始", zzzRunPanel.PrimaryActionText);
 			Assert.False(zzzRunPanel.StopActionEnabled);
+		});
+	}
+
+	/// <summary>
+	/// 运行页登记真实目标，并在全局 F9/F10 到达后刷新同一运行状态。
+	/// </summary>
+	[Fact]
+	public void RunPanelTracksTargetAndGlobalRunHotkeys()
+	{
+		EnsureAvaloniaServices();
+		RunOnUiThread(delegate
+		{
+			FakeBackend fakeBackend = new FakeBackend();
+			fakeBackend.SaveConfigScope(new ZzzSaveConfigScopeRequest("env", new Dictionary<string, object>
+			{
+				["key_start_running"] = "F9",
+				["key_stop_running"] = "F10",
+			}));
+			ZzzGuiRunIntentService runIntent = new();
+			ZzzRunPanel runPanel = new ZzzRunPanel(fakeBackend, "one_dragon", runIntent: runIntent, fixedGroupId: "one_dragon");
+			runPanel.OnPageShown();
+
+			Assert.Equal(new ZzzGuiRunTarget("one_dragon", "one_dragon", null), runIntent.CurrentRunTarget);
+			fakeBackend.StartRunAsync(new ZzzStartRunRequest("one_dragon", GroupId: "one_dragon")).GetAwaiter().GetResult();
+			runIntent.PublishGlobalInputPressed("f9");
+			Assert.Equal("暂停", runPanel.PrimaryActionText);
+
+			fakeBackend.PauseRun();
+			runIntent.PublishGlobalInputPressed("f9");
+			Assert.Equal("继续", runPanel.PrimaryActionText);
+
+			fakeBackend.StopRunAsync().GetAwaiter().GetResult();
+			runIntent.PublishGlobalInputPressed("f10");
+			Assert.Equal("开始", runPanel.PrimaryActionText);
+
+			runPanel.OnPageHidden();
+			Assert.Null(runIntent.CurrentRunTarget);
+			runPanel.DisposePage();
+		});
+	}
+
+	/// <summary>
+	/// frontier 运行页重新显示时恢复后端运行状态，并重新登记当前目标。
+	/// </summary>
+	[Fact]
+	public void FrontierRunPanelRestoresStateAfterNavigation()
+	{
+		EnsureAvaloniaServices();
+		RunOnUiThread(delegate
+		{
+			FakeBackend fakeBackend = new FakeBackend(run: new ZzzRunStatusDto(
+				ZzzRunState.Running,
+				"one_dragon",
+				"一条龙",
+				0,
+				"one_dragon"));
+			ZzzGuiRunIntentService runIntent = new();
+			FrontierOneDragonRunPage page = new(fakeBackend, runIntent);
+
+			page.OnPageShown();
+			Assert.Equal("暂停", page.RunPanel.PrimaryActionText);
+			Assert.Equal("one_dragon", runIntent.CurrentRunTarget?.AppId);
+
+			page.OnPageHidden();
+			Assert.Null(runIntent.CurrentRunTarget);
+			page.OnPageShown();
+			Assert.Equal("暂停", page.RunPanel.PrimaryActionText);
+			Assert.Equal("one_dragon", runIntent.CurrentRunTarget?.AppId);
+
+			page.DisposePage();
+		});
+	}
+
+	[Fact]
+	public void RunPanelCommandsRemainEqualAndSeparatedAtNarrowWidth()
+	{
+		EnsureAvaloniaServices();
+		RunOnUiThread(delegate
+		{
+			ZzzRunPanel panel = new(new FakeBackend(), "one_dragon");
+			panel.Measure(new Avalonia.Size(320, 560));
+			panel.Arrange(new Avalonia.Rect(0, 0, 320, 560));
+			Button primary = panel.FindControl<Button>("PrimaryButton")!;
+			Button stop = panel.FindControl<Button>("StopButton")!;
+
+			Assert.Contains("zzz-run-command", primary.Classes);
+			Assert.Contains("zzz-run-command", stop.Classes);
+			Assert.Equal(primary.Bounds.Width, stop.Bounds.Width, 3);
+			panel.DisposePage();
 		});
 	}
 

@@ -70,6 +70,22 @@ internal sealed partial class ZzzLogDisplayCard : UserControl, IZzzPageLifecycle
 
     public void AppendLine(string line) => Append(line);
 
+    internal static string FormatOperationTrace(ZzzOperationTraceDto trace)
+    {
+        ArgumentNullException.ThrowIfNull(trace);
+        string path = trace.ResultKind == "transition" && !string.IsNullOrWhiteSpace(trace.CurrentNode) && !string.IsNullOrWhiteSpace(trace.NextNode)
+            ? $"{trace.CurrentNode} -> {trace.NextNode}"
+            : !string.IsNullOrWhiteSpace(trace.PreviousNode) && !string.IsNullOrWhiteSpace(trace.CurrentNode)
+                ? $"{trace.PreviousNode} -> {trace.CurrentNode}"
+                : trace.CurrentNode ?? trace.NextNode ?? "当前节点";
+        string status = string.IsNullOrWhiteSpace(trace.Status) ? trace.ResultKind ?? "未知" : trace.Status;
+        string retry = trace.RetryCount > 0 ? $"，重试 {trace.RetryCount}" : string.Empty;
+        string exception = string.IsNullOrWhiteSpace(trace.ExceptionType)
+            ? string.Empty
+            : $"，异常 {trace.ExceptionType}: {trace.ExceptionMessage ?? status}";
+        return $"[{trace.Timestamp:HH:mm:ss}] [Operation] {trace.Operation} 节点 {path} 返回状态 {status}{retry}{exception}";
+    }
+
     public void OnPageShown() => Start();
 
     public void OnPageHidden()
@@ -106,13 +122,19 @@ internal sealed partial class ZzzLogDisplayCard : UserControl, IZzzPageLifecycle
                 {
                     while (reader.TryRead(out ZzzBackendEvent? item))
                     {
-                        if (!_active || item.Type != "log.appended" || item.Data is not ZzzLogEntryDto log)
+                        if (!_active)
                         {
                             continue;
                         }
 
-                        string line = $"[{log.Timestamp:HH:mm:ss}] [{log.Level}] {log.Message}";
-                        batch.Add(line);
+                        if (item.Type == "log.appended" && item.Data is ZzzLogEntryDto log)
+                        {
+                            batch.Add($"[{log.Timestamp:HH:mm:ss}] [{log.Level}] {log.Message}");
+                        }
+                        else if (item.Type == "run.operationTrace" && item.Data is ZzzOperationTraceDto trace)
+                        {
+                            batch.Add(FormatOperationTrace(trace));
+                        }
                     }
 
                     if (batch.Count > 0)

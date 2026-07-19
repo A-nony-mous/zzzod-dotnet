@@ -16,10 +16,13 @@
     <fa:FAComboBox x:Name="AppCombo"
                    Grid.Row="2" Margin="0,0,0,8"
                    MinWidth="260" />
-    <Grid ColumnDefinitions="*,8,*" Grid.Row="3" Margin="0,0,0,8">
+    <Grid ColumnDefinitions="*,*"
+          ColumnSpacing="{DynamicResource ZzzRunCommandSpacing}"
+          Grid.Row="3"
+          Margin="0,0,0,8">
       <Button x:Name="PrimaryButton"
               Grid.Column="0"
-              Classes="accent">
+              Classes="accent zzz-run-command">
         <StackPanel Orientation="Horizontal"
                     Spacing="8">
           <fa:FASymbolIcon x:Name="PrimaryIcon"
@@ -29,7 +32,8 @@
         </StackPanel>
       </Button>
       <Button x:Name="StopButton"
-              Grid.Column="2"
+              Grid.Column="1"
+              Classes="zzz-run-command"
               IsEnabled="False">
         <StackPanel Orientation="Horizontal"
                     Spacing="8">

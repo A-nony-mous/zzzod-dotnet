@@ -11,6 +11,9 @@
   <x:Double x:Key="ZzzWindowControlWidth">46</x:Double>
   <x:Double x:Key="ZzzIconCommandSize">36</x:Double>
   <x:Double x:Key="ZzzCommandHeight">34</x:Double>
+  <x:Double x:Key="ZzzRunCommandMinHeight">40</x:Double>
+  <x:Double x:Key="ZzzRunCommandSpacing">12</x:Double>
+  <Thickness x:Key="ZzzRunCommandPadding">16,8</Thickness>
   <x:Double x:Key="ZzzListRowHeight">40</x:Double>
   <Thickness x:Key="ZzzShellContentMargin">11,32,11,0</Thickness>
   <Thickness x:Key="ZzzPagePadding">24</Thickness>
