@@ -45,6 +45,7 @@ internal sealed partial class FrontierOneDragonRunPage : UserControl, IZzzPageLi
     private readonly ZzzAppSettingNavigator _appSettingNavigator;
     private readonly FASettingsExpander _appList;
     private readonly FAInfoBar _actionInfoBar;
+    private readonly DispatcherTimer _actionInfoTimer;
     private readonly ToggleSwitch _notifyToggle;
     private readonly FAComboBox _instanceRunCombo;
     private readonly FAComboBox _afterDoneCombo;
@@ -80,6 +81,8 @@ internal sealed partial class FrontierOneDragonRunPage : UserControl, IZzzPageLi
         AvaloniaXamlLoader.Load(this);
         _appList = Required<FASettingsExpander>("AppList");
         _actionInfoBar = Required<FAInfoBar>("ActionInfoBar");
+        _actionInfoTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(4) };
+        _actionInfoTimer.Tick += OnActionInfoTimerTick;
         _notifyToggle = Required<ToggleSwitch>("NotifyToggle");
         _instanceRunCombo = Required<FAComboBox>("InstanceRunCombo");
         _afterDoneCombo = Required<FAComboBox>("AfterDoneCombo");
@@ -128,6 +131,7 @@ internal sealed partial class FrontierOneDragonRunPage : UserControl, IZzzPageLi
     public void OnPageLeave()
     {
         StopEvents();
+        HideActionToast();
         _appNotifyTip.IsOpen = false;
         RunPanel.OnPageLeave();
     }
@@ -135,6 +139,7 @@ internal sealed partial class FrontierOneDragonRunPage : UserControl, IZzzPageLi
     public void OnPageHidden()
     {
         StopEvents();
+        HideActionToast();
         _appNotifyTip.IsOpen = false;
         RunPanel.OnPageHidden();
     }
@@ -142,6 +147,8 @@ internal sealed partial class FrontierOneDragonRunPage : UserControl, IZzzPageLi
     public void DisposePage()
     {
         StopEvents();
+        HideActionToast();
+        _actionInfoTimer.Tick -= OnActionInfoTimerTick;
         _appNotifyTip.IsOpen = false;
         RunPanel.DisposePage();
     }
@@ -469,6 +476,19 @@ internal sealed partial class FrontierOneDragonRunPage : UserControl, IZzzPageLi
         _actionInfoBar.Message = message;
         _actionInfoBar.Severity = severity;
         _actionInfoBar.IsOpen = true;
+        _actionInfoTimer.Stop();
+        _actionInfoTimer.Interval = severity is FAInfoBarSeverity.Error
+            ? TimeSpan.FromSeconds(8)
+            : TimeSpan.FromSeconds(4);
+        _actionInfoTimer.Start();
+    }
+
+    private void OnActionInfoTimerTick(object? sender, EventArgs args) => HideActionToast();
+
+    private void HideActionToast()
+    {
+        _actionInfoTimer.Stop();
+        _actionInfoBar.IsOpen = false;
     }
 
     private static void OpenUrl(string url)

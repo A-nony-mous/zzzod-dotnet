@@ -7,11 +7,8 @@
         ColumnDefinitions="*,10,*">
     <Grid Grid.Column="0"
           RowDefinitions="Auto,*">
-      <fa:FAInfoBar x:Name="ActionInfoBar"
-                  IsOpen="False"
-                  IsClosable="True"
-                  Severity="Informational" />
-      <ScrollViewer Grid.Row="1"
+      <ScrollViewer Grid.Row="0"
+                    Grid.RowSpan="2"
                     HorizontalScrollBarVisibility="Disabled"
                     VerticalScrollBarVisibility="Auto">
         <fa:FASettingsExpander x:Name="AppList"
@@ -150,6 +147,16 @@
                       HorizontalContentAlignment="Stretch"
                       VerticalContentAlignment="Stretch" />
     </Grid>
+
+    <fa:FAInfoBar x:Name="ActionInfoBar"
+                  Grid.Column="0"
+                  Margin="0,8,24,0"
+                  HorizontalAlignment="Right"
+                  VerticalAlignment="Top"
+                  IsOpen="False"
+                  IsClosable="True"
+                  Severity="Informational"
+                  ZIndex="10" />
 
     <fa:FATeachingTip x:Name="AppNotifyTip"
                     IsLightDismissEnabled="True"
