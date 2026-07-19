@@ -24,10 +24,13 @@ config/dodge/*
 config/auto_battle/*
 !config/auto_battle/*.sample.yml
 !config/auto_battle/*.merged.yml
+!config/auto_battle/docs/
+!config/auto_battle/docs/文档讲解示例.sample.yml
 config/auto_battle_state_handler/*
 !config/auto_battle_state_handler/*.sample.yml
 config/auto_battle_operation/*
 !config/auto_battle_operation/*.sample.yml
+!config/auto_battle_operation/掉血闪避.yml
 config/hollow_zero_challenge/*
 !config/hollow_zero_challenge/*.sample.yml
 config/lost_void_challenge/*
