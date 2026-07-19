@@ -195,6 +195,30 @@ public sealed class SettingsViewModelTests
     }
 
     [Fact]
+    public void CustomSettingsPagesKeepTheirViewModelWhenAttachedToAHostContext()
+    {
+        IZzzAppBackend backend = DispatchProxy.Create<IZzzAppBackend, RecordingBackendProxy>();
+        string runRoot = Path.Combine(Path.GetTempPath(), "zzzod-settings-datacontext", Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(runRoot);
+        try
+        {
+            GuiParityAndFacadeTests.RunOnUiThread(() =>
+            {
+                AssertCustomPageOwnsDataContext(
+                    new ZzzCustomSettingsAxamlPage(backend, new ZzzLauncherMediaService(new ZzzRunRoot(runRoot), backend)));
+                AssertCustomPageOwnsDataContext(
+                    new ZzzOd.Gui.Views.FrontierPages.Settings.FrontierCustomSettingsPage(
+                        backend,
+                        new ZzzLauncherMediaService(new ZzzRunRoot(runRoot), backend)));
+            });
+        }
+        finally
+        {
+            Directory.Delete(runRoot, recursive: true);
+        }
+    }
+
+    [Fact]
     public void CustomSettingsFirstShowSelectsEachClosedComboBoxItem()
     {
         IZzzAppBackend backend = DispatchProxy.Create<IZzzAppBackend, RecordingBackendProxy>();
@@ -235,5 +259,28 @@ public sealed class SettingsViewModelTests
         Assert.Equal(expectedIndex, comboBox.SelectedIndex);
         ZzzCustomOption option = Assert.IsType<ZzzCustomOption>(comboBox.SelectedItem);
         Assert.Equal(expectedLabel, option.Label);
+    }
+
+    private static void AssertCustomPageOwnsDataContext(Control page)
+    {
+        Window window = new()
+        {
+            DataContext = new object(),
+            Content = page,
+        };
+        try
+        {
+            window.Show();
+            Assert.IsType<ZzzCustomSettingsViewModel>(page.DataContext);
+        }
+        finally
+        {
+            if (page is IZzzPageLifecycle lifecycle)
+            {
+                lifecycle.DisposePage();
+            }
+
+            window.Close();
+        }
     }
 }

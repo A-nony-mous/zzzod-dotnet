@@ -64,6 +64,7 @@ internal sealed partial class ZzzCustomSettingsAxamlPage : UserControl, IZzzPage
         viewModel.CustomBannerSelectionRequested += SelectCustomBannerAsync;
         AvaloniaXamlLoader.Load(this);
         _viewModel = viewModel;
+        DataContext = _viewModel;
         _customThemeColorToggle = Required<ToggleSwitch>("CustomThemeColorToggle");
         _customBannerToggle = Required<ToggleSwitch>("CustomBannerToggle");
         _themeColorPassword = Required<TextBox>("ThemeColorPassword");
@@ -76,9 +77,7 @@ internal sealed partial class ZzzCustomSettingsAxamlPage : UserControl, IZzzPage
 
     public void OnPageShown()
     {
-        DataContext = null;
         _viewModel.OnPageShown();
-        DataContext = _viewModel;
         ApplySelectedOptions();
     }
     public void OnPageHidden() => (DataContext as IZzzPageLifecycle)?.OnPageHidden();
