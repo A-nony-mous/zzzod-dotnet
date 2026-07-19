@@ -25,6 +25,7 @@ using ZzzOd.GameLogic.Application.HollowZero.LostVoid;
 using ZzzOd.GameLogic.Application.HollowZero.WitheredDomain;
 using ZzzOd.GameLogic.Application.IntelBoard;
 using ZzzOd.GameLogic.Application.LifeOnLine;
+using ZzzOd.GameLogic.Application.OneDragonApp;
 using ZzzOd.GameLogic.Application.RedemptionCode;
 using ZzzOd.GameLogic.Application.ShiyuDefense;
 using ZzzOd.GameLogic.Application.WorldPatrol;
@@ -320,7 +321,7 @@ public sealed class ZzzAppBackend : IZzzAppBackend, IZzzIntelBoardProgressBacken
 			ZContext zContext = _runtime.EnsureContext();
 			int value = instanceIndex ?? _runtime.ActiveInstanceIndex;
 			IReadOnlyList<string> registeredAppIds = zContext.RunContext.DefaultGroupApps.Where((string appId) => !string.Equals(appId, "one_dragon", StringComparison.Ordinal)).ToArray();
-			ZzzBackendResult<ZzzConfigScopeValuesDto> zzzBackendResult = _configScopes.Read("one-dragon-group", value, "default");
+			ZzzBackendResult<ZzzConfigScopeValuesDto> zzzBackendResult = _configScopes.Read("one-dragon-group", value, ZOneDragonAppConstants.DefaultGroupId);
 			if (!zzzBackendResult.Success || (object)zzzBackendResult.Value == null)
 			{
 				return ZzzBackendResult<IReadOnlyList<ZzzOneDragonAppDto>>.Fail(zzzBackendResult.ErrorCode ?? ZzzBackendErrorCode.NotReady, zzzBackendResult.Error ?? "一条龙应用组不可用。");
@@ -330,7 +331,7 @@ public sealed class ZzzAppBackend : IZzzAppBackend, IZzzIntelBoardProgressBacken
 			ZzzOneDragonAppMergeResult zzzOneDragonAppMergeResult = ZzzOneDragonAppListMerger.Merge(savedApps, registeredAppIds);
 			if (zzzOneDragonAppMergeResult.Changed)
 			{
-				ZzzBackendResult<ZzzConfigScopeValuesDto> zzzBackendResult2 = _configScopes.Save(new ZzzSaveConfigScopeRequest("one-dragon-group", new Dictionary<string, object> { ["app_list"] = zzzOneDragonAppMergeResult.AllApps }, value, "default"));
+				ZzzBackendResult<ZzzConfigScopeValuesDto> zzzBackendResult2 = _configScopes.Save(new ZzzSaveConfigScopeRequest("one-dragon-group", new Dictionary<string, object> { ["app_list"] = zzzOneDragonAppMergeResult.AllApps }, value, ZOneDragonAppConstants.DefaultGroupId));
 				if (!zzzBackendResult2.Success)
 				{
 					return ZzzBackendResult<IReadOnlyList<ZzzOneDragonAppDto>>.Fail(zzzBackendResult2.ErrorCode ?? ZzzBackendErrorCode.NotReady, zzzBackendResult2.Error ?? "一条龙应用组保存失败。");
@@ -361,7 +362,7 @@ public sealed class ZzzAppBackend : IZzzAppBackend, IZzzIntelBoardProgressBacken
 			int value = request.InstanceIndex ?? _runtime.ActiveInstanceIndex;
 			IReadOnlyList<string> readOnlyList = zContext.RunContext.DefaultGroupApps.Where((string appId) => !string.Equals(appId, "one_dragon", StringComparison.Ordinal)).ToArray();
 			HashSet<string> registeredAppIds = readOnlyList.ToHashSet<string>(StringComparer.Ordinal);
-			ZzzBackendResult<ZzzConfigScopeValuesDto> zzzBackendResult = _configScopes.Read("one-dragon-group", value, "default");
+			ZzzBackendResult<ZzzConfigScopeValuesDto> zzzBackendResult = _configScopes.Read("one-dragon-group", value, ZOneDragonAppConstants.DefaultGroupId);
 			if (!zzzBackendResult.Success || (object)zzzBackendResult.Value == null)
 			{
 				return ZzzBackendResult<IReadOnlyList<ZzzOneDragonAppDto>>.Fail(zzzBackendResult.ErrorCode ?? ZzzBackendErrorCode.NotReady, zzzBackendResult.Error ?? "一条龙应用组不可用。");
@@ -378,7 +379,7 @@ public sealed class ZzzAppBackend : IZzzAppBackend, IZzzIntelBoardProgressBacken
 			{
 				return ZzzBackendResult<IReadOnlyList<ZzzOneDragonAppDto>>.Fail(ZzzBackendErrorCode.Validation, ex.Message);
 			}
-			ZzzBackendResult<ZzzConfigScopeValuesDto> zzzBackendResult2 = _configScopes.Save(new ZzzSaveConfigScopeRequest("one-dragon-group", new Dictionary<string, object> { ["app_list"] = value3 }, value, "default"));
+			ZzzBackendResult<ZzzConfigScopeValuesDto> zzzBackendResult2 = _configScopes.Save(new ZzzSaveConfigScopeRequest("one-dragon-group", new Dictionary<string, object> { ["app_list"] = value3 }, value, ZOneDragonAppConstants.DefaultGroupId));
 			return (ZzzBackendResult<IReadOnlyList<ZzzOneDragonAppDto>>)(zzzBackendResult2.Success ? ((object)GetOneDragonApps(value)) : ((object)ZzzBackendResult<IReadOnlyList<ZzzOneDragonAppDto>>.Fail(zzzBackendResult2.ErrorCode ?? ZzzBackendErrorCode.NotReady, zzzBackendResult2.Error ?? "一条龙应用组保存失败。")));
 		}
 		catch (Exception ex2)
