@@ -357,6 +357,11 @@ public sealed class DefaultIntelBoardOperationServices : IIntelBoardOperationSer
 			return Task.FromResult(new OperationResult(IsSuccess: false, "未获取截图"));
 		}
 		IReadOnlyList<OcrMatchResult> sortedOcrResults = GetSortedOcrResults(context, screen);
+		if (FindText(sortedOcrResults, "至少选择1位代理人出战"))
+		{
+			OperationResult result = ClickTextByPriority(context, new string[] { "确认" }, null, screen, sortedOcrResults);
+			return Task.FromResult(result.IsSuccess ? new OperationResult(IsSuccess: true, "未选择代理人", result.Data) : result);
+		}
 		return Task.FromResult(FindText(sortedOcrResults, "委托代行中") ? ClickTextByPriority(context, new string[] { "确认" }, null, screen, sortedOcrResults) : new OperationResult(IsSuccess: true, "无弹窗"));
 	}
 

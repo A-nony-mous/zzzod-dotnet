@@ -24,6 +24,9 @@ public sealed class IntelBoardOperation : ZOperation
 	/// <summary>接取失败。</summary>
 	public const string StatusAcceptFailed = "接取失败";
 
+	/// <summary>未选择代理人。</summary>
+	public const string StatusNoAgentSelected = "未选择代理人";
+
 	/// <summary>自动战斗中。</summary>
 	public const string StatusAutoBattleRunning = "自动战斗中";
 
@@ -289,6 +292,7 @@ public sealed class IntelBoardOperation : ZOperation
 	/// 点击出战。
 	/// </summary>
 	[NodeFrom("选择预备编队")]
+	[NodeFrom("选择任意预备编队")]
 	[OperationNode("点击出战")]
 	public async Task<OperationRoundResult> ClickDeploy()
 	{
@@ -302,7 +306,24 @@ public sealed class IntelBoardOperation : ZOperation
 	[OperationNode("委托代行中弹窗")]
 	public async Task<OperationRoundResult> ClickCommissionAgent()
 	{
-		return RoundByOperationResult(await _services.ConfirmCommissionAgentAsync(base.ZContext, base.LastScreenshot).ConfigureAwait(continueOnCapturedContext: false), null, retryOnFail: true);
+		OperationResult result = await _services.ConfirmCommissionAgentAsync(base.ZContext, base.LastScreenshot).ConfigureAwait(continueOnCapturedContext: false);
+		return result.IsSuccess && string.Equals(result.Status, "未选择代理人", StringComparison.Ordinal) ? RoundSuccess("未选择代理人", result.Data, TimeSpan.FromSeconds(1L)) : RoundByOperationResult(result, null, retryOnFail: true);
+	}
+
+	/// <summary>
+	/// 选择首个预备编队后重新出战。
+	/// </summary>
+	[NodeFrom("委托代行中弹窗", Status = "未选择代理人")]
+	[OperationNode("选择任意预备编队")]
+	public async Task<OperationRoundResult> ChooseAnyPredefinedTeam()
+	{
+		ZzzOd.GameLogic.Config.PredefinedTeamInfo fallbackTeam = base.ZContext.TeamConfig.TeamList.FirstOrDefault();
+		if (fallbackTeam == null)
+		{
+			return RoundFail("没有可用预备编队");
+		}
+		base.ZContext.Logger.Warning("情报板出战未选择代理人，使用预备编队 {TeamName} 重新出战", fallbackTeam.Name);
+		return RoundByOperationResult(await _services.ChooseTeamAsync(base.ZContext, fallbackTeam.Idx).ConfigureAwait(continueOnCapturedContext: false));
 	}
 
 	/// <summary>
