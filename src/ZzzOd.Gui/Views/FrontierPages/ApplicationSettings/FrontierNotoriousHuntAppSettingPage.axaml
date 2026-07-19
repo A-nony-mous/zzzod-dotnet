@@ -1,7 +1,7 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:fa="using:FluentAvalonia.UI.Controls"
-             xmlns:local="using:ZzzOd.Gui.Pages.ApplicationSettings"
+             xmlns:local="using:ZzzOd.Gui.Views.FrontierPages.ApplicationSettings"
              x:Class="ZzzOd.Gui.Views.FrontierPages.ApplicationSettings.FrontierNotoriousHuntAppSettingPage">
   <UserControl.Resources>
     <DataTemplate x:Key="NotoriousHuntPlanTemplate"

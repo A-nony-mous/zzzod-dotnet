@@ -1,7 +1,7 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:fa="using:FluentAvalonia.UI.Controls"
-             xmlns:local="using:ZzzOd.Gui.Pages.Standalone"
+             xmlns:local="using:ZzzOd.Gui.Views.FrontierPages.Standalone"
              x:Class="ZzzOd.Gui.Views.FrontierPages.Standalone.FrontierStandaloneAppRunPage">
   <Grid Margin="{DynamicResource SampleAppPageMargin}"
         ColumnDefinitions="*,10,*">

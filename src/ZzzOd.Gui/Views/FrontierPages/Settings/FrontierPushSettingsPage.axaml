@@ -1,7 +1,7 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:fa="using:FluentAvalonia.UI.Controls"
-             xmlns:settings="using:ZzzOd.Gui.Pages.Settings"
+             xmlns:settings="using:ZzzOd.Gui.Views.FrontierPages.Settings"
              x:Class="ZzzOd.Gui.Views.FrontierPages.Settings.FrontierPushSettingsPage">
   <ScrollViewer HorizontalScrollBarVisibility="Disabled"
                 VerticalScrollBarVisibility="Auto">

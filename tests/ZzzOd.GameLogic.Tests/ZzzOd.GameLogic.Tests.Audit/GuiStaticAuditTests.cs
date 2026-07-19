@@ -283,6 +283,41 @@ public sealed class GuiStaticAuditTests
 	}
 
 	[Fact]
+	public void FrontierCollectionTemplatesUseTheirRuntimeModelNamespaces()
+	{
+		string root = Path.Combine(FindGuiRoot(), "Views", "FrontierPages");
+		string standalone = File.ReadAllText(Path.Combine(root, "Standalone", "FrontierStandaloneAppRunPage.axaml"));
+		string resourceDownload = File.ReadAllText(Path.Combine(root, "Settings", "FrontierResourceDownloadPage.axaml"));
+		string environment = File.ReadAllText(Path.Combine(root, "Settings", "FrontierEnvironmentSettingsPage.axaml"));
+		string push = File.ReadAllText(Path.Combine(root, "Settings", "FrontierPushSettingsPage.axaml"));
+		string notoriousHunt = File.ReadAllText(Path.Combine(root, "ApplicationSettings", "FrontierNotoriousHuntAppSettingPage.axaml"));
+		string redemptionCode = File.ReadAllText(Path.Combine(root, "ApplicationSettings", "FrontierRedemptionCodeAppSettingPage.axaml"));
+		string shiyuDefense = File.ReadAllText(Path.Combine(root, "ApplicationSettings", "FrontierShiyuDefenseAppSettingPage.axaml"));
+
+		Assert.Contains("xmlns:local=\"using:ZzzOd.Gui.Views.FrontierPages.Standalone\"", standalone, StringComparison.Ordinal);
+		Assert.Contains("x:DataType=\"local:ZzzStandaloneAppRowModel\"", standalone, StringComparison.Ordinal);
+		Assert.Contains("xmlns:local=\"using:ZzzOd.Gui.Views.FrontierPages.Settings\"", resourceDownload, StringComparison.Ordinal);
+		Assert.Contains("x:DataType=\"local:ZzzResourceModelOption\"", resourceDownload, StringComparison.Ordinal);
+		Assert.Contains("xmlns:local=\"using:ZzzOd.Gui.Views.FrontierPages.Settings\"", environment, StringComparison.Ordinal);
+		Assert.Contains("x:DataType=\"local:ZzzEnvironmentOption\"", environment, StringComparison.Ordinal);
+		Assert.Contains("xmlns:settings=\"using:ZzzOd.Gui.Views.FrontierPages.Settings\"", push, StringComparison.Ordinal);
+		Assert.Contains("x:DataType=\"settings:ZzzPushFieldModel\"", push, StringComparison.Ordinal);
+		Assert.Contains("xmlns:local=\"using:ZzzOd.Gui.Views.FrontierPages.ApplicationSettings\"", notoriousHunt, StringComparison.Ordinal);
+		Assert.Contains("x:DataType=\"local:ZzzNotoriousHuntPlanRowModel\"", notoriousHunt, StringComparison.Ordinal);
+		Assert.Contains("xmlns:local=\"using:ZzzOd.Gui.Views.FrontierPages.ApplicationSettings\"", redemptionCode, StringComparison.Ordinal);
+		Assert.Contains("x:DataType=\"local:ZzzRedemptionCodeRowModel\"", redemptionCode, StringComparison.Ordinal);
+		Assert.Contains("xmlns:local=\"using:ZzzOd.Gui.Views.FrontierPages.ApplicationSettings\"", shiyuDefense, StringComparison.Ordinal);
+		Assert.Contains("x:DataType=\"local:ZzzShiyuDefenseTeamRowModel\"", shiyuDefense, StringComparison.Ordinal);
+
+		foreach (string content in new[] { standalone, resourceDownload, environment, push, notoriousHunt, redemptionCode, shiyuDefense })
+		{
+			Assert.DoesNotContain("using:ZzzOd.Gui.Pages.Standalone", content, StringComparison.Ordinal);
+			Assert.DoesNotContain("using:ZzzOd.Gui.Pages.Settings", content, StringComparison.Ordinal);
+			Assert.DoesNotContain("using:ZzzOd.Gui.Pages.ApplicationSettings", content, StringComparison.Ordinal);
+		}
+	}
+
+	[Fact]
 	public void FrontierApplicationSettingsFactoryMapsEveryRegisteredProvider()
 	{
 		string path = FindGuiRoot();
