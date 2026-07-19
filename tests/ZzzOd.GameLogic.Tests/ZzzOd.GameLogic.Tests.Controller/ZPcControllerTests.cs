@@ -308,6 +308,67 @@ public class ZPcControllerTests
 	}
 
 	[Fact]
+	public void EmergencyStop_BlocksLateForegroundBattleInput()
+	{
+		RecordingButtonController buttons = new RecordingButtonController();
+		RecordingInputController input = new RecordingInputController(buttons);
+		List<(float Dx, float Dy)> moves = new List<(float, float)>();
+		ZPcController controller = new ZPcController(new GameConfig(), null, 1920, 1080, null, input, null, buttons, null, null, skipForegroundActivation: true, (dx, dy) => moves.Add((dx, dy)));
+		controller.EnableInputForGeneration(42);
+		Assert.True(controller.EmergencyReleaseAll(42));
+
+		controller.Dodge();
+		controller.NormalAttack(press: true);
+		controller.TurnByDistance(100f);
+		bool clicked = controller.Click(new OneDragon.Core.Abstractions.Geometry.Point(960, 540));
+
+		Assert.False(clicked);
+		Assert.Empty(buttons.Taps);
+		Assert.Empty(buttons.Presses);
+		Assert.Empty(buttons.Releases);
+		Assert.Empty(input.Clicks);
+		Assert.Empty(moves);
+	}
+
+	[Fact]
+	public void EmergencyStop_BlocksLateBackgroundGamepadInput()
+	{
+		RecordingButtonController backgroundButtons = new RecordingButtonController();
+		RecordingGamepadController gamepad = new RecordingGamepadController();
+		ZPcController controller = new ZPcController(
+			new GameConfig { BackgroundMode = true, BackgroundGamepadType = "xbox", GamepadTurnSpeed = 1000f },
+			null,
+			1920,
+			1080,
+			null,
+			null,
+			new RecordingInputController(backgroundButtons),
+			null,
+			backgroundButtons,
+			gamepad,
+			skipForegroundActivation: true);
+		controller.ApplyRuntimeControlMode();
+		controller.EnableInputForGeneration(43);
+		Assert.True(controller.EmergencyReleaseAll(43));
+
+		controller.Dodge();
+		controller.EnsureGamepadMode();
+		controller.TurnByDistance(100f);
+		controller.MoveGamepadRightStick(1f, 0f, TimeSpan.FromMilliseconds(100));
+		bool opened = controller.OpenMap();
+
+		Assert.False(opened);
+		Assert.Empty(gamepad.Taps);
+		Assert.Empty(gamepad.Presses);
+		Assert.Empty(gamepad.Releases);
+		Assert.Empty(gamepad.ComboTaps);
+		Assert.Empty(gamepad.StickMoves);
+		Assert.Empty(backgroundButtons.Taps);
+		Assert.Empty(backgroundButtons.Presses);
+		Assert.Empty(backgroundButtons.Releases);
+	}
+
+	[Fact]
 	public void FillUidBlack_UsesYoloDefaultColor()
 	{
 		OpenCvTestRuntime.RequireAvailable();

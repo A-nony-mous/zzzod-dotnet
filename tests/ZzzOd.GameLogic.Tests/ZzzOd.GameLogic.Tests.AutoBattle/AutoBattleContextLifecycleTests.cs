@@ -206,6 +206,32 @@ public class AutoBattleContextLifecycleTests
 	}
 
 	[Fact]
+	public void RunSessionEmergencyStop_StopsAutoBattleParticipant()
+	{
+		string text = CreateTempRoot();
+		try
+		{
+			WriteResumeConfig(text);
+			using ZContext ctx = new ZContext(new OneDragonEnvironment(text));
+			Assert.True(ctx.RunContext.StartRunning());
+			AutoBattleContext autoBattleContext = ctx.AutoBattleContext;
+			autoBattleContext.InitAutoOp("resume");
+			autoBattleContext.StartAutoBattle();
+			Assert.True(autoBattleContext.IsRuntimeRunning);
+			Assert.True(autoBattleContext.AutoOp!.IsRunning);
+
+			ctx.RunContext.StopRunningAsync().GetAwaiter().GetResult();
+
+			Assert.False(autoBattleContext.IsRuntimeRunning);
+			Assert.False(autoBattleContext.AutoOp.IsRunning);
+		}
+		finally
+		{
+			Directory.Delete(text, recursive: true);
+		}
+	}
+
+	[Fact]
 	public void InitBattleContext_PreservesLastBattleScreenState()
 	{
 		using ZContext ctx = new ZContext(new OneDragonEnvironment("test_project", "test_user_id"));

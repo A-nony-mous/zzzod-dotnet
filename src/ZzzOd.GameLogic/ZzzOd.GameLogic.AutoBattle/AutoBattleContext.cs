@@ -6,10 +6,12 @@ using System.Linq;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
+using OneDragon.Core.Abstractions.Runtime;
 using OneDragon.Core.Inference;
 using OneDragon.Core.Matcher;
 using OneDragon.Core.Ocr;
 using OneDragon.Core.Operation;
+using OneDragon.Core.Runtime;
 using OneDragon.Core.Screen;
 using OneDragon.Core.Utils;
 using OpenCvSharp;
@@ -21,7 +23,7 @@ using ZzzOd.GameLogic.GameData;
 
 namespace ZzzOd.GameLogic.AutoBattle;
 
-public class AutoBattleContext
+public class AutoBattleContext : IRunParticipant
 {
 	private static readonly string[] DirectMlProvider = new string[1] { GpuExecutor.GetDirectMlProviderName() };
 
@@ -32,6 +34,8 @@ public class AutoBattleContext
 	private readonly ZContext _ctx;
 
 	private readonly object _lifecycleLock = new object();
+
+	private RunSession? _registeredRunSession;
 
 	private readonly object _checkChainLock = new object();
 
@@ -190,6 +194,8 @@ public class AutoBattleContext
 
 	public bool IsRuntimeRunning { get; private set; }
 
+	public string Name => "AutoBattleContext";
+
 	private ZPcController Controller => (_ctx.Controller as ZPcController) ?? throw new InvalidOperationException("AutoBattle atomic operation requires ZPcController.");
 
 	private OneDragon.Core.Screen.ScreenArea CheckDistanceArea => _checkDistanceArea ?? (_checkDistanceArea = RequireScreenArea("距离显示区域"));
@@ -259,7 +265,7 @@ public class AutoBattleContext
 
 	public void StartAutoBattle()
 	{
-		if (AutoOp != null)
+		if (AutoOp != null && TryRegisterCurrentRunSession())
 		{
 			AutoUltimateEnabled = true;
 			InitBattleContext();
@@ -271,7 +277,7 @@ public class AutoBattleContext
 
 	public void ResumeAutoBattle()
 	{
-		if (AutoOp != null)
+		if (AutoOp != null && TryRegisterCurrentRunSession())
 		{
 			AutoOp.StartRunningAsync();
 			StartContextAsync(startOperator: false);
@@ -316,6 +322,11 @@ public class AutoBattleContext
 
 	public void StartContextAsync(bool startOperator = true)
 	{
+		if (!TryRegisterCurrentRunSession())
+		{
+			return;
+		}
+
 		lock (_lifecycleLock)
 		{
 			if (!IsRuntimeRunning)
@@ -332,6 +343,11 @@ public class AutoBattleContext
 
 	public void ResumeContextAsync()
 	{
+		if (!TryRegisterCurrentRunSession())
+		{
+			return;
+		}
+
 		AutoOp?.StartRunningAsync();
 		StartContextAsync(startOperator: false);
 		ClearAllStates();
@@ -361,6 +377,41 @@ public class AutoBattleContext
 			AutoOp?.StopRunning();
 		}
 		ReleaseKeysIfControllerReady();
+	}
+
+	public void RequestEmergencyStop(RunTerminationReason reason)
+	{
+		StopAutoBattle();
+	}
+
+	public Task ReleaseRunResourcesAsync(CancellationToken cancellationToken)
+	{
+		return Task.CompletedTask;
+	}
+
+	private bool TryRegisterCurrentRunSession()
+	{
+		RunSession? runSession = _ctx.RunContext.ActiveRunSession;
+		if (runSession is null)
+		{
+			return true;
+		}
+
+		lock (_lifecycleLock)
+		{
+			if (!runSession.IsActive)
+			{
+				return false;
+			}
+
+			if (!ReferenceEquals(_registeredRunSession, runSession))
+			{
+				_registeredRunSession = runSession;
+				runSession.RegisterParticipant(this);
+			}
+
+			return runSession.IsActive;
+		}
 	}
 
 	public void AfterAppShutdown()

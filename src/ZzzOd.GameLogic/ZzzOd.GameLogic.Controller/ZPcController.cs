@@ -225,6 +225,11 @@ public sealed class ZPcController : WindowsGameController, IZzzControllerActions
 	private void ActionBtn(string key, bool press = false, TimeSpan? pressTime = null, bool release = false)
 	{
 		Log.Information("ZPcController ActionBtn: key={Key}, press={Press}, release={Release}, pressTimeMs={PressTimeMs}, backgroundMode={BackgroundMode}", key, press, release, pressTime?.TotalMilliseconds, base.IsBackgroundMode);
+		if (!IsInputAllowed)
+		{
+			return;
+		}
+
 		if (!TryHandleBackgroundGamepadButton(key, press, pressTime, release))
 		{
 			if (press)
@@ -538,7 +543,7 @@ public sealed class ZPcController : WindowsGameController, IZzzControllerActions
 
 	private void MoveMouseRelative(float dx, float dy)
 	{
-		if (dx == 0f && dy == 0f)
+		if (!IsInputAllowed || (dx == 0f && dy == 0f))
 		{
 			return;
 		}
