@@ -1903,7 +1903,7 @@ public sealed class ZzzAppBackend : IZzzAppBackend, IZzzIntelBoardProgressBacken
 			ZContext zContext = _runtime.TryGetContext();
 			if (zContext == null)
 			{
-				return ZzzBackendResult<ZzzBattleAssistantRuntimeDto>.Fail(ZzzBackendErrorCode.NotReady, "运行上下文未初始化。");
+				return ZzzBackendResult<ZzzBattleAssistantRuntimeDto>.Ok(EmptyBattleAssistantRuntime());
 			}
 			_battleAssistantRuntimeSource.Attach(zContext);
 			AutoBattleOperator autoOp = zContext.AutoBattleContext.AutoOp;
@@ -2424,10 +2424,6 @@ public sealed class ZzzAppBackend : IZzzAppBackend, IZzzIntelBoardProgressBacken
 	{
 		using (_lock.EnterScope())
 		{
-			if (_runtime.TryGetContext() == null)
-			{
-				return ZzzBackendResult<ZzzRunStatusDto>.Fail(ZzzBackendErrorCode.NotReady, "运行上下文未初始化。");
-			}
 			return ZzzBackendResult<ZzzRunStatusDto>.Ok(GetCurrentRunCore());
 		}
 	}

@@ -393,18 +393,23 @@ public sealed class AppHostRuntimeTests
 	}
 
 	/// <summary>
-	/// 运行状态和战斗助手状态不能用本地空值掩盖尚未创建的运行上下文。
+	/// 尚未创建运行上下文时，查询接口返回真实空闲状态且不会触发上下文构造。
 	/// </summary>
 	[Fact]
-	public void BackendReportsNotReadyBeforeContextExists()
+	public void BackendReturnsIdleBeforeContextExistsWithoutCreatingIt()
 	{
 		using BackendHarness backendHarness = BackendHarness.Create();
+		Assert.Null(backendHarness.Runtime.TryGetContext());
+
 		ZzzBackendResult<ZzzRunStatusDto> currentRun = backendHarness.Backend.GetCurrentRun();
 		ZzzBackendResult<ZzzBattleAssistantRuntimeDto> battleAssistantRuntime = backendHarness.Backend.GetBattleAssistantRuntime();
-		Assert.False(currentRun.Success);
-		Assert.Equal(ZzzBackendErrorCode.NotReady, currentRun.ErrorCode);
-		Assert.False(battleAssistantRuntime.Success);
-		Assert.Equal(ZzzBackendErrorCode.NotReady, battleAssistantRuntime.ErrorCode);
+
+		Assert.True(currentRun.Success);
+		Assert.Equal(ZzzRunState.Idle, currentRun.Value.State);
+		Assert.True(battleAssistantRuntime.Success);
+		Assert.False(battleAssistantRuntime.Value.IsRunning);
+		Assert.Empty(battleAssistantRuntime.Value.States);
+		Assert.Null(backendHarness.Runtime.TryGetContext());
 	}
 
 	/// <summary>
