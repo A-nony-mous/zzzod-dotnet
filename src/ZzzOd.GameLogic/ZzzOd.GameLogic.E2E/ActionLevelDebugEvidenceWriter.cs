@@ -3,6 +3,7 @@ using System.IO;
 using System.Text.Encodings.Web;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using OneDragon.Core.Utils;
 using OpenCvSharp;
 
 namespace ZzzOd.GameLogic.E2E;
@@ -90,7 +91,7 @@ public static class ActionLevelDebugEvidenceWriter
 		}
 		Directory.CreateDirectory(evidenceDirectory);
 		string text = Path.Combine(evidenceDirectory, fileStem + "-" + label + ".png");
-		Cv2.ImWrite(text, image);
+		CvImageUtils.SaveImage(image, text);
 		return text;
 	}
 

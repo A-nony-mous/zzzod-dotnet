@@ -1,4 +1,5 @@
 using Avalonia.Media;
+using OneDragon.Core.Utils;
 using OpenCvSharp;
 
 namespace ZzzOd.Gui.Services.Home;
@@ -13,7 +14,7 @@ internal static class ZzzHomeThemeColorExtractor
 
     internal static bool TryExtract(string path, bool video, out Color color)
     {
-        using Mat source = video ? ReadFirstVideoFrame(path) : Cv2.ImRead(path, ImreadModes.Color);
+        using Mat source = video ? ReadFirstVideoFrame(path) : CvImageUtils.ReadImage(path, ImreadModes.Color) ?? new Mat();
         return TryExtract(source, out color);
     }
 

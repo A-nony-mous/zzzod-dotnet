@@ -611,8 +611,8 @@ public sealed class DefaultTransportBy3dMapServices : ITransportBy3dMapServices
 		string text = null;
 		if (!string.IsNullOrWhiteSpace(afterScreenshotPath))
 		{
-			using Mat mat = Cv2.ImRead(afterScreenshotPath);
-			if (!mat.Empty())
+			using Mat? mat = CvImageUtils.ReadImage(afterScreenshotPath);
+			if (mat is not null && !mat.Empty())
 			{
 				text = ScreenUtils.GetMatchScreenName(context, mat, new string[] { "3D地图" });
 			}
