@@ -21,10 +21,9 @@ internal sealed partial class FrontierEnvironmentSettingsPage : UserControl, IZz
     private static readonly ZzzEnvironmentOption[] ScreenshotMethods =
     [
         new("自动", "auto"),
-        new("Print Window", "print_window"),
+        new("Windows Graphics Capture", "wgc"),
         new("BitBlt", "bitblt"),
-        new("MSS", "mss"),
-        new("PIL", "pil"),
+        new("Print Window", "print_window"),
     ];
 
     private static readonly ZzzEnvironmentOption[] ProxyTypes =
@@ -154,7 +153,7 @@ internal sealed partial class FrontierEnvironmentSettingsPage : UserControl, IZz
         {
             IReadOnlyDictionary<string, object?> values = result.Value.Values;
             _runtimeCoordinator?.UpdateEnvironmentConfiguration(result.Value);
-            SelectOption(_screenshotMethodCombo, ReadString(values, "screenshot_method"));
+            SelectOption(_screenshotMethodCombo, NormalizeScreenshotMethodForDisplay(ReadString(values, "screenshot_method")));
             _debugToggle.IsChecked = ReadBool(values, "is_debug");
             _copyScreenshotToggle.IsChecked = ReadBool(values, "copy_screenshot");
             SelectOption(_proxyTypeCombo, ReadString(values, "proxy_type"));
@@ -363,6 +362,9 @@ internal sealed partial class FrontierEnvironmentSettingsPage : UserControl, IZz
 
         return Convert.ToString(value, CultureInfo.InvariantCulture) ?? string.Empty;
     }
+
+    private static string NormalizeScreenshotMethodForDisplay(string value) =>
+        value is "mss" or "pil" ? "bitblt" : value;
 
     private static bool ReadBool(IReadOnlyDictionary<string, object?> values, string key)
     {

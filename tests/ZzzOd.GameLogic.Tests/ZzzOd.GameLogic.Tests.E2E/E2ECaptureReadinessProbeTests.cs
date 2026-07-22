@@ -23,6 +23,8 @@ public sealed class E2ECaptureReadinessProbeTests
 		E2ECaptureReadinessEvidence e2ECaptureReadinessEvidence = new E2ECaptureReadinessProbe().Probe(controller);
 		Assert.Equal(0L, e2ECaptureReadinessEvidence.WindowHandle);
 		Assert.Equal(screenshotMethod, e2ECaptureReadinessEvidence.ScreenshotMethod);
+		Assert.Equal(screenshotMethod, e2ECaptureReadinessEvidence.ConfiguredScreenshotMethod);
+		Assert.Null(e2ECaptureReadinessEvidence.ActiveScreenshotMethod);
 		Assert.Null(e2ECaptureReadinessEvidence.FirstFrameWidth);
 		Assert.Null(e2ECaptureReadinessEvidence.FirstFrameHeight);
 		Assert.Equal("游戏窗口句柄无效", e2ECaptureReadinessEvidence.FailureReason);
@@ -37,9 +39,30 @@ public sealed class E2ECaptureReadinessProbeTests
 		E2ECaptureReadinessEvidence e2ECaptureReadinessEvidence = E2ECaptureReadinessEvidence.Succeeded(17767, screenshotMethod, firstFrame, new DateTimeOffset(2026, 7, 7, 2, 0, 0, TimeSpan.Zero));
 		Assert.Equal(17767L, e2ECaptureReadinessEvidence.WindowHandle);
 		Assert.Equal(screenshotMethod, e2ECaptureReadinessEvidence.ScreenshotMethod);
+		Assert.Equal(screenshotMethod, e2ECaptureReadinessEvidence.ConfiguredScreenshotMethod);
+		Assert.Equal(screenshotMethod, e2ECaptureReadinessEvidence.ActiveScreenshotMethod);
 		Assert.Equal(1280, e2ECaptureReadinessEvidence.FirstFrameWidth);
 		Assert.Equal(720, e2ECaptureReadinessEvidence.FirstFrameHeight);
 		Assert.Null(e2ECaptureReadinessEvidence.FailureReason);
+	}
+
+	[Fact]
+	public void CaptureReadinessEvidence_ShouldRecordConfiguredActiveAndAttemptedMethods()
+	{
+		using Mat firstFrame = new Mat(new Size(1920, 1080), MatType.CV_8UC3, Scalar.All(1.0));
+		E2ECaptureReadinessEvidence evidence = E2ECaptureReadinessEvidence.Succeeded(
+			88,
+			"auto",
+			"bitblt",
+			["wgc", "dwm_shared_surface", "bitblt"],
+			firstFrame,
+			new DateTimeOffset(2026, 7, 23, 0, 0, 0, TimeSpan.Zero),
+			12.5);
+		Assert.Equal("bitblt", evidence.ScreenshotMethod);
+		Assert.Equal("auto", evidence.ConfiguredScreenshotMethod);
+		Assert.Equal("bitblt", evidence.ActiveScreenshotMethod);
+		Assert.Equal(["wgc", "dwm_shared_surface", "bitblt"], evidence.AttemptedScreenshotMethods);
+		Assert.Equal(12.5, evidence.FirstFrameCaptureElapsedMilliseconds);
 	}
 
 	[Fact(Skip = "Requires a live ZZZ window, configured screenshot method, real desktop permissions and account state.")]

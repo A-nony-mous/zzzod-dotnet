@@ -17,10 +17,11 @@ public sealed class E2ECaptureReadinessProbe
 	{
 		ArgumentNullException.ThrowIfNull(controller, "controller");
 		nint windowHandle = controller.WindowHandle;
-		string text = controller.ActiveScreenshotMethod ?? controller.ConfiguredScreenshotMethod;
+		string configuredMethod = controller.ConfiguredScreenshotMethod;
+		string? activeMethod = controller.ActiveScreenshotMethod;
 		if (windowHandle == 0)
 		{
-			return E2ECaptureReadinessEvidence.Failed(windowHandle, text, "游戏窗口句柄无效");
+			return E2ECaptureReadinessEvidence.Failed(windowHandle, configuredMethod, activeMethod, controller.LastScreenshotAttemptedMethods, "游戏窗口句柄无效");
 		}
 		try
 		{
@@ -29,15 +30,27 @@ public sealed class E2ECaptureReadinessProbe
 			{
 				if (mat == null)
 				{
-					return E2ECaptureReadinessEvidence.Failed(windowHandle, text, "首帧截图为空");
+					return E2ECaptureReadinessEvidence.Failed(
+						windowHandle,
+						configuredMethod,
+						controller.ActiveScreenshotMethod,
+						controller.LastScreenshotAttemptedMethods,
+						controller.LastScreenshotFailureReason ?? "首帧截图为空");
 				}
-				string screenshotMethod = controller.ActiveScreenshotMethod ?? text;
-				return E2ECaptureReadinessEvidence.Succeeded(windowHandle, screenshotMethod, mat, capturedAtUtc);
+				string screenshotMethod = controller.ActiveScreenshotMethod ?? configuredMethod;
+				return E2ECaptureReadinessEvidence.Succeeded(
+					windowHandle,
+					configuredMethod,
+					screenshotMethod,
+					controller.LastScreenshotAttemptedMethods,
+					mat,
+					capturedAtUtc,
+					controller.LastCaptureElapsedMilliseconds);
 			}
 		}
 		catch (Exception ex)
 		{
-			return E2ECaptureReadinessEvidence.Failed(windowHandle, text, ex.Message);
+			return E2ECaptureReadinessEvidence.Failed(windowHandle, configuredMethod, controller.ActiveScreenshotMethod, controller.LastScreenshotAttemptedMethods, ex.Message);
 		}
 	}
 }

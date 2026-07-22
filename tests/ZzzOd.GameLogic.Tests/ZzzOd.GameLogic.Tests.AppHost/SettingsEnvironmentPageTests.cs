@@ -85,6 +85,26 @@ public sealed class SettingsEnvironmentPageTests
 	}
 
 	[Fact]
+	public void ScreenshotMethodOptionsExposeOnlyImplementedBackends()
+	{
+		string root = FindGuiFile();
+		string standardPage = File.ReadAllText(Path.Combine(root, "Pages", "Settings", "ZzzEnvironmentSettingsPage.axaml.cs"));
+		string frontierPage = File.ReadAllText(Path.Combine(root, "Views", "FrontierPages", "Settings", "FrontierEnvironmentSettingsPage.axaml.cs"));
+		foreach (string source in new[] { standardPage, frontierPage })
+		{
+			Assert.Contains("Windows Graphics Capture", source, StringComparison.Ordinal);
+			Assert.Contains("print_window", source, StringComparison.Ordinal);
+			Assert.Contains("bitblt", source, StringComparison.Ordinal);
+			Assert.True(source.IndexOf("new(\"自动\", \"auto\")", StringComparison.Ordinal) < source.IndexOf("new(\"Windows Graphics Capture\", \"wgc\")", StringComparison.Ordinal));
+			Assert.True(source.IndexOf("new(\"Windows Graphics Capture\", \"wgc\")", StringComparison.Ordinal) < source.IndexOf("new(\"BitBlt\", \"bitblt\")", StringComparison.Ordinal));
+			Assert.True(source.IndexOf("new(\"BitBlt\", \"bitblt\")", StringComparison.Ordinal) < source.IndexOf("new(\"Print Window\", \"print_window\")", StringComparison.Ordinal));
+			Assert.DoesNotContain("new(\"MSS\"", source, StringComparison.Ordinal);
+			Assert.DoesNotContain("new(\"PIL\"", source, StringComparison.Ordinal);
+			Assert.DoesNotContain("DWM Shared Surface", source, StringComparison.Ordinal);
+		}
+	}
+
+	[Fact]
 	public void ProxyChangesWriteEnvScopeAndUpdateCurrentProcessProxy()
 	{
 		string environmentVariable = Environment.GetEnvironmentVariable("HTTP_PROXY");
@@ -130,7 +150,12 @@ public sealed class SettingsEnvironmentPageTests
 	{
 		for (DirectoryInfo directoryInfo = new DirectoryInfo(AppContext.BaseDirectory); directoryInfo != null; directoryInfo = directoryInfo.Parent)
 		{
-			string text = Path.Combine(directoryInfo.FullName, "src", "ZzzOd.Gui", Path.Combine(relativeSegments));
+			string root = Path.Combine(directoryInfo.FullName, "src", "ZzzOd.Gui");
+			if (relativeSegments.Length == 0 && Directory.Exists(root))
+			{
+				return root;
+			}
+			string text = Path.Combine(root, Path.Combine(relativeSegments));
 			if (File.Exists(text))
 			{
 				return text;
