@@ -78,6 +78,10 @@ public sealed class IntelBoardAppTests
 
 		public bool BattleScreenReady { get; set; }
 
+		public bool DetectorLoadSucceeds { get; set; } = true;
+
+		public bool DetectorLoadCalled { get; private set; }
+
 		public bool BackToList { get; set; }
 
 		public string AutoBattleName { get; set; } = "测试模板";
@@ -97,6 +101,12 @@ public sealed class IntelBoardAppTests
 		public bool AutoBattleStarted { get; private set; }
 
 		public int ReadProgressCallCount { get; private set; }
+
+		public bool LoadLostVoidDetectorModel(ZContext context)
+		{
+			DetectorLoadCalled = true;
+			return DetectorLoadSucceeds;
+		}
 
 		public Task<OperationResult> BackToVideoStoreAsync(ZContext context)
 		{
@@ -264,6 +274,12 @@ public sealed class IntelBoardAppTests
 		public int SettlementClickCount { get; private set; }
 
 		public int BackToListCount { get; private set; }
+
+		public bool LoadLostVoidDetectorModel(ZContext context)
+		{
+			Calls.Add("init_detector");
+			return true;
+		}
 
 		public Task<OperationResult> BackToVideoStoreAsync(ZContext context)
 		{
@@ -944,6 +960,33 @@ public sealed class IntelBoardAppTests
 	}
 
 	[Fact]
+	public void IntelBoardOperation_InitForIntelBoardReportsDetectorLoadFailure()
+	{
+		string rootDirectory = CreateTempRoot();
+		try
+		{
+			using ZContext context = new ZContext(new OneDragonEnvironment(rootDirectory));
+			IntelBoardConfig config = new IntelBoardConfig();
+			IntelBoardRunRecord record = new IntelBoardRunRecord(config);
+			RecordingIntelBoardServices services = new RecordingIntelBoardServices
+			{
+				DetectorLoadSucceeds = false
+			};
+			IntelBoardOperation operation = new IntelBoardOperation(context, config, record, services);
+
+			OperationRoundResult result = operation.InitForIntelBoard();
+
+			Assert.False(result.IsSuccess);
+			Assert.Equal("初始化失败", result.Status);
+			Assert.True(services.DetectorLoadCalled);
+		}
+		finally
+		{
+			Directory.Delete(rootDirectory, recursive: true);
+		}
+	}
+
+	[Fact]
 	public async Task IntelBoardOperation_ExecuteAsyncRunsCompletePythonStateGraphWithScriptedExternalResults()
 	{
 		string rootDirectory = CreateTempRoot();
@@ -972,9 +1015,9 @@ public sealed class IntelBoardAppTests
 			Assert.Equal(1, services.SettlementClickCount);
 			Assert.Equal(2, services.BackToListCount);
 			Assert.Equal(new List<int>(1) { 1 }, services.ChosenTeams);
-			Assert.Equal<List<string>>(new List<string>(32)
+			Assert.Equal<List<string>>(new List<string>(33)
 			{
-				"back", "open_board", "click_board", "read_progress:0", "open_filter", "reset_filter", "select:恶名狩猎", "select:专业挑战室", "close_filter", "find:none",
+				"init_detector", "back", "open_board", "click_board", "read_progress:0", "open_filter", "reset_filter", "select:恶名狩猎", "select:专业挑战室", "close_filter", "find:none",
 				"scroll", "find:恶名狩猎", "accept:接取委托", "accept:委托代行中", "next:接取失败", "confirm_accept_failed", "find:专业挑战室", "accept:委托代行中", "next:预备编队", "choose_team:1",
 				"deploy", "confirm_agent", "init_auto", "battle_ready", "pre_battle:专业挑战室", "start_auto", "battle:自动战斗中", "battle:战斗结束-完成", "back_to_list:false", "settlement",
 				"back_to_list:true", "read_progress:1000"
@@ -995,38 +1038,39 @@ public sealed class IntelBoardAppTests
 				}
 				return nodes;
 			}).ToArray();
-			string[] buffer = new string[31];
-			buffer[0] = "返回录像店";
-			buffer[1] = "打开情报板";
-			buffer[2] = "点击情报板";
-			buffer[3] = "检查进度";
-			buffer[4] = "刷新委托";
-			buffer[5] = "打开筛选";
-			buffer[6] = "重置筛选";
-			buffer[7] = "选择恶名狩猎";
-			buffer[8] = "选择专业挑战室";
-			buffer[9] = "关闭筛选";
-			buffer[10] = "寻找委托";
+			string[] buffer = new string[32];
+			buffer[0] = "初始化加载";
+			buffer[1] = "返回录像店";
+			buffer[2] = "打开情报板";
+			buffer[3] = "点击情报板";
+			buffer[4] = "检查进度";
+			buffer[5] = "刷新委托";
+			buffer[6] = "打开筛选";
+			buffer[7] = "重置筛选";
+			buffer[8] = "选择恶名狩猎";
+			buffer[9] = "选择专业挑战室";
+			buffer[10] = "关闭筛选";
 			buffer[11] = "寻找委托";
-			buffer[12] = "接取委托";
+			buffer[12] = "寻找委托";
 			buffer[13] = "接取委托";
-			buffer[14] = "下一步";
-			buffer[15] = "接取失败";
-			buffer[16] = "寻找委托";
-			buffer[17] = "接取委托";
-			buffer[18] = "下一步";
-			buffer[19] = "选择预备编队";
-			buffer[20] = "点击出战";
-			buffer[21] = "委托代行中弹窗";
-			buffer[22] = "加载自动战斗指令";
-			buffer[23] = "等待战斗画面加载";
-			buffer[24] = "战斗前移动";
-			buffer[25] = "开始自动战斗";
-			buffer[26] = "检查回到委托列表";
-			buffer[27] = "点击结算按钮";
-			buffer[28] = "检查回到委托列表";
-			buffer[29] = "检查进度";
-			buffer[30] = "结束处理";
+			buffer[14] = "接取委托";
+			buffer[15] = "下一步";
+			buffer[16] = "接取失败";
+			buffer[17] = "寻找委托";
+			buffer[18] = "接取委托";
+			buffer[19] = "下一步";
+			buffer[20] = "选择预备编队";
+			buffer[21] = "点击出战";
+			buffer[22] = "委托代行中弹窗";
+			buffer[23] = "加载自动战斗指令";
+			buffer[24] = "等待战斗画面加载";
+			buffer[25] = "战斗前移动";
+			buffer[26] = "开始自动战斗";
+			buffer[27] = "检查回到委托列表";
+			buffer[28] = "点击结算按钮";
+			buffer[29] = "检查回到委托列表";
+			buffer[30] = "检查进度";
+			buffer[31] = "结束处理";
 			Assert.Equal(buffer, enteredNodes);
 		}
 		finally
@@ -1278,17 +1322,18 @@ public sealed class IntelBoardAppTests
 			} into item
 			where item.Node != null
 			select item).ToDictionary(item => item.Node.Name, item => item.Method);
-		Assert.Equal(new string[25]
+		Assert.Equal(new string[27]
 		{
-			"返回录像店", "打开情报板", "点击情报板", "刷新委托", "打开筛选", "重置筛选", "选择恶名狩猎", "选择专业挑战室", "关闭筛选", "寻找委托",
-			"接取委托", "下一步", "接取失败", "选择预备编队", "点击出战", "委托代行中弹窗", "加载自动战斗指令", "等待战斗画面加载", "战斗前移动", "开始自动战斗",
+			"初始化加载", "返回录像店", "打开情报板", "点击情报板", "刷新委托", "打开筛选", "重置筛选", "选择恶名狩猎", "选择专业挑战室", "关闭筛选", "寻找委托",
+			"接取委托", "下一步", "接取失败", "选择预备编队", "点击出战", "委托代行中弹窗", "选择任意预备编队", "加载自动战斗指令", "等待战斗画面加载", "战斗前移动", "开始自动战斗",
 			"战斗中", "检查回到委托列表", "点击结算按钮", "检查进度", "结束处理"
 		}, readOnlyDictionary.Keys);
-		Assert.True(readOnlyDictionary["返回录像店"].GetCustomAttribute<OperationNodeAttribute>().IsStartNode);
+		Assert.True(readOnlyDictionary["初始化加载"].GetCustomAttribute<OperationNodeAttribute>().IsStartNode);
 		string[] actual = readOnlyDictionary.SelectMany((KeyValuePair<string, MethodInfo> pair) => from edge in pair.Value.GetCustomAttributes<NodeFromAttribute>()
 			select Edge(edge.FromName, pair.Key, edge.Success, edge.Status, edge.IgnoreStatus)).Order<string>(StringComparer.Ordinal).ToArray();
-		string[] source = new string[32]
+		string[] source = new string[35]
 		{
+			Edge("初始化加载", "返回录像店"),
 			Edge("返回录像店", "打开情报板"),
 			Edge("打开情报板", "点击情报板"),
 			Edge("检查进度", "刷新委托", success: false),
@@ -1307,7 +1352,9 @@ public sealed class IntelBoardAppTests
 			Edge("下一步", "接取失败", success: true, "接取失败"),
 			Edge("下一步", "选择预备编队"),
 			Edge("选择预备编队", "点击出战"),
+			Edge("选择任意预备编队", "点击出战"),
 			Edge("点击出战", "委托代行中弹窗"),
+			Edge("委托代行中弹窗", "选择任意预备编队", success: true, "未选择代理人"),
 			Edge("委托代行中弹窗", "加载自动战斗指令"),
 			Edge("加载自动战斗指令", "等待战斗画面加载"),
 			Edge("等待战斗画面加载", "战斗前移动"),

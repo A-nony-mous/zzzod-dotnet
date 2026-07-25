@@ -102,7 +102,7 @@ public sealed class IntelBoardOperation : ZOperation
 	{
 		try
 		{
-			return base.ZContext.LostVoid.LoadLostVoidDetectorModel() ? RoundSuccess() : RoundFail("初始化失败");
+			return _services.LoadLostVoidDetectorModel(base.ZContext) ? RoundSuccess() : RoundFail("初始化失败");
 		}
 		catch (Exception)
 		{

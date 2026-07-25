@@ -69,6 +69,12 @@ public sealed class DefaultIntelBoardOperationServices : IIntelBoardOperationSer
 	}
 
 	/// <inheritdoc />
+	public bool LoadLostVoidDetectorModel(ZContext context)
+	{
+		return context.LostVoid.LoadLostVoidDetectorModel();
+	}
+
+	/// <inheritdoc />
 	public Task<OperationResult> BackToVideoStoreAsync(ZContext context)
 	{
 		return new Transport(context, "录像店", "房间").ExecuteAsync();

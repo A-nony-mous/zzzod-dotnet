@@ -11,6 +11,9 @@ namespace ZzzOd.GameLogic.Application.IntelBoard;
 /// </summary>
 public interface IIntelBoardOperationServices
 {
+	/// <summary>加载迷失之地检测模型。</summary>
+	bool LoadLostVoidDetectorModel(ZContext context);
+
 	/// <summary>返回录像店。</summary>
 	Task<OperationResult> BackToVideoStoreAsync(ZContext context);
 
