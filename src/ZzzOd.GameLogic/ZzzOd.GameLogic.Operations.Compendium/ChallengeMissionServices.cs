@@ -23,6 +23,9 @@ public sealed class ChallengeMissionServices
 	/// <summary>恶名狩猎战前移动流程。</summary>
 	public Func<ZContext, ChargePlanItem, Task<OperationResult>>? BeforeBattleMoveAsync { get; set; }
 
+	/// <summary>加载恶名狩猎战前移动所需的迷失之地检测模型。</summary>
+	public Func<ZContext, bool>? LoadLostVoidDetectorModel { get; set; }
+
 	/// <summary>加载自动战斗指令流程。</summary>
 	public Func<ZContext, ChargePlanItem, string, OperationResult>? InitializeAutoBattle { get; set; }
 

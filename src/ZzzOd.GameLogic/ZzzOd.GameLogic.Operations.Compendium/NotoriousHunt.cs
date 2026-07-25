@@ -92,7 +92,9 @@ public sealed class NotoriousHunt : CompendiumChallengeOperationBase
 	{
 		try
 		{
-			return base.ZContext.LostVoid.LoadLostVoidDetectorModel() ? RoundSuccess() : RoundFail("初始化失败");
+			bool loaded = base.Services.LoadLostVoidDetectorModel?.Invoke(base.ZContext)
+				?? base.ZContext.LostVoid.LoadLostVoidDetectorModel();
+			return loaded ? RoundSuccess() : RoundFail("初始化失败");
 		}
 		catch (Exception)
 		{

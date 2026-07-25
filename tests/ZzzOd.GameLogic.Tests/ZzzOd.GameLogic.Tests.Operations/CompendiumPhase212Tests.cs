@@ -171,15 +171,11 @@ public sealed class CompendiumPhase212Tests : IDisposable
 
 	private sealed class StageMoveDetector(StageController controller, Func<int, NotoriousHuntDistanceHint?> hintByStage) : INotoriousHuntMoveDetector
 	{
-		public bool Initialized { get; private set; }
-
-		public void Initialize()
-		{
-			Initialized = true;
-		}
+		public int DetectCount { get; private set; }
 
 		public NotoriousHuntDistanceHint? DetectDistanceHint(Mat screen)
 		{
+			DetectCount++;
 			return hintByStage(controller.ScreenshotStage);
 		}
 	}
@@ -213,6 +209,7 @@ public sealed class CompendiumPhase212Tests : IDisposable
 		Directory.CreateDirectory(Path.Combine(_rootDirectory, "assets", "game_data", "screen_info"));
 		Directory.CreateDirectory(Path.Combine(_rootDirectory, "assets", "game_data"));
 		WriteScreenYaml();
+		MarkCompendiumTrainingTitleAsIdMark();
 		WriteCompendiumData();
 	}
 
@@ -438,7 +435,7 @@ public sealed class CompendiumPhase212Tests : IDisposable
 		Assert.Contains((IEnumerable<ControllerAction>)controller.Actions, (Predicate<ControllerAction>)((ControllerAction action) => action.Name == "MoveW" && action.PressTime.HasValue && Math.Abs((action.PressTime.Value - TimeSpan.FromSeconds(1L)).TotalMilliseconds) < 1.0));
 		Assert.Contains((IEnumerable<ControllerAction>)controller.Actions, (Predicate<ControllerAction>)((ControllerAction action) => action.Name == "Interact"));
 		Assert.Contains(new OneDragon.Core.Abstractions.Geometry.Point(59, 10), (IEnumerable<OneDragon.Core.Abstractions.Geometry.Point>)controller.Clicks);
-		Assert.True(detector.Initialized);
+		Assert.Equal(4, detector.DetectCount);
 	}
 
 	[Fact]
@@ -718,25 +715,25 @@ public sealed class CompendiumPhase212Tests : IDisposable
 			{
 			}
 			IReadOnlyList<string> result2;
-			if (stage < 8)
+			if (stage < 9)
 			{
 				switch (stage)
 				{
-				case 1:
+				case 2:
 					result2 = new string[2] { "当期剩余奖励次数", "猎血清道夫" };
 					break;
-				case 2:
+				case 3:
 					result2 = new string[] { "猎血清道夫" };
 					break;
-				case 3:
 				case 4:
+				case 5:
 					result2 = new string[2] { "深度追猎信息", "无报酬模式" };
 					break;
-				case 5:
 				case 6:
+				case 7:
 					result2 = new string[2] { "深度追猎信息", "深度追猎ON" };
 					break;
-				case 7:
+				case 8:
 					result2 = new string[] { "下一步" };
 					break;
 				default:
@@ -766,6 +763,7 @@ public sealed class CompendiumPhase212Tests : IDisposable
 		};
 		ChallengeMissionServices services = new ChallengeMissionServices
 		{
+			LoadLostVoidDetectorModel = (ZContext _) => true,
 			InitializeAutoBattle = (ZContext _, ChargePlanItem _, string _) => new OperationResult(IsSuccess: true, "加载自动战斗指令"),
 			DeployAsync = (ZContext _) => Task.FromResult(new OperationResult(IsSuccess: true, "出战")),
 			BeforeBattleMoveAsync = (ZContext _, ChargePlanItem item) => Task.FromResult(new OperationResult(IsSuccess: true, $"战前移动-{item.NotoriousHuntBuffNum}")),
@@ -810,6 +808,7 @@ public sealed class CompendiumPhase212Tests : IDisposable
 		};
 		ChallengeMissionServices services = new ChallengeMissionServices
 		{
+			LoadLostVoidDetectorModel = (ZContext _) => true,
 			InitializeAutoBattle = (ZContext _, ChargePlanItem _, string _) => new OperationResult(IsSuccess: true, "加载自动战斗指令"),
 			DeployAsync = (ZContext _) => Task.FromResult(new OperationResult(IsSuccess: true, "出战")),
 			BeforeBattleMoveAsync = (ZContext _, ChargePlanItem _) => Task.FromResult(new OperationResult(IsSuccess: true, "战前移动")),
@@ -820,6 +819,36 @@ public sealed class CompendiumPhase212Tests : IDisposable
 		Assert.True(result.IsSuccess, result.Status);
 		Assert.Null(result.Status);
 		Assert.Equal(1, plan.RunTimes);
+	}
+
+	[Fact]
+	public async Task NotoriousHunt_DetectorInitializationFailureStopsBeforeEntry()
+	{
+		using StageController controller = new StageController();
+		using ZContext context = CreateContext(controller, (int _) => Array.Empty<string>());
+		ChargePlanItem plan = new ChargePlanItem
+		{
+			CategoryName = "恶名狩猎",
+			MissionTypeName = "猎血清道夫",
+			Level = "默认等级",
+			AutoBattleConfig = "全配队通用",
+			PlanTimes = 1,
+			PredefinedTeamIndex = -1
+		};
+		ChallengeMissionServices services = new ChallengeMissionServices
+		{
+			LoadLostVoidDetectorModel = (ZContext _) => false
+		};
+		NotoriousHunt operation = new NotoriousHunt(context, plan, new ChargePlanConfig
+		{
+			PlanList = new List<ChargePlanItem>(1) { plan }
+		}, services, useChargePower: true, new NotoriousHuntConfig(), new NotoriousHuntRunRecord(), TimeSpan.Zero, TimeSpan.Zero);
+
+		OperationResult result = await operation.ExecuteAsync();
+
+		Assert.False(result.IsSuccess);
+		Assert.Equal("初始化失败", result.Status);
+		Assert.Empty(controller.Clicks);
 	}
 
 	[Fact]
@@ -835,12 +864,12 @@ public sealed class CompendiumPhase212Tests : IDisposable
 			if (1 == 0)
 			{
 			}
-			IReadOnlyList<string> result2 = ((stage >= 5) ? new string[6] { "出战", "普通攻击", "倒带", "完成", "街区", "剩余奖励次数" } : (stage switch
+			IReadOnlyList<string> result2 = ((stage >= 7) ? new string[6] { "出战", "普通攻击", "倒带", "完成", "街区", "剩余奖励次数" } : (stage switch
 			{
-				1 => new string[2] { "当期剩余奖励次数", "猎血清道夫" }, 
-				2 => new string[] { "猎血清道夫" }, 
-				3 => new string[] { "2" }, 
-				4 => new string[] { "下一步" }, 
+				2 => new string[2] { "当期剩余奖励次数", "猎血清道夫" },
+				3 => new string[] { "猎血清道夫" },
+				4 => new string[] { "2" },
+				6 => new string[] { "下一步" },
 				_ => Array.Empty<string>(), 
 			}));
 			if (1 == 0)
@@ -861,6 +890,7 @@ public sealed class CompendiumPhase212Tests : IDisposable
 		};
 		ChallengeMissionServices services = new ChallengeMissionServices
 		{
+			LoadLostVoidDetectorModel = (ZContext _) => true,
 			InitializeAutoBattle = (ZContext _, ChargePlanItem _, string _) => new OperationResult(IsSuccess: true, "加载自动战斗指令"),
 			DeployAsync = (ZContext _) => Task.FromResult(new OperationResult(IsSuccess: true, "出战")),
 			BeforeBattleMoveAsync = (ZContext _, ChargePlanItem item) => Task.FromResult(new OperationResult(IsSuccess: true, $"战前移动-{item.NotoriousHuntBuffNum}")),
@@ -900,12 +930,12 @@ public sealed class CompendiumPhase212Tests : IDisposable
 			if (1 == 0)
 			{
 			}
-			IReadOnlyList<string> result2 = ((stage >= 5) ? new string[4] { "出战", "普通攻击", "撤退", "退出" } : (stage switch
+			IReadOnlyList<string> result2 = ((stage >= 7) ? new string[4] { "出战", "普通攻击", "撤退", "退出" } : (stage switch
 			{
-				1 => new string[2] { "当期剩余奖励次数", "猎血清道夫" }, 
-				2 => new string[] { "猎血清道夫" }, 
-				3 => new string[] { "1" }, 
-				4 => new string[] { "下一步" }, 
+				2 => new string[2] { "当期剩余奖励次数", "猎血清道夫" },
+				3 => new string[] { "猎血清道夫" },
+				4 => new string[] { "1" },
+				6 => new string[] { "下一步" },
 				_ => Array.Empty<string>(), 
 			}));
 			if (1 == 0)
@@ -926,6 +956,7 @@ public sealed class CompendiumPhase212Tests : IDisposable
 		};
 		ChallengeMissionServices services = new ChallengeMissionServices
 		{
+			LoadLostVoidDetectorModel = (ZContext _) => true,
 			InitializeAutoBattle = (ZContext _, ChargePlanItem _, string _) => new OperationResult(IsSuccess: true, "加载自动战斗指令"),
 			DeployAsync = (ZContext _) => Task.FromResult(new OperationResult(IsSuccess: true, "出战")),
 			BeforeBattleMoveAsync = (ZContext _, ChargePlanItem item) => Task.FromResult(new OperationResult(IsSuccess: true, $"战前移动-{item.NotoriousHuntBuffNum}")),
@@ -1001,6 +1032,16 @@ public sealed class CompendiumPhase212Tests : IDisposable
 		return zContext;
 	}
 
+	private void MarkCompendiumTrainingTitleAsIdMark()
+	{
+		string path = Path.Combine(_rootDirectory, "assets", "game_data", "screen_info", "_od_merged.yml");
+		string yaml = File.ReadAllText(path);
+		const string marker = "  screen_name: 快捷手册-训练\n  area_list:\n    - area_name: 标题\n      pc_rect: [0, 0, 300, 40]\n      text: 快捷手册训练\n      lcs_percent: 0.8";
+		const string replacement = marker + "\n      id_mark: true";
+		Assert.Contains(marker, yaml);
+		File.WriteAllText(path, yaml.Replace(marker, replacement, StringComparison.Ordinal));
+	}
+
 	private void WriteCompendiumData()
 	{
 		File.WriteAllText(Path.Combine(_rootDirectory, "assets", "game_data", "compendium_data.yml"), "- tab_name: 训练\n  category_list:\n    - category_name: 实战模拟室\n      mission_type_list:\n        - mission_type_name: 基础材料\n          mission_list:\n            - mission_name: 调查专项\n        - mission_type_name: 代理人方案培养\n          mission_list:\n            - mission_name: 防护演练\n        - mission_type_name: 驱动盘\n    - category_name: 区域巡防\n      mission_type_list:\n        - mission_type_name: 铁律与狂徒\n    - category_name: 恶名狩猎\n      mission_type_list:\n        - mission_type_name: 猎血清道夫");
@@ -1022,7 +1063,6 @@ public sealed class CompendiumPhase212Tests : IDisposable
 		buffer[3] = "screen_info";
 		buffer[4] = "_od_merged.yml";
 		File.WriteAllText(Path.Combine(buffer), "- screen_id: battle\n  screen_name: 战斗画面\n  area_list:\n    - area_name: 按键-交互\n      pc_rect: [10, 10, 30, 30]\n      text: 交互\n      lcs_percent: 0.8\n    - area_name: 按键-普通攻击\n      pc_rect: [10, 40, 30, 60]\n      text: 普通攻击\n      lcs_percent: 0.8\n    - area_name: 战斗结果-完成\n      pc_rect: [10, 90, 30, 110]\n      text: 完成\n      lcs_percent: 0.8\n    - area_name: 战斗结果-再来一次\n      pc_rect: [10, 120, 30, 140]\n      text: 再来一次\n      lcs_percent: 0.8\n    - area_name: 战斗结果-已达成\n      pc_rect: [10, 150, 30, 170]\n      text: 已达成\n      lcs_percent: 0.8\n    - area_name: 战斗结果-倒带\n      pc_rect: [10, 180, 30, 200]\n      text: 倒带\n      lcs_percent: 0.8\n    - area_name: 战斗结果-撤退\n      pc_rect: [10, 210, 30, 230]\n      text: 撤退\n      lcs_percent: 0.8\n    - area_name: 战斗结果-退出\n      pc_rect: [10, 240, 30, 260]\n      text: 退出\n      lcs_percent: 0.8\n    - area_name: 距离显示区域\n      pc_rect: [432, 132, 1640, 842]\n- screen_id: compendium_training\n  screen_name: 快捷手册-训练\n  area_list:\n    - area_name: 标题\n      pc_rect: [0, 0, 300, 40]\n      text: 快捷手册训练\n      lcs_percent: 0.8\n- screen_id: notorious\n  screen_name: 恶名狩猎\n  area_list:\n    - area_name: 标识-BOSS血条\n      pc_rect: [10, 70, 30, 90]\n      text: BOSS血条\n      lcs_percent: 0.8\n    - area_name: 当期剩余奖励次数\n      pc_rect: [0, 0, 300, 40]\n      text: 当期剩余奖励次数\n      lcs_percent: 0.8\n    - area_name: 按钮-街区\n      pc_rect: [10, 280, 30, 300]\n      text: 街区\n      lcs_percent: 0.8\n    - area_name: 标题-副本名称\n      pc_rect: [0, 80, 300, 120]\n    - area_name: 副本名称列表\n      pc_rect: [0, 80, 300, 130]\n    - area_name: 深度追猎-信息\n      pc_rect: [0, 0, 300, 40]\n      text: 深度追猎信息\n      lcs_percent: 0.8\n    - area_name: 剩余次数\n      pc_rect: [0, 0, 300, 40]\n    - area_name: 按钮-深度追猎-确认\n      pc_rect: [10, 300, 30, 320]\n      text: 深度追猎确认\n      lcs_percent: 0.8\n    - area_name: 按钮-深度追猎-ON\n      pc_rect: [10, 330, 30, 350]\n      text: 深度追猎ON\n      lcs_percent: 0.8\n    - area_name: 按钮-无报酬模式\n      pc_rect: [10, 360, 30, 380]\n      text: 无报酬模式\n      lcs_percent: 0.8\n    - area_name: 难度选择入口\n      pc_rect: [10, 390, 30, 410]\n    - area_name: 难度选择区域\n      pc_rect: [0, 400, 300, 440]\n- screen_id: simulation\n  screen_name: 实战模拟室\n  area_list:\n    - area_name: 挑战等级\n      pc_rect: [10, 100, 30, 120]\n      text: 挑战等级\n      lcs_percent: 0.8\n    - area_name: 下一步\n      pc_rect: [10, 70, 30, 90]\n      text: 下一步\n      lcs_percent: 0.8\n    - area_name: 出战\n      pc_rect: [10, 130, 30, 150]\n      text: 出战\n      lcs_percent: 0.8\n    - area_name: 副本类型列表\n      pc_rect: [0, 0, 300, 40]\n    - area_name: 副本名称列表\n      pc_rect: [0, 40, 300, 80]\n    - area_name: 副本名称列表顶部\n      pc_rect: [0, 40, 300, 80]\n    - area_name: 外层-卡片1\n      pc_rect: [10, 180, 30, 200]\n    - area_name: 保存方案\n      pc_rect: [10, 210, 30, 230]\n      text: 保存方案\n      lcs_percent: 0.8\n    - area_name: 内层-已选择卡片1\n      pc_rect: [10, 240, 30, 260]\n    - area_name: 内层-卡片1\n      pc_rect: [10, 270, 30, 290]\n- screen_id: coupon\n  screen_name: 家政券\n  area_list:\n    - area_name: 使用\n      pc_rect: [10, 10, 30, 30]\n      text: 使用\n      lcs_percent: 0.8\n    - area_name: 确认\n      pc_rect: [10, 40, 30, 60]\n      text: 确认\n      lcs_percent: 0.8\n    - area_name: 绳网信用\n      pc_rect: [10, 70, 30, 90]\n      text: 绳网信用\n      lcs_percent: 0.8\n- screen_id: menu\n  screen_name: 菜单\n  area_list:\n    - area_name: 返回\n      pc_rect: [10, 160, 30, 180]\n      text: 返回\n      lcs_percent: 0.8");
-		File.AppendAllText(Path.Combine(buffer), "\n- screen_id: compendium_training_test\n  screen_name: 快捷手册-训练\n  area_list:\n    - area_name: 标题\n      pc_rect: [0, 0, 300, 40]\n      text: 快捷手册训练\n      lcs_percent: 0.8\n      id_mark: true");
 	}
 
 	private static bool CanUseOpenCv()
