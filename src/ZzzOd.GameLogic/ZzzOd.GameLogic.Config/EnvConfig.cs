@@ -8,7 +8,7 @@ namespace ZzzOd.GameLogic.Config;
 public sealed class EnvConfig
 {
 	[YamlMember(Alias = "screenshot_method", ApplyNamingConventions = false)]
-	public string ScreenshotMethod { get; set; } = "auto";
+	public string ScreenshotMethod { get; set; } = "print_window";
 
 	[YamlMember(Alias = "is_debug", ApplyNamingConventions = false)]
 	public bool IsDebug { get; set; }

@@ -29,7 +29,7 @@ public sealed class E2EAutomationProfileTests : IDisposable
 		Assert.False(e2EAutomationProfile.Enabled);
 		Assert.Equal("C:\\Users\\Anonymous\\IdeaProjects\\ZenlessZoneZero-OneDragon", e2EAutomationProfile.PythonReferenceRoot);
 		Assert.Equal(0, e2EAutomationProfile.InstanceIndex);
-		Assert.Equal("auto", e2EAutomationProfile.ScreenshotMethod);
+		Assert.Equal("print_window", e2EAutomationProfile.ScreenshotMethod);
 		Assert.Equal("keyboard", e2EAutomationProfile.InputMode);
 		Assert.Equal("evidence\\e2e", e2EAutomationProfile.EvidenceOutputDirectory);
 		Assert.Empty(e2EAutomationProfile.ApplicationIds);

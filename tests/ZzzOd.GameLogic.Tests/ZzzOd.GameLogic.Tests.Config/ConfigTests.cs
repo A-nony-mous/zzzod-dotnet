@@ -189,7 +189,7 @@ public sealed class ConfigTests : IDisposable
 		OneDragonEnvironment environment = new OneDragonEnvironment(_rootDirectory);
 		YamlConfig<EnvConfig> yamlConfig = new YamlConfig<EnvConfig>(environment, "env");
 		YamlConfig<ProjectConfig> yamlConfig2 = new YamlConfig<ProjectConfig>(environment, "project");
-		Assert.Equal("auto", yamlConfig.Current.ScreenshotMethod);
+		Assert.Equal("print_window", yamlConfig.Current.ScreenshotMethod);
 		Assert.Equal(string.Empty, yamlConfig2.Current.ProjectName);
 		Assert.Equal(string.Empty, yamlConfig2.Current.GithubHomepage);
 		Assert.Equal(string.Empty, yamlConfig2.Current.NoticeUrl);

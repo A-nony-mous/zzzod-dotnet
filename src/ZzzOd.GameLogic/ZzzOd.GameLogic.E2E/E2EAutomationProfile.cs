@@ -31,7 +31,7 @@ public sealed class E2EAutomationProfile
 	/// <summary>
 	/// 默认截图方式。
 	/// </summary>
-	public const string DefaultScreenshotMethod = "auto";
+	public const string DefaultScreenshotMethod = "print_window";
 
 	/// <summary>
 	/// 默认输入模式。
@@ -79,7 +79,7 @@ public sealed class E2EAutomationProfile
 	/// 截图方式。
 	/// </summary>
 	[YamlMember(Alias = "screenshot_method", ApplyNamingConventions = false)]
-	public string ScreenshotMethod { get; set; } = "auto";
+	public string ScreenshotMethod { get; set; } = "print_window";
 
 	/// <summary>
 	/// 输入模式。
