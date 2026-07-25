@@ -243,6 +243,14 @@ public sealed class ScreenLostVoidRunLevelRuntime : ILostVoidRunLevelRuntime
 			OperationResult result = await interactOperation.ExecuteAsync(cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
 			return result.IsSuccess ? LostVoidInteractResult.Wait(result.Status ?? screenName, hadBeenType, target) : LostVoidInteractResult.Fail(result.Status ?? "未知画面");
 		}
+		if (string.Equals(screenName, "迷失之地-挑战结果", StringComparison.Ordinal))
+		{
+			return LostVoidInteractResult.Success("迷失之地-挑战结果");
+		}
+		if (string.Equals(screenName, "迷失之地-大世界", StringComparison.Ordinal))
+		{
+			return LostVoidInteractResult.Success("迷失之地-大世界");
+		}
 		LostVoidInteractResult talkResult = TryTalk(operation, screen);
 		if ((object)talkResult != null)
 		{
@@ -265,11 +273,7 @@ public sealed class ScreenLostVoidRunLevelRuntime : ILostVoidRunLevelRuntime
 				};
 			}
 		}
-		if (string.Equals(screenName, "迷失之地-挑战结果", StringComparison.Ordinal))
-		{
-			return LostVoidInteractResult.Success("迷失之地-挑战结果");
-		}
-		if (string.Equals(screenName, "迷失之地-大世界", StringComparison.Ordinal) || IsInNormalWorld(operation.GameContext, screen))
+		if (IsInNormalWorld(operation.GameContext, screen))
 		{
 			return LostVoidInteractResult.Success("迷失之地-大世界");
 		}

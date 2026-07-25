@@ -1536,6 +1536,39 @@ public sealed class LostVoidContextTests
 	}
 
 	[Fact]
+	public async Task ScreenRunLevelRuntime_ChallengeResultStopsBeforeRewardNumbersAreTreatedAsTalk()
+	{
+		string rootDirectory = CreateTempRoot();
+		try
+		{
+			WriteLostVoidRuntimeOrderingScreenYaml(rootDirectory);
+			using ZContext context = new ZContext(new OneDragonEnvironment(rootDirectory, rootDirectory));
+			using TestScreenshotController controller = new TestScreenshotController();
+			context.AttachController(controller);
+			SequenceOcrMatcher matcher = new SequenceOcrMatcher(new IReadOnlyList<OcrMatchResult>[2]
+			{
+				new OcrMatchResult[] { Ocr("挑战结果") },
+				new OcrMatchResult[] { Ocr("500"), Ocr("4") }
+			});
+			context.OcrService.Matcher = matcher;
+			context.ScreenContext.Reload();
+			LostVoidRunLevel operation = new LostVoidRunLevel(context, new LostVoidRunRecord(new LostVoidConfig()), "战斗-道中危机");
+			using Mat screen = new Mat(new Size(320, 240), MatType.CV_8UC3, Scalar.Black);
+
+			LostVoidInteractResult result = await ScreenLostVoidRunLevelRuntime.Instance.HandleInteractAsync(operation, null, screen, CancellationToken.None);
+
+			Assert.Equal(LostVoidInteractResultKind.Success, result.Kind);
+			Assert.Equal("迷失之地-挑战结果", result.Status);
+			Assert.Equal(1, matcher.OcrCallCount);
+			Assert.Equal(0, controller.ClickCount);
+		}
+		finally
+		{
+			Directory.Delete(rootDirectory, recursive: true);
+		}
+	}
+
+	[Fact]
 	public async Task ScreenRunLevelRuntime_BattleStateDoesNotTreatTitleOnlyAsSelectionScreen()
 	{
 		string rootDirectory = CreateTempRoot();
@@ -2383,7 +2416,7 @@ public sealed class LostVoidContextTests
 	{
 		string text = Path.Combine(rootDirectory, "assets", "game_data", "screen_info");
 		Directory.CreateDirectory(text);
-		File.WriteAllText(Path.Combine(text, "_od_merged.yml"), "- screen_id: lost_void_normal_world\n  screen_name: 迷失之地-大世界\n  app_id: lost_void\n  area_list:\n    - area_name: 按钮-挑战-确认\n      pc_rect: [10, 10, 80, 30]\n      text: 确认\n      lcs_percent: 0.5\n    - area_name: 区域-对话角色名称\n      pc_rect: [10, 40, 160, 70]\n    - area_name: 区域-文本提示\n      pc_rect: [10, 80, 200, 110]");
+		File.WriteAllText(Path.Combine(text, "_od_merged.yml"), "- screen_id: lost_void_normal_world\n  screen_name: 迷失之地-大世界\n  app_id: lost_void\n  area_list:\n    - area_name: 按钮-挑战-确认\n      pc_rect: [10, 10, 80, 30]\n      text: 确认\n      lcs_percent: 0.5\n    - area_name: 区域-对话角色名称\n      pc_rect: [10, 40, 160, 70]\n    - area_name: 区域-文本提示\n      pc_rect: [10, 80, 200, 110]\n- screen_id: lost_void_battle_result\n  screen_name: 迷失之地-挑战结果\n  app_id: lost_void\n  area_list:\n    - area_name: 标题-挑战结果\n      id_mark: true\n      pc_rect: [10, 120, 200, 160]\n      text: 挑战结果\n      lcs_percent: 0.5");
 	}
 
 	private static void WriteLostVoidTitleOnlyScreenYaml(string rootDirectory)
