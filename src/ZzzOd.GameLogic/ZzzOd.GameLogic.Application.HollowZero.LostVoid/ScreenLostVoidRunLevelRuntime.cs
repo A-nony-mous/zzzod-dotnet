@@ -359,21 +359,21 @@ public sealed class ScreenLostVoidRunLevelRuntime : ILostVoidRunLevelRuntime
 		bool num;
 		if (!flag)
 		{
-			if (!(dateTimeOffset - (operation.LastCheckFinishTimeUtc ?? dateTimeOffset) >= TimeSpan.FromSeconds(1L)))
+			if (!HasElapsed(dateTimeOffset, operation.LastCheckFinishTimeUtc, TimeSpan.FromSeconds(1L)))
 			{
 				if (operation.NoInBattleTimes > 0)
 				{
-					num = dateTimeOffset - (operation.LastCheckFinishTimeUtc ?? dateTimeOffset) >= TimeSpan.FromMilliseconds(100L);
+					num = HasElapsed(dateTimeOffset, operation.LastCheckFinishTimeUtc, TimeSpan.FromMilliseconds(100L));
 					goto IL_012d;
 				}
 				goto IL_013b;
 			}
 		}
-		else if (operation.LastFrameInBattle && !(dateTimeOffset - (operation.LastDetectTimeUtc ?? dateTimeOffset) >= TimeSpan.FromMilliseconds(800L)))
+		else if (operation.LastFrameInBattle && !HasElapsed(dateTimeOffset, operation.LastDetectTimeUtc, TimeSpan.FromMilliseconds(800L)))
 		{
 			if (operation.NoInBattleTimes > 0)
 			{
-				num = dateTimeOffset - (operation.LastCheckFinishTimeUtc ?? dateTimeOffset) >= TimeSpan.FromMilliseconds(100L);
+				num = HasElapsed(dateTimeOffset, operation.LastCheckFinishTimeUtc, TimeSpan.FromMilliseconds(100L));
 				goto IL_012d;
 			}
 			goto IL_013b;
@@ -445,6 +445,11 @@ public sealed class ScreenLostVoidRunLevelRuntime : ILostVoidRunLevelRuntime
 			operation.GameContext.Logger.Information("[.NET诊断] 迷失之地战斗轮次: Phase=TransitionSkipped, InBattle={InBattle}, FrameTimeUtc={FrameTimeUtc}, LastFrameInBattle={LastFrameInBattle}, NoInBattleTimes={NoInBattleTimes}, LastDetectTimeUtc={LastDetectTimeUtc}, LastCheckFinishTimeUtc={LastCheckFinishTimeUtc}", flag, dateTimeOffset, operation.LastFrameInBattle, operation.NoInBattleTimes, operation.LastDetectTimeUtc, operation.LastCheckFinishTimeUtc);
 		}
 		return Task.FromResult(new LostVoidBattleState(flag, NextRegionHint: false, NoLongerInBattleByDetection: false, InInteractScreen: false, BattleFailed: false, TransitionCheckPerformed: false));
+	}
+
+	private static bool HasElapsed(DateTimeOffset currentTime, DateTimeOffset? previousTime, TimeSpan threshold)
+	{
+		return !previousTime.HasValue || currentTime - previousTime.Value >= threshold;
 	}
 
 	public Task<OperationResult> RestartForRetryAsync(LostVoidRunLevel operation, CancellationToken cancellationToken)

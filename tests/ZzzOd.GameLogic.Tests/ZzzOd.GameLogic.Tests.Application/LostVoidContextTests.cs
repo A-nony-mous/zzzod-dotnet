@@ -1563,6 +1563,35 @@ public sealed class LostVoidContextTests
 	}
 
 	[Fact]
+	public async Task ScreenRunLevelRuntime_BattleStateChecksFinishScreenOnFirstNonBattleFrame()
+	{
+		string rootDirectory = CreateTempRoot();
+		try
+		{
+			WriteLostVoidTitleOnlyScreenYaml(rootDirectory);
+			using ZContext context = new ZContext(new OneDragonEnvironment(rootDirectory, rootDirectory));
+			context.OcrService.Matcher = new SequenceOcrMatcher(new IReadOnlyList<OcrMatchResult>[] { new OcrMatchResult[] { Ocr("鸣徽") } });
+			context.ScreenContext.Reload();
+			LostVoidRunLevel operation = new LostVoidRunLevel(context, new LostVoidRunRecord(new LostVoidConfig()), "挚交会谈");
+			using Mat screen = new Mat(new Size(320, 240), MatType.CV_8UC3);
+			Cv2.Randu(screen, Scalar.All(0.0), Scalar.All(255.0));
+			DateTimeOffset frameTimeUtc = DateTimeOffset.UtcNow;
+
+			Assert.Null(operation.LastCheckFinishTimeUtc);
+			LostVoidBattleState state = await ScreenLostVoidRunLevelRuntime.Instance.GetBattleStateAsync(operation, screen, frameTimeUtc, CancellationToken.None);
+
+			Assert.False(state.CurrentFrameInBattle);
+			Assert.True(state.TransitionCheckPerformed);
+			Assert.True(state.FinishScreenChecked);
+			Assert.False(state.InInteractScreen);
+		}
+		finally
+		{
+			Directory.Delete(rootDirectory, recursive: true);
+		}
+	}
+
+	[Fact]
 	public async Task RunLevel_FinishChallengeResultAccumulatesRewardMarkersAcrossFramesBeforeSavingRecord()
 	{
 		string rootDirectory = CreateTempRoot();
@@ -2113,7 +2142,7 @@ public sealed class LostVoidContextTests
 						});
 						LostVoidRunLevel operation = new LostVoidRunLevel(context, new LostVoidRunRecord(new LostVoidConfig()), "挚交会谈");
 						DateTimeOffset frameTime = DateTimeOffset.UtcNow;
-						operation.EnterBattle(frameTime - TimeSpan.FromSeconds(1L));
+						Assert.Null(operation.LastDetectTimeUtc);
 						Task<LostVoidBattleState> battle = Task.Run(async () => await runtime.GetBattleStateAsync(operation, screen, frameTime, CancellationToken.None).ConfigureAwait(continueOnCapturedContext: false));
 						Assert.True(detectorEntered.Wait(TimeSpan.FromSeconds(2L)));
 						context.AutoBattleContext.StateRecordService.UpdateState(new StateRecord("自定义-迷失并发", (double)frameTime.ToUnixTimeMilliseconds() / 1000.0));
