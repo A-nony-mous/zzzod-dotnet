@@ -3,6 +3,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using OneDragon.Core.Screening;
+using OneDragon.Core.Windows.Platform;
 using ZzzOd.Api;
 using ZzzOd.AppHost;
 using ZzzOd.AppHost.Backend;
@@ -25,6 +26,11 @@ internal static class Program
     [STAThread]
     public static int Main(string[] args)
     {
+        // 必须早于任何窗口创建和窗口矩形查询。app.manifest 已声明 PerMonitorV2，
+        // 此处重复调用会被系统判为已配置并视同成功；保留这一行是为了让新增宿主
+        // 即使漏配 manifest 也仍处于感知状态，避免截图裁剪拿到虚拟化坐标。
+        WindowsDpiAwareness.TryEnablePerMonitorDpiAwareness();
+
         ZzzRunRootResolution runRootResolution = ZzzRunRootResolver.Resolve(args);
         string runRoot = runRootResolution.RunRoot.Path;
         using ZzzRuntimeLock? runtimeLock = AcquireRuntimeLock(runRoot, args);

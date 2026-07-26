@@ -3,6 +3,7 @@ using System.Runtime.InteropServices;
 using System.Text.Json;
 using OneDragon.Core.Screening;
 using OneDragon.Core.Windows.Capture;
+using OneDragon.Core.Windows.Platform;
 using OneDragon.Core.Windows.Screening;
 using OpenCvSharp;
 using Windows.Graphics.Capture;
@@ -17,7 +18,8 @@ if (!OperatingSystem.IsWindows())
     return 2;
 }
 
-NativeMethods.SetProcessDpiAwarenessContext(new nint(-4));
+// 交由框架层统一处理，业务侧不再自行判定 DPI 感知级别。
+WindowsDpiAwareness.TryEnablePerMonitorDpiAwareness();
 
 CaptureOptions options;
 try
@@ -388,9 +390,6 @@ internal static class NativeMethods
         internal int X = x;
         internal int Y = y;
     }
-
-    [DllImport("user32.dll")]
-    internal static extern bool SetProcessDpiAwarenessContext(nint dpiContext);
 
     [DllImport("user32.dll")]
     [return: MarshalAs(UnmanagedType.Bool)]
