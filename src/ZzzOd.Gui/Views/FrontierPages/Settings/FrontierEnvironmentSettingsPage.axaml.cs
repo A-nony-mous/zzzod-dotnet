@@ -23,6 +23,7 @@ internal sealed partial class FrontierEnvironmentSettingsPage : UserControl, IZz
         new("自动", "auto"),
         new("Windows Graphics Capture", "wgc"),
         new("Print Window", "print_window"),
+        new("BitBlt", "bitblt"),
     ];
 
     private static readonly ZzzEnvironmentOption[] ProxyTypes =
@@ -368,11 +369,15 @@ internal sealed partial class FrontierEnvironmentSettingsPage : UserControl, IZz
     /// <param name="value">配置中的取值。</param>
     /// <returns>下拉框中对应的取值。</returns>
     /// <remarks>
-    /// 已退役后端的取值仍可能存在于用户配置中，统一显示为自动选择，
-    /// 与配置解析层把这些取值折叠为 auto 的行为保持一致。
+    /// 桌面取像类的旧值并入 BitBlt，已退役后端的取值显示为自动选择，
+    /// 与配置解析层的折叠规则保持一致。
     /// </remarks>
-    private static string NormalizeScreenshotMethodForDisplay(string value) =>
-        value is "mss" or "pil" or "bitblt" or "dwm_shared_surface" ? "auto" : value;
+    private static string NormalizeScreenshotMethodForDisplay(string value) => value switch
+    {
+        "mss" or "pil" => "bitblt",
+        "dwm_shared_surface" => "auto",
+        _ => value,
+    };
 
     private static bool ReadBool(IReadOnlyDictionary<string, object?> values, string key)
     {
