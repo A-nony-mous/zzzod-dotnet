@@ -84,8 +84,7 @@ public sealed class Transport : ZOperation
 		string beforeScreenshotPath = (isEnabled ? ActionLevelDebugEvidenceWriter.WriteScreenshot(fileStem, "before", base.LastScreenshot) : null);
 		Mat? lastScreenshot = base.LastScreenshot;
 		TimeSpan? preDelay = _preClickDelay;
-		TimeSpan? retryDelay = _retryDelay;
-		OperationRoundResult operationRoundResult = RoundByFindAndClickArea(lastScreenshot, "大世界", "地图", preDelay, null, retryDelay);
+		OperationRoundResult operationRoundResult = RoundByFindAndClickArea(lastScreenshot, "大世界", "地图", preDelay, null, null);
 		MapScreenRecognitionSummary mapScreenRecognitionSummary = null;
 		string text = null;
 		if (isEnabled)

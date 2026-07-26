@@ -80,7 +80,7 @@ public sealed class BackToNormalWorld : ZOperation
 			}
 			return RoundSuccess(currentScreen);
 		}
-		OperationRoundResult gotoNormalWorld = RoundByGotoScreen(base.LastScreenshot, "大世界-普通");
+		OperationRoundResult gotoNormalWorld = RoundByGotoScreen(base.LastScreenshot, "大世界-普通", null, null, TimeSpan.Zero);
 		if (gotoNormalWorld.IsSuccess)
 		{
 			return RoundSuccess(gotoNormalWorld.Status);
@@ -237,7 +237,7 @@ public sealed class BackToNormalWorld : ZOperation
 			return null;
 		}
 		await new HollowExitByMenu(base.ZContext, _retryDelay).ExecuteAsync().ConfigureAwait(continueOnCapturedContext: false);
-		return RoundRetry("空洞内", null, _retryDelay);
+		return RoundRetry("空洞内部", null, _retryDelay);
 	}
 
 	private OperationRoundResult? CheckCompendium()
@@ -350,7 +350,8 @@ public sealed class BackToNormalWorld : ZOperation
 				RetryStoppedBecauseOfSuspectedLoop = false
 			});
 		}
-		return operationRoundResult.IsSuccess ? RoundRetry(operationRoundResult.Status, null, TimeSpan.FromMilliseconds(500L)) : RoundRetry(operationRoundResult.Status, null, _retryDelay);
+		// 点击成功或失败都只等待 0.5s，与参考实现 侧未区分点击结果的重试语义保持一致。
+		return RoundRetry(operationRoundResult.Status, null, TimeSpan.FromMilliseconds(500L));
 	}
 
 	private OperationRoundResult FindAndClickWithEvidence(string screenName, string areaName, string nodeName, string actionTarget, string expectedNextState)

@@ -30,7 +30,7 @@ public sealed class GotoMenu : ZOperation
 	[OperationNode("画面识别", IsStartNode = true, NodeMaxRetryTimes = 60)]
 	private async Task<OperationRoundResult> CheckScreenAndRun()
 	{
-		OperationRoundResult gotoMenu = RoundByGotoScreen(base.LastScreenshot, "菜单", _preClickDelay);
+		OperationRoundResult gotoMenu = RoundByGotoScreen(base.LastScreenshot, "菜单", _preClickDelay, null, TimeSpan.Zero);
 		if (gotoMenu.IsSuccess)
 		{
 			return RoundSuccess(gotoMenu.Status);

@@ -105,11 +105,11 @@ public abstract class ZOperation : Operation
 	}
 
 	/// <summary>
-	/// 按 Python <c>wait_round_time</c> 语义把本轮总时长补足到 <paramref name="minimumRoundTime" />。
+	/// 按 参考实现 <c>wait_round_time</c> 语义把本轮总时长补足到 <paramref name="minimumRoundTime" />。
 	/// </summary>
 	/// <remarks>
 	/// 补足计算由框架轮循环完成（<see cref="OperationRoundResult.DelayUntilRoundTime" />），
-	/// 锚点是循环顶部、截图之前，对应 Python <c>operation.py:404</c> 的 <c>round_start_time</c>。
+	/// 锚点是循环顶部、截图之前，对应参考实现 <c>operation.py:404</c> 的 <c>round_start_time</c>。
 	/// 原先按 <c>LastScreenshotTimeUtc</c>（截图完成时刻）自行计算的实现已下线：那个锚点每轮会多等一个截图耗时。
 	/// </remarks>
 	protected OperationRoundResult RoundWaitForScreenshotRound(TimeSpan minimumRoundTime, string? status = null, object? data = null)
@@ -136,7 +136,7 @@ public abstract class ZOperation : Operation
 	/// </summary>
 	/// <remarks>
 	/// <c>successDelayUntilRoundTime</c> / <c>retryDelayUntilRoundTime</c> 是补足制通道，
-	/// 对应 Python <c>round_by_find_area</c> 的 <c>success_wait_round</c> / <c>retry_wait_round</c>；
+	/// 对应参考实现 <c>round_by_find_area</c> 的 <c>success_wait_round</c> / <c>retry_wait_round</c>；
 	/// <c>successDelay</c> / <c>retryDelay</c> 是固定延时，对应 <c>success_wait</c> / <c>retry_wait</c>。
 	/// </remarks>
 	protected OperationRoundResult RoundByFindArea(Mat? screen, string screenName, string areaName, TimeSpan? successDelay = null, TimeSpan? retryDelay = null, bool cropFirst = true, TimeSpan? successDelayUntilRoundTime = null, TimeSpan? retryDelayUntilRoundTime = null)
@@ -193,7 +193,7 @@ public abstract class ZOperation : Operation
 	/// </summary>
 	/// <remarks>
 	/// <c>successDelayUntilRoundTime</c> / <c>retryDelayUntilRoundTime</c> 是补足制通道，
-	/// 对应 Python <c>round_by_find_and_click_area</c> 的 <c>success_wait_round</c> / <c>retry_wait_round</c>。
+	/// 对应参考实现 <c>round_by_find_and_click_area</c> 的 <c>success_wait_round</c> / <c>retry_wait_round</c>。
 	/// </remarks>
 	protected OperationRoundResult RoundByFindAndClickArea(Mat? screen = null, string? screenName = null, string? areaName = null, TimeSpan? preDelay = null, TimeSpan? successDelay = null, TimeSpan? retryDelay = null, bool cropFirst = true, bool centerX = false, IReadOnlyList<(string ScreenName, string AreaName)>? untilFindAll = null, IReadOnlyList<(string ScreenName, string AreaName)>? untilNotFindAll = null, TimeSpan? successDelayUntilRoundTime = null, TimeSpan? retryDelayUntilRoundTime = null)
 	{
@@ -274,17 +274,47 @@ public abstract class ZOperation : Operation
 	}
 
 	/// <summary>
-	/// OCR 查找文本并点击。
+	/// OCR 查找单一目标文本并点击。
+	/// 两段判定：先按相似度全局最优候选粗筛（截断 0.6），再对该候选做最长公共子序列校验（阈值 <paramref name="lcsPercent"/>），
+	/// 两段都通过才点击；与按优先级列表匹配的单段算法是两个不同用途的门槛，不得合并。
 	/// </summary>
-	protected OperationRoundResult RoundByOcrAndClick(Mat? screen, string targetText, OneDragon.Core.Screen.ScreenArea? area = null, double lcsPercent = 0.6, OneDragon.Core.Abstractions.Geometry.Point? offset = null, TimeSpan? successDelay = null, TimeSpan? retryDelay = null, IReadOnlyList<IReadOnlyList<int>>? colorRange = null, bool cropFirst = true)
+	protected OperationRoundResult RoundByOcrAndClick(Mat? screen, string targetText, OneDragon.Core.Screen.ScreenArea? area = null, double lcsPercent = 0.5, OneDragon.Core.Abstractions.Geometry.Point? offset = null, TimeSpan? successDelay = null, TimeSpan? retryDelay = null, IReadOnlyList<IReadOnlyList<int>>? colorRange = null, bool cropFirst = true)
 	{
-		return RoundByOcrAndClickByPriority(screen, new string[] { targetText }, area, lcsPercent, offset, successDelay, retryDelay, colorRange, cropFirst);
+		if (screen == null)
+		{
+			return RoundRetry("未获取截图", null, retryDelay);
+		}
+		if (string.IsNullOrWhiteSpace(targetText))
+		{
+			return RoundRetry("未指定 OCR 文本", null, retryDelay);
+		}
+		if (ZContext.Controller == null)
+		{
+			return RoundRetry("点击失败", null, retryDelay);
+		}
+		IReadOnlyList<OcrMatchResult> ocrResultList = ZContext.OcrService.GetOcrResultList(screen, colorRange ?? area?.ColorRange, area?.Rect, cropFirst);
+		string resolvedTarget = ZContext.GameTextResolver(targetText);
+		int? bestIndex = StringUtils.FindBestMatchByDifflib(resolvedTarget, ocrResultList.Select((OcrMatchResult result) => result.Text).ToArray(), 0.6);
+		if (!bestIndex.HasValue)
+		{
+			return RoundRetry("找不到 " + targetText, null, retryDelay);
+		}
+		OcrMatchResult candidate = ocrResultList[bestIndex.Value];
+		if (!StringUtils.FindByLcs(resolvedTarget, candidate.Text, lcsPercent))
+		{
+			return RoundRetry("找不到 " + targetText, null, retryDelay);
+		}
+		OneDragon.Core.Abstractions.Geometry.Point clickPoint = ((!offset.HasValue) ? candidate.Center : (candidate.Center + offset.Value));
+		SleepIfNeeded(DefaultFindAndClickPreDelay);
+		return ZContext.Controller.Click(clickPoint, null, area?.PcAlt ?? false, area?.GamepadKey)
+			? RoundSuccess(targetText, null, successDelay)
+			: RoundRetry("点击失败 " + targetText, null, retryDelay);
 	}
 
 	/// <summary>
-	/// 按优先级 OCR 查找文本并点击。
+	/// 按优先级 OCR 查找文本并点击（单段相似度匹配，截断默认 0.6）。
 	/// </summary>
-	protected OperationRoundResult RoundByOcrAndClickByPriority(Mat? screen, IReadOnlyList<string> targetTextList, OneDragon.Core.Screen.ScreenArea? area = null, double lcsPercent = 0.5, OneDragon.Core.Abstractions.Geometry.Point? offset = null, TimeSpan? successDelay = null, TimeSpan? retryDelay = null, IReadOnlyList<IReadOnlyList<int>>? colorRange = null, bool cropFirst = true, IReadOnlyList<string>? ignoreTextList = null)
+	protected OperationRoundResult RoundByOcrAndClickByPriority(Mat? screen, IReadOnlyList<string> targetTextList, OneDragon.Core.Screen.ScreenArea? area = null, double lcsPercent = 0.6, OneDragon.Core.Abstractions.Geometry.Point? offset = null, TimeSpan? successDelay = null, TimeSpan? retryDelay = null, IReadOnlyList<IReadOnlyList<int>>? colorRange = null, bool cropFirst = true, IReadOnlyList<string>? ignoreTextList = null)
 	{
 		if (screen == null)
 		{
@@ -376,6 +406,8 @@ public abstract class ZOperation : Operation
 	/// </summary>
 	protected OperationRoundResult RoundByGotoScreen(Mat? screen = null, string? screenName = null, TimeSpan? preDelay = null, TimeSpan? successDelay = null, TimeSpan? retryDelay = null, bool cropFirst = true)
 	{
+		// 未显式指定重试等待时按 1 秒处理；调用方要表达"零等待"须显式传 TimeSpan.Zero。
+		retryDelay ??= TimeSpan.FromSeconds(1L);
 		if (screen == null)
 		{
 			screen = LastScreenshot;

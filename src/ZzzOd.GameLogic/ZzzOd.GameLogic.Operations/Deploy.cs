@@ -41,16 +41,14 @@ public sealed class Deploy : ZOperation
 		}
 		Mat? lastScreenshot = base.LastScreenshot;
 		TimeSpan? preDelay = _preClickDelay;
-		TimeSpan? retryDelay = _retryDelay;
-		OperationRoundResult operationRoundResult2 = RoundByFindAndClickArea(lastScreenshot, "通用-出战", "按钮-队员数量少-确认", preDelay, null, retryDelay);
+		OperationRoundResult operationRoundResult2 = RoundByFindAndClickArea(lastScreenshot, "通用-出战", "按钮-队员数量少-确认", preDelay, null, null);
 		if (operationRoundResult2.IsSuccess)
 		{
 			return RoundWait(operationRoundResult2.Status, null, _retryDelay);
 		}
 		Mat? lastScreenshot2 = base.LastScreenshot;
 		TimeSpan? preDelay2 = _preClickDelay;
-		retryDelay = _retryDelay;
-		OperationRoundResult operationRoundResult3 = RoundByFindAndClickArea(lastScreenshot2, "通用-出战", "按钮-等级低-确定并出战", preDelay2, null, retryDelay);
+		OperationRoundResult operationRoundResult3 = RoundByFindAndClickArea(lastScreenshot2, "通用-出战", "按钮-等级低-确定并出战", preDelay2, null, null);
 		if (operationRoundResult3.IsSuccess)
 		{
 			return RoundWait(operationRoundResult3.Status, null, _retryDelay);

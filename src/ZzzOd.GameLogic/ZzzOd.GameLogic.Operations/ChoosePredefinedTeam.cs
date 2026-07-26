@@ -154,8 +154,7 @@ public sealed class ChoosePredefinedTeam : ZOperation
 	{
 		Mat? lastScreenshot = base.LastScreenshot;
 		TimeSpan? preDelay = _preClickDelay;
-		TimeSpan? retryDelay = _retryDelay;
-		OperationRoundResult operationRoundResult = RoundByFindAndClickArea(lastScreenshot, "实战模拟室", "预备出战", preDelay, null, retryDelay);
+		OperationRoundResult operationRoundResult = RoundByFindAndClickArea(lastScreenshot, "实战模拟室", "预备出战", preDelay, null, null);
 		if (!operationRoundResult.IsSuccess)
 		{
 			return RoundRetry(operationRoundResult.Status, null, _retryDelay);

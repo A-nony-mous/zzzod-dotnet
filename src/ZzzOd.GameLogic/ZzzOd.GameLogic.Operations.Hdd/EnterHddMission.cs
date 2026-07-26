@@ -45,15 +45,13 @@ public sealed class EnterHddMission : ZOperation
 		OneDragon.Core.Screen.ScreenArea area = base.ZContext.ScreenContext.GetArea("HDD", "章节列表");
 		Mat? lastScreenshot = base.LastScreenshot;
 		string chapter = _chapter;
-		TimeSpan? successDelay = _retryDelay;
-		TimeSpan? retryDelay = _retryDelay;
-		OperationRoundResult operationRoundResult = RoundByOcrAndClick(lastScreenshot, chapter, area, 0.6, null, successDelay, retryDelay);
+		OperationRoundResult operationRoundResult = RoundByOcrAndClick(lastScreenshot, chapter, area, 0.5, null, null, null);
 		if (operationRoundResult.IsSuccess)
 		{
 			return RoundWait(operationRoundResult.Status, null, _retryDelay);
 		}
 		OneDragon.Core.Screen.ScreenArea area2 = base.ZContext.ScreenContext.GetArea("HDD", "章节显示");
-		OperationRoundResult operationRoundResult2 = RoundByOcr(base.LastScreenshot, _chapter, area2, 0.5, _retryDelay, _retryDelay);
+		OperationRoundResult operationRoundResult2 = RoundByOcr(base.LastScreenshot, _chapter, area2, 0.5, null, null);
 		if (operationRoundResult2.IsSuccess)
 		{
 			return RoundSuccess(operationRoundResult2.Status);
@@ -74,9 +72,7 @@ public sealed class EnterHddMission : ZOperation
 		OneDragon.Core.Screen.ScreenArea area = base.ZContext.ScreenContext.GetArea("HDD", "委托区域");
 		Mat? lastScreenshot = base.LastScreenshot;
 		string missionType = _missionType;
-		TimeSpan? successDelay = TimeSpan.FromSeconds(2L);
-		TimeSpan? retryDelay = _retryDelay;
-		OperationRoundResult operationRoundResult = RoundByOcrAndClick(lastScreenshot, missionType, area, 0.6, null, successDelay, retryDelay);
+		OperationRoundResult operationRoundResult = RoundByOcrAndClick(lastScreenshot, missionType, area, 0.5, null, null, null);
 		if (operationRoundResult.IsSuccess)
 		{
 			return RoundWait(operationRoundResult.Status, null, TimeSpan.FromSeconds(2L));
@@ -97,15 +93,12 @@ public sealed class EnterHddMission : ZOperation
 		}
 		Mat? lastScreenshot = base.LastScreenshot;
 		string missionName = _missionName;
-		TimeSpan? successDelay = _retryDelay;
-		TimeSpan? retryDelay = _retryDelay;
-		OperationRoundResult operationRoundResult = RoundByOcrAndClick(lastScreenshot, missionName, area, 0.6, null, successDelay, retryDelay);
+		OperationRoundResult operationRoundResult = RoundByOcrAndClick(lastScreenshot, missionName, area, 0.5, null, null, null);
 		if (operationRoundResult.IsSuccess)
 		{
 			Mat? lastScreenshot2 = base.LastScreenshot;
 			string missionName2 = _missionName;
-			retryDelay = _retryDelay;
-			RoundByOcrAndClick(lastScreenshot2, missionName2, area, 0.6, null, retryDelay);
+			RoundByOcrAndClick(lastScreenshot2, missionName2, area, 0.5, null, null);
 			return RoundSuccess(operationRoundResult.Status, null, _retryDelay);
 		}
 		OneDragon.Core.Abstractions.Geometry.Point center = area.Center;

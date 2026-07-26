@@ -71,9 +71,9 @@ public sealed class RestoreCharge : ZOperation
 		}
 		if (IsAfterBattleRetry)
 		{
-			return RoundByFindAndClickArea(base.LastScreenshot, "战斗画面", "战斗结果-再来一次", _preClickDelay, _retryDelay, _retryDelay);
+			return RoundByFindAndClickArea(base.LastScreenshot, "战斗画面", "战斗结果-再来一次", _preClickDelay, _retryDelay, null);
 		}
-		return RoundByFindAndClickArea(base.LastScreenshot, "实战模拟室", "下一步", _preClickDelay, _retryDelay, _retryDelay);
+		return RoundByFindAndClickArea(base.LastScreenshot, "实战模拟室", "下一步", _preClickDelay, _retryDelay, null);
 	}
 
 	[NodeFrom("打开恢复界面")]
