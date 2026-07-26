@@ -23,10 +23,6 @@ internal sealed partial class ZzzLogDisplayCard : UserControl, IZzzPageLifecycle
     private CancellationTokenSource? _cancellation;
     private bool _active;
     private bool _following = true;
-    private bool _mouseButtonDown;
-    private bool _scrollUpdateQueued;
-    private bool _pendingScrollToEnd;
-    private Vector _pendingOffset;
     private string _statusText = "已停止";
 
     public ZzzLogDisplayCard(IZzzAppBackend backend, int maxLines = 300)
@@ -49,8 +45,9 @@ internal sealed partial class ZzzLogDisplayCard : UserControl, IZzzPageLifecycle
         _logScrollViewer.PointerWheelChanged += OnPointerWheelChanged;
         _logScrollViewer.PointerPressed += OnPointerPressed;
         _logScrollViewer.PointerReleased += OnPointerReleased;
-        _logScrollViewer.PointerCaptureLost += OnPointerCaptureLost;
     }
+
+    private double ScrollMaximum => Math.Max(0d, _logScrollViewer.Extent.Height - _logScrollViewer.Viewport.Height);
 
     public int MaxLines { get; set; }
 
@@ -74,7 +71,7 @@ internal sealed partial class ZzzLogDisplayCard : UserControl, IZzzPageLifecycle
         _following = true;
         _statusText = "跟随中";
         _followResumeTimer.Stop();
-        QueueScrollUpdate(true, _logScrollViewer.Offset);
+        ScrollToEnd();
         EnsureSubscribed();
     }
 
@@ -82,7 +79,6 @@ internal sealed partial class ZzzLogDisplayCard : UserControl, IZzzPageLifecycle
     {
         _active = false;
         _following = false;
-        _mouseButtonDown = false;
         _followResumeTimer.Stop();
         _statusText = "已暂停";
     }
@@ -91,7 +87,6 @@ internal sealed partial class ZzzLogDisplayCard : UserControl, IZzzPageLifecycle
     {
         _active = false;
         _following = false;
-        _mouseButtonDown = false;
         _followResumeTimer.Stop();
         _statusText = "已停止";
     }
@@ -103,7 +98,7 @@ internal sealed partial class ZzzLogDisplayCard : UserControl, IZzzPageLifecycle
         _statusText = !following ? "已暂停跟随" : (_active ? "跟随中" : "已停止");
         if (following)
         {
-            QueueScrollUpdate(true, _logScrollViewer.Offset);
+            ScrollToEnd();
         }
     }
 
@@ -243,66 +238,58 @@ internal sealed partial class ZzzLogDisplayCard : UserControl, IZzzPageLifecycle
 
     private void UpdateOutput()
     {
-        Vector previousOffset = _logScrollViewer.Offset;
         _output.Text = _lines.Count == 0 ? string.Empty : string.Join(Environment.NewLine, _lines);
-        QueueScrollUpdate(_following, previousOffset);
+        ScrollToEnd();
     }
 
-    private void QueueScrollUpdate(bool scrollToEnd, Vector previousOffset)
+    /// <summary>
+    /// 跟随状态下把视口对齐到末尾。文本刚变更时布局还没跑，这里拿到的是旧的 <see cref="ScrollViewer.Extent"/>；
+    /// 布局完成后 <see cref="ScrollViewer.ScrollChanged"/> 会带着新的 Extent 再调用一次，最终一定落到真正的末尾。
+    /// </summary>
+    private void ScrollToEnd()
     {
-        _pendingScrollToEnd = scrollToEnd;
-        _pendingOffset = previousOffset;
-        if (_scrollUpdateQueued)
+        if (!_following)
         {
             return;
         }
 
-        _scrollUpdateQueued = true;
-        Dispatcher.UIThread.Post(ApplyPendingScroll, DispatcherPriority.Render);
-    }
+        double maximum = ScrollMaximum;
+        if (Math.Abs(_logScrollViewer.Offset.Y - maximum) <= double.Epsilon)
+        {
+            return;
+        }
 
-    private void ApplyPendingScroll()
-    {
-        _scrollUpdateQueued = false;
-        double maximum = Math.Max(0d, _logScrollViewer.Extent.Height - _logScrollViewer.Viewport.Height);
-        double target = _pendingScrollToEnd && _following
-            ? maximum
-            : Math.Clamp(_pendingOffset.Y, 0d, maximum);
-        _logScrollViewer.Offset = new Vector(_logScrollViewer.Offset.X, target);
+        _logScrollViewer.Offset = new Vector(_logScrollViewer.Offset.X, maximum);
     }
 
     private void OnPointerWheelChanged(object? sender, PointerWheelEventArgs args) => PauseFollowingUntilIdle();
 
-    private void OnPointerPressed(object? sender, PointerPressedEventArgs args)
-    {
-        _mouseButtonDown = true;
-        PauseFollowingUntilIdle();
-        _followResumeTimer.Stop();
-    }
+    private void OnPointerPressed(object? sender, PointerPressedEventArgs args) => PauseFollowingUntilIdle();
 
-    private void OnPointerReleased(object? sender, PointerReleasedEventArgs args)
-    {
-        _mouseButtonDown = false;
-        PauseFollowingUntilIdle();
-    }
-
-    private void OnPointerCaptureLost(object? sender, PointerCaptureLostEventArgs args)
-    {
-        _mouseButtonDown = false;
-        PauseFollowingUntilIdle();
-    }
+    private void OnPointerReleased(object? sender, PointerReleasedEventArgs args) => PauseFollowingUntilIdle();
 
     private void OnScrollChanged(object? sender, ScrollChangedEventArgs args)
     {
-        if (_following || _mouseButtonDown)
+        if (_following)
+        {
+            // 只有布局改变了内容量或视口高度才需要重新对齐，跟随自身造成的偏移变化不参与。
+            if (Math.Abs(args.ExtentDelta.Y) > double.Epsilon || Math.Abs(args.ViewportDelta.Y) > double.Epsilon)
+            {
+                ScrollToEnd();
+            }
+
+            return;
+        }
+
+        if (!_active)
         {
             return;
         }
 
-        double maximum = Math.Max(0d, _logScrollViewer.Extent.Height - _logScrollViewer.Viewport.Height);
+        double maximum = ScrollMaximum;
         bool scrollable = maximum > BottomTolerance;
         bool atBottom = maximum - _logScrollViewer.Offset.Y <= BottomTolerance;
-        if (scrollable && atBottom && _active)
+        if (scrollable && atBottom)
         {
             _following = true;
             _statusText = "跟随中";
@@ -313,14 +300,21 @@ internal sealed partial class ZzzLogDisplayCard : UserControl, IZzzPageLifecycle
     private void OnFollowResumeTimerTick(object? sender, EventArgs args)
     {
         _followResumeTimer.Stop();
-        if (!_active || _output.SelectionStart != _output.SelectionEnd)
+        if (!_active)
         {
+            return;
+        }
+
+        if (_output.SelectionStart != _output.SelectionEnd)
+        {
+            // 用户还留着选中的日志，等选中取消后再恢复跟随。
+            _followResumeTimer.Start();
             return;
         }
 
         _following = true;
         _statusText = "跟随中";
-        QueueScrollUpdate(true, _logScrollViewer.Offset);
+        ScrollToEnd();
     }
 }
 
