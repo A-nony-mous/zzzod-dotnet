@@ -119,7 +119,7 @@ internal sealed class LostVoidAppOperation : ZOperation
 	[NodeFrom("识别初始画面", Status = "可前往副本画面")]
 	[NodeFrom("识别初始画面", Status = "迷失之地-入口")]
 	[NodeFrom("前往迷失之地-入口")]
-	[OperationNode("开始前等待入口加载", NodeMaxRetryTimes = 60)]
+	[OperationNode("开始前等待入口加载")]
 	private OperationRoundResult WaitLostVoidEntry()
 	{
 		return WaitForLostVoidEntry();
@@ -485,7 +485,7 @@ internal sealed class LostVoidAppOperation : ZOperation
 	}
 
 	[NodeFrom("识别悬赏委托完成进度", Status = "继续挑战")]
-	[OperationNode("前往副本画面", NodeMaxRetryTimes = 60)]
+	[OperationNode("前往副本画面")]
 	private OperationRoundResult GotoMissionScreen()
 	{
 		OperationRoundResult result;
