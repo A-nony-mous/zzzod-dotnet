@@ -67,6 +67,7 @@ public sealed class ZzzPushNotificationService : IZzzPushNotificationService
 		["mail.ee"] = new ZzzEmailServicePreset("smtp.mail.ee", 587, Secure: false),
 		["Mail.ru"] = new ZzzEmailServicePreset("smtp.mail.ru", 465, Secure: true),
 		["Mailcatch.app"] = new ZzzEmailServicePreset("sandbox-smtp.mailcatch.app", 2525, Secure: false),
+		["Maildev"] = new ZzzEmailServicePreset("localhost", 1025, Secure: false),
 		["Mailgun"] = new ZzzEmailServicePreset("smtp.mailgun.org", 465, Secure: true),
 		["Mailjet"] = new ZzzEmailServicePreset("in.mailjet.com", 587, Secure: false),
 		["Mailosaur"] = new ZzzEmailServicePreset("mailosaur.io", 25, Secure: false),
@@ -848,7 +849,11 @@ public sealed class ZzzPushNotificationService : IZzzPushNotificationService
 	{
 		if (!TryEncodeJpeg(image, out byte[] bytes))
 		{
-			throw new InvalidOperationException("图片处理失败");
+			// 图片编码失败时回退为不带图的纯文本请求，而不是让整次推送失败。
+			return JsonPost(url, new
+			{
+				content = title + "\n" + content
+			}, authorization);
 		}
 		MultipartFormDataContent multipartFormDataContent = new MultipartFormDataContent();
 		multipartFormDataContent.Add(new StringContent(JsonSerializer.Serialize(new
@@ -918,8 +923,11 @@ public sealed class ZzzPushNotificationService : IZzzPushNotificationService
 		int configuredPort;
 		int port = ((server.Length == 2 && int.TryParse(server[1], out configuredPort)) ? configuredPort : 465);
 		string email = Get(config, "smtp_email");
-		using MailMessage message = new MailMessage(email, email, title, content)
+		string displayName = Get(config, "smtp_name", "OneDragon");
+		using MailMessage message = new MailMessage(new MailAddress(email, displayName), new MailAddress(email, displayName))
 		{
+			Subject = title,
+			Body = content,
 			BodyEncoding = Encoding.UTF8,
 			SubjectEncoding = Encoding.UTF8
 		};
@@ -935,9 +943,14 @@ public sealed class ZzzPushNotificationService : IZzzPushNotificationService
 			message.AlternateViews.Add(view);
 		}
 		bool ssl;
+		bool starttls;
+		bool.TryParse(Get(config, "smtp_ssl", "true"), out ssl);
+		bool.TryParse(Get(config, "smtp_starttls", "false"), out starttls);
 		using SmtpClient client = new SmtpClient(server[0], port)
 		{
-			EnableSsl = (bool.TryParse(Get(config, "smtp_ssl", "true"), out ssl) && ssl),
+			// System.Net.Mail.SmtpClient 的 EnableSsl 只表达 STARTTLS 语义（连接后升级），
+			// 没有真正的隐式 SSL；ssl 或 starttls 任一开启都需要它。
+			EnableSsl = ssl || starttls,
 			Credentials = new NetworkCredential(email, Get(config, "smtp_password"))
 		};
 		await client.SendMailAsync(message, cancellationToken).ConfigureAwait(continueOnCapturedContext: false);

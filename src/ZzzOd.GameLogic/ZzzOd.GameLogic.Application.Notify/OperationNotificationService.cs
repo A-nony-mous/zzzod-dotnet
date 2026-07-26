@@ -101,7 +101,7 @@ public sealed class OperationNotificationService : IDisposable
 			if (settings.Detail == "merge" && _pool.Items.Count > 0)
 			{
 				IReadOnlyList<string> values = ((settings.Lifecycle == "off") ? _pool.Items.Select((NotificationPoolItem item) => item.Content).ToArray() : new string[1] { text }.Concat(_pool.Items.Select((NotificationPoolItem item) => item.Content)).ToArray());
-				Dispatch(settings.Title, string.Join(Environment.NewLine, values), _pool.LastImage);
+				Dispatch(settings.Title, string.Join("\n---\n", values), _pool.LastImage);
 			}
 			else if (settings.Lifecycle != "off")
 			{

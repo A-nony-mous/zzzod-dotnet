@@ -43,7 +43,7 @@ public sealed class DefaultNotifyAppFlow : INotifyAppFlow
 		OperationResult result = await (_pushService ?? context.PushNotificationService).PushAsync(context, _titleProvider(context), message.Content, screenshot, cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
 		if (!result.IsSuccess)
 		{
-			context.Logger.Warning("通知推送返回失败，但 NotifyApp 结果按 Python 语义只由失败指令决定。Status={Status}", result.Status);
+			context.Logger.Warning("通知推送返回失败，但 NotifyApp 结果按 参考实现 语义只由失败指令决定。Status={Status}", result.Status);
 		}
 		await _delayAsync(TimeSpan.FromSeconds(5L), cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
 		return (!message.HasFailure) ? new OperationResult(IsSuccess: true, "通知已发送", message.Content) : new OperationResult(IsSuccess: false, "存在失败指令", message.Content);
