@@ -109,7 +109,7 @@ public sealed class AgentEnum
 
 	public static readonly AgentEnum PROMEIA = new AgentEnum(Create("promeia", "普罗米娅", RareTypeEnum.S, AgentTypeEnum.ANOMALY, DmgTypeEnum.ICE, new string[] { "promeia" }, new string[] { "普罗米娅-霜刑" }));
 
-	public static readonly AgentEnum VELINA = new AgentEnum(Create("velina", "维琳娜", RareTypeEnum.S, AgentTypeEnum.ANOMALY, DmgTypeEnum.WIND, new string[] { "velina" }, new string[] { "维琳娜-风华" }));
+	public static readonly AgentEnum VELINA = new AgentEnum(Create("velina", "维琳娜", RareTypeEnum.S, AgentTypeEnum.ANOMALY, DmgTypeEnum.WIND, new string[2] { "velina", "velina_shade_of_leisure" }, new string[] { "维琳娜-风华" }));
 
 	public static readonly AgentEnum PYROIS_WISE = new AgentEnum(Create("pyrois_wise", "佩洛伊斯", RareTypeEnum.S, AgentTypeEnum.ATTACK, DmgTypeEnum.ETHER, new string[] { "pyrois_wise" }, new string[] { "佩洛伊斯-日珥" }));
 
