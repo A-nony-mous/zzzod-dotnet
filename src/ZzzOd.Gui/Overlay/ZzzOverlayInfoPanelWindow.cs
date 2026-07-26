@@ -215,7 +215,7 @@ internal sealed class ZzzOverlayInfoPanelWindow : Window
         {
             ZzzOverlayPhysicalRect bounds = panel.IsFreeMode
                 ? ResolveFreeBounds(panel)
-                : ZzzOverlayPanelLayout.ResolveLocked(panel, gameWindow);
+                : ZzzOverlayPanelLayout.ResolveLocked(panel, gameWindow, settings.Panels);
             ApplyPhysicalBounds(bounds);
             _geometryApplied = true;
         }

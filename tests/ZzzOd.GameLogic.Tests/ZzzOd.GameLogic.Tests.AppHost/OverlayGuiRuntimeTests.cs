@@ -258,6 +258,74 @@ public sealed class OverlayGuiRuntimeTests
         }
     }
 
+    /// <summary>
+    /// 出厂默认几何下所有已启用面板的停靠矩形必须两两不相交，并落在游戏客户区边距内。
+    /// </summary>
+    [Fact]
+    public void DefaultDockLayoutKeepsEnabledPanelsDisjointInsideGameBounds()
+    {
+        ZzzOverlayGuiSettings settings = new();
+        ZzzWindowStatusDto game = Window(0, 0, 1920, 1080, 96);
+
+        Dictionary<string, ZzzOverlayPhysicalRect> docks = settings.Panels
+            .Where(panel => panel.Enabled)
+            .ToDictionary(
+                panel => panel.Id,
+                panel => ZzzOverlayPanelLayout.ResolveLocked(panel, game, settings.Panels),
+                StringComparer.Ordinal);
+
+        Assert.Equal(16d, docks["state"].Y, 4);
+        Assert.Equal(144d, docks["decision"].Y, 4);
+        Assert.Equal(292d, docks["timeline"].Y, 4);
+        Assert.Equal(470d, docks["performance"].Y, 4);
+
+        foreach (KeyValuePair<string, ZzzOverlayPhysicalRect> entry in docks)
+        {
+            Assert.True(
+                entry.Value.X >= 16d && entry.Value.Y >= 16d &&
+                entry.Value.Right <= 1904d && entry.Value.Bottom <= 1064d,
+                $"面板 {entry.Key} 的停靠矩形超出了游戏客户区边距。");
+        }
+
+        string[] ids = [.. docks.Keys];
+        for (int i = 0; i < ids.Length; i++)
+        {
+            for (int j = i + 1; j < ids.Length; j++)
+            {
+                Assert.False(
+                    Intersects(docks[ids[i]], docks[ids[j]]),
+                    $"面板 {ids[i]} 与 {ids[j]} 的停靠矩形重叠。");
+            }
+        }
+    }
+
+    /// <summary>
+    /// 右列中被禁用的面板不占位，其后的面板向上递补。
+    /// </summary>
+    [Fact]
+    public void DisabledPanelDoesNotOccupyDefaultDockSlot()
+    {
+        ZzzOverlayGuiSettings settings = new();
+        settings.Panels.Single(panel => panel.Id == "decision").Enabled = false;
+        ZzzWindowStatusDto game = Window(0, 0, 1920, 1080, 96);
+
+        ZzzOverlayPhysicalRect timeline = ZzzOverlayPanelLayout.ResolveLocked(
+            settings.Panels.Single(panel => panel.Id == "timeline"),
+            game,
+            settings.Panels);
+        ZzzOverlayPhysicalRect performance = ZzzOverlayPanelLayout.ResolveLocked(
+            settings.Panels.Single(panel => panel.Id == "performance"),
+            game,
+            settings.Panels);
+
+        Assert.Equal(144d, timeline.Y, 4);
+        Assert.Equal(322d, performance.Y, 4);
+    }
+
+    private static bool Intersects(ZzzOverlayPhysicalRect left, ZzzOverlayPhysicalRect right) =>
+        left.X < right.Right && right.X < left.Right &&
+        left.Y < right.Bottom && right.Y < left.Bottom;
+
     private static ZzzWindowStatusDto Window(int x, int y, int width, int height, uint dpi) =>
         new(null, true, true, false, x, y, width, height, false, dpi);
 }

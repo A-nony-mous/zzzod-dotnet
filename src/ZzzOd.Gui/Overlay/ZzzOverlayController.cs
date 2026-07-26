@@ -508,7 +508,7 @@ internal sealed class ZzzOverlayController : IDisposable
             }
             else
             {
-                ZzzOverlayPanelLayout.StoreLocked(panel, ZzzOverlayPanelLayout.ResolveLocked(panel, gameWindow), gameWindow);
+                ZzzOverlayPanelLayout.StoreLocked(panel, ZzzOverlayPanelLayout.ResolveLocked(panel, gameWindow, Settings.Panels), gameWindow);
             }
         }
 
@@ -636,7 +636,7 @@ internal sealed class ZzzOverlayController : IDisposable
         }
         else
         {
-            physicalBounds = ZzzOverlayPanelLayout.ResolveLocked(panel, gameWindow);
+            physicalBounds = ZzzOverlayPanelLayout.ResolveLocked(panel, gameWindow, Settings.Panels);
         }
 
         ZzzOverlayDisplayArea fallbackDisplayArea = ResolveDisplayAreaForPanel(
