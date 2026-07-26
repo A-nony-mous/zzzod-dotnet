@@ -114,12 +114,26 @@ public sealed class AgentStateCheckerTests
 	[Fact]
 	public void CheckTemplateFoundAndNotFound_UsesInMemoryTemplate()
 	{
+		// TM_CCOEFF_NORMED 对零方差模板退化（结果恒 1），与 Python 一致使用带纹理模板
 		using Mat template = new Mat(3, 3, MatType.CV_8UC3, new Scalar(255.0, 255.0, 255.0));
+		template.Set(2, 2, new Vec3b(0, 0, 0));
 		using Mat mat = new Mat(8, 8, MatType.CV_8UC3, new Scalar(0.0, 0.0, 0.0));
 		Cv2.Rectangle(mat, new Rect(4, 4, 3, 3), new Scalar(255.0, 255.0, 255.0), -1);
+		mat.Set(6, 6, new Vec3b(0, 0, 0));
 		using Mat source = new Mat(8, 8, MatType.CV_8UC3, new Scalar(0.0, 0.0, 0.0));
 		Assert.Equal(1, AgentStateChecker.CheckTemplateFound(mat, template, 0.99));
 		Assert.Equal(1, AgentStateChecker.CheckTemplateNotFound(source, template, 0.99));
+	}
+
+	[Fact]
+	public void CheckTemplateFound_UniformBrightRegionIsNotAMatch()
+	{
+		// 回归：CCorrNormed 下亮色模板对任意亮色区域给出 ~0.94 的假命中（叶瞬光-常态 恒真问题），
+		// CCoeffNormed（Python TM_CCOEFF_NORMED）下均值中心化后相关性为 0
+		using Mat template = new Mat(3, 3, MatType.CV_8UC3, new Scalar(255.0, 255.0, 255.0));
+		template.Set(2, 2, new Vec3b(0, 0, 0));
+		using Mat source = new Mat(8, 8, MatType.CV_8UC3, new Scalar(200.0, 200.0, 200.0));
+		Assert.Equal(0, AgentStateChecker.CheckTemplateFound(source, template, 0.8));
 	}
 
 	[Fact]
@@ -132,6 +146,7 @@ public sealed class AgentStateCheckerTests
 			using ZContext ctx = new ZContext(new OneDragonEnvironment(text));
 			using Mat mat = new Mat(10, 10, MatType.CV_8UC3, new Scalar(0.0, 0.0, 0.0));
 			Cv2.Rectangle(mat, new Rect(2, 2, 3, 3), new Scalar(255.0, 255.0, 255.0), -1);
+			mat.Set(4, 4, new Vec3b(0, 0, 0));
 			using Mat screen = new Mat(10, 10, MatType.CV_8UC3, new Scalar(0.0, 0.0, 0.0));
 			double? templateThreshold = 0.99;
 			AgentStateDef stateDef = new AgentStateDef("模板存在", AgentStateCheckWay.TEMPLATE_FOUND, "probe", null, null, null, null, null, null, 100, null, templateThreshold);
@@ -227,7 +242,9 @@ public sealed class AgentStateCheckerTests
 		string text = Path.Combine(buffer);
 		Directory.CreateDirectory(text);
 		File.WriteAllText(Path.Combine(text, "config.yml"), $"sub_dir: agent_state\ntemplate_id: {templateId}\ntemplate_name: {templateId}\ntemplate_shape: rectangle\nauto_mask: true\npoint_list:\n- 2, 2\n- 5, 5");
+		// 模板需带纹理：TM_CCOEFF_NORMED 对零方差模板退化（结果恒 1）
 		using Mat img = new Mat(3, 3, MatType.CV_8UC3, new Scalar(255.0, 255.0, 255.0));
+		img.Set(2, 2, new Vec3b(0, 0, 0));
 		using Mat img2 = new Mat(3, 3, MatType.CV_8UC1, Scalar.White);
 		Cv2.ImWrite(Path.Combine(text, "raw.png"), img);
 		Cv2.ImWrite(Path.Combine(text, "mask.png"), img2);

@@ -163,15 +163,49 @@ public sealed class AutoBattleOperatorTests
 	}
 
 	[Fact]
-	public async Task OperationExecutor_RecordsErrorAndStopsSequence()
+	public async Task OperationExecutor_RecordsErrorAndContinuesRemainingOps()
 	{
 		RecordingAtomicOp failing = new RecordingAtomicOp("bad", asyncOp: false, blockUntilStopped: false, throwOnExecute: true);
-		RecordingAtomicOp skipped = new RecordingAtomicOp("skipped");
-		OperationExecutor executor = new OperationExecutor(new AtomicOp[2] { failing, skipped }, 1.0);
-		Assert.False(await executor.RunAsync());
+		RecordingAtomicOp following = new RecordingAtomicOp("following");
+		OperationExecutor executor = new OperationExecutor(new AtomicOp[2] { failing, following }, 1.0);
+		Assert.True(await executor.RunAsync());
 		Assert.NotNull(executor.LastException);
-		Assert.Equal(0, skipped.ExecuteCount);
+		Assert.Equal(1, following.ExecuteCount);
 		Assert.Contains((IEnumerable<OperationExecutionStepRecord>)executor.Records, (Predicate<OperationExecutionStepRecord>)((OperationExecutionStepRecord record) => record.OpName == "bad" && record.Event == "error"));
+		Assert.Contains((IEnumerable<OperationExecutionStepRecord>)executor.Records, (Predicate<OperationExecutionStepRecord>)((OperationExecutionStepRecord record) => record.OpName == "following" && record.Event == "completed"));
+	}
+
+	[Fact]
+	public async Task OperationExecutor_ErrorOnLastOpStillCompletes()
+	{
+		RecordingAtomicOp first = new RecordingAtomicOp("first");
+		RecordingAtomicOp failingLast = new RecordingAtomicOp("bad-last", asyncOp: false, blockUntilStopped: false, throwOnExecute: true);
+		OperationExecutor executor = new OperationExecutor(new AtomicOp[2] { first, failingLast }, 1.0);
+		Assert.True(await executor.RunAsync());
+		Assert.NotNull(executor.LastException);
+		Assert.Equal(1, first.ExecuteCount);
+	}
+
+	[Fact]
+	public async Task SubmitExecution_OpErrorDoesNotStarveFollowingExecutions()
+	{
+		using ZContext zctx = new ZContext(new OneDragonEnvironment("test_project", "test_user_id"));
+		AutoBattleOperator op = new AutoBattleOperator(zctx.AutoBattleContext, "auto_battle", "test");
+		ExecutionInfo faulting = new ExecutionInfo(new List<AtomicOp>(1)
+		{
+			new RecordingAtomicOp("bad", asyncOp: false, blockUntilStopped: false, throwOnExecute: true)
+		});
+		Assert.True(op.SubmitExecution(faulting, "主循环", 1.0));
+		bool completed = await op.GetRunningExecutionTask().WaitAsync(TimeSpan.FromSeconds(1L));
+		await WaitUntilIdle(op);
+		Assert.True(completed);
+		Assert.Contains((IEnumerable<AutoBattleExecutionRecord>)op.ExecutionRecords, (Predicate<AutoBattleExecutionRecord>)((AutoBattleExecutionRecord record) => record.Event == "error" && record.Completed && record.ErrorMessage == "boom"));
+		RecordingAtomicOp next = new RecordingAtomicOp("next");
+		Assert.True(op.SubmitExecution(new ExecutionInfo(new List<AtomicOp>(1) { next }), "主循环", 2.0));
+		bool nextCompleted = await op.GetRunningExecutionTask().WaitAsync(TimeSpan.FromSeconds(1L));
+		await WaitUntilIdle(op);
+		Assert.True(nextCompleted);
+		Assert.Equal(1, next.ExecuteCount);
 	}
 
 	[Fact]

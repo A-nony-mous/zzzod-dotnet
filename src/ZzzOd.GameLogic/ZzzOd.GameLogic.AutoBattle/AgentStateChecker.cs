@@ -220,12 +220,15 @@ public static class AgentStateChecker
 		using Mat mat = new Mat();
 		if (mask != null && !mask.Empty())
 		{
-			Cv2.MatchTemplate(source, template, mat, TemplateMatchModes.CCorrNormed, mask);
+			Cv2.MatchTemplate(source, template, mat, TemplateMatchModes.CCoeffNormed, mask);
 		}
 		else
 		{
-			Cv2.MatchTemplate(source, template, mat, TemplateMatchModes.CCorrNormed);
+			Cv2.MatchTemplate(source, template, mat, TemplateMatchModes.CCoeffNormed);
 		}
+		// 对齐 Python cv2_utils.match_template(TM_CCOEFF_NORMED)：带 mask 匹配可能产生 NaN，
+		// Python 侧 result >= threshold 对 NaN 为假、对 +inf 为真，先替换 NaN 再取最大值。
+		Cv2.PatchNaNs(mat, -1.0);
 		Cv2.MinMaxLoc((InputArray)mat, out double _, out double maxVal);
 		return (maxVal >= threshold) ? 1 : 0;
 	}
