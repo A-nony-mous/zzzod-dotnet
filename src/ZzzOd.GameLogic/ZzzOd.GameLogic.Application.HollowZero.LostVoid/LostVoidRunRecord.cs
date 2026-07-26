@@ -118,7 +118,7 @@ public sealed class LostVoidRunRecord : ZApplicationRunRecord
 
 	/// <summary>按 BaselineParity 当周、当天完成条件计算当前展示状态。</summary>
 	[YamlIgnore]
-	public new int RunStatusUnderNow
+	public override int RunStatusUnderNow
 	{
 		get
 		{

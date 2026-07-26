@@ -58,7 +58,7 @@ public sealed class NotoriousHuntRunRecord : ZApplicationRunRecord
 	/// 当前日期下的运行状态。
 	/// </summary>
 	[YamlIgnore]
-	public new int RunStatusUnderNow
+	public override int RunStatusUnderNow
 	{
 		get
 		{
@@ -74,7 +74,7 @@ public sealed class NotoriousHuntRunRecord : ZApplicationRunRecord
 	/// 记录是否完成。
 	/// </summary>
 	[YamlIgnore]
-	public new bool IsDone => IsFinishedByWeek || !IsAutoRunAllowedToday;
+	public override bool IsDone => IsFinishedByWeek || !IsAutoRunAllowedToday;
 
 	/// <summary>
 	/// 初始化运行记录。

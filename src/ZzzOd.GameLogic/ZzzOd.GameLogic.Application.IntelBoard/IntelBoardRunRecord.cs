@@ -126,7 +126,7 @@ public sealed class IntelBoardRunRecord : ZApplicationRunRecord
 	/// 当前日期下的运行状态。
 	/// </summary>
 	[YamlIgnore]
-	public new int RunStatusUnderNow
+	public override int RunStatusUnderNow
 	{
 		get
 		{
@@ -142,7 +142,7 @@ public sealed class IntelBoardRunRecord : ZApplicationRunRecord
 	/// 当前记录是否已完成。
 	/// </summary>
 	[YamlIgnore]
-	public new bool IsDone => !ShouldResetByCurrentWeek() && IsFinishedByWeek;
+	public override bool IsDone => !ShouldResetByCurrentWeek() && IsFinishedByWeek;
 
 	/// <summary>
 	/// 初始化运行记录。

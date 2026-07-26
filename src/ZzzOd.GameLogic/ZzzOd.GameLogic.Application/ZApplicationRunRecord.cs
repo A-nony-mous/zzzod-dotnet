@@ -62,13 +62,13 @@ public class ZApplicationRunRecord : IApplicationRunRecord
 	/// 当前日期下的运行状态。
 	/// </summary>
 	[YamlIgnore]
-	public int RunStatusUnderNow => (!ShouldResetByDt()) ? RunStatus : 0;
+	public virtual int RunStatusUnderNow => (!ShouldResetByDt()) ? RunStatus : 0;
 
 	/// <summary>
 	/// 当前记录是否已完成。
 	/// </summary>
 	[YamlIgnore]
-	public bool IsDone => RunStatus == 1;
+	public virtual bool IsDone => RunStatus == 1;
 
 	/// <summary>
 	/// 初始化 YAML 反序列化使用的运行记录。

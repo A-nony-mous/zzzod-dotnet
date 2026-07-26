@@ -37,29 +37,23 @@ public sealed class WitheredDomainRunRecord : ZApplicationRunRecord
 	/// 基于当前日期和周计划计算的运行状态。
 	/// </summary>
 	[YamlIgnore]
-	public new int RunStatusUnderNow
+	public override int RunStatusUnderNow
 	{
 		get
 		{
 			string currentDt = GetCurrentDt();
 			if (!string.Equals(GetSundayDt(base.Dt), GetSundayDt(currentDt), StringComparison.Ordinal))
 			{
+				// 上一次运行已经是上一周，必定是重置
 				return 0;
 			}
+			if (!string.Equals(base.Dt, currentDt, StringComparison.Ordinal))
+			{
+				// 上一次运行已经是一天前，看本周是否已经完成
+				return IsFinishedByWeek() ? 1 : 0;
+			}
+			// 当天的，看当天是否已经完成
 			return IsFinishedByDay() ? 1 : 0;
-		}
-	}
-
-	/// <summary>
-	/// 当前日期和周计划下是否完成。
-	/// </summary>
-	[YamlIgnore]
-	public new bool IsDone
-	{
-		get
-		{
-			string currentDt = GetCurrentDt();
-			return string.Equals(GetSundayDt(base.Dt), GetSundayDt(currentDt), StringComparison.Ordinal) && (string.Equals(base.Dt, currentDt, StringComparison.Ordinal) ? IsFinishedByDay() : IsFinishedByWeek());
 		}
 	}
 

@@ -41,7 +41,7 @@ public sealed class RedemptionCodeRunRecord : ZApplicationRunRecord
 	/// 当前日期下的运行状态。
 	/// </summary>
 	[YamlIgnore]
-	public new int RunStatusUnderNow => (GetUnusedCodeList(GetCurrentDt()).Count <= 0) ? base.RunStatusUnderNow : 0;
+	public override int RunStatusUnderNow => (GetUnusedCodeList(GetCurrentDt()).Count <= 0) ? base.RunStatusUnderNow : 0;
 
 	/// <summary>
 	/// 初始化运行记录。
@@ -119,7 +119,10 @@ public sealed class RedemptionCodeRunRecord : ZApplicationRunRecord
 		return redemptionCodeConfig.CodesDict.Select<KeyValuePair<string, int>, RedemptionCodeEntry>((KeyValuePair<string, int> item) => new RedemptionCodeEntry(item.Key, item.Value.ToString(CultureInfo.InvariantCulture))).ToArray();
 	}
 
-	private string GetCurrentDt()
+	/// <summary>
+	/// 计算当前业务日期（按游戏刷新时区偏移）。
+	/// </summary>
+	internal string GetCurrentDt()
 	{
 		return _now().ToUniversalTime().ToOffset(TimeSpan.FromHours(base.GameRefreshHourOffset)).ToString("yyyyMMdd", CultureInfo.InvariantCulture);
 	}

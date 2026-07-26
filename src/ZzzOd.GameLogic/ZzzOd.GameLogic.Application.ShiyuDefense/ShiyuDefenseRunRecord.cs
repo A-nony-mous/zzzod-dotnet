@@ -27,7 +27,7 @@ public sealed class ShiyuDefenseRunRecord : ZApplicationRunRecord
 	/// 当前日期下的运行状态。
 	/// </summary>
 	[YamlIgnore]
-	public new int RunStatusUnderNow
+	public override int RunStatusUnderNow
 	{
 		get
 		{
