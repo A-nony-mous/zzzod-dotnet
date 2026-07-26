@@ -379,6 +379,45 @@ public sealed class OverlayGuiRuntimeTests
         Assert.Equal(expected, missing);
     }
 
+    /// <summary>
+    /// 状态面板在既有内容之后按 Key 排序追加业务状态行；无业务状态时不输出任何多余内容。
+    /// </summary>
+    [Fact]
+    public void StatePanelAppendsBusinessStateRowsAfterExistingContent()
+    {
+        ZzzOverlayRunStateDto state = new(
+            "Running",
+            "lost_void",
+            "迷失之地",
+            null,
+            null,
+            null,
+            null,
+            null,
+            DateTimeOffset.UnixEpoch);
+
+        string withoutBusiness = ZzzOverlayPanelTextFormatter.FormatState(state);
+        string withBusiness = ZzzOverlayPanelTextFormatter.FormatState(
+            state,
+            [
+                new ZzzOverlayBusinessStateDto("下一步", "前往传送点"),
+                new ZzzOverlayBusinessStateDto("当前地区", "旧都失所"),
+            ]);
+
+        Assert.Equal(
+            string.Join(Environment.NewLine, "RunState: Running", "CurrentAppId: lost_void", "CurrentApp: 迷失之地"),
+            withoutBusiness);
+        Assert.Equal(
+            string.Join(
+                Environment.NewLine,
+                "RunState: Running",
+                "CurrentAppId: lost_void",
+                "CurrentApp: 迷失之地",
+                "下一步: 前往传送点",
+                "当前地区: 旧都失所"),
+            withBusiness);
+    }
+
     private static bool Intersects(ZzzOverlayPhysicalRect left, ZzzOverlayPhysicalRect right) =>
         left.X < right.Right && right.X < left.Right &&
         left.Y < right.Bottom && right.Y < left.Bottom;

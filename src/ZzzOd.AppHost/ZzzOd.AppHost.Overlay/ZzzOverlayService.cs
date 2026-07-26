@@ -500,7 +500,14 @@ public sealed class ZzzOverlayService : IZzzOverlayService, IDisposable
 			? logs
 			: ImmutableArray<ZzzOverlayLogEntryDto>.Empty;
 
-		return new ZzzOverlaySnapshotDto(now, enabled, visionFrame, state, operations, decisions, timeline, performance, visibleLogs);
+		ImmutableArray<ZzzOverlayBusinessStateDto> businessStates = IsPanelEnabled(options, "state")
+			? [.. debugSnapshot.BusinessStateItems.Select(item => new ZzzOverlayBusinessStateDto(item.Key, item.Value))]
+			: ImmutableArray<ZzzOverlayBusinessStateDto>.Empty;
+
+		return new ZzzOverlaySnapshotDto(now, enabled, visionFrame, state, operations, decisions, timeline, performance, visibleLogs)
+		{
+			BusinessStates = businessStates,
+		};
 	}
 
 	private ImmutableArray<ZzzOverlayPerformanceSampleDto> CollectPerformance(

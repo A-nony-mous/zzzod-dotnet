@@ -16,7 +16,7 @@ internal static class ZzzOverlayPanelTextFormatter
         return panelId switch
         {
             "log" => FormatLogs(snapshot.Logs, settings.LogMaxLines, settings.LogFadeSeconds, now),
-            "state" => FormatState(snapshot.State),
+            "state" => FormatState(snapshot.State, snapshot.BusinessStates),
             "battle" => FormatBattle(snapshot.State?.AutoBattle),
             "decision" => FormatDecisions(snapshot.Decisions),
             "timeline" => FormatTimeline(snapshot.Timeline),
@@ -76,7 +76,9 @@ internal static class ZzzOverlayPanelTextFormatter
     private static string Fallback(string? value) =>
         string.IsNullOrWhiteSpace(value) ? EmptyValue : value;
 
-    internal static string FormatState(ZzzOverlayRunStateDto? state)
+    internal static string FormatState(
+        ZzzOverlayRunStateDto? state,
+        IReadOnlyList<ZzzOverlayBusinessStateDto>? businessStates = null)
     {
         if (state is null)
         {
@@ -123,6 +125,15 @@ internal static class ZzzOverlayPanelTextFormatter
             if (autoBattle.DistanceMeters.HasValue)
             {
                 Add(rows, "Distance", autoBattle.DistanceMeters.Value.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture) + "m");
+            }
+        }
+
+        // 业务状态跟在既有内容之后；没有数据时不输出任何段落标题。
+        if (businessStates is not null)
+        {
+            foreach (ZzzOverlayBusinessStateDto businessState in businessStates.OrderBy(item => item.Key, StringComparer.Ordinal))
+            {
+                Add(rows, businessState.Key, businessState.Value);
             }
         }
 
