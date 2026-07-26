@@ -562,12 +562,54 @@ public sealed class ZApplicationRunContextTests
 			{
 				context.AttachController(new ReadyController());
 				context.ApplicationFactoryRegistry.RegisterBuiltInApplications();
-				string[] expected = context.ApplicationFactoryRegistry.BuiltInApplicationDirectories.Where((ZApplicationDirectoryMetadata directory) => directory.DefaultGroup).SelectMany((ZApplicationDirectoryMetadata directory) => directory.AppIds).ToArray();
+				string[] expected = context.ApplicationFactoryRegistry.BuiltInApplicationDirectories
+					.OrderBy((ZApplicationDirectoryMetadata directory) => directory.Priority is null)
+					.ThenBy((ZApplicationDirectoryMetadata directory) => directory.Priority ?? 0)
+					.ThenBy((ZApplicationDirectoryMetadata directory) => directory.DirectoryName, StringComparer.Ordinal)
+					.Where((ZApplicationDirectoryMetadata directory) => directory.DefaultGroup)
+					.SelectMany((ZApplicationDirectoryMetadata directory) => directory.AppIds)
+					.ToArray();
 				Assert.Equal(expected, context.RunContext.DefaultGroupApps);
 				Assert.All(ZzzApplicationIds.All, delegate(string appId)
 				{
 					Assert.True(context.RunContext.IsAppRegistered(appId), appId);
 				});
+			}
+			finally
+			{
+				if (context != null)
+				{
+					((IDisposable)context).Dispose();
+				}
+			}
+		}
+		finally
+		{
+			Directory.Delete(text, recursive: true);
+		}
+	}
+
+	/// <summary>
+	/// 默认组注册顺序应精确复刻 BaselineParity 排序键：按优先级排序后展开的应用 id 序列写死校验，
+	/// 避免生产代码和测试各自的排序推导公式凑巧一致而掩盖回归。
+	/// </summary>
+	[Fact]
+	public void Registry_RegisterBuiltInApplicationsOrdersDefaultGroupByPriority()
+	{
+		string text = CreateTempRoot();
+		try
+		{
+			ZContext context = new ZContext(new OneDragonEnvironment(text));
+			try
+			{
+				context.AttachController(new ReadyController());
+				context.ApplicationFactoryRegistry.RegisterBuiltInApplications();
+				string[] expected = new string[19]
+				{
+					"redemption_code", "email", "daily_signin", "random_play", "coffee", "charge_plan", "engagement_reward", "city_fund", "ridu_weekly", "notorious_hunt",
+					"lost_void", "withered_domain", "shiyu_defense", "intel_board", "suibian_temple", "world_patrol", "life_on_line", "drive_disc_dismantle", "notify"
+				};
+				Assert.Equal(expected, context.RunContext.DefaultGroupApps);
 			}
 			finally
 			{

@@ -65,7 +65,7 @@ public sealed class ScratchCardAppTests
 	}
 
 	[Fact]
-	public void Registry_RegistersScratchCardAsDefaultNotifyApplication()
+	public void Registry_RegistersScratchCardAsNonDefaultNotifyApplication()
 	{
 		string text = CreateTempRoot();
 		try
@@ -75,7 +75,7 @@ public sealed class ScratchCardAppTests
 			zContext.ApplicationFactoryRegistry.RegisterScratchCardApplication();
 			Assert.True(zContext.RunContext.IsAppRegistered("scratch_card"));
 			Assert.True(zContext.RunContext.IsAppNeedNotify("scratch_card"));
-			Assert.Contains("scratch_card", (IEnumerable<string>)zContext.RunContext.DefaultGroupApps);
+			Assert.DoesNotContain("scratch_card", (IEnumerable<string>)zContext.RunContext.DefaultGroupApps);
 		}
 		finally
 		{

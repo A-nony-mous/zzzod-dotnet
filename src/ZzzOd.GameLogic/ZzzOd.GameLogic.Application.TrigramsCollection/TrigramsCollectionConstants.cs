@@ -15,7 +15,7 @@ public static class TrigramsCollectionConstants
 	public const string DefaultGroupId = "one_dragon";
 
 	/// <summary>是否属于一条龙默认组。</summary>
-	public const bool DefaultGroup = true;
+	public const bool DefaultGroup = false;
 
 	/// <summary>是否需要通知。</summary>
 	public const bool NeedNotify = true;

@@ -12,13 +12,14 @@ public static class E2ECoverageMatrix
 	/// <summary>
 	/// 全部覆盖条目。
 	/// </summary>
-	public static IReadOnlyList<E2ECoverageMatrixItem> Items { get; } = new E2ECoverageMatrixItem[58]
+	public static IReadOnlyList<E2ECoverageMatrixItem> Items { get; } = new E2ECoverageMatrixItem[59]
 	{
 		Application("auto_battle", "自动战斗", E2EVerificationMode.RealGameE2E, "AutoBattleAppOperation", "AutoBattleContext"),
 		Application("charge_plan", "体力刷本", E2EVerificationMode.RealGameE2E, "ChargePlanOperation", "CompendiumChallengeOperationBase"),
 		Application("city_fund", "丽都城募", E2EVerificationMode.RealGameE2E, "CityFundOperation"),
 		Application("coffee", "咖啡店", E2EVerificationMode.RealGameE2E, "CoffeeOperation", "CoffeeSelectionService"),
 		BlockedApplication("commission_assistant", "委托助手", "实机 E2E blocked evidence：未确认真实游戏窗口、真实截图捕获、真实 OCR 结果、真实输入、账号当前处于可安全自动对话/剧情/短信/钓鱼/空洞/自动战斗状态，不能安全接管全部委托助手分支。非 E2E 回归 evidence：CommissionAssistantAppTests 覆盖对话确认、交互键、大世界画面、二级菜单、空洞背包检测、通关完成点击、剧情按钮、玩法引导、短信关闭、钓鱼入口、钓鱼按键动作和 unsupported 分支；ProductionPlaceholderAuditTests 覆盖固定成功和短延迟缺口未回归。", "CommissionAssistantOperation", "DefaultCommissionAssistantOperationServices", "AutoBattleContext"),
+		Application("daily_signin", "每日签到", E2EVerificationMode.PureLogic, "DailySignInApp"),
 		Application("dodge_assistant", "闪避助手", E2EVerificationMode.RealGameE2E, "DodgeAssistantOperation", "AutoBattleDodgeContext"),
 		BlockedApplication("drive_disc_dismantle", "驱动盘拆解", "实机 E2E blocked evidence：未确认真实游戏窗口、真实截图捕获、真实 OCR/模板检测、真实输入、账号当前驱动盘仓库状态、筛选条件和拆解物品可安全操作，不能安全执行真实拆解。非 E2E 回归 evidence：DriveDiscDismantleAppTests 覆盖导航到仓库驱动盘拆解页、区域点击、未知画面失败、区域未命中失败、返回大世界流程和应用 run record；ProductionPlaceholderAuditTests 覆盖固定成功和短延迟缺口未回归。", "DriveDiscDismantleOperation", "DefaultDriveDiscDismantleOperationServices"),
 		Application("email", "邮件", E2EVerificationMode.RealGameE2E, "EmailOperation"),

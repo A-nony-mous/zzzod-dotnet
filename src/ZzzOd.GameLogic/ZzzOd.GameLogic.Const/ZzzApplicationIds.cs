@@ -17,6 +17,8 @@ public static class ZzzApplicationIds
 
 	public const string CommissionAssistant = "commission_assistant";
 
+	public const string DailySignIn = "daily_signin";
+
 	public const string DodgeAssistant = "dodge_assistant";
 
 	public const string DriveDiscDismantle = "drive_disc_dismantle";
@@ -65,10 +67,10 @@ public static class ZzzApplicationIds
 
 	public const string WorldPatrol = "world_patrol";
 
-	public static IReadOnlyList<string> All { get; } = new string[29]
+	public static IReadOnlyList<string> All { get; } = new string[30]
 	{
-		"auto_battle", "charge_plan", "city_fund", "coffee", "commission_assistant", "dodge_assistant", "drive_disc_dismantle", "email", "engagement_reward", "hou_hou_bakery",
-		"intel_board", "life_on_line", "lost_void", "mouse_sensitivity_checker", "notorious_hunt", "notify", "one_dragon", "operation_debug", "predefined_team_checker", "random_play",
-		"redemption_code", "ridu_weekly", "scratch_card", "screenshot_helper", "shiyu_defense", "suibian_temple", "trigrams_collection", "withered_domain", "world_patrol"
+		"auto_battle", "charge_plan", "city_fund", "coffee", "commission_assistant", "daily_signin", "dodge_assistant", "drive_disc_dismantle", "email", "engagement_reward",
+		"hou_hou_bakery", "intel_board", "life_on_line", "lost_void", "mouse_sensitivity_checker", "notorious_hunt", "notify", "one_dragon", "operation_debug", "predefined_team_checker",
+		"random_play", "redemption_code", "ridu_weekly", "scratch_card", "screenshot_helper", "shiyu_defense", "suibian_temple", "trigrams_collection", "withered_domain", "world_patrol"
 	};
 }

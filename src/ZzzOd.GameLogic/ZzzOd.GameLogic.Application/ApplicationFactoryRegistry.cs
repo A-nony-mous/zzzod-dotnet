@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using OneDragon.Core.Abstractions.Operations;
 using ZzzOd.GameLogic.Application.BattleAssistant.AutoBattle;
 using ZzzOd.GameLogic.Application.BattleAssistant.DodgeAssistant;
@@ -7,6 +8,7 @@ using ZzzOd.GameLogic.Application.ChargePlan;
 using ZzzOd.GameLogic.Application.CityFund;
 using ZzzOd.GameLogic.Application.Coffee;
 using ZzzOd.GameLogic.Application.CommissionAssistant;
+using ZzzOd.GameLogic.Application.DailySignIn;
 using ZzzOd.GameLogic.Application.Devtools.OperationDebug;
 using ZzzOd.GameLogic.Application.Devtools.ScreenshotHelper;
 using ZzzOd.GameLogic.Application.DriveDiscDismantle;
@@ -62,8 +64,9 @@ public sealed class ApplicationFactoryRegistry
 			"charge_plan" => CreateChargePlanFactory(), 
 			"city_fund" => CreateCityFundFactory(), 
 			"coffee" => CreateCoffeeFactory(), 
-			"commission_assistant" => CreateCommissionAssistantFactory(), 
-			"dodge_assistant" => CreateDodgeAssistantFactory(), 
+			"commission_assistant" => CreateCommissionAssistantFactory(),
+			"daily_signin" => CreateDailySignInFactory(),
+			"dodge_assistant" => CreateDodgeAssistantFactory(),
 			"drive_disc_dismantle" => CreateDriveDiscDismantleFactory(), 
 			"email" => CreateEmailFactory(), 
 			"engagement_reward" => CreateEngagementRewardFactory(), 
@@ -95,9 +98,17 @@ public sealed class ApplicationFactoryRegistry
 		return result;
 	}
 
+	/// <summary>
+	/// 按优先级排序后注册全部内置应用；排序键精确复刻 BaselineParity
+	/// <c>(priority is None, priority or 0, app_id)</c>，目录粒度以 <see cref="ZApplicationDirectoryMetadata.DirectoryName"/> 作为并列时的字典序兜底。
+	/// </summary>
 	public void RegisterBuiltInApplications()
 	{
-		foreach (ZApplicationDirectoryMetadata builtInApplicationDirectory in BuiltInApplicationDirectories)
+		IOrderedEnumerable<ZApplicationDirectoryMetadata> orderedDirectories = BuiltInApplicationDirectories
+			.OrderBy((ZApplicationDirectoryMetadata directory) => directory.Priority is null)
+			.ThenBy((ZApplicationDirectoryMetadata directory) => directory.Priority ?? 0)
+			.ThenBy((ZApplicationDirectoryMetadata directory) => directory.DirectoryName, StringComparer.Ordinal);
+		foreach (ZApplicationDirectoryMetadata builtInApplicationDirectory in orderedDirectories)
 		{
 			foreach (string appId in builtInApplicationDirectory.AppIds)
 			{
@@ -211,6 +222,14 @@ public sealed class ApplicationFactoryRegistry
 		return new HouHouBakeryFactory(_context);
 	}
 
+	/// <summary>
+	/// 创建每日签到应用 factory。
+	/// </summary>
+	public DailySignInFactory CreateDailySignInFactory()
+	{
+		return new DailySignInFactory(_context);
+	}
+
 	public LifeOnLineAppFactory CreateLifeOnLineFactory()
 	{
 		return new LifeOnLineAppFactory(_context);
@@ -303,7 +322,7 @@ public sealed class ApplicationFactoryRegistry
 
 	public void RegisterScratchCardApplication()
 	{
-		RegisterApplication(CreateScratchCardFactory(), defaultGroup: true);
+		RegisterApplication(CreateScratchCardFactory());
 	}
 
 	public void RegisterEngagementRewardApplication()
@@ -353,7 +372,15 @@ public sealed class ApplicationFactoryRegistry
 
 	public void RegisterHouHouBakeryApplication()
 	{
-		RegisterApplication(CreateHouHouBakeryFactory(), defaultGroup: true);
+		RegisterApplication(CreateHouHouBakeryFactory());
+	}
+
+	/// <summary>
+	/// 注册每日签到应用。
+	/// </summary>
+	public void RegisterDailySignInApplication()
+	{
+		RegisterApplication(CreateDailySignInFactory(), defaultGroup: true);
 	}
 
 	public void RegisterLifeOnLineApplication()
@@ -373,7 +400,7 @@ public sealed class ApplicationFactoryRegistry
 
 	public void RegisterTrigramsCollectionApplication()
 	{
-		RegisterApplication(CreateTrigramsCollectionFactory(), defaultGroup: true);
+		RegisterApplication(CreateTrigramsCollectionFactory());
 	}
 
 	public void RegisterSuibianTempleApplication()

@@ -172,7 +172,7 @@ public sealed class HouHouBakeryAppTests
 	}
 
 	[Fact]
-	public void Registry_RegistersHouHouBakeryAsDefaultNotifyApplication()
+	public void Registry_RegistersHouHouBakeryAsNonDefaultNotifyApplication()
 	{
 		string text = CreateTempRoot();
 		try
@@ -182,7 +182,7 @@ public sealed class HouHouBakeryAppTests
 			zContext.ApplicationFactoryRegistry.RegisterHouHouBakeryApplication();
 			Assert.True(zContext.RunContext.IsAppRegistered("hou_hou_bakery"));
 			Assert.True(zContext.RunContext.IsAppNeedNotify("hou_hou_bakery"));
-			Assert.Contains("hou_hou_bakery", (IEnumerable<string>)zContext.RunContext.DefaultGroupApps);
+			Assert.DoesNotContain("hou_hou_bakery", (IEnumerable<string>)zContext.RunContext.DefaultGroupApps);
 		}
 		finally
 		{

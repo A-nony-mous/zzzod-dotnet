@@ -129,14 +129,14 @@ public sealed class ZOneDragonAppTests
 	[Fact]
 	public void DirectoryCatalog_MatchesPythonApplicationTopLevelDirectories()
 	{
-		string[] expected = new string[25]
+		string[] expected = new string[26]
 		{
-			"battle_assistant", "charge_plan", "city_fund", "coffee", "commission_assistant", "devtools", "drive_disc_dismantle", "email_app", "engagement_reward", "game_config_checker",
-			"hollow_zero", "hou_hou_bakery", "intel_board", "life_on_line", "notify", "notorious_hunt", "one_dragon_app", "random_play", "redemption_code", "ridu_weekly",
-			"scratch_card", "shiyu_defense", "suibian_temple", "trigrams_collection", "world_patrol"
+			"battle_assistant", "charge_plan", "city_fund", "coffee", "commission_assistant", "daily_signin", "devtools", "drive_disc_dismantle", "email_app", "engagement_reward",
+			"game_config_checker", "hollow_zero", "hou_hou_bakery", "intel_board", "life_on_line", "notify", "notorious_hunt", "one_dragon_app", "random_play", "redemption_code",
+			"ridu_weekly", "scratch_card", "shiyu_defense", "suibian_temple", "trigrams_collection", "world_patrol"
 		};
 		IReadOnlyList<ZApplicationDirectoryMetadata> builtInDirectories = ZApplicationDirectoryCatalog.BuiltInDirectories;
-		Assert.Equal(25, builtInDirectories.Count);
+		Assert.Equal(26, builtInDirectories.Count);
 		Assert.Equal(expected, builtInDirectories.Select((ZApplicationDirectoryMetadata directory) => directory.DirectoryName));
 		Assert.All(builtInDirectories, delegate(ZApplicationDirectoryMetadata directory)
 		{
@@ -178,7 +178,7 @@ public sealed class ZOneDragonAppTests
 			using ZContext zContext = new ZContext(new OneDragonEnvironment(text));
 			zContext.AttachController(new ReadyController());
 			zContext.ApplicationFactoryRegistry.RegisterOneDragonApplication();
-			Assert.Equal(25, zContext.ApplicationFactoryRegistry.BuiltInApplicationDirectories.Count);
+			Assert.Equal(26, zContext.ApplicationFactoryRegistry.BuiltInApplicationDirectories.Count);
 			Assert.True(zContext.RunContext.IsAppRegistered("one_dragon"));
 			Assert.False(zContext.RunContext.IsAppNeedNotify("one_dragon"));
 			Assert.DoesNotContain("one_dragon", (IEnumerable<string>)zContext.RunContext.DefaultGroupApps);
@@ -201,7 +201,7 @@ public sealed class ZOneDragonAppTests
 			IReadOnlyList<ZApplicationDirectoryMetadata> builtInApplicationDirectories = applicationFactoryRegistry.BuiltInApplicationDirectories;
 			string[] source = builtInApplicationDirectories.SelectMany((ZApplicationDirectoryMetadata directory) => directory.AppIds).ToArray();
 			RegisterAllBuiltInApplications(applicationFactoryRegistry);
-			Assert.Equal(25, builtInApplicationDirectories.Count);
+			Assert.Equal(26, builtInApplicationDirectories.Count);
 			Assert.Equal(ZzzApplicationIds.All.OrderBy((string id) => id), source.OrderBy((string id) => id));
 			foreach (string item in ZzzApplicationIds.All)
 			{
@@ -607,6 +607,7 @@ public sealed class ZOneDragonAppTests
 		registry.RegisterScreenshotHelperApplication();
 		registry.RegisterOperationDebugApplication();
 		registry.RegisterEmailApplication();
+		registry.RegisterDailySignInApplication();
 		registry.RegisterChargePlanApplication();
 		registry.RegisterCoffeeApplication();
 		registry.RegisterCommissionAssistantApplication();

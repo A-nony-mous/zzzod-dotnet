@@ -64,9 +64,10 @@ public sealed class GameConstTests
 	[Fact]
 	public void ApplicationIds_ShouldExposeKnownBusinessApplications()
 	{
-		Assert.Equal(29, ZzzApplicationIds.All.Count);
+		Assert.Equal(30, ZzzApplicationIds.All.Count);
 		Assert.Contains("auto_battle", (IEnumerable<string>)ZzzApplicationIds.All);
 		Assert.Contains("coffee", (IEnumerable<string>)ZzzApplicationIds.All);
+		Assert.Contains("daily_signin", (IEnumerable<string>)ZzzApplicationIds.All);
 		Assert.Contains("lost_void", (IEnumerable<string>)ZzzApplicationIds.All);
 		Assert.Contains("withered_domain", (IEnumerable<string>)ZzzApplicationIds.All);
 		Assert.Contains("world_patrol", (IEnumerable<string>)ZzzApplicationIds.All);

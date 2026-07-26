@@ -169,7 +169,7 @@ public sealed class TrigramsCollectionAppTests
 	}
 
 	[Fact]
-	public void Registry_RegistersTrigramsCollectionAsDefaultNotifyApplication()
+	public void Registry_RegistersTrigramsCollectionAsNonDefaultNotifyApplication()
 	{
 		string text = CreateTempRoot();
 		try
@@ -179,7 +179,7 @@ public sealed class TrigramsCollectionAppTests
 			zContext.ApplicationFactoryRegistry.RegisterTrigramsCollectionApplication();
 			Assert.True(zContext.RunContext.IsAppRegistered("trigrams_collection"));
 			Assert.True(zContext.RunContext.IsAppNeedNotify("trigrams_collection"));
-			Assert.Contains("trigrams_collection", (IEnumerable<string>)zContext.RunContext.DefaultGroupApps);
+			Assert.DoesNotContain("trigrams_collection", (IEnumerable<string>)zContext.RunContext.DefaultGroupApps);
 		}
 		finally
 		{
