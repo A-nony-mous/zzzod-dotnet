@@ -337,7 +337,7 @@ internal sealed class LostVoidAppOperation : ZOperation
 				for (int num3 = 0; num3 < GetMatrixAgentReturnToTopSwipeCount(lastScannedPage, foundAll: true); num3++)
 				{
 					ScreenUtils.ScrollArea(base.ZContext, area, "up", 0.75, 0.25);
-					Thread.Sleep(TimeSpan.FromMilliseconds(200L));
+					Thread.Sleep(TimeSpan.FromMilliseconds(100L));
 				}
 				foreach (string item5 in challengeConfig.TeamInfo)
 				{
@@ -347,17 +347,17 @@ internal sealed class LostVoidAppOperation : ZOperation
 					for (int num4 = 0; num4 < item; num4++)
 					{
 						ScreenUtils.ScrollArea(base.ZContext, area, "down", 0.75, 0.25);
-						Thread.Sleep(TimeSpan.FromMilliseconds(200L));
+						Thread.Sleep(TimeSpan.FromMilliseconds(100L));
 					}
 					if (!base.ZContext.Controller.Click(item2))
 					{
 						return RoundRetry("点击代理人失败", null, TimeSpan.FromMilliseconds(500L));
 					}
 					Thread.Sleep(TimeSpan.FromMilliseconds(500L));
-					for (int num5 = 0; num5 <= item; num5++)
+					for (int num5 = 0; num5 < item; num5++)
 					{
 						ScreenUtils.ScrollArea(base.ZContext, area, "up", 0.75, 0.25);
-						Thread.Sleep(TimeSpan.FromMilliseconds(200L));
+						Thread.Sleep(TimeSpan.FromMilliseconds(100L));
 					}
 				}
 				return RoundSuccess();
@@ -368,7 +368,7 @@ internal sealed class LostVoidAppOperation : ZOperation
 
 	internal static int GetMatrixAgentReturnToTopSwipeCount(int lastScannedPage, bool foundAll)
 	{
-		return foundAll ? Math.Clamp(lastScannedPage + 1, 1, 5) : 5;
+		return foundAll ? Math.Clamp(lastScannedPage, 0, 5) : 5;
 	}
 
 	[NodeFrom("矩阵行动-选择预备编队")]

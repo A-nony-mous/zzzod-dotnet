@@ -488,11 +488,11 @@ public sealed class LostVoidAppTests
 	}
 
 	[Fact]
-	public void MatrixSelectAgent_ReturnsToTopWithPythonSwipeCount()
+	public void MatrixSelectAgent_ReturnsToTopWithBaselineSwipeCount()
 	{
-		Assert.Equal(1, LostVoidAppOperation.GetMatrixAgentReturnToTopSwipeCount(0, foundAll: true));
-		Assert.Equal(3, LostVoidAppOperation.GetMatrixAgentReturnToTopSwipeCount(2, foundAll: true));
-		Assert.Equal(5, LostVoidAppOperation.GetMatrixAgentReturnToTopSwipeCount(4, foundAll: true));
+		Assert.Equal(0, LostVoidAppOperation.GetMatrixAgentReturnToTopSwipeCount(0, foundAll: true));
+		Assert.Equal(2, LostVoidAppOperation.GetMatrixAgentReturnToTopSwipeCount(2, foundAll: true));
+		Assert.Equal(4, LostVoidAppOperation.GetMatrixAgentReturnToTopSwipeCount(4, foundAll: true));
 		Assert.Equal(5, LostVoidAppOperation.GetMatrixAgentReturnToTopSwipeCount(1, foundAll: false));
 	}
 
