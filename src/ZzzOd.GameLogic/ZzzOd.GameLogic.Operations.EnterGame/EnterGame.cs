@@ -7,11 +7,11 @@ using System.Threading;
 using System.Threading.Tasks;
 using OneDragon.Core.Abstractions.Geometry;
 using OneDragon.Core.Abstractions.Operations;
+using OneDragon.Core.Configuration;
 using OneDragon.Core.Matcher;
 using OneDragon.Core.Ocr;
 using OneDragon.Core.Screen;
 using OneDragon.Core.Utils;
-using OneDragon.Core.Windows.Controller;
 using OpenCvSharp;
 using ZzzOd.GameLogic.Config;
 using ZzzOd.GameLogic.Context;
@@ -58,20 +58,32 @@ public sealed class EnterGame : ZOperation
 	/// <summary>
 	/// Initialize the operation.
 	/// </summary>
-	public EnterGame(ZContext context, bool switchAccount = false, bool runAllInstances = false, int instanceCount = 1, Func<DateTimeOffset>? now = null, TimeSpan? maxResourceDownload = null, TimeSpan? retryDelay = null, TimeSpan? waitDelay = null)
+	public EnterGame(ZContext context, bool switchAccount = false, Func<DateTimeOffset>? now = null, TimeSpan? maxResourceDownload = null, TimeSpan? retryDelay = null, TimeSpan? waitDelay = null)
 		: base(context, "进入游戏")
 	{
+		OneDragonConfig oneDragonConfig = LoadOneDragonConfig(context);
+		bool runAllInstances = string.Equals(oneDragonConfig.InstanceRun, "全部实例", StringComparison.Ordinal);
+		int activeInOneDragonCount = oneDragonConfig.InstanceList.Count((OneDragonInstanceConfigItem item) => item.ActiveInOneDragon);
 		bool forceLoginBeforeRun = context.ForceLoginBeforeRun;
-		bool requestedForceLogin = switchAccount || (runAllInstances && instanceCount > 1) || forceLoginBeforeRun;
+		bool requestedForceLogin = switchAccount || (runAllInstances && activeInOneDragonCount > 1) || forceLoginBeforeRun;
 		if (!switchAccount && requestedForceLogin && !context.GameAccountConfig.HasLoginInfo)
 		{
 			context.Logger.Warning("登录信息未配置完整，跳过强制重新登录，将使用游戏当前登录状态");
 		}
-		_forceLogin = ShouldForceLogin(switchAccount, context.GameAccountConfig, runAllInstances, instanceCount, forceLoginBeforeRun);
+		_forceLogin = ShouldForceLogin(switchAccount, context.GameAccountConfig, runAllInstances, activeInOneDragonCount, forceLoginBeforeRun);
 		_now = now ?? ((Func<DateTimeOffset>)(() => DateTimeOffset.UtcNow));
 		_maxResourceDownload = maxResourceDownload ?? TimeSpan.FromSeconds(1200L);
 		_retryDelay = retryDelay ?? TimeSpan.FromSeconds(1L);
 		_waitDelay = waitDelay ?? TimeSpan.FromSeconds(1L);
+	}
+
+	/// <summary>
+	/// 读取一条龙配置，用于在构造时判断是否需要强制重新登录。
+	/// </summary>
+	private static OneDragonConfig LoadOneDragonConfig(ZContext context)
+	{
+		IReadOnlyList<string> subDirectories = Array.Empty<string>();
+		return new YamlConfig<OneDragonConfig>(context.Environment, "one_dragon", null, null, subDirectories).Current;
 	}
 
 	/// <summary>
@@ -310,11 +322,7 @@ public sealed class EnterGame : ZOperation
 	private OperationRoundResult CheckServer()
 	{
 		TimeSpan? successDelay = _waitDelay;
-		OperationRoundResult operationRoundResult = RoundByClickArea("打开游戏", "国际服-换服", clickLeftTop: false, null, successDelay);
-		if (!operationRoundResult.IsSuccess)
-		{
-			return operationRoundResult;
-		}
+		RoundByClickArea("打开游戏", "国际服-换服", clickLeftTop: false, null, successDelay);
 		string gameRegion = base.ZContext.GameAccountConfig.GameRegion;
 		if (1 == 0)
 		{
@@ -355,9 +363,7 @@ public sealed class EnterGame : ZOperation
 		}
 		if (_forceLogin && !_alreadyLogin)
 		{
-			Mat? lastScreenshot = base.LastScreenshot;
-			TimeSpan? successDelay = TimeSpan.FromSeconds(5L);
-			OperationRoundResult operationRoundResult2 = RoundByFindAndClickArea(lastScreenshot, "打开游戏", "切换账号确定", null, successDelay);
+			OperationRoundResult operationRoundResult2 = RoundByFindAndClickArea(base.LastScreenshot, "打开游戏", "切换账号确定", null, null);
 			if (operationRoundResult2.IsSuccess)
 			{
 				_afterFirstEnterClick = false;
@@ -365,9 +371,7 @@ public sealed class EnterGame : ZOperation
 				ResourceDownloadStartTimeUtc = null;
 				return RoundSuccess(operationRoundResult2.Status, null, TimeSpan.FromSeconds(5L));
 			}
-			Mat? lastScreenshot2 = base.LastScreenshot;
-			successDelay = _waitDelay;
-			OperationRoundResult operationRoundResult3 = RoundByFindAndClickArea(lastScreenshot2, "打开游戏", "切换账号", null, successDelay);
+			OperationRoundResult operationRoundResult3 = RoundByFindAndClickArea(base.LastScreenshot, "打开游戏", "切换账号", null, null);
 			if (operationRoundResult3.IsSuccess)
 			{
 				_afterSecondEnterClick = false;
@@ -386,20 +390,10 @@ public sealed class EnterGame : ZOperation
 			ResourceDownloadStartTimeUtc = null;
 			if (text == "点击进入游戏")
 			{
-				TapEnterGameConfirmKey();
-				OperationRoundResult operationRoundResult4 = FindEnterGameByFullScreenOcr(base.LastScreenshot, click: true);
-				OperationRoundResult operationRoundResult5 = operationRoundResult4 ?? RoundByClickArea("打开游戏", "点击进入游戏");
-				if (!operationRoundResult5.IsSuccess)
+				OperationRoundResult operationRoundResult4 = RoundByClickArea("打开游戏", "点击进入游戏");
+				if (!operationRoundResult4.IsSuccess)
 				{
-					operationRoundResult4 = FindEnterGameByFullScreenOcr(base.LastScreenshot, click: true);
-					if (operationRoundResult4 != null)
-					{
-						operationRoundResult5 = operationRoundResult4;
-					}
-				}
-				if (!operationRoundResult5.IsSuccess)
-				{
-					return operationRoundResult5;
+					return operationRoundResult4;
 				}
 				if (_afterFirstEnterClick)
 				{
@@ -421,16 +415,10 @@ public sealed class EnterGame : ZOperation
 			}
 			return (text == "登录成功") ? RoundSuccess(text, null, _waitDelay) : RoundWait(text, null, _waitDelay);
 		}
-		OperationRoundResult operationRoundResult6 = FindEnterGameByFullScreenOcr(base.LastScreenshot, click: true);
-		if (operationRoundResult6 != null)
-		{
-			_afterFirstEnterClick = true;
-			return RoundWait(operationRoundResult6.Status, null, TimeSpan.FromSeconds(2L));
-		}
 		if (_afterSecondEnterClick)
 		{
-			OperationRoundResult operationRoundResult7 = MatchLoginError(base.LastScreenshot);
-			return operationRoundResult7 ?? RoundSuccess("加载中");
+			OperationRoundResult operationRoundResult5 = MatchLoginError(base.LastScreenshot);
+			return operationRoundResult5 ?? RoundSuccess("加载中");
 		}
 		return RoundRetry("进入游戏点击后等待", null, _retryDelay);
 	}
@@ -546,12 +534,6 @@ public sealed class EnterGame : ZOperation
 			ResourceDownloadStartTimeUtc = null;
 			return RoundSuccess("点击进入游戏", null, _waitDelay);
 		}
-		OperationRoundResult operationRoundResult5 = FindEnterGameByFullScreenOcr(screen, click: false);
-		if (operationRoundResult5 != null)
-		{
-			ResourceDownloadStartTimeUtc = null;
-			return operationRoundResult5;
-		}
 		OperationRoundResult operationRoundResult6 = RoundByFindAndClickArea(screen, "打开游戏", "国服-账号密码");
 		if (operationRoundResult6.IsSuccess)
 		{
@@ -587,11 +569,16 @@ public sealed class EnterGame : ZOperation
 
 	private OperationRoundResult? CheckScreenIntl(Mat screen)
 	{
-		TimeSpan? successDelay = _waitDelay;
-		OperationRoundResult operationRoundResult = RoundByFindAndClickArea(screen, "打开游戏", "国际服-点击登录", null, successDelay);
+		OperationRoundResult operationRoundResult = RoundByFindArea(screen, "打开游戏", "国际服-点击登录");
 		if (operationRoundResult.IsSuccess)
 		{
-			return RoundWait(operationRoundResult.Status, null, _retryDelay);
+			// 已登录状态下也可能闪现"点击登录"文字，先等待再确认是否真的需要点击。
+			Thread.Sleep(TimeSpan.FromSeconds(2L));
+			operationRoundResult = RoundByFindAndClickArea(screen, "打开游戏", "国际服-点击登录");
+			if (operationRoundResult.IsSuccess)
+			{
+				return RoundWait(operationRoundResult.Status, null, _retryDelay);
+			}
 		}
 		OperationRoundResult operationRoundResult2 = RoundByFindArea(screen, "打开游戏", "国际服-密码输入区域");
 		return operationRoundResult2.IsSuccess ? RoundSuccess(operationRoundResult2.Status, null, _waitDelay) : null;
@@ -670,28 +657,5 @@ public sealed class EnterGame : ZOperation
 		OneDragon.Core.Screen.ScreenArea area = base.ZContext.ScreenContext.GetArea("打开游戏", "进入游戏点击后状态");
 		IReadOnlyList<OcrMatchResult> ocrResultList = base.ZContext.OcrService.GetOcrResultList(screen, area?.ColorRange, area?.Rect);
 		return MatchEnterClickStatusText(ocrResultList.Select((OcrMatchResult result) => result.Text), includeEnterClick);
-	}
-
-	private void TapEnterGameConfirmKey()
-	{
-		if (base.ZContext.Controller is WindowsGameController windowsGameController)
-		{
-			windowsGameController.TapButton("enter");
-		}
-	}
-
-	private OperationRoundResult? FindEnterGameByFullScreenOcr(Mat screen, bool click)
-	{
-		IReadOnlyList<OcrMatchResult> ocrResultList = base.ZContext.OcrService.GetOcrResultList(screen);
-		OcrMatchResult ocrMatchResult = ocrResultList.FirstOrDefault((OcrMatchResult item) => StringUtils.FindByLcs("点击进入游戏", item.Text, 0.5));
-		if (ocrMatchResult == null)
-		{
-			return null;
-		}
-		if (click && base.ZContext.Controller != null)
-		{
-			base.ZContext.Controller.Click(ocrMatchResult.Center);
-		}
-		return RoundSuccess("点击进入游戏", null, _waitDelay);
 	}
 }

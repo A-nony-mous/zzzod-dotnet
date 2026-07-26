@@ -44,10 +44,11 @@ public sealed class OpenAndEnterGame : ZOperation
 	[OperationNode("打开游戏", IsStartNode = true, ScreenshotBeforeRound = false)]
 	private async Task<OperationRoundResult> OpenGameAsync()
 	{
+		// 禁用自动 HDR 属尽力而为：注册表读写失败不阻断游戏启动
 		OperationResult hdrResult = await _disableAutoHdrAsync().ConfigureAwait(continueOnCapturedContext: false);
 		if (!hdrResult.IsSuccess)
 		{
-			return RoundFail(hdrResult.Status);
+			base.ZContext.Logger.Warning("禁用自动 HDR 失败，继续启动游戏：{Status}", hdrResult.Status);
 		}
 		return RoundByOperationResult(await _openGameAsync().ConfigureAwait(continueOnCapturedContext: false));
 	}
@@ -61,7 +62,13 @@ public sealed class OpenAndEnterGame : ZOperation
 			return RoundRetry("等待游戏窗口", null, _retryDelay);
 		}
 		_activateWindow();
-		return RoundByOperationResult(await _enableAutoHdrAsync().ConfigureAwait(continueOnCapturedContext: false));
+		// 恢复自动 HDR 同样尽力而为，失败不影响后续登录
+		OperationResult hdrResult = await _enableAutoHdrAsync().ConfigureAwait(continueOnCapturedContext: false);
+		if (!hdrResult.IsSuccess)
+		{
+			base.ZContext.Logger.Warning("恢复自动 HDR 失败，继续进入游戏：{Status}", hdrResult.Status);
+		}
+		return RoundSuccess();
 	}
 
 	[NodeFrom("等待游戏打开")]
