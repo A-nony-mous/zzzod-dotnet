@@ -78,8 +78,10 @@ public abstract class CompendiumChallengeOperationBase : ZOperation
 
 	/// <summary>
 	/// 点击下一步并识别恢复电量或出战入口。
+	/// 注意：不在基类声明来自"等待入口加载"的无状态兜底边——各子类对该节点的兜底去向不同
+	/// （实战模拟室去"选择副本"、区域巡防直接来本节点），由需要的子类在重写方法上自行声明，
+	/// 避免一个节点出现两条无状态兜底边导致解析依赖反射枚举顺序。
 	/// </summary>
-	[NodeFrom("等待入口加载")]
 	[NodeFrom("恢复电量", Status = "恢复电量成功")]
 	[OperationNode("下一步", NodeMaxRetryTimes = 10)]
 	protected virtual OperationRoundResult ClickNext()
@@ -192,7 +194,7 @@ public abstract class CompendiumChallengeOperationBase : ZOperation
 	[OperationNode("等待战斗画面加载", NodeMaxRetryTimes = 60)]
 	protected virtual OperationRoundResult WaitBattleScreen()
 	{
-		// 对应 Python operation/battle/base.py:88 的 retry_wait_round=1（补足制，非固定延时）。
+		// 对应参考实现的 retry_wait_round=1（补足制，非固定延时）。
 		return RoundByFindArea(base.LastScreenshot, "战斗画面", "按键-普通攻击", null, null, cropFirst: true, null, _retryDelay);
 	}
 

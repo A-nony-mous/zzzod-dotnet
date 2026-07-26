@@ -49,3 +49,4 @@ src/ZzzOd.Gui/-AvaloniaResources
 *.trx
 *.user
 *.suo
+notice_cache/

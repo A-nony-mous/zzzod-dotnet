@@ -40,7 +40,8 @@ public sealed class CompendiumChooseTab : ZOperation
 			return RoundRetry("找不到 " + _tabName, null, _retryDelay);
 		}
 		IReadOnlyList<OcrMatchResult> ocrResultList = base.ZContext.OcrService.GetOcrResultList(base.LastScreenshot, area.ColorRange, area.Rect);
-		OcrMatchResult ocrMatchResult = ocrResultList.FirstOrDefault((OcrMatchResult result) => StringUtils.FindByLcs(_tabName, result.Text, 0.5));
+		string resolvedTabName = base.ZContext.GameTextResolver(_tabName);
+		OcrMatchResult ocrMatchResult = ocrResultList.FirstOrDefault((OcrMatchResult result) => StringUtils.FindByLcs(resolvedTabName, result.Text, 0.5));
 		if (ocrMatchResult == null || base.ZContext.Controller == null)
 		{
 			return RoundRetry("找不到 " + _tabName, null, _retryDelay);

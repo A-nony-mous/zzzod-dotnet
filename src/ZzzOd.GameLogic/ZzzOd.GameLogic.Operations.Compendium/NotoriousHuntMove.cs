@@ -129,8 +129,9 @@ public sealed class NotoriousHuntMove : ZOperation
 		{
 			return RoundRetry("未识别到鸣徽选择", null, _retryDelay);
 		}
+		string resolvedChooseText = base.ZContext.GameTextResolver("选择");
 		List<OcrMatchResult> list = (from result in base.ZContext.OcrService.GetOcrResultList(base.LastScreenshot)
-			where StringUtils.FindByLcs("选择", result.Text, 1.0)
+			where StringUtils.FindByLcs(resolvedChooseText, result.Text, 1.0)
 			orderby result.Center.X
 			select result).ToList();
 		base.ZContext.Logger.Information("当前识别鸣徽选项数量 {ChoiceCount}", list.Count);

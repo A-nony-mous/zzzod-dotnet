@@ -58,7 +58,7 @@ public sealed class CompendiumChooseMissionType : ZOperation
 		{
 			return RoundFail("非法的副本分类 " + _missionType.MissionTypeName);
 		}
-		(List<string> TargetWords, Dictionary<string, int> NameToIndex) tuple = BuildMissionTypeMatchIndex(sameCategoryMissionTypeList);
+		(List<string> TargetWords, Dictionary<string, int> NameToIndex) tuple = BuildMissionTypeMatchIndex(sameCategoryMissionTypeList, base.ZContext.GameTextResolver);
 		List<string> item = tuple.TargetWords;
 		Dictionary<string, int> item2 = tuple.NameToIndex;
 		IReadOnlyList<OcrMatchResult> ocrResultList = base.ZContext.OcrService.GetOcrResultList(base.LastScreenshot, area.ColorRange, area.Rect);
@@ -127,9 +127,10 @@ public sealed class CompendiumChooseMissionType : ZOperation
 		}
 		IReadOnlyList<OcrMatchResult> ocrResultList = base.ZContext.OcrService.GetOcrResultList(screen, area.ColorRange, area.Rect);
 		OneDragon.Core.Abstractions.Geometry.Point? point = null;
+		string resolvedGoText = base.ZContext.GameTextResolver("前往");
 		foreach (OcrMatchResult item in ocrResultList)
 		{
-			if (StringUtils.FindByLcs("前往", item.Text, 0.5))
+			if (StringUtils.FindByLcs(resolvedGoText, item.Text, 0.5))
 			{
 				OneDragon.Core.Abstractions.Geometry.Point center = item.Center;
 				if (center.Y > targetPoint.Y && (!point.HasValue || center.Y < point.Value.Y))
@@ -157,7 +158,7 @@ public sealed class CompendiumChooseMissionType : ZOperation
 		return RoundSuccess(null, null, _successDelay);
 	}
 
-	private static (List<string> TargetWords, Dictionary<string, int> NameToIndex) BuildMissionTypeMatchIndex(IReadOnlyList<CompendiumMissionType> missionTypes)
+	private static (List<string> TargetWords, Dictionary<string, int> NameToIndex) BuildMissionTypeMatchIndex(IReadOnlyList<CompendiumMissionType> missionTypes, Func<string, string> resolveGameText)
 	{
 		List<string> targetWords = new List<string>();
 		Dictionary<string, int> nameToIndex = new Dictionary<string, int>(StringComparer.Ordinal);
@@ -177,10 +178,16 @@ public sealed class CompendiumChooseMissionType : ZOperation
 		return (TargetWords: targetWords, NameToIndex: nameToIndex);
 		void AddName(string? name, int index)
 		{
-			if (!string.IsNullOrWhiteSpace(name) && !nameToIndex.ContainsKey(name))
+			if (string.IsNullOrWhiteSpace(name))
 			{
-				targetWords.Add(name);
-				nameToIndex[name] = index;
+				return;
+			}
+			// 参与 OCR 比对的目标词要经过游戏文本解析，保证非中文客户端语言下仍可匹配
+			string resolvedName = resolveGameText(name);
+			if (!string.IsNullOrWhiteSpace(resolvedName) && !nameToIndex.ContainsKey(resolvedName))
+			{
+				targetWords.Add(resolvedName);
+				nameToIndex[resolvedName] = index;
 			}
 		}
 	}

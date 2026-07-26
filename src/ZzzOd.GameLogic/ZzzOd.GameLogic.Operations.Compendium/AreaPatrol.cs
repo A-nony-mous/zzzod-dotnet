@@ -25,6 +25,15 @@ public sealed class AreaPatrol : CompendiumChallengeOperationBase
 	}
 
 	/// <inheritdoc />
+	[NodeFrom("等待入口加载")]
+	[NodeFrom("恢复电量", Status = "恢复电量成功")]
+	[OperationNode("下一步", NodeMaxRetryTimes = 10)]
+	protected override OperationRoundResult ClickNext()
+	{
+		return base.ClickNext();
+	}
+
+	/// <inheritdoc />
 	[NodeFrom("战斗超时")]
 	[OperationNode("点击挑战结果退出")]
 	protected override OperationRoundResult ClickResultExit()

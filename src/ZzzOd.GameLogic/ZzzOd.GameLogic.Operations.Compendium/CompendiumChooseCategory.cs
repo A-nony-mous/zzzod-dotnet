@@ -40,7 +40,8 @@ public sealed class CompendiumChooseCategory : ZOperation
 			return RoundRetry("找不到 " + _categoryName, null, _retryDelay);
 		}
 		IReadOnlyList<OcrMatchResult> ocrResultList = base.ZContext.OcrService.GetOcrResultList(base.LastScreenshot, area.ColorRange, area.Rect, cropFirst: true, 0.0, 40.0);
-		OcrMatchResult ocrMatchResult = ocrResultList.FirstOrDefault((OcrMatchResult result) => StringUtils.FindByLcs(_categoryName, result.Text, 0.5));
+		string resolvedCategoryName = base.ZContext.GameTextResolver(_categoryName);
+		OcrMatchResult ocrMatchResult = ocrResultList.FirstOrDefault((OcrMatchResult result) => StringUtils.FindByLcs(resolvedCategoryName, result.Text, 0.5));
 		if (ocrMatchResult == null || base.ZContext.Controller == null)
 		{
 			return RoundRetry("找不到 " + _categoryName, null, _retryDelay);
