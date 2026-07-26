@@ -13,6 +13,7 @@ namespace ZzzOd.GameLogic.Tests.Audit;
 /// <summary>
 /// GUI AXAML 和 FluentAvalonia 静态审计。
 /// </summary>
+[Trait("Category", "Audit")]
 public sealed class GuiStaticAuditTests
 {
 	private sealed record GuiAuditResult(IReadOnlyList<string> MissingAxaml, IReadOnlyList<string> DynamicVisualTree, IReadOnlyList<string> HardcodedVisualSurface, IReadOnlyList<string> UnapprovedControls, IReadOnlyList<string> HandwrittenFluentReplacements);

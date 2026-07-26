@@ -2,6 +2,7 @@ using Xunit;
 
 namespace ZzzOd.GameLogic.Tests.Audit;
 
+[Trait("Category", "Audit")]
 public sealed class AppCompletionContractTests
 {
     public static TheoryData<string, string> NormalWorldApplications => new()

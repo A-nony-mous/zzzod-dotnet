@@ -4,6 +4,7 @@ using Xunit;
 
 namespace ZzzOd.GameLogic.Tests.Audit;
 
+[Trait("Category", "Audit")]
 public sealed class GuiDependencyBaselineTests
 {
     [Fact]

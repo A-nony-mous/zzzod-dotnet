@@ -7,6 +7,7 @@ namespace ZzzOd.GameLogic.Tests.Audit;
 /// <summary>
 /// 账户页 AXAML 与 BaselineParity SettingInstanceInterface 的静态合同。
 /// </summary>
+[Trait("Category", "Audit")]
 public sealed class AccountsPageParityTests
 {
 	/// <summary>

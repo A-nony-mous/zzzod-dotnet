@@ -16,6 +16,7 @@ namespace ZzzOd.GameLogic.Tests.AppHost;
 /// <summary>
 /// 式舆防卫战设置页、真实配置和运行记录重置测试。
 /// </summary>
+[Trait("Category", "GuiHeavy")]
 public sealed class ShiyuDefenseAppSettingPageTests
 {
 	private sealed class BackendSession : IDisposable

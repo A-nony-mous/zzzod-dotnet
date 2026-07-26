@@ -13,6 +13,7 @@ using ZzzOd.Gui.Pages.ApplicationSettings;
 
 namespace ZzzOd.GameLogic.Tests.AppHost;
 
+[Trait("Category", "GuiHeavy")]
 public sealed class LifeOnLineSettingsFlyoutTests
 {
 	public class RecordingBackendProxy : DispatchProxy

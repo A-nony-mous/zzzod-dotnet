@@ -12,6 +12,7 @@ namespace ZzzOd.GameLogic.Tests.Audit;
 /// <summary>
 /// 审计生产源码中影响实机自动化的占位实现。
 /// </summary>
+[Trait("Category", "Audit")]
 public sealed class ProductionPlaceholderAuditTests
 {
 	private sealed record PlaceholderFinding(string RelativePath, string Category, string Text)

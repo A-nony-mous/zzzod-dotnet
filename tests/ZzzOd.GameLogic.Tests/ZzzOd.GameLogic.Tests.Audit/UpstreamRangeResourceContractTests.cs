@@ -5,6 +5,7 @@ using Xunit;
 
 namespace ZzzOd.GameLogic.Tests.Audit;
 
+[Trait("Category", "UpstreamSync")]
 public sealed class UpstreamRangeResourceContractTests
 {
 	private static readonly ResourceHash[] AutoBattleResources =

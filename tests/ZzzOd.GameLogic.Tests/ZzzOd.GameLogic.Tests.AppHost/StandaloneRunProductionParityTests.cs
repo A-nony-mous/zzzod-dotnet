@@ -15,6 +15,7 @@ namespace ZzzOd.GameLogic.Tests.AppHost;
 /// <summary>
 /// 独立运行列表的数据保真和 BaselineParity 注册顺序测试。
 /// </summary>
+[Trait("Category", "GuiHeavy")]
 public sealed class StandaloneRunProductionParityTests
 {
 	private sealed class BackendSession : IDisposable
