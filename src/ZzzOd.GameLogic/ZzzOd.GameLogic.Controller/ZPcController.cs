@@ -6,6 +6,7 @@ using OneDragon.Core.Input;
 using OneDragon.Core.Screening;
 using OneDragon.Core.Windows.Controller;
 using OneDragon.Core.Windows.Input;
+using OneDragon.Core.Windows.Screening;
 using OpenCvSharp;
 using Serilog;
 using ZzzOd.GameLogic.Config;
@@ -61,8 +62,8 @@ public sealed class ZPcController : WindowsGameController, IZzzControllerActions
 	/// <summary>
 	/// 初始化 ZPcController。
 	/// </summary>
-	public ZPcController(GameConfig gameConfig, string? screenshotMethod = null, int standardWidth = 1920, int standardHeight = 1080, ScreenshotController? screenshotController = null, IInputController? foregroundInputController = null, IInputController? backgroundInputController = null, IButtonController? foregroundButtonController = null, IButtonController? backgroundButtonController = null, IButtonController? backgroundGamepadController = null, bool skipForegroundActivation = false, Action<float, float>? mouseMoveRelative = null, ILogger? logger = null)
-		: base(null, screenshotMethod, standardWidth, standardHeight, null, screenshotController, foregroundInputController, backgroundInputController, foregroundButtonController, backgroundButtonController, backgroundGamepadController, null, null, skipForegroundActivation, logger)
+	public ZPcController(GameConfig gameConfig, string? screenshotMethod = null, int standardWidth = 1920, int standardHeight = 1080, ScreenshotController? screenshotController = null, IInputController? foregroundInputController = null, IInputController? backgroundInputController = null, IButtonController? foregroundButtonController = null, IButtonController? backgroundButtonController = null, IButtonController? backgroundGamepadController = null, bool skipForegroundActivation = false, Action<float, float>? mouseMoveRelative = null, ILogger? logger = null, WindowsGameWindowMatchOptions? matchOptions = null)
+		: base(null, screenshotMethod, standardWidth, standardHeight, null, screenshotController, foregroundInputController, backgroundInputController, foregroundButtonController, backgroundButtonController, backgroundGamepadController, null, null, skipForegroundActivation, logger, matchOptions: matchOptions)
 	{
 		_gameConfig = gameConfig;
 		RefreshActionKeys("keyboard");

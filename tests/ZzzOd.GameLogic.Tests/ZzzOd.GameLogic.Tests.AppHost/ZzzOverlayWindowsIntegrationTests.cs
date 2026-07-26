@@ -8,10 +8,12 @@ using Avalonia.Controls;
 using Avalonia.Media;
 using Avalonia.Threading;
 using FluentAvalonia.Styling;
+using OneDragon.Core.Windows.Screening;
 using OpenCvSharp;
 using Xunit;
 using ZzzOd.AppHost.Backend;
 using ZzzOd.AppHost.Overlay;
+using ZzzOd.GameLogic.Const;
 using ZzzOd.Gui.Overlay;
 using ZzzOd.Gui.Pages.ApplicationSettings;
 using ZzzOd.Gui.Views.FrontierPages.WorldPatrol;
@@ -335,6 +337,53 @@ public sealed class ZzzOverlayWindowsIntegrationTests
                 }
             }
         });
+    }
+
+    /// <summary>
+    /// 桌面上存在标题与游戏相同但类名不符的窗口时，共享游戏窗口实例不得绑定它，Overlay 也不得显示。
+    /// </summary>
+    [WindowsIntegrationFact]
+    [Trait("Category", "WindowsIntegration")]
+    public void GameWindowBindingRejectsSameTitleWindowWithForeignClassName()
+    {
+        Assert.Equal(
+            (nint)0,
+            new WindowsGameWindow(GameConst.ChineseWindowTitle, 1920, 1080).Handle);
+
+        using ControlledWin32Window target = ControlledWin32Window.Create(GameConst.ChineseWindowTitle);
+        target.Show();
+        Assert.NotEqual((nint)0, target.Handle);
+
+        WindowsGameWindowMatchOptions matchOptions = new(
+            [GameConst.ProcessName],
+            GameConst.WindowClassName);
+        WindowsGameWindow guarded = new(GameConst.ChineseWindowTitle, 1920, 1080, null, matchOptions);
+
+        Assert.NotEqual(target.Handle, guarded.Handle);
+        Assert.False(
+            ZzzOverlayController.CanShowForWindow(ToWindowStatus(guarded), layoutEditMode: true),
+            "布局编辑模式下也不得对同标题的非游戏窗口显示 Overlay。");
+
+        // 对照：撤掉匹配条件即退回纯标题查找，会绑上这个非游戏窗口——即修复前的行为。
+        WindowsGameWindow unguarded = new(GameConst.ChineseWindowTitle, 1920, 1080);
+        Assert.Equal(target.Handle, unguarded.Handle);
+    }
+
+    private static ZzzWindowStatusDto ToWindowStatus(WindowsGameWindow window)
+    {
+        OneDragon.Core.Screening.GameWindowGeometry geometry = window.GetWindowGeometry();
+        OneDragon.Core.Abstractions.Geometry.Rect? client = geometry.ClientRect;
+        return new ZzzWindowStatusDto(
+            window.WindowTitle,
+            geometry.IsValid,
+            geometry.IsActive,
+            false,
+            client?.X1,
+            client?.Y1,
+            client?.Width,
+            client?.Height,
+            geometry.IsMinimized,
+            geometry.Dpi);
     }
 
     private static void EnsureFluentTheme()
@@ -1154,15 +1203,17 @@ public sealed class ZzzOverlayWindowsIntegrationTests
 
         public bool IsForeground => GetForegroundWindow() == _handle;
 
+        public nint Handle => _handle;
+
         public int MouseDownCount => MouseDownCounts.TryGetValue(_handle, out int count) ? count : 0;
 
-        public static ControlledWin32Window Create()
+        public static ControlledWin32Window Create(string title = "ZZZ Overlay Integration Target")
         {
             EnsureRegistered();
             nint handle = CreateWindowExW(
                 0,
                 ClassName,
-                "ZZZ Overlay Integration Target",
+                title,
                 WsOverlappedWindow,
                 80,
                 80,
