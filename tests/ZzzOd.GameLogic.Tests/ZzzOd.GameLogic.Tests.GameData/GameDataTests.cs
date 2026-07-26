@@ -30,6 +30,12 @@ public sealed class GameDataTests : IDisposable
 		Assert.Equal("澄辉坪", mapAreaService.GetBestMatchArea("澄辉平")?.AreaName);
 		Assert.Equal(-1, mapAreaService.GetDirectionToTargetArea(mapAreaService.AreaList[0], mapAreaService.AreaList[2]));
 		Assert.Equal("汀曼咖啡", mapAreaService.GetBestMatchTp("澄辉坪", "汀曼咖啡"));
+		// 字序颠倒仍属同一名称：按基准的相似度语义可命中，按编辑距离则会漏
+		Assert.Equal("六分街", mapAreaService.GetBestMatchArea("街六分")?.AreaName);
+		Assert.Equal("随便观", mapAreaService.GetBestMatchTp("澄辉坪", "随观便"));
+		// 与目标名称无共同字时不得兜底命中
+		Assert.Null(mapAreaService.GetBestMatchArea("录像"));
+		Assert.Null(mapAreaService.GetBestMatchTp("澄辉坪", "咖啡汀曼"));
 	}
 
 	[Fact]

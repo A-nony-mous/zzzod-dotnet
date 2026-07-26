@@ -416,11 +416,11 @@ public sealed class RandomPlayAppTests
 	}
 
 	[Fact]
-	public void FindBestThemeByPythonDifflib_UsesPythonCandidateSortingAndCutoff()
+	public void FindBestTheme_UsesBaselineCandidateSortingAndCutoff()
 	{
-		Assert.Equal("ac", RandomPlayOperation.FindBestThemeByPythonDifflib("a", new string[2] { "ab", "ac" }));
-		Assert.Equal("动作", RandomPlayOperation.FindBestThemeByPythonDifflib("动作片", new string[3] { "爱情", "动作", "喜剧" }));
-		Assert.Null(RandomPlayOperation.FindBestThemeByPythonDifflib("x", new string[2] { "动作", "爱情" }));
+		Assert.Equal("ac", RandomPlayOperation.FindBestTheme("a", new string[2] { "ab", "ac" }));
+		Assert.Equal("动作", RandomPlayOperation.FindBestTheme("动作片", new string[3] { "爱情", "动作", "喜剧" }));
+		Assert.Null(RandomPlayOperation.FindBestTheme("x", new string[2] { "动作", "爱情" }));
 	}
 
 	[Fact]

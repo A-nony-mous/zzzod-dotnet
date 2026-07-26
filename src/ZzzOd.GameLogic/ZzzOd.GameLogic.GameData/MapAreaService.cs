@@ -58,8 +58,8 @@ public sealed class MapAreaService
 			return null;
 		}
 		List<string> targetTexts = AreaList.Select((MapArea area) => area.AreaName).ToList();
-		string item = StringUtils.FindBestMatchBySimilarity(ocrResult, targetTexts, 0.4).Match;
-		return (item == null) ? null : AreaNameMap.GetValueOrDefault(item);
+		int? num = StringUtils.FindBestMatchByDifflib(ocrResult, targetTexts);
+		return num.HasValue ? AreaList[num.Value] : null;
 	}
 
 	public int GetDirectionToTargetArea(MapArea currentArea, MapArea targetArea)
@@ -89,6 +89,7 @@ public sealed class MapAreaService
 		{
 			return null;
 		}
-		return StringUtils.FindBestMatchBySimilarity(ocrResult, value.TpList, 0.4).Match;
+		int? num = StringUtils.FindBestMatchByDifflib(ocrResult, value.TpList);
+		return num.HasValue ? value.TpList[num.Value] : null;
 	}
 }

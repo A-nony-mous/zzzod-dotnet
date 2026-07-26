@@ -5,6 +5,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using OneDragon.Core.Abstractions.Operations;
+using OneDragon.Core.Utils;
 using ZzzOd.GameLogic.Context;
 using ZzzOd.GameLogic.Operations;
 
@@ -15,12 +16,6 @@ namespace ZzzOd.GameLogic.Application.RandomPlay;
 /// </summary>
 public sealed class RandomPlayOperation : ZOperation
 {
-	private sealed record ThemeCandidate(string Theme, double Ratio);
-
-	private readonly record struct SequenceMatcherRange(int CandidateStart, int CandidateEnd, int OcrStart, int OcrEnd);
-
-	private readonly record struct SequenceMatcherMatch(int CandidateStart, int OcrStart, int Length);
-
 	/// <summary>已选择全部录像带。</summary>
 	public const string StatusAllVideoChoose = "已选择全部录像带";
 
@@ -83,113 +78,21 @@ public sealed class RandomPlayOperation : ZOperation
 	}
 
 	/// <summary>
-	/// 按 BaselineParity <c>difflib.get_close_matches(..., n=1, cutoff=0.6)</c> 选择主题。
+	/// 在候选主题中选出与识别文本最相近的一个，未达相似度下限时返回 null。
 	/// </summary>
-	public static string? FindBestThemeByPythonDifflib(string? ocrText, IReadOnlyList<string> candidates)
+	public static string? FindBestTheme(string? ocrText, IReadOnlyList<string> candidates)
 	{
-		if (ocrText == null)
+		if (string.IsNullOrEmpty(ocrText))
 		{
 			return null;
 		}
-		return (from candidate in (from candidate in candidates
-				select new ThemeCandidate(candidate, GetSequenceMatcherRatio(candidate, ocrText)) into candidate
-				where candidate.Ratio >= 0.6
-				orderby candidate.Ratio descending
-				select candidate).ThenByDescending<ThemeCandidate, string>((ThemeCandidate candidate) => candidate.Theme, StringComparer.Ordinal)
-			select candidate.Theme).FirstOrDefault();
+		int? index = StringUtils.FindBestMatchByDifflib(ocrText, candidates);
+		return index.HasValue ? candidates[index.Value] : null;
 	}
 
 	private string GetCurrentGameRefreshDt()
 	{
 		return _now().ToUniversalTime().ToOffset(TimeSpan.FromHours(_runRecord.GameRefreshHourOffset)).ToString("yyyyMMdd", CultureInfo.InvariantCulture);
-	}
-
-	private static double GetSequenceMatcherRatio(string candidate, string ocrText)
-	{
-		int num = candidate.Length + ocrText.Length;
-		if (num == 0)
-		{
-			return 1.0;
-		}
-		return 2.0 * (double)GetSequenceMatcherMatchedLength(candidate, ocrText) / (double)num;
-	}
-
-	private static int GetSequenceMatcherMatchedLength(string candidate, string ocrText)
-	{
-		Dictionary<char, List<int>> dictionary = new Dictionary<char, List<int>>();
-		for (int i = 0; i < ocrText.Length; i++)
-		{
-			if (!dictionary.TryGetValue(ocrText[i], out var value))
-			{
-				value = new List<int>();
-				dictionary.Add(ocrText[i], value);
-			}
-			value.Add(i);
-		}
-		if (ocrText.Length >= 200)
-		{
-			int popularCharacterThreshold = ocrText.Length / 100 + 1;
-			char[] array = (from pair in dictionary
-				where pair.Value.Count > popularCharacterThreshold
-				select pair.Key).ToArray();
-			foreach (char key in array)
-			{
-				dictionary.Remove(key);
-			}
-		}
-		int num2 = 0;
-		Stack<SequenceMatcherRange> stack = new Stack<SequenceMatcherRange>();
-		stack.Push(new SequenceMatcherRange(0, candidate.Length, 0, ocrText.Length));
-		SequenceMatcherRange result;
-		while (stack.TryPop(out result))
-		{
-			SequenceMatcherMatch sequenceMatcherMatch = FindLongestSequenceMatcherMatch(candidate, ocrText, dictionary, result);
-			if (sequenceMatcherMatch.Length != 0)
-			{
-				num2 += sequenceMatcherMatch.Length;
-				if (result.CandidateStart < sequenceMatcherMatch.CandidateStart && result.OcrStart < sequenceMatcherMatch.OcrStart)
-				{
-					stack.Push(new SequenceMatcherRange(result.CandidateStart, sequenceMatcherMatch.CandidateStart, result.OcrStart, sequenceMatcherMatch.OcrStart));
-				}
-				int num3 = sequenceMatcherMatch.CandidateStart + sequenceMatcherMatch.Length;
-				int num4 = sequenceMatcherMatch.OcrStart + sequenceMatcherMatch.Length;
-				if (num3 < result.CandidateEnd && num4 < result.OcrEnd)
-				{
-					stack.Push(new SequenceMatcherRange(num3, result.CandidateEnd, num4, result.OcrEnd));
-				}
-			}
-		}
-		return num2;
-	}
-
-	private static SequenceMatcherMatch FindLongestSequenceMatcherMatch(string candidate, string ocrText, IReadOnlyDictionary<char, List<int>> positionsByCharacter, SequenceMatcherRange range)
-	{
-		Dictionary<int, int> dictionary = new Dictionary<int, int>();
-		SequenceMatcherMatch result = new SequenceMatcherMatch(range.CandidateStart, range.OcrStart, 0);
-		for (int i = range.CandidateStart; i < range.CandidateEnd; i++)
-		{
-			Dictionary<int, int> dictionary2 = new Dictionary<int, int>();
-			if (positionsByCharacter.TryGetValue(candidate[i], out List<int> value))
-			{
-				foreach (int item in value)
-				{
-					if (item >= range.OcrStart)
-					{
-						if (item >= range.OcrEnd)
-						{
-							break;
-						}
-						int num = (dictionary2[item] = dictionary.GetValueOrDefault(item - 1) + 1);
-						if (num > result.Length)
-						{
-							result = new SequenceMatcherMatch(i - num + 1, item - num + 1, num);
-						}
-					}
-				}
-			}
-			dictionary = dictionary2;
-		}
-		return result;
 	}
 
 	/// <summary>

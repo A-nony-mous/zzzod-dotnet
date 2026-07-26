@@ -516,7 +516,7 @@ public sealed class DefaultRandomPlayOperationServices : IRandomPlayOperationSer
 	private static string? FindThemeByGameText(ZContext context, string? ocrText)
 	{
 		string[] array = RandomPlayVideoThemes.All.Select(context.GameTextResolver).ToArray();
-		string text = RandomPlayOperation.FindBestThemeByPythonDifflib(ocrText, array);
+		string text = RandomPlayOperation.FindBestTheme(ocrText, array);
 		int num = ((text == null) ? (-1) : Array.IndexOf(array, text));
 		return (num >= 0) ? RandomPlayVideoThemes.All[num] : null;
 	}

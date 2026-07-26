@@ -16,8 +16,6 @@ namespace ZzzOd.GameLogic.Operations.Compendium;
 /// </summary>
 public sealed class CompendiumChooseMissionType : ZOperation
 {
-	private const double PythonDifflibCutoff = 0.6;
-
 	private readonly CompendiumMissionType _missionType;
 
 	private readonly TimeSpan _retryDelay;
@@ -67,8 +65,8 @@ public sealed class CompendiumChooseMissionType : ZOperation
 		OneDragon.Core.Abstractions.Geometry.Point? point = null;
 		foreach (OcrMatchResult item4 in ocrResultList)
 		{
-			string item3 = StringUtils.FindBestMatchBySimilarity(item4.Text, item, 0.6).Match;
-			if (item3 == null || !item2.TryGetValue(item3, out var value) || value != num)
+			int? num2 = StringUtils.FindBestMatchByDifflib(item4.Text, item);
+			if (!num2.HasValue || !item2.TryGetValue(item[num2.Value], out var value) || value != num)
 			{
 				continue;
 			}
