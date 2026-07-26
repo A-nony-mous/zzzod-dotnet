@@ -5,34 +5,33 @@ namespace ZzzOd.GameLogic.Tests.Audit;
 [Trait("Category", "Audit")]
 public sealed class AppCompletionContractTests
 {
-    public static TheoryData<string, string> NormalWorldApplications => new()
+    public static TheoryData<string> NormalWorldApplications => new()
     {
-        { "coffee", "ZzzOd.GameLogic.Application.Coffee/CoffeeOperation.cs" },
-        { "scratch_card", "ZzzOd.GameLogic.Application.ScratchCard/ScratchCardOperation.cs" },
-        { "charge_plan", "ZzzOd.GameLogic.Application.ChargePlan/ChargePlanOperation.cs" },
-        { "suibian_temple", "ZzzOd.GameLogic.Application.SuibianTemple/SuibianTempleOperation.cs" },
-        { "email", "ZzzOd.GameLogic.Application.EmailApp/EmailOperation.cs" },
-        { "redemption_code", "ZzzOd.GameLogic.Application.RedemptionCode/RedemptionCodeOperation.cs" },
-        { "random_play", "ZzzOd.GameLogic.Application.RandomPlay/DefaultRandomPlayOperationServices.cs" },
-        { "trigrams_collection", "ZzzOd.GameLogic.Application.TrigramsCollection/DefaultTrigramsCollectionOperationServices.cs" },
-        { "notorious_hunt", "ZzzOd.GameLogic.Application.NotoriousHunt/NotoriousHuntOperation.cs" },
-        { "engagement_reward", "ZzzOd.GameLogic.Application.EngagementReward/EngagementRewardOperation.cs" },
-        { "withered_domain", "ZzzOd.GameLogic.Application.HollowZero.WitheredDomain/DefaultWitheredDomainAppActions.cs" },
-        { "ridu_weekly", "ZzzOd.GameLogic.Application.RiduWeekly/RiduWeeklyOperation.cs" },
-        { "drive_disc_dismantle", "ZzzOd.GameLogic.Application.DriveDiscDismantle/DefaultDriveDiscDismantleOperationServices.cs" },
-        { "lost_void", "ZzzOd.GameLogic.Application.HollowZero.LostVoid/LostVoidAppOperation.cs" },
-        { "city_fund", "ZzzOd.GameLogic.Application.CityFund/CityFundOperation.cs" },
-        { "world_patrol", "ZzzOd.GameLogic.Application.WorldPatrol/WorldPatrolAppOperation.cs" },
-        { "life_on_line", "ZzzOd.GameLogic.Application.LifeOnLine/DefaultLifeOnLineOperationServices.cs" },
-        { "shiyu_defense", "ZzzOd.GameLogic.Application.ShiyuDefense/DefaultShiyuDefenseOperationServices.cs" },
-        { "hou_hou_bakery", "ZzzOd.GameLogic.Application.HouHouBakery/DefaultHouHouBakeryOperationServices.cs" },
+        "ZzzOd.GameLogic.Application.Coffee/CoffeeOperation.cs",
+        "ZzzOd.GameLogic.Application.ScratchCard/ScratchCardOperation.cs",
+        "ZzzOd.GameLogic.Application.ChargePlan/ChargePlanOperation.cs",
+        "ZzzOd.GameLogic.Application.SuibianTemple/SuibianTempleOperation.cs",
+        "ZzzOd.GameLogic.Application.EmailApp/EmailOperation.cs",
+        "ZzzOd.GameLogic.Application.RedemptionCode/RedemptionCodeOperation.cs",
+        "ZzzOd.GameLogic.Application.RandomPlay/DefaultRandomPlayOperationServices.cs",
+        "ZzzOd.GameLogic.Application.TrigramsCollection/DefaultTrigramsCollectionOperationServices.cs",
+        "ZzzOd.GameLogic.Application.NotoriousHunt/NotoriousHuntOperation.cs",
+        "ZzzOd.GameLogic.Application.EngagementReward/EngagementRewardOperation.cs",
+        "ZzzOd.GameLogic.Application.HollowZero.WitheredDomain/DefaultWitheredDomainAppActions.cs",
+        "ZzzOd.GameLogic.Application.RiduWeekly/RiduWeeklyOperation.cs",
+        "ZzzOd.GameLogic.Application.DriveDiscDismantle/DefaultDriveDiscDismantleOperationServices.cs",
+        "ZzzOd.GameLogic.Application.HollowZero.LostVoid/LostVoidAppOperation.cs",
+        "ZzzOd.GameLogic.Application.CityFund/CityFundOperation.cs",
+        "ZzzOd.GameLogic.Application.WorldPatrol/WorldPatrolAppOperation.cs",
+        "ZzzOd.GameLogic.Application.LifeOnLine/DefaultLifeOnLineOperationServices.cs",
+        "ZzzOd.GameLogic.Application.ShiyuDefense/DefaultShiyuDefenseOperationServices.cs",
+        "ZzzOd.GameLogic.Application.HouHouBakery/DefaultHouHouBakeryOperationServices.cs",
     };
 
     [Theory]
     [MemberData(nameof(NormalWorldApplications))]
-    public void NormalWorldApplicationCompletionPathReferencesBackToNormalWorld(string appId, string relativePath)
+    public void NormalWorldApplicationCompletionPathReferencesBackToNormalWorld(string relativePath)
     {
-        Assert.NotEmpty(appId);
         string source = File.ReadAllText(Path.Combine(FindGameLogicRoot(), relativePath.Replace('/', Path.DirectorySeparatorChar)));
         Assert.Contains("BackToNormalWorld", source, StringComparison.Ordinal);
     }
