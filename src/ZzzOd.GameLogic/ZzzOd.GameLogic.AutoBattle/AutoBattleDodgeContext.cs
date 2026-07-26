@@ -30,6 +30,12 @@ public class AutoBattleDodgeContext
 
 	private long _droppedAudioBecauseBusy;
 
+	// 与丢弃计数对称的受理计数。缺了它就无法从日志区分
+	// "闪光本来就少" 与 "闪光被闸门大量丢弃"——检测结果日志本身按秒节流，条数不等于执行次数。
+	private long _acceptedFlashChecks;
+
+	private long _acceptedAudioChecks;
+
 	private long _reportedDroppedFlashBecauseBusy;
 
 	private long _reportedDroppedAudioBecauseBusy;
@@ -54,6 +60,16 @@ public class AutoBattleDodgeContext
 
 	public long DroppedAudioBecauseBusy => Interlocked.Read(in _droppedAudioBecauseBusy);
 
+	/// <summary>
+	/// 闪光检测被闸门受理并实际执行的累计次数。
+	/// </summary>
+	public long AcceptedFlashChecks => Interlocked.Read(in _acceptedFlashChecks);
+
+	/// <summary>
+	/// 声音检测被闸门受理并实际执行的累计次数。
+	/// </summary>
+	public long AcceptedAudioChecks => Interlocked.Read(in _acceptedAudioChecks);
+
 	private long CurrentRunGeneration
 	{
 		get
@@ -77,9 +93,10 @@ public class AutoBattleDodgeContext
 		if (!_dodgeFlashCheckGate.Wait(0))
 		{
 			runGeneration = CurrentRunGeneration;
-			RecordBusyDrop("闪光", ref _droppedFlashBecauseBusy, ref _reportedDroppedFlashBecauseBusy, ref _lastFlashBusyDiagnosticAtMilliseconds);
+			RecordBusyDrop("闪光", ref _droppedFlashBecauseBusy, ref _reportedDroppedFlashBecauseBusy, ref _lastFlashBusyDiagnosticAtMilliseconds, ref _acceptedFlashChecks);
 			return false;
 		}
+		Interlocked.Increment(ref _acceptedFlashChecks);
 		runGeneration = CurrentRunGeneration;
 		return true;
 	}
@@ -94,9 +111,10 @@ public class AutoBattleDodgeContext
 		if (!_dodgeAudioCheckGate.Wait(0))
 		{
 			runGeneration = CurrentRunGeneration;
-			RecordBusyDrop("声音", ref _droppedAudioBecauseBusy, ref _reportedDroppedAudioBecauseBusy, ref _lastAudioBusyDiagnosticAtMilliseconds);
+			RecordBusyDrop("声音", ref _droppedAudioBecauseBusy, ref _reportedDroppedAudioBecauseBusy, ref _lastAudioBusyDiagnosticAtMilliseconds, ref _acceptedAudioChecks);
 			return false;
 		}
+		Interlocked.Increment(ref _acceptedAudioChecks);
 		runGeneration = CurrentRunGeneration;
 		return true;
 	}
@@ -121,6 +139,8 @@ public class AutoBattleDodgeContext
 		_audioDetector.ResetBattle();
 		Interlocked.Exchange(ref _droppedFlashBecauseBusy, 0L);
 		Interlocked.Exchange(ref _droppedAudioBecauseBusy, 0L);
+		Interlocked.Exchange(ref _acceptedFlashChecks, 0L);
+		Interlocked.Exchange(ref _acceptedAudioChecks, 0L);
 		Interlocked.Exchange(ref _reportedDroppedFlashBecauseBusy, 0L);
 		Interlocked.Exchange(ref _reportedDroppedAudioBecauseBusy, 0L);
 		AdvanceRunGeneration();
@@ -299,7 +319,19 @@ public class AutoBattleDodgeContext
 		return true;
 	}
 
-	private void RecordBusyDrop(string detector, ref long counter, ref long reportedCounter, ref long lastDiagnosticAtMilliseconds)
+	/// <summary>
+	/// 记录一次因闸门占用被丢弃的检测提交，并按窗口上报。
+	/// </summary>
+	/// <param name="detector">检测名称。</param>
+	/// <param name="counter">丢弃累计计数。</param>
+	/// <param name="reportedCounter">上次上报时的丢弃累计值。</param>
+	/// <param name="lastDiagnosticAtMilliseconds">上次上报时刻。</param>
+	/// <param name="acceptedCounter">同一检测被受理并执行的累计次数。</param>
+	/// <remarks>
+	/// 同时上报受理累计数：检测结果日志按秒节流，条数不等于执行次数，
+	/// 只有把受理与丢弃放在同一条记录里才能算出受理比例。
+	/// </remarks>
+	private void RecordBusyDrop(string detector, ref long counter, ref long reportedCounter, ref long lastDiagnosticAtMilliseconds, ref long acceptedCounter)
 	{
 		long num = Interlocked.Increment(ref counter);
 		long num2 = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
@@ -307,7 +339,14 @@ public class AutoBattleDodgeContext
 		if (num2 - num3 >= 500 && Interlocked.CompareExchange(ref lastDiagnosticAtMilliseconds, num2, num3) == num3)
 		{
 			long num4 = Interlocked.Exchange(ref reportedCounter, num);
-			_ctx.Logger.Information("自动战斗{Detector}检测繁忙: DroppedBecauseBusy={DroppedBecauseBusy}, WindowMilliseconds={WindowMilliseconds}", detector, num - num4, (num3 == 0L) ? 500 : (num2 - num3));
+			long accepted = Interlocked.Read(in acceptedCounter);
+			_ctx.Logger.Information(
+				"自动战斗{Detector}检测繁忙: DroppedBecauseBusy={DroppedBecauseBusy}, WindowMilliseconds={WindowMilliseconds}, AcceptedTotal={AcceptedTotal}, DroppedTotal={DroppedTotal}",
+				detector,
+				num - num4,
+				(num3 == 0L) ? 500 : (num2 - num3),
+				accepted,
+				num);
 		}
 	}
 
