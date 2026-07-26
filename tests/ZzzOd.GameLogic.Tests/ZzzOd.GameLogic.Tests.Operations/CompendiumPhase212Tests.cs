@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using OneDragon.Core.Abstractions.Geometry;
@@ -1092,6 +1093,45 @@ public sealed class CompendiumPhase212Tests : IClassFixture<CompendiumPhase212Fi
 		float? actual = zContext.AutoBattleContext.CheckBattleDistance(screen);
 		Assert.Equal(12.5f, actual);
 		Assert.Equal(12.5f, zContext.AutoBattleContext.LastCheckDistance);
+	}
+
+	[Fact]
+	public void BattleTimeoutExit_NodeGraphMatchesBaselinePerChallenge()
+	{
+		IReadOnlyDictionary<string, MethodInfo> huntNodes = CollectNodeMethods(typeof(NotoriousHunt));
+		Assert.DoesNotContain("战斗超时", huntNodes.Keys);
+		Assert.Contains("退出战斗", huntNodes.Keys);
+		Assert.Contains(huntNodes["退出战斗"].GetCustomAttributes<NodeFromAttribute>(), (NodeFromAttribute edge) => edge.FromName == "向前移动准备战斗" && !edge.Success);
+		Assert.Contains(huntNodes["退出战斗"].GetCustomAttributes<NodeFromAttribute>(), (NodeFromAttribute edge) => edge.FromName == "自动战斗" && !edge.Success);
+		Assert.Contains("点击挑战结果退出", huntNodes.Keys);
+		Assert.Contains(huntNodes["点击挑战结果退出"].GetCustomAttributes<NodeFromAttribute>(), (NodeFromAttribute edge) => edge.FromName == "退出战斗");
+		Assert.DoesNotContain(huntNodes["点击挑战结果退出"].GetCustomAttributes<NodeFromAttribute>(), (NodeFromAttribute edge) => edge.FromName == "战斗超时");
+
+		IReadOnlyDictionary<string, MethodInfo> expertNodes = CollectNodeMethods(typeof(ExpertChallenge));
+		Assert.Contains("战斗超时", expertNodes.Keys);
+		Assert.Contains("点击挑战结果退出", expertNodes.Keys);
+		Assert.Contains(expertNodes["点击挑战结果退出"].GetCustomAttributes<NodeFromAttribute>(), (NodeFromAttribute edge) => edge.FromName == "战斗超时");
+
+		IReadOnlyDictionary<string, MethodInfo> patrolNodes = CollectNodeMethods(typeof(AreaPatrol));
+		Assert.Contains("战斗超时", patrolNodes.Keys);
+		Assert.Contains("点击挑战结果退出", patrolNodes.Keys);
+		Assert.Contains(patrolNodes["点击挑战结果退出"].GetCustomAttributes<NodeFromAttribute>(), (NodeFromAttribute edge) => edge.FromName == "战斗超时");
+
+		IReadOnlyDictionary<string, MethodInfo> simulationNodes = CollectNodeMethods(typeof(CombatSimulation));
+		Assert.Contains("战斗超时", simulationNodes.Keys);
+		Assert.DoesNotContain("点击挑战结果退出", simulationNodes.Keys);
+	}
+
+	private static IReadOnlyDictionary<string, MethodInfo> CollectNodeMethods(Type operationType)
+	{
+		return (from method in operationType.GetMethods(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)
+			select new
+			{
+				Method = method,
+				Node = method.GetCustomAttribute<OperationNodeAttribute>()
+			} into item
+			where item.Node != null
+			select item).ToDictionary(item => item.Node!.Name, item => item.Method);
 	}
 
 	/// <summary>
