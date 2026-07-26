@@ -88,12 +88,7 @@ public sealed class ZOneDragonApp : ZApplication
 		{
 			cancellationToken.ThrowIfCancellationRequested();
 			int currentInstanceIndex = instances[currentIndex].Idx;
-			int resultCountBeforeGroup = results.Count;
 			await RunGroupAsync(currentInstanceIndex, results, cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
-			if (results.Skip(resultCountBeforeGroup).Any((ZOneDragonApplicationResult result) => !result.IsSuccess))
-			{
-				return ZApplication.Fail("一条龙应用执行失败", new ZOneDragonRunSummary(currentInstanceIndex, _groupId, results));
-			}
 			int nextIndex = currentIndex + 1;
 			if (nextIndex >= instances.Length)
 			{
@@ -112,7 +107,9 @@ public sealed class ZOneDragonApp : ZApplication
 				currentIndex = nextIndex;
 				if (currentIndex == startIndex)
 				{
-					return await CompleteNaturallyAsync(nextInstanceIndex, results, cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
+					return HasFailure(results)
+						? ZApplication.Fail("一条龙应用执行失败", new ZOneDragonRunSummary(nextInstanceIndex, _groupId, results))
+						: await CompleteNaturallyAsync(nextInstanceIndex, results, cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
 				}
 				OperationResult enterResult = await ExecuteEnterGameAsync(cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
 				if (!enterResult.IsSuccess)
@@ -136,7 +133,17 @@ public sealed class ZOneDragonApp : ZApplication
 				break;
 			}
 		}
-		return await CompleteNaturallyAsync(nextInstanceIndex, results, cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
+		return HasFailure(results)
+			? ZApplication.Fail("一条龙应用执行失败", new ZOneDragonRunSummary(nextInstanceIndex, _groupId, results))
+			: await CompleteNaturallyAsync(nextInstanceIndex, results, cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
+	}
+
+	/// <summary>
+	/// 一整轮实例轮转中是否存在应用执行失败。
+	/// </summary>
+	private static bool HasFailure(IEnumerable<ZOneDragonApplicationResult> results)
+	{
+		return results.Any((ZOneDragonApplicationResult result) => !result.IsSuccess);
 	}
 
 	private OneDragonConfig LoadOneDragonConfig()
