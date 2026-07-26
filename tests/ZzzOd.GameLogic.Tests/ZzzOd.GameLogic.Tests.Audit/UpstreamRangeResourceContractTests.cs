@@ -29,7 +29,7 @@ public sealed class UpstreamRangeResourceContractTests
 
 	private static readonly ResourceHash[] ScreenAndTemplateResources =
 	[
-		new("assets/game_data/screen_info/_od_merged.yml", "2BAB46FF1048E9FDD9886EA5B4420AD7137ADDD638F6C9D7DCA26A088D04AB76"),
+		new("assets/game_data/screen_info/_od_merged.yml", "B9292F20584A71A6DED2C3AB85A4DBF75D0DFCC226152643883BA84E6FF5991B"),
 		new("assets/template/hollow/avatar_norma/raw.png", "18038B78C0F3E94638460A1E1D49EBD760741458400B497589FD30D4830145F6"),
 		new("assets/template/hollow/avatar_norma/mask.png", "5F562680464076662A086EF6E4DD356A3A5818359464F20AF4857FDC9AE0E8F6"),
 		new("assets/template/predefined_team/avatar_norma/raw.png", "158DD6DC4541EA7D25FDD020726F4776139DDC46D21AC3816AB4BE0359B320DB"),

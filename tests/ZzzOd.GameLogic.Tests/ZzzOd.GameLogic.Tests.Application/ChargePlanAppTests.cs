@@ -358,13 +358,14 @@ public sealed class ChargePlanAppTests
 				PlanList = new List<ChargePlanItem>(1) { plan }
 			};
 			ChargePlanRunRecord runRecord = new ChargePlanRunRecord();
-			int menuCount = 0;
+			int backCount = 0;
+			int compendiumCount = 0;
 			int transportCount = 0;
 			int combatCount = 0;
-			ChargePlanOperation operation = new ChargePlanOperation(context, config, runRecord, gotoMenuAsync: delegate
+			ChargePlanOperation operation = new ChargePlanOperation(context, config, runRecord, backToWorldBeforeCompendiumAsync: delegate
 			{
-				menuCount++;
-				return Task.FromResult(new OperationResult(IsSuccess: true, "菜单"));
+				backCount++;
+				return Task.FromResult(new OperationResult(IsSuccess: true, "大世界"));
 			}, transportAsync: delegate(ZContext _, ChargePlanItem actualPlan)
 			{
 				transportCount++;
@@ -375,24 +376,32 @@ public sealed class ChargePlanAppTests
 				combatCount++;
 				Assert.Same(plan, actualPlan);
 				return Task.FromResult(new OperationResult(IsSuccess: true, "挑战完成"));
-			}, chargePowerReader: (ZContext _) => 100);
+			}, resourceReader: (ZContext _) => new ChargePlanResourceReading(100, 0, 0), openCompendiumAsync: delegate
+			{
+				compendiumCount++;
+				return Task.FromResult(new OperationResult(IsSuccess: true, "快捷手册-训练"));
+			});
 			Assert.True(operation.StartChargePlan().IsSuccess);
-			Assert.True((await operation.GotoMenu().WaitAsync(TimeSpan.FromSeconds(2L))).IsSuccess);
-			OperationRoundResult charge = operation.CheckChargePower();
-			OperationRoundResult select = operation.FindAndSelectNextPlan();
+			Assert.True((await operation.BackBeforeOpenCompendium().WaitAsync(TimeSpan.FromSeconds(2L))).IsSuccess);
+			Assert.True((await operation.OpenCompendium().WaitAsync(TimeSpan.FromSeconds(2L))).IsSuccess);
+			OperationRoundResult charge = operation.CheckBatteryCharge();
+			OperationRoundResult select = operation.FindNextPlan();
+			OperationRoundResult check = operation.CheckBeforeTransport();
 			OperationRoundResult transport = await operation.Transport().WaitAsync(TimeSpan.FromSeconds(2L));
 			OperationRoundResult missionType = operation.CheckMissionType();
 			OperationRoundResult combat = await operation.CombatSimulation().WaitAsync(TimeSpan.FromSeconds(2L));
 			Assert.True(charge.IsSuccess);
-			Assert.Equal("剩余电量 100", charge.Status);
+			Assert.Equal("查找候选计划", charge.Status);
 			Assert.True(select.IsSuccess);
+			Assert.True(check.IsSuccess);
 			Assert.True(transport.IsSuccess);
 			Assert.Equal("传送完成", transport.Status);
 			Assert.True(missionType.IsSuccess);
 			Assert.Equal("实战模拟室", missionType.Status);
 			Assert.True(combat.IsSuccess);
 			Assert.Equal("挑战完成", combat.Status);
-			Assert.Equal(1, menuCount);
+			Assert.Equal(1, backCount);
+			Assert.Equal(1, compendiumCount);
 			Assert.Equal(1, transportCount);
 			Assert.Equal(1, combatCount);
 			Assert.Equal(new List<int>(2)
@@ -428,12 +437,14 @@ public sealed class ChargePlanAppTests
 					}
 				}
 			};
-			ChargePlanOperation operation = new ChargePlanOperation(context, config, new ChargePlanRunRecord(), chargePowerReader: (ZContext _) => 20);
+			ChargePlanOperation operation = new ChargePlanOperation(context, config, new ChargePlanRunRecord(), resourceReader: (ZContext _) => new ChargePlanResourceReading(20, 0, 0));
 			operation.StartChargePlan();
-			operation.CheckChargePower();
-			OperationRoundResult select = operation.FindAndSelectNextPlan();
+			operation.CheckBatteryCharge();
+			OperationRoundResult select = operation.FindNextPlan();
 			Assert.True(select.IsSuccess);
-			Assert.Equal(ChargePlanOperation.StatusRoundFinished, select.Status);
+			OperationRoundResult check = operation.CheckBeforeTransport();
+			Assert.True(check.IsSuccess);
+			Assert.Equal(ChargePlanOperation.StatusRoundFinished, check.Status);
 		}
 		finally
 		{
@@ -442,7 +453,7 @@ public sealed class ChargePlanAppTests
 	}
 
 	[Fact]
-	public void ChargePlanOperation_ReadChargePowerUsesMenuChargeCrop()
+	public void ChargePlanOperation_ReadResourcesCropsThreeFixedFieldsFromResourceBar()
 	{
 		OpenCvTestRuntime.RequireAvailable();
 		string text = CreateTempRoot();
@@ -451,17 +462,112 @@ public sealed class ChargePlanAppTests
 			WriteChargePlanScreenInfo(text);
 			using ZContext zContext = new ZContext(new OneDragonEnvironment(text));
 			zContext.ScreenContext.Reload();
-			SizeAwareSingleLineMatcher sizeAwareSingleLineMatcher = new SizeAwareSingleLineMatcher((int width, int height) => (width == 80 && height == 20) ? "100" : "999");
+			SizeAwareSingleLineMatcher sizeAwareSingleLineMatcher = new SizeAwareSingleLineMatcher((int width, int height) => (width, height) switch
+			{
+				(150, 64) => "100",
+				(135, 64) => "2400",
+				(110, 64) => "300",
+				_ => "999",
+			});
 			zContext.OcrService.Matcher = sizeAwareSingleLineMatcher;
 			ChargePlanOperation chargePlanOperation = new ChargePlanOperation(zContext, new ChargePlanConfig(), new ChargePlanRunRecord());
-			using Mat screen = new Mat(160, 160, MatType.CV_8UC3, Scalar.Black);
-			int? actual = chargePlanOperation.ReadChargePowerFromMenuForTesting(screen);
-			Assert.Equal(100, actual);
-			Assert.Equal((80, 20), sizeAwareSingleLineMatcher.LastSize);
+			using Mat screen = new Mat(1080, 1920, MatType.CV_8UC3, Scalar.Black);
+			ChargePlanResourceReading? actual = chargePlanOperation.ReadResourcesForTesting(screen);
+			Assert.NotNull(actual);
+			Assert.Equal(100, actual.BatteryCharge);
+			Assert.Equal(2400, actual.BackupBatteryCharge);
+			Assert.Equal(300, actual.EtherBattery);
+			Assert.Equal((110, 64), sizeAwareSingleLineMatcher.LastSize);
 		}
 		finally
 		{
 			Directory.Delete(text, recursive: true);
+		}
+	}
+
+	[Fact]
+	public void ChargePlanOperation_BatteryCheckRetriesWhenAnyFieldMissingAndChecksDoubleRewardOnce()
+	{
+		string rootDirectory = CreateTempRoot();
+		try
+		{
+			using ZContext context = new ZContext(new OneDragonEnvironment(rootDirectory));
+			context.AttachController(new ReadyController());
+			ChargePlanConfig config = new ChargePlanConfig
+			{
+				DoubleReward = true
+			};
+			ChargePlanResourceReading? reading = null;
+			ChargePlanOperation operation = new ChargePlanOperation(context, config, new ChargePlanRunRecord(), resourceReader: (ZContext _) => reading);
+			operation.StartChargePlan();
+			OperationRoundResult missing = operation.CheckBatteryCharge();
+			Assert.Equal(OperationRoundResultKind.Retry, missing.Kind);
+			Assert.Equal("未识别到电量", missing.Status);
+			Assert.Equal(TimeSpan.FromSeconds(1L), missing.Delay);
+			reading = new ChargePlanResourceReading(100, 2400, 300);
+			OperationRoundResult first = operation.CheckBatteryCharge();
+			Assert.True(first.IsSuccess);
+			Assert.Equal("查看双倍活动", first.Status);
+			OperationRoundResult second = operation.CheckBatteryCharge();
+			Assert.True(second.IsSuccess);
+			Assert.Equal("查找候选计划", second.Status);
+		}
+		finally
+		{
+			Directory.Delete(rootDirectory, recursive: true);
+		}
+	}
+
+	[Fact]
+	public void ChargePlanOperation_RestoreCoverageAllowsPlanWhenBackupOrEtherCoversDeficit()
+	{
+		string rootDirectory = CreateTempRoot();
+		try
+		{
+			using ZContext context = new ZContext(new OneDragonEnvironment(rootDirectory));
+			context.AttachController(new ReadyController());
+			ChargePlanConfig config = new ChargePlanConfig
+			{
+				RestoreCharge = RestoreChargeMode.BackupOnly.DisplayName,
+				PlanList = new List<ChargePlanItem>(1)
+				{
+					new ChargePlanItem
+					{
+						CategoryName = "区域巡防",
+						MissionTypeName = "定期清剿",
+						RunTimes = 0,
+						PlanTimes = 1
+					}
+				}
+			};
+			ChargePlanOperation operation = new ChargePlanOperation(context, config, new ChargePlanRunRecord(), resourceReader: (ZContext _) => new ChargePlanResourceReading(20, 100, 0));
+			operation.StartChargePlan();
+			operation.CheckBatteryCharge();
+			Assert.True(operation.FindNextPlan().IsSuccess);
+			OperationRoundResult backupCheck = operation.CheckBeforeTransport();
+			Assert.True(backupCheck.IsSuccess);
+			Assert.True(string.IsNullOrEmpty(backupCheck.Status));
+			config.RestoreCharge = RestoreChargeMode.EtherOnly.DisplayName;
+			ChargePlanOperation etherOperation = new ChargePlanOperation(context, config, new ChargePlanRunRecord(), resourceReader: (ZContext _) => new ChargePlanResourceReading(20, 0, 1));
+			etherOperation.StartChargePlan();
+			etherOperation.CheckBatteryCharge();
+			Assert.True(etherOperation.FindNextPlan().IsSuccess);
+			OperationRoundResult etherCheck = etherOperation.CheckBeforeTransport();
+			Assert.True(etherCheck.IsSuccess);
+			Assert.True(string.IsNullOrEmpty(etherCheck.Status));
+			config.RestoreCharge = RestoreChargeMode.None.DisplayName;
+			config.SkipPlan = true;
+			ChargePlanOperation skipOperation = new ChargePlanOperation(context, config, new ChargePlanRunRecord(), resourceReader: (ZContext _) => new ChargePlanResourceReading(20, 0, 0));
+			skipOperation.StartChargePlan();
+			skipOperation.CheckBatteryCharge();
+			Assert.True(skipOperation.FindNextPlan().IsSuccess);
+			OperationRoundResult skipCheck = skipOperation.CheckBeforeTransport();
+			Assert.True(skipCheck.IsSuccess);
+			Assert.Equal(ChargePlanOperation.StatusFindNextPlan, skipCheck.Status);
+		}
+		finally
+		{
+			Directory.Delete(rootDirectory, recursive: true);
 		}
 	}
 
@@ -561,6 +667,6 @@ public sealed class ChargePlanAppTests
 	{
 		string text = Path.Combine(rootDirectory, "assets", "game_data", "screen_info");
 		Directory.CreateDirectory(text);
-		File.WriteAllText(Path.Combine(text, "_od_merged.yml"), "- screen_id: menu\n  screen_name: \"菜单\"\n  area_list:\n    - area_name: \"文本-电量\"\n      pc_rect: [10, 20, 90, 40]\n- screen_id: compendium_train\n  screen_name: \"快捷手册\"\n  area_list:\n    - area_name: \"怪物卡双倍剩余次数\"\n      pc_rect: [30, 50, 70, 70]");
+		File.WriteAllText(Path.Combine(text, "_od_merged.yml"), "- screen_id: compendium_train\n  screen_name: \"快捷手册\"\n  area_list:\n    - area_name: \"怪物卡双倍剩余次数\"\n      pc_rect: [30, 50, 70, 70]\n    - area_name: \"资源栏\"\n      pc_rect: [1220, 35, 1770, 110]\n      color_range: [[208, 208, 208], [255, 255, 255]]");
 	}
 }
