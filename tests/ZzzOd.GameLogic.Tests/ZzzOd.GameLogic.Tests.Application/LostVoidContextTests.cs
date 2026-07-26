@@ -638,7 +638,7 @@ public sealed class LostVoidContextTests
 	[Fact]
 	public void Detector_ProductionPathsUseMaskedRunEntry()
 	{
-		string sourceDirectory = Path.Combine(FindRepoRoot(), "src", "ZzzOd.GameLogic", "ZzzOd.GameLogic.Application.HollowZero.LostVoid");
+		string sourceDirectory = Path.Combine(FindBusinessSourceRoot(), "ZzzOd.GameLogic", "ZzzOd.GameLogic.Application.HollowZero.LostVoid");
 		string detectorSource = File.ReadAllText(Path.Combine(sourceDirectory, "LostVoidDetector.cs"));
 		Assert.Contains("CoreDetector.Run(maskedImage", detectorSource, StringComparison.Ordinal);
 
@@ -1434,7 +1434,7 @@ public sealed class LostVoidContextTests
 		IReadOnlyList<NodeFromAttribute> edges = turnAtFirst.GetCustomAttributes(typeof(NodeFromAttribute), inherit: false).OfType<NodeFromAttribute>().ToArray();
 		Assert.Contains(edges, edge => edge.FromName == "脱困" && edge.Status == LostVoidMoveByDetectionOperation.StatusContinue);
 
-		string sourcePath = Path.Combine(FindRepoRoot(), "src", "ZzzOd.GameLogic", "ZzzOd.GameLogic.Application.HollowZero.LostVoid", "LostVoidMoveByDetectionOperation.cs");
+		string sourcePath = Path.Combine(FindBusinessSourceRoot(), "ZzzOd.GameLogic", "ZzzOd.GameLogic.Application.HollowZero.LostVoid", "LostVoidMoveByDetectionOperation.cs");
 		string source = File.ReadAllText(sourcePath);
 		int escapeStart = source.IndexOf("private OperationRoundResult GetOutOfStuck()", StringComparison.Ordinal);
 		int detectRun = source.IndexOf("LostVoid.Detector?.Run", escapeStart, StringComparison.Ordinal);
@@ -1445,7 +1445,7 @@ public sealed class LostVoidContextTests
 	[Fact]
 	public void ChooseCommon_NoDetailFallbackPrecedesGenericCandidateFallback()
 	{
-		string sourcePath = Path.Combine(FindRepoRoot(), "src", "ZzzOd.GameLogic", "ZzzOd.GameLogic.Application.HollowZero.LostVoid", "LostVoidChooseCommonOperation.cs");
+		string sourcePath = Path.Combine(FindBusinessSourceRoot(), "ZzzOd.GameLogic", "ZzzOd.GameLogic.Application.HollowZero.LostVoid", "LostVoidChooseCommonOperation.cs");
 		string source = File.ReadAllText(sourcePath);
 		int chooseArtifact = source.IndexOf("public OperationRoundResult ChooseArtifact()", StringComparison.Ordinal);
 		int answerFallback = source.IndexOf("TryFillByAnswerFallback", chooseArtifact, StringComparison.Ordinal);
@@ -2543,17 +2543,35 @@ public sealed class LostVoidContextTests
 		mat.CopyTo(m);
 	}
 
+	/// <summary>
+	/// 定位资源真源所在的工作区根目录：同时要求资源目录和业务子仓存在，避免锚定到只有同名子目录的上层。
+	/// </summary>
 	private static string FindRepoRoot()
 	{
 		for (DirectoryInfo directoryInfo = new DirectoryInfo(AppContext.BaseDirectory); directoryInfo != null; directoryInfo = directoryInfo.Parent)
 		{
 			string fullName = directoryInfo.FullName;
-			if (Directory.Exists(Path.Combine(fullName, "assets", "template", "battle")) && Directory.Exists(Path.Combine(fullName, "assets", "game_data", "screen_info")))
+			if (Directory.Exists(Path.Combine(fullName, "assets", "template", "battle"))
+				&& Directory.Exists(Path.Combine(fullName, "assets", "game_data", "screen_info"))
+				&& Directory.Exists(Path.Combine(fullName, "zzzod-dotnet")))
 			{
 				return fullName;
 			}
 		}
-		throw new DirectoryNotFoundException("未找到 zzz-od-dotnet 仓库根目录。");
+		throw new DirectoryNotFoundException("未找到 zzz-od-dotnet 工作区根目录。");
+	}
+
+	/// <summary>
+	/// 定位业务子仓的源码根目录。业务源码在 zzzod-dotnet 子仓内，不在工作区根下。
+	/// </summary>
+	private static string FindBusinessSourceRoot()
+	{
+		string sourceRoot = Path.Combine(FindRepoRoot(), "zzzod-dotnet", "src");
+		if (!Directory.Exists(sourceRoot))
+		{
+			throw new DirectoryNotFoundException("未找到业务子仓源码目录 " + sourceRoot);
+		}
+		return sourceRoot;
 	}
 
 	private static string EntryLabel(string regionType)

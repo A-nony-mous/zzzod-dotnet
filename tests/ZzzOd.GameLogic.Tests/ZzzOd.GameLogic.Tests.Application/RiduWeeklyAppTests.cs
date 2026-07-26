@@ -355,23 +355,21 @@ public sealed class RiduWeeklyAppTests
 		return text;
 	}
 
+	/// <summary>
+	/// 定位资源真源所在的工作区根目录：资源在根目录 assets 下，同时要求业务子仓存在以免锚定到上层。
+	/// </summary>
 	private static string FindRepoRoot()
 	{
 		for (DirectoryInfo directoryInfo = new DirectoryInfo(AppContext.BaseDirectory); directoryInfo != null; directoryInfo = directoryInfo.Parent)
 		{
-			string[] buffer = new string[6];
-			buffer[0] = directoryInfo.FullName;
-			buffer[1] = "zzzod-dotnet";
-			buffer[2] = "assets";
-			buffer[3] = "game_data";
-			buffer[4] = "screen_info";
-			buffer[5] = "ridu_weekly.yml";
-			if (File.Exists(Path.Combine(buffer)))
+			string fullName = directoryInfo.FullName;
+			if (File.Exists(Path.Combine(fullName, "assets", "game_data", "screen_info", "ridu_weekly.yml"))
+				&& Directory.Exists(Path.Combine(fullName, "zzzod-dotnet")))
 			{
-				return directoryInfo.FullName;
+				return fullName;
 			}
 		}
-		throw new DirectoryNotFoundException("未找到含丽都周纪区域配置的仓库根目录。");
+		throw new DirectoryNotFoundException("未找到含丽都周纪区域配置的工作区根目录。");
 	}
 
 	private static void CaptureOnce(RiduWeeklyOperation operation)
