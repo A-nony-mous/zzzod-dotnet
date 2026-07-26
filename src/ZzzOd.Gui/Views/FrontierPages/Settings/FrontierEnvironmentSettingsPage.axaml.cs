@@ -22,7 +22,6 @@ internal sealed partial class FrontierEnvironmentSettingsPage : UserControl, IZz
     [
         new("自动", "auto"),
         new("Windows Graphics Capture", "wgc"),
-        new("BitBlt", "bitblt"),
         new("Print Window", "print_window"),
     ];
 
@@ -363,8 +362,17 @@ internal sealed partial class FrontierEnvironmentSettingsPage : UserControl, IZz
         return Convert.ToString(value, CultureInfo.InvariantCulture) ?? string.Empty;
     }
 
+    /// <summary>
+    /// 把配置里的截图方法值映射到当前可选项。
+    /// </summary>
+    /// <param name="value">配置中的取值。</param>
+    /// <returns>下拉框中对应的取值。</returns>
+    /// <remarks>
+    /// 已退役后端的取值仍可能存在于用户配置中，统一显示为自动选择，
+    /// 与配置解析层把这些取值折叠为 auto 的行为保持一致。
+    /// </remarks>
     private static string NormalizeScreenshotMethodForDisplay(string value) =>
-        value is "mss" or "pil" ? "bitblt" : value;
+        value is "mss" or "pil" or "bitblt" or "dwm_shared_surface" ? "auto" : value;
 
     private static bool ReadBool(IReadOnlyDictionary<string, object?> values, string key)
     {

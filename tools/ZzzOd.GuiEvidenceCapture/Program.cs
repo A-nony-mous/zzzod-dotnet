@@ -119,7 +119,6 @@ IReadOnlyList<IScreenCapturer> capturers =
 [
     new WindowsGraphicsCaptureScreenCapturer(window),
     new PrintWindowScreenCapturer(window),
-    new WindowsBitBltScreenCapturer(window),
 ];
 
 foreach (IScreenCapturer capturer in capturers)
