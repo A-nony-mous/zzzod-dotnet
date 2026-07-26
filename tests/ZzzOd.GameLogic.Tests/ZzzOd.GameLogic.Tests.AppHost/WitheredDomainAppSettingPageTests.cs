@@ -187,22 +187,8 @@ public sealed class WitheredDomainAppSettingPageTests
 		string text = FindWorkspaceRoot();
 		string text2 = Path.Combine(runRoot, "assets", "game_data", "hollow_zero");
 		Directory.CreateDirectory(text2);
-		string[] buffer = new string[6];
-		buffer[0] = text;
-		buffer[1] = "zzzod-dotnet";
-		buffer[2] = "assets";
-		buffer[3] = "game_data";
-		buffer[4] = "hollow_zero";
-		buffer[5] = "entry_list.yml";
-		File.Copy(Path.Combine(buffer), Path.Combine(text2, "entry_list.yml"));
-		string[] buffer2 = new string[6];
-		buffer2[0] = text;
-		buffer2[1] = "zzzod-dotnet";
-		buffer2[2] = "assets";
-		buffer2[3] = "game_data";
-		buffer2[4] = "hollow_zero";
-		buffer2[5] = "resonium.yml";
-		File.Copy(Path.Combine(buffer2), Path.Combine(text2, "resonium.yml"));
+		File.Copy(Path.Combine(text, "assets", "game_data", "hollow_zero", "entry_list.yml"), Path.Combine(text2, "entry_list.yml"));
+		File.Copy(Path.Combine(text, "assets", "game_data", "hollow_zero", "resonium.yml"), Path.Combine(text2, "resonium.yml"));
 	}
 
 	private static void CopyCompendiumCatalog(string runRoot)
@@ -210,13 +196,7 @@ public sealed class WitheredDomainAppSettingPageTests
 		string text = FindWorkspaceRoot();
 		string text2 = Path.Combine(runRoot, "assets", "game_data");
 		Directory.CreateDirectory(text2);
-		string[] buffer = new string[5];
-		buffer[0] = text;
-		buffer[1] = "zzzod-dotnet";
-		buffer[2] = "assets";
-		buffer[3] = "game_data";
-		buffer[4] = "compendium_data.yml";
-		File.Copy(Path.Combine(buffer), Path.Combine(text2, "compendium_data.yml"));
+		File.Copy(Path.Combine(text, "assets", "game_data", "compendium_data.yml"), Path.Combine(text2, "compendium_data.yml"));
 	}
 
 	private static void WriteInstanceConfig(string runRoot)
