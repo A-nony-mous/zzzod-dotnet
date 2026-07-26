@@ -7,6 +7,9 @@ public interface IZzzShellPageHost : IDisposable
 {
     event EventHandler<string>? RouteChanged;
 
+    /// <summary>宿主是否已释放。窗口关闭后迟到的导航回调应据此静默丢弃。</summary>
+    bool IsDisposed { get; }
+
     void Initialize(string initialRoute);
 
     void ShowPage(string route);
@@ -172,6 +175,9 @@ public sealed class ZzzShellPageHost : IZzzShellPageHost
 
     private void OnBackNavigationStateChanged(object? sender, EventArgs args) =>
         _navigation.IsBackEnabled = _backNavigationHost?.CanGoBack == true;
+
+    /// <summary>宿主是否已释放。窗口关闭后迟到的导航回调应据此静默丢弃。</summary>
+    public bool IsDisposed => _disposed;
 
     private void ThrowIfDisposed() => ObjectDisposedException.ThrowIf(_disposed, this);
 }

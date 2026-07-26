@@ -142,6 +142,11 @@ public partial class MainWindow : Window
 
     protected void OnNavigationSelectionChanged(object? sender, FANavigationViewSelectionChangedEventArgs args)
     {
+        if (_pageHost.IsDisposed)
+        {
+            return;
+        }
+
         string? tag = args.SelectedItem switch
         {
             ZzzNavigationEntry entry => entry.Key,
@@ -155,7 +160,13 @@ public partial class MainWindow : Window
 
         if (_evidenceRoute is not null && !string.Equals(tag, _evidenceRoute, StringComparison.Ordinal))
         {
-            Dispatcher.UIThread.Post(() => _pageHost.ShowPage(_evidenceRoute));
+            Dispatcher.UIThread.Post(() =>
+            {
+                if (!_pageHost.IsDisposed)
+                {
+                    _pageHost.ShowPage(_evidenceRoute);
+                }
+            });
             return;
         }
 
@@ -164,7 +175,10 @@ public partial class MainWindow : Window
 
     protected void OnNavigationBackRequested(object? sender, FANavigationViewBackRequestedEventArgs args)
     {
-        _pageHost.GoBack();
+        if (!_pageHost.IsDisposed)
+        {
+            _pageHost.GoBack();
+        }
     }
 
     protected virtual void OnRouteChanged(object? sender, string routeKey)
@@ -176,7 +190,13 @@ public partial class MainWindow : Window
 
     private void OnNavigationRequested(object? sender, string key)
     {
-        Dispatcher.UIThread.Post(() => _pageHost.NavigateToRequestedTarget(key));
+        Dispatcher.UIThread.Post(() =>
+        {
+            if (!_pageHost.IsDisposed)
+            {
+                _pageHost.NavigateToRequestedTarget(key);
+            }
+        });
     }
 
     protected void OnIssueClicked(object? sender, RoutedEventArgs args)

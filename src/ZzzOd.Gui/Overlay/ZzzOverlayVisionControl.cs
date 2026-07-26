@@ -11,7 +11,7 @@ internal sealed class ZzzOverlayVisionControl : Control
 {
     private const double StandardGameWidth = 1920d;
     private const double StandardGameHeight = 1080d;
-    private static readonly IReadOnlyDictionary<string, Color> PythonSourceColors = new Dictionary<string, Color>(StringComparer.Ordinal)
+    private static readonly IReadOnlyDictionary<string, Color> BaselineSourceColors = new Dictionary<string, Color>(StringComparer.Ordinal)
     {
         ["ocr"] = Color.Parse("#ff4fa3"),
         ["template"] = Color.Parse("#ffd166"),
@@ -132,7 +132,7 @@ internal sealed class ZzzOverlayVisionControl : Control
         }
 
         string source = SourceOf(item);
-        foreach ((string key, Color color) in PythonSourceColors)
+        foreach ((string key, Color color) in BaselineSourceColors)
         {
             if (source.Contains(key, StringComparison.OrdinalIgnoreCase))
             {

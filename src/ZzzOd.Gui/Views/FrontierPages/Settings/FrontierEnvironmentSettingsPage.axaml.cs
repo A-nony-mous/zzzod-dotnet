@@ -22,8 +22,8 @@ internal sealed partial class FrontierEnvironmentSettingsPage : UserControl, IZz
     [
         new("自动", "auto"),
         new("Windows Graphics Capture", "wgc"),
-        new("Print Window", "print_window"),
         new("BitBlt", "bitblt"),
+        new("Print Window", "print_window"),
     ];
 
     private static readonly ZzzEnvironmentOption[] ProxyTypes =
