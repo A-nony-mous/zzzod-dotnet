@@ -187,56 +187,6 @@ public sealed class EnterGameOperationTests : IDisposable
 		}
 	}
 
-	private sealed class FullScreenEnterClickMatcher : IOcrMatcher
-	{
-		public void UpdateUseGpu(bool useGpu)
-		{
-		}
-
-		public bool IsUseGpu()
-		{
-			return false;
-		}
-
-		public bool InitModel(string? proxyUrl = null, string? ghProxyUrl = null, bool skipIfExisted = true, Action<double, string>? progressCallback = null)
-		{
-			return true;
-		}
-
-		public string RunOcrSingleLine(Mat image, double? threshold = null, bool strictOneLine = true)
-		{
-			return string.Empty;
-		}
-
-		public IReadOnlyDictionary<string, MatchResultList> RunOcr(Mat image, double? threshold = null, double mergeLineDistance = -1.0)
-		{
-			Dictionary<string, MatchResultList> dictionary = new Dictionary<string, MatchResultList>(StringComparer.Ordinal);
-			foreach (OcrMatchResult item in Ocr(image, threshold.GetValueOrDefault(), mergeLineDistance))
-			{
-				MatchResultList matchResultList = new MatchResultList(onlyBest: false);
-				matchResultList.Append(item, autoMerge: false);
-				dictionary[item.Text] = matchResultList;
-			}
-			return dictionary;
-		}
-
-		public IReadOnlyList<OcrMatchResult> Ocr(Mat image, double threshold = 0.0, double mergeLineDistance = -1.0)
-		{
-			IReadOnlyList<OcrMatchResult> result;
-			if (image.Width < 1900 || image.Height < 1000)
-			{
-				IReadOnlyList<OcrMatchResult> readOnlyList = Array.Empty<OcrMatchResult>();
-				result = readOnlyList;
-			}
-			else
-			{
-				IReadOnlyList<OcrMatchResult> readOnlyList = new OcrMatchResult[] { new OcrMatchResult(0.99, 895, 880, 130, 32, "点击进入游戏") };
-				result = readOnlyList;
-			}
-			return result;
-		}
-	}
-
 	private sealed class EnterClickStatusMatcher : IOcrMatcher
 	{
 		public void UpdateUseGpu(bool useGpu)
@@ -378,7 +328,7 @@ public sealed class EnterGameOperationTests : IDisposable
 	{
 		using ZContext context = CreateContext();
 		DateTimeOffset now = new DateTimeOffset(2026, 7, 5, 8, 0, 0, TimeSpan.Zero);
-		EnterGame enterGame = new EnterGame(context, switchAccount: false, runAllInstances: false, 1, () => now, TimeSpan.FromSeconds(10L));
+		EnterGame enterGame = new EnterGame(context, switchAccount: false, () => now, TimeSpan.FromSeconds(10L));
 		OperationRoundResult operationRoundResult = enterGame.WaitResourceDownload();
 		now = now.AddSeconds(11.0);
 		OperationRoundResult operationRoundResult2 = enterGame.WaitResourceDownload();
@@ -402,26 +352,7 @@ public sealed class EnterGameOperationTests : IDisposable
 	}
 
 	[Fact]
-	public void EnterGame_CheckLoginRelatedUsesFullScreenOcrFallbackForEnterClick()
-	{
-		if (!CanUseOpenCv())
-		{
-			return;
-		}
-		using ZContext zContext = CreateContext();
-		zContext.OcrService.Matcher = new FullScreenEnterClickMatcher();
-		using Mat mat = new Mat(new Size(1920, 1080), MatType.CV_8UC3, Scalar.Black);
-		TimeSpan? retryDelay = TimeSpan.Zero;
-		TimeSpan? waitDelay = TimeSpan.Zero;
-		EnterGame obj = new EnterGame(zContext, switchAccount: false, runAllInstances: false, 1, null, null, retryDelay, waitDelay);
-		MethodInfo method = typeof(EnterGame).GetMethod("CheckLoginRelated", BindingFlags.Instance | BindingFlags.NonPublic);
-		OperationRoundResult operationRoundResult = (OperationRoundResult)method.Invoke(obj, new object[1] { mat });
-		Assert.Equal(OperationRoundResultKind.Success, operationRoundResult.Kind);
-		Assert.Equal("点击进入游戏", operationRoundResult.Status);
-	}
-
-	[Fact]
-	public void EnterGame_CheckEnterClickStatusClicksOcrCenterBeforeConfiguredAreaCenter()
+	public void EnterGame_CheckEnterClickStatusClicksConfiguredAreaCenter()
 	{
 		if (!CanUseOpenCv())
 		{
@@ -436,14 +367,15 @@ public sealed class EnterGameOperationTests : IDisposable
 		zContext.ScreenContext.Reload();
 		TimeSpan? retryDelay = TimeSpan.Zero;
 		TimeSpan? waitDelay = TimeSpan.Zero;
-		EnterGame obj = new EnterGame(zContext, switchAccount: false, runAllInstances: false, 1, null, null, retryDelay, waitDelay);
+		EnterGame obj = new EnterGame(zContext, switchAccount: false, null, null, retryDelay, waitDelay);
 		typeof(ZOperation).GetMethod("Screenshot", BindingFlags.Instance | BindingFlags.NonPublic).Invoke(obj, new object[1] { false });
 		MethodInfo method = typeof(EnterGame).GetMethod("CheckEnterClickStatus", BindingFlags.Instance | BindingFlags.NonPublic);
 		OperationRoundResult operationRoundResult = (OperationRoundResult)method.Invoke(obj, Array.Empty<object>());
 		Assert.Equal(OperationRoundResultKind.Wait, operationRoundResult.Kind);
 		Assert.Equal("点击进入游戏", operationRoundResult.Status);
-		Assert.Contains(new OneDragon.Core.Abstractions.Geometry.Point(965, 896), (IEnumerable<OneDragon.Core.Abstractions.Geometry.Point>)stageController.Clicks);
-		Assert.DoesNotContain(new OneDragon.Core.Abstractions.Geometry.Point(959, 939), (IEnumerable<OneDragon.Core.Abstractions.Geometry.Point>)stageController.Clicks);
+		// 还原为纯区域点击后，点击落在配置区域中心，不再是 OCR 命中中心。
+		Assert.Contains(new OneDragon.Core.Abstractions.Geometry.Point(959, 939), (IEnumerable<OneDragon.Core.Abstractions.Geometry.Point>)stageController.Clicks);
+		Assert.DoesNotContain(new OneDragon.Core.Abstractions.Geometry.Point(965, 896), (IEnumerable<OneDragon.Core.Abstractions.Geometry.Point>)stageController.Clicks);
 	}
 
 	[Fact]

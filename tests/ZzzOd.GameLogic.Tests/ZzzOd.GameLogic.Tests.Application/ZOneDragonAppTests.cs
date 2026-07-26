@@ -305,6 +305,55 @@ public sealed class ZOneDragonAppTests
 		}
 	}
 
+	[Fact]
+	public async Task OneDragonApp_ContinuesToSecondInstanceAfterFirstInstanceFailureThenReturnsFailure()
+	{
+		string rootDirectory = CreateTempRoot();
+		try
+		{
+			using ZContext context = new ZContext(new OneDragonEnvironment(rootDirectory));
+			context.AttachController(new ReadyController());
+			RecordingCompletionPlatform platform = new RecordingCompletionPlatform();
+			List<string> executionOrder = new List<string>();
+			TestFactory failedOnFirstInstance = new TestFactory(context, "daily-failed", "失败应用", delegate
+			{
+				executionOrder.Add("instance0-failed");
+				return Task.FromResult(new OperationResult(IsSuccess: false, "failed-status"));
+			});
+			TestFactory succeedsOnSecondInstance = new TestFactory(context, "daily-second", "第二实例应用", delegate
+			{
+				executionOrder.Add("instance1-second");
+				return Task.FromResult(new OperationResult(IsSuccess: true, "second-ok"));
+			});
+			context.ApplicationFactoryRegistry.RegisterApplications(new IApplicationFactory[2] { failedOnFirstInstance, succeedsOnSecondInstance }, defaultGroup: true);
+			// 两实例使用同一个（未配置的）游戏路径，从而走"切换账号"分支而不是"关闭游戏重开"分支。
+			WriteOneDragonConfigWithAfterDone(rootDirectory, "全部实例", "关机", (0, true, true), (1, false, true));
+			WriteGroupConfig(rootDirectory, 0, ("daily-failed", true));
+			WriteGroupConfig(rootDirectory, 1, ("daily-second", true));
+			bool switchAccountCalled = false;
+			ZOneDragonApp app = new ZOneDragonApp(context, 0, completionPlatform: platform, switchAccountAsync: delegate
+			{
+				switchAccountCalled = true;
+				return Task.FromResult(new OperationResult(IsSuccess: true));
+			});
+			OperationResult result = await app.ExecuteAsync(CancellationToken.None).WaitAsync(TimeSpan.FromSeconds(2L));
+			Assert.False(result.IsSuccess);
+			Assert.Equal("一条龙应用执行失败", result.Status);
+			Assert.Equal<List<string>>(new List<string>(2) { "instance0-failed", "instance1-second" }, executionOrder);
+			Assert.True(switchAccountCalled);
+			ZOneDragonRunSummary summary = Assert.IsType<ZOneDragonRunSummary>(result.Data);
+			Assert.Equal(2, summary.Results.Count);
+			Assert.False(summary.Results[0].IsSuccess);
+			Assert.True(summary.Results[1].IsSuccess);
+			Assert.Empty(platform.ClosedControllers);
+			Assert.Equal(0, platform.ShutdownCallCount);
+		}
+		finally
+		{
+			Directory.Delete(rootDirectory, recursive: true);
+		}
+	}
+
 	[Theory]
 	[InlineData("无", 0, 0)]
 	[InlineData("关闭游戏", 1, 0)]

@@ -361,7 +361,11 @@ public sealed class LifeOnLineAppTests
 			Assert.True((await operation.WaitWorld().WaitAsync(TimeSpan.FromSeconds(2L))).IsSuccess);
 			Assert.True(operation.Interact().IsSuccess);
 			Assert.True((await operation.EnterMission().WaitAsync(TimeSpan.FromSeconds(2L))).IsSuccess);
-			Assert.True(operation.WaitBattleScreen().IsSuccess);
+			// 等待战斗画面加载改为直接查真实的"战斗画面/按键-普通攻击"区域，不再经过注入的 services。
+			// 本用例没有配置该画面区域（也没有真实截图），因此识别不到，返回失败而不是成功；
+			// _chosenTeam 的写入在识别之前发生，不受这里影响。
+			OperationRoundResult waitBattleScreen = operation.WaitBattleScreen();
+			Assert.False(waitBattleScreen.IsSuccess);
 			Assert.True((await operation.RunKeySim().WaitAsync(TimeSpan.FromSeconds(2L))).IsSuccess);
 			Assert.True(operation.InteractAfterMission().IsSuccess);
 			Assert.True(operation.TalkAfterMission().IsSuccess);

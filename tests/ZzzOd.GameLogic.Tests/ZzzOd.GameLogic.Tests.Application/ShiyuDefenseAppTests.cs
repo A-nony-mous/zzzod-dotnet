@@ -1045,7 +1045,7 @@ public sealed class ShiyuDefenseAppTests
 			}, screen).WaitAsync(TimeSpan.FromSeconds(2L));
 			Assert.True(result.IsSuccess);
 			Assert.Equal("节点-05", result.Status);
-			Assert.Null(result.Data);
+			Assert.Equal(5, result.Data);
 		}
 		finally
 		{

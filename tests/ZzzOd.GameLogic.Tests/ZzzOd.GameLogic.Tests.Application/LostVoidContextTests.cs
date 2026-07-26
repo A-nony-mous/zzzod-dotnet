@@ -143,9 +143,9 @@ public sealed class LostVoidContextTests
 			return false;
 		}
 
-		public OperationRoundResult? HandleFriendlyTalkInit(LostVoidRunLevel operation, int roomInitedTimes)
+		public (OperationRoundResult? Result, bool Advance) HandleFriendlyTalkInit(LostVoidRunLevel operation, int roomInitedTimes)
 		{
-			return null;
+			return (null, false);
 		}
 
 		public void TurnToFindTarget(LostVoidRunLevel operation)
@@ -283,9 +283,9 @@ public sealed class LostVoidContextTests
 			return false;
 		}
 
-		public OperationRoundResult? HandleFriendlyTalkInit(LostVoidRunLevel operation, int roomInitedTimes)
+		public (OperationRoundResult? Result, bool Advance) HandleFriendlyTalkInit(LostVoidRunLevel operation, int roomInitedTimes)
 		{
-			return null;
+			return (null, false);
 		}
 
 		public void TurnToFindTarget(LostVoidRunLevel operation)
@@ -668,7 +668,9 @@ public sealed class LostVoidContextTests
 			Assert.True(zContext.LostVoid.GearByName.ContainsKey("喷水枪"));
 			Assert.True(zContext.LostVoid.CategoryToArtifacts.ContainsKey("通用"));
 			Assert.Equal("鸣徽狂热战略", zContext.LostVoid.InvestigationStrategyList[0].StrategyName);
-			Assert.Equal(3, zContext.LostVoid.PredefinedTeamIdx);
+			Assert.Equal(-1, zContext.LostVoid.PredefinedTeamIdx);
+			Assert.Equal("自定义战斗", zContext.LostVoid.GetAutoOpName());
+			zContext.LostVoid.PredefinedTeamIdx = 3;
 			Assert.Equal("编队战斗", zContext.LostVoid.GetAutoOpName());
 			Assert.Equal("战斗-鸣徽", zContext.LostVoid.ChallengeConfig.RegionTypePriority[0]);
 		}

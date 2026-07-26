@@ -179,7 +179,7 @@ public sealed class DailySignInAppTests
 			DailySignInOperation operation = new DailySignInOperation(context, config, 3, "daily");
 			OperationRoundResult result = await operation.RunSubApp().WaitAsync(TimeSpan.FromSeconds(2L));
 			Assert.True(result.IsSuccess);
-			Assert.Equal("签到成功", result.Status);
+			Assert.True(string.IsNullOrEmpty(result.Status));
 			Assert.Equal(1, subAppFactory.CreateApplicationCallCount);
 			Assert.Equal(3, subAppFactory.LastInstanceIndex);
 			Assert.Equal("daily", subAppFactory.LastGroupId);

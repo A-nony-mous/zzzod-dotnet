@@ -156,15 +156,15 @@ public sealed class ResourceDownloadServiceTests
 			buffer[1] = "assets";
 			buffer[2] = "models";
 			buffer[3] = "hollow_zero_event";
-			buffer[4] = "installed-model";
+			buffer[4] = "yolov8s-736-hollow-zero-event-1130";
 			string installed = Path.Combine(buffer);
 			Directory.CreateDirectory(installed);
 			File.WriteAllText(Path.Combine(installed, "model.onnx"), "old-model");
 			File.WriteAllText(Path.Combine(installed, "labels.csv"), "old-labels");
-			WriteModelConfig(root, "hollow_zero_event: installed-model\n");
+			WriteModelConfig(root, "hollow_zero_event: yolov8s-736-hollow-zero-event-1130\n");
 			byte[] archive = CreateZip(new Dictionary<string, string> { ["../escape.txt"] = "bad" });
 			using ZzzResourceDownloadService service = CreateService(root, (HttpRequestMessage _) => Response(archive));
-			await service.DownloadAsync("hollow_zero_event", "installed-model");
+			await service.DownloadAsync("hollow_zero_event", "yolov8s-736-hollow-zero-event-1130");
 			ZzzResourceDownloadStatusDto status = service.GetItems().Single((ZzzResourceDownloadItemDto item) => item.ResourceId == "hollow_zero_event").Status;
 			Assert.Equal("下载资源失败 请尝试更换代理", status.Message);
 			Assert.NotNull(status.Error);
@@ -404,17 +404,20 @@ public sealed class ResourceDownloadServiceTests
 		try
 		{
 			Directory.CreateDirectory(Path.Combine(text, "config"));
-			File.WriteAllText(Path.Combine(text, "config", "model.yml"), "flash_classifier: local-model\nocr: ppocrv5\nocr_use_gpu: true\n");
-			string[] buffer = new string[5];
-			buffer[0] = text;
-			buffer[1] = "assets";
-			buffer[2] = "models";
-			buffer[3] = "flash_classifier";
-			buffer[4] = "local-model";
-			string text2 = Path.Combine(buffer);
-			Directory.CreateDirectory(text2);
-			File.WriteAllText(Path.Combine(text2, "model.onnx"), "model");
-			File.WriteAllText(Path.Combine(text2, "labels.csv"), "labels");
+			File.WriteAllText(Path.Combine(text, "config", "model.yml"), "flash_classifier: yolov8n-640-flash-20250906\nocr: ppocrv5\nocr_use_gpu: true\n");
+			foreach (string installedModel in new string[2] { "yolov8n-640-flash-20250906", "local-model" })
+			{
+				string[] buffer = new string[5];
+				buffer[0] = text;
+				buffer[1] = "assets";
+				buffer[2] = "models";
+				buffer[3] = "flash_classifier";
+				buffer[4] = installedModel;
+				string text2 = Path.Combine(buffer);
+				Directory.CreateDirectory(text2);
+				File.WriteAllText(Path.Combine(text2, "model.onnx"), "model");
+				File.WriteAllText(Path.Combine(text2, "labels.csv"), "labels");
+			}
 			using ZzzResourceDownloadService zzzResourceDownloadService = CreateService(text, (HttpRequestMessage _) => Response(Array.Empty<byte>()));
 			IReadOnlyList<ZzzResourceDownloadItemDto> items = zzzResourceDownloadService.GetItems();
 			ZzzResourceDownloadItemDto zzzResourceDownloadItemDto = items.Single((ZzzResourceDownloadItemDto item) => item.ResourceId == "ocr");
@@ -422,7 +425,7 @@ public sealed class ResourceDownloadServiceTests
 			Assert.True(zzzResourceDownloadItemDto.UseGpu);
 			Assert.Equal(new string[2] { "ppocrv5", "ppocrv6" }, zzzResourceDownloadItemDto.Options.Select((ZzzResourceModelOptionDto option) => option.ModelId));
 			ZzzResourceDownloadItemDto zzzResourceDownloadItemDto2 = items.Single((ZzzResourceDownloadItemDto item) => item.ResourceId == "flash_classifier");
-			Assert.Equal("local-model", zzzResourceDownloadItemDto2.SelectedModelId);
+			Assert.Equal("yolov8n-640-flash-20250906", zzzResourceDownloadItemDto2.SelectedModelId);
 			Assert.True(zzzResourceDownloadItemDto2.Status.IsInstalled);
 			Assert.Contains((IEnumerable<ZzzResourceModelOptionDto>)zzzResourceDownloadItemDto2.Options, (Predicate<ZzzResourceModelOptionDto>)((ZzzResourceModelOptionDto option) => option.ModelId == "local-model"));
 		}

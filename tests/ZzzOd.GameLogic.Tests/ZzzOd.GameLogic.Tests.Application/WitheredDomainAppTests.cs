@@ -258,7 +258,7 @@ public sealed class WitheredDomainAppTests
 	[Fact]
 	public void ResoniumPriority_UsesPythonLevelAndCategoryOrder()
 	{
-		IReadOnlyList<int> actual = WitheredDomainEventOperations.OrderResoniumByPythonPriority(new WitheredDomainResonium[3]
+		IReadOnlyList<int> actual = WitheredDomainEventOperations.OrderResoniumByBaselinePriority(new WitheredDomainResonium[3]
 		{
 			new WitheredDomainResonium
 			{
@@ -280,7 +280,7 @@ public sealed class WitheredDomainAppTests
 			}
 		}, new string[] { "强攻" }, onlyPriority: false);
 		Assert.Equal(new int[3] { 2, 0, 1 }, actual);
-		Assert.Equal(new int[] { 0 }, WitheredDomainEventOperations.OrderResoniumByPythonPriority(new WitheredDomainResonium[2]
+		Assert.Equal(new int[] { 0 }, WitheredDomainEventOperations.OrderResoniumByBaselinePriority(new WitheredDomainResonium[2]
 		{
 			new WitheredDomainResonium
 			{
@@ -349,12 +349,10 @@ public sealed class WitheredDomainAppTests
 				{
 					context.WitheredDomain.InitBeforeRun();
 				});
-				FileNotFoundException ex2 = Assert.Throws<FileNotFoundException>(delegate
-				{
-					context.WitheredDomain.InitBeforeRun("不存在的挑战");
-				});
 				Assert.Equal("枯萎之都未选择挑战配置。", ex.Message);
-				Assert.Contains("不存在的挑战", ex2.Message, StringComparison.Ordinal);
+				// 配置文件缺失时静默回退默认挑战配置，不再抛出
+				context.WitheredDomain.InitBeforeRun("不存在的挑战");
+				Assert.NotNull(context.WitheredDomain.ChallengeConfig);
 			}
 			finally
 			{
@@ -387,7 +385,11 @@ public sealed class WitheredDomainAppTests
 			DailyRunTimes = 1
 		};
 		Assert.Equal(1, witheredDomainRunRecord.RunStatusUnderNow);
+		// 完成态只读取已落盘的运行状态，不由次数推导
+		Assert.False(witheredDomainRunRecord.IsDone);
+		witheredDomainRunRecord.RunStatus = 1;
 		Assert.True(witheredDomainRunRecord.IsDone);
+		witheredDomainRunRecord.RunStatus = 0;
 		now = now.AddDays(7.0);
 		Assert.Equal(0, witheredDomainRunRecord.RunStatusUnderNow);
 		Assert.False(witheredDomainRunRecord.IsDone);

@@ -58,7 +58,7 @@ public sealed class StandaloneRunProductionParityTests
 			ZzzBackendResult<IReadOnlyList<ZzzAppDto>> standaloneApps = backendSession.Backend.GetStandaloneApps();
 			Assert.True(standaloneApps.Success, standaloneApps.Error);
 			IReadOnlyList<ZzzAppDto> value = standaloneApps.Value;
-			string[] expected = (from appId in ZApplicationDirectoryCatalog.BuiltInDirectories.Where((ZApplicationDirectoryMetadata directory) => directory.DefaultGroup).SelectMany((ZApplicationDirectoryMetadata directory) => directory.AppIds)
+			string[] expected = (from appId in ZApplicationDirectoryCatalog.BuiltInDirectories.Where((ZApplicationDirectoryMetadata directory) => directory.DefaultGroup).OrderBy((ZApplicationDirectoryMetadata directory) => directory.Priority).SelectMany((ZApplicationDirectoryMetadata directory) => directory.AppIds)
 				where !string.Equals(appId, "one_dragon", StringComparison.Ordinal)
 				select appId).ToArray();
 			Assert.Equal(expected, value.Select((ZzzAppDto app) => app.AppId));

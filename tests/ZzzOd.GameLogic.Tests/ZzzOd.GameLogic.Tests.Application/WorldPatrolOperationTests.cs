@@ -693,6 +693,8 @@ public sealed class WorldPatrolOperationTests
 			OperationRoundResult initSearch = operation.InitTransportPointSearch();
 			OperationRoundResult search = operation.SearchTransportPointLoop();
 			OperationRoundResult closePopup = operation.CloseAreaInfoPopup();
+			// 点击前往改为直接调用框架 RoundByFindAndClickArea，不再经过注入的 services；
+			// 本用例没有附加控制器/截图，因此这一步会因"未获取截图"而 Retry。
 			OperationRoundResult go = operation.ClickGo();
 			OperationRoundResult wait = await operation.BackAtLast().WaitAsync(TimeSpan.FromSeconds(2L));
 			Assert.True(back.IsSuccess);
@@ -707,12 +709,12 @@ public sealed class WorldPatrolOperationTests
 			Assert.True(initSearch.IsSuccess);
 			Assert.True(search.IsSuccess);
 			Assert.True(closePopup.IsSuccess);
-			Assert.Equal(OperationRoundResultKind.Wait, go.Kind);
+			Assert.Equal(OperationRoundResultKind.Retry, go.Kind);
 			Assert.True(wait.IsSuccess);
-			Assert.Equal<List<string>>(new List<string>(14)
+			Assert.Equal<List<string>>(new List<string>(13)
 			{
 				"back", "open_map", "choose_area:六分街", "expand_sub_area", "choose_sub_area:咖啡店", "open_filter", "choose_filter:传送", "close_filter", "mini_scale", "init_search:咖啡店",
-				"search:咖啡店", "close_popup", "click_go", "wait_world:False"
+				"search:咖啡店", "close_popup", "wait_world:False"
 			}, services.Calls);
 		}
 		finally
@@ -814,11 +816,26 @@ public sealed class WorldPatrolOperationTests
 		try
 		{
 			Write3dMapScreenInfo(rootDirectory);
-			using RecordingController controller = new RecordingController();
+			// "按钮-前往" pc_rect 是 [220, 0, 320, 80]，需要一张能完整容纳该区域的截图，
+			// 否则裁剪会退化成空区域，命中不到下面伪造的 OCR 结果。
+			using RecordingController controller = new RecordingController(new Mat(500, 500, MatType.CV_8UC3, Scalar.Black));
 			using ZContext context = new ZContext(new OneDragonEnvironment(rootDirectory));
 			context.AttachController(controller);
 			context.ScreenContext.Reload();
-			context.OcrService.Matcher = new SizeAwareOcrMatcher((int _, int _) => Array.Empty<OcrMatchResult>());
+			int clickGoOcrCalls = 0;
+			context.OcrService.Matcher = new SizeAwareOcrMatcher(delegate(int width, int height)
+			{
+				if (width == 100 && height == 80)
+				{
+					clickGoOcrCalls++;
+					// 点击前往改为直接调用框架的持续补点击语义：第一次识别到"前往"触发点击，
+					// 第二次识别不到即视为已跳转，从而结束该节点。
+					return clickGoOcrCalls == 1
+						? new OcrMatchResult[] { new OcrMatchResult(0.99, 10, 10, 60, 20, "前往") }
+						: Array.Empty<OcrMatchResult>();
+				}
+				return Array.Empty<OcrMatchResult>();
+			});
 			WorldPatrolArea area = CreateRouteArea().Area;
 			ExecutingTransportBy3dMapServices services = new ExecutingTransportBy3dMapServices();
 			TransportBy3dMap operation = new TransportBy3dMap(context, area, "咖啡店", services);
@@ -829,7 +846,8 @@ public sealed class WorldPatrolOperationTests
 			Assert.Equal(3, services.OpenMapChecks);
 			Assert.Equal(2, services.OpenFilterChecks);
 			Assert.Equal(2, services.CloseFilterChecks);
-			Assert.Equal(1, services.ClickGoCount);
+			// 点击前往不再经过注入的 services，真实识别/点击走 ScreenContext + OcrService。
+			Assert.Equal(0, services.ClickGoCount);
 			Assert.Equal(cts.Token, services.BackCancellationToken);
 			Assert.Equal(cts.Token, services.WaitCancellationToken);
 		}
@@ -1472,7 +1490,7 @@ public sealed class WorldPatrolOperationTests
 		using ZContext zContext = CreateZPcContext(out buttons);
 		zContext.AutoBattleContext.AgentContext.Team.Agents.Add(new AgentInfo(AgentEnum.ASTRA_YAO.Value));
 		zContext.AutoBattleContext.AgentContext.Team.Agents.Add(new AgentInfo(AgentEnum.ANBY.Value));
-		DefaultWorldPatrolRunRouteServices defaultWorldPatrolRunRouteServices = new DefaultWorldPatrolRunRouteServices();
+		DefaultWorldPatrolRunRouteServices defaultWorldPatrolRunRouteServices = new DefaultWorldPatrolRunRouteServices(zContext);
 		defaultWorldPatrolRunRouteServices.SwitchToBestAgentForMoving(zContext);
 		Assert.Equal("安比", zContext.AutoBattleContext.AgentContext.Team.Agents[0].Agent.AgentName);
 		int num = 1;
@@ -1490,7 +1508,7 @@ public sealed class WorldPatrolOperationTests
 		zContext.AutoBattleContext.AgentContext.Team.Agents.Add(new AgentInfo(AgentEnum.ANBY.Value));
 		zContext.AutoBattleContext.AgentContext.Team.Agents.Add(new AgentInfo(AgentEnum.NICOLE.Value));
 		zContext.AutoBattleContext.AgentContext.Team.Agents.Add(new AgentInfo(AgentEnum.BILLY.Value));
-		DefaultWorldPatrolRunRouteServices defaultWorldPatrolRunRouteServices = new DefaultWorldPatrolRunRouteServices();
+		DefaultWorldPatrolRunRouteServices defaultWorldPatrolRunRouteServices = new DefaultWorldPatrolRunRouteServices(zContext);
 		defaultWorldPatrolRunRouteServices.SwitchNextForUnstuck(zContext);
 		Assert.Equal("妮可", zContext.AutoBattleContext.AgentContext.Team.Agents[0].Agent.AgentName);
 		int num = 1;

@@ -104,7 +104,7 @@ public sealed class ConfigTests : IDisposable
 	{
 		string text = Path.Combine(_rootDirectory, "config");
 		Directory.CreateDirectory(text);
-		string contents = "\nocr_use_gpu: true\nflash_classifier_gpu: true\nhollow_zero_event_gpu: true\nlost_void_det_gpu: true\nlost_void_det: yolov8n-736-lost-void-det-20250622\n";
+		string contents = "\nocr_use_gpu: true\nflash_classifier_gpu: true\nhollow_zero_event_gpu: true\nlost_void_det_gpu: true\nlost_void_det: yolov8n-736-lost-void-det-20250921\n";
 		File.WriteAllText(Path.Combine(text, "model.yml"), contents);
 		OneDragonEnvironment environment = new OneDragonEnvironment(_rootDirectory);
 		YamlConfig<ZzzOd.GameLogic.Config.ModelConfig> yamlConfig = new YamlConfig<ZzzOd.GameLogic.Config.ModelConfig>(environment, "model");
@@ -113,7 +113,7 @@ public sealed class ConfigTests : IDisposable
 		Assert.True(yamlConfig.Current.HollowZeroEventGpu);
 		Assert.True(yamlConfig.Current.LostVoidDetGpu);
 		Assert.Equal("yolov8n-640-flash-20250906", yamlConfig.Current.FlashClassifierBackup);
-		Assert.Equal("yolov8n-736-lost-void-det-20250622", yamlConfig.Current.LostVoidDet);
+		Assert.Equal("yolov8n-736-lost-void-det-20250921", yamlConfig.Current.LostVoidDet);
 		Assert.Equal("yolov8n-736-lost-void-det-20250921", yamlConfig.Current.LostVoidDetBackup);
 		Assert.Equal("yolov8s-736-hollow-zero-event-1130", yamlConfig.Current.HollowZeroEventBackup);
 	}
@@ -201,18 +201,18 @@ public sealed class ConfigTests : IDisposable
 	}
 
 	[Fact]
-	public void ModelConfig_ShouldPreserveDiscoveredModelNamesAndReportNonDefaultModel()
+	public void ModelConfig_CoercesUnknownModelNamesToDefaultsAndReportsBackupModel()
 	{
 		string text = Path.Combine(_rootDirectory, "config");
 		Directory.CreateDirectory(text);
 		File.WriteAllText(Path.Combine(text, "model.yml"), "flash_classifier: unknown-flash\nhollow_zero_event: unknown-event\nlost_void_det: unknown-lost-void");
 		OneDragonEnvironment environment = new OneDragonEnvironment(_rootDirectory);
 		YamlConfig<ZzzOd.GameLogic.Config.ModelConfig> yamlConfig = new YamlConfig<ZzzOd.GameLogic.Config.ModelConfig>(environment, "model");
-		Assert.Equal("unknown-flash", yamlConfig.Current.FlashClassifier);
-		Assert.Equal("unknown-event", yamlConfig.Current.HollowZeroEvent);
-		Assert.Equal("unknown-lost-void", yamlConfig.Current.LostVoidDet);
-		Assert.True(yamlConfig.Current.UsingOldModel());
-		yamlConfig.Current.LostVoidDet = "yolov8n-736-lost-void-det-20250622";
+		Assert.Equal("yolov8n-640-flash-20250921", yamlConfig.Current.FlashClassifier);
+		Assert.Equal("yolov8s-736-hollow-zero-event-0126", yamlConfig.Current.HollowZeroEvent);
+		Assert.Equal("yolov26n-736-lost-void-det-20260630", yamlConfig.Current.LostVoidDet);
+		Assert.False(yamlConfig.Current.UsingOldModel());
+		yamlConfig.Current.LostVoidDet = "yolov8n-736-lost-void-det-20250921";
 		Assert.True(yamlConfig.Current.UsingOldModel());
 	}
 
