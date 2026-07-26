@@ -229,9 +229,23 @@ public sealed partial class FrontierHomePage : UserControl, IZzzPageLifecycle
         _noticeCard.DisposeNotice();
         _noticeCard.RetryRequested -= OnNoticeRetryRequested;
 
-        _activationCancellation?.Cancel();
-        _activationCancellation?.Dispose();
-        _activationCancellation = null;
+        // 原子摘下再释放：DisposePage 可能被页面宿主和缓存清理重复调用，
+        // 之前的写法在第二次调用时会对已释放的 CTS 调 Cancel，异常一路抛到窗口 OnClosed。
+        CancellationTokenSource? activation = Interlocked.Exchange(ref _activationCancellation, null);
+        if (activation is null)
+        {
+            return;
+        }
+
+        try
+        {
+            activation.Cancel();
+        }
+        catch (ObjectDisposedException)
+        {
+        }
+
+        activation.Dispose();
     }
 
     public void InvokePrimaryAction() => _ = HandleStartAsync();

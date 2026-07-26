@@ -1,6 +1,7 @@
 using Avalonia.Controls;
 using FluentAvalonia.UI.Controls;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using ZzzOd.AppHost.Backend;
 using ZzzOd.AppHost.Devtools;
 using ZzzOd.AppHost.Resources;
@@ -95,11 +96,23 @@ internal sealed class ZzzFrontierPageFactory : IFANavigationPageFactory
 
     public void DisposeCachedPages(Control? alreadyDisposed)
     {
+        // 这条路径由窗口 OnClosed 触发，异常逃出去会落到 Win32 WndProc 上并跳过其余页面的释放。
+        // 单个页面释放失败只记录，不中断整轮清理。
+        ILogger<ZzzFrontierPageFactory>? logger = _services.GetService<ILogger<ZzzFrontierPageFactory>>();
         foreach (Control page in _pages.Values)
         {
-            if (!ReferenceEquals(page, alreadyDisposed) && page is IZzzPageLifecycle lifecycle)
+            if (ReferenceEquals(page, alreadyDisposed) || page is not IZzzPageLifecycle lifecycle)
+            {
+                continue;
+            }
+
+            try
             {
                 lifecycle.DisposePage();
+            }
+            catch (Exception exception)
+            {
+                logger?.LogWarning(exception, "释放缓存页面 {PageType} 失败。", page.GetType().Name);
             }
         }
 
