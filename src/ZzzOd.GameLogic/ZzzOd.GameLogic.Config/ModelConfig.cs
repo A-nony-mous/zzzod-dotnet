@@ -41,6 +41,10 @@ public sealed class ModelConfig
 	{
 		get
 		{
+			if (_flashClassifier != DefaultFlashClassifier && _flashClassifier != BackupFlashClassifier)
+			{
+				_flashClassifier = DefaultFlashClassifier;
+			}
 			return _flashClassifier;
 		}
 		set
@@ -60,6 +64,10 @@ public sealed class ModelConfig
 	{
 		get
 		{
+			if (_hollowZeroEvent != DefaultHollowZeroEvent && _hollowZeroEvent != BackupHollowZeroEvent)
+			{
+				_hollowZeroEvent = DefaultHollowZeroEvent;
+			}
 			return _hollowZeroEvent;
 		}
 		set
@@ -79,6 +87,10 @@ public sealed class ModelConfig
 	{
 		get
 		{
+			if (_lostVoidDet != DefaultLostVoidDet && _lostVoidDet != BackupLostVoidDet)
+			{
+				_lostVoidDet = DefaultLostVoidDet;
+			}
 			return _lostVoidDet;
 		}
 		set
