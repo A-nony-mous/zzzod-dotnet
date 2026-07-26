@@ -126,18 +126,22 @@ public sealed class ScreenLostVoidRunLevelRuntime : ILostVoidRunLevelRuntime
 		return CheckBattleEncounter(operation.GameContext, screen, screenshotTimeUtc);
 	}
 
-	public OperationRoundResult? HandleFriendlyTalkInit(LostVoidRunLevel operation, int roomInitedTimes)
+	public (OperationRoundResult? Result, bool Advance) HandleFriendlyTalkInit(LostVoidRunLevel operation, int roomInitedTimes)
 	{
 		switch (roomInitedTimes)
 		{
 		case 0:
-			return new OperationRoundResult(OperationRoundResultKind.Wait, null, null, TimeSpan.FromSeconds(2L));
+			// 进入大世界一秒内可能触发战略奖励鸣徽的画面，先等待再继续识别。
+			return (new OperationRoundResult(OperationRoundResultKind.Wait, null, null, TimeSpan.FromSeconds(2L)), true);
 		case 1:
+			// 挚交会谈开局先向右移动一段距离避开桌子，执行后不提前返回，但计数需要推进到 2，
+			// 否则下一轮会把移动动作重复执行。
 			operation.GameContext.AutoBattleContext.MoveW(press: true, TimeSpan.FromMilliseconds(700L), release: true);
 			operation.GameContext.AutoBattleContext.MoveD(press: true, TimeSpan.FromMilliseconds(1400L), release: true);
-			break;
+			return (null, true);
+		default:
+			return (null, false);
 		}
-		return null;
 	}
 
 	public void TurnToFindTarget(LostVoidRunLevel operation)
@@ -309,8 +313,10 @@ public sealed class ScreenLostVoidRunLevelRuntime : ILostVoidRunLevelRuntime
 	public Task<LostVoidAfterInteractState> GetAfterInteractStateAsync(LostVoidRunLevel operation, LostVoidInteractTarget? currentTarget, Mat? screen, CancellationToken cancellationToken)
 	{
 		bool inNormalWorld = IsInNormalWorld(operation.GameContext, screen);
-		bool challengeResultConfirmAvailable = FindArea(operation.GameContext, screen, "迷失之地-挑战结果", "按钮-确定");
-		bool challengeResultFinishAvailable = FindArea(operation.GameContext, screen, "迷失之地-挑战结果", "按钮-完成");
+		// 挑战结果标题出现后按钮才可能出现较晚，因此只有先命中标题才检测两个按钮，否则一律按未出现处理。
+		bool challengeResultTitleFound = FindArea(operation.GameContext, screen, "迷失之地-挑战结果", "标题-挑战结果");
+		bool challengeResultConfirmAvailable = challengeResultTitleFound && FindArea(operation.GameContext, screen, "迷失之地-挑战结果", "按钮-确定");
+		bool challengeResultFinishAvailable = challengeResultTitleFound && FindArea(operation.GameContext, screen, "迷失之地-挑战结果", "按钮-完成");
 		return Task.FromResult(new LostVoidAfterInteractState(inNormalWorld, challengeResultConfirmAvailable, challengeResultFinishAvailable));
 	}
 
@@ -366,7 +372,7 @@ public sealed class ScreenLostVoidRunLevelRuntime : ILostVoidRunLevelRuntime
 	/// </summary>
 	private void ScheduleInBattleProbe(LostVoidRunLevel operation, Mat screen, DateTimeOffset frameTimeUtc)
 	{
-		// 对齐 Python：道中危机与终结之役不识别下层入口，因此也不受 0.8 秒检测节流限制，
+		// 对齐参考实现：道中危机与终结之役不识别下层入口，因此也不受 0.8 秒检测节流限制，
 		// 只按单飞节奏持续做 前往下一个区域 OCR。
 		bool skipDetector = string.Equals(operation.RegionType, "战斗-道中危机", StringComparison.Ordinal) || string.Equals(operation.RegionType, "战斗-终结之役", StringComparison.Ordinal);
 		TimeSpan? minIntervalOverride = (skipDetector ? new TimeSpan?(TimeSpan.Zero) : null);

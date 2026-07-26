@@ -66,7 +66,6 @@ public class LostVoidContext
 	public void InitBeforeRun(string? challengeConfigName = null)
 	{
 		ChallengeConfigName = (string.IsNullOrWhiteSpace(challengeConfigName) ? "默认-成就模式" : challengeConfigName);
-		PredefinedTeamIdx = -1;
 		PriorityUpdated = false;
 		DynamicPriorityList.Clear();
 		DynamicAbandonList.Clear();
@@ -79,15 +78,15 @@ public class LostVoidContext
 
 	public string GetAutoOpName()
 	{
+		if (PredefinedTeamIdx == -1)
+		{
+			return ChallengeConfig?.AutoBattle ?? "全配队通用";
+		}
 		if (PredefinedTeamIdx >= 0 && PredefinedTeamIdx < _ctx.TeamConfig.TeamList.Count)
 		{
-			string autoBattle = _ctx.TeamConfig.TeamList[PredefinedTeamIdx].AutoBattle;
-			if (!string.IsNullOrWhiteSpace(autoBattle))
-			{
-				return autoBattle;
-			}
+			return _ctx.TeamConfig.TeamList[PredefinedTeamIdx].AutoBattle;
 		}
-		return (ChallengeConfig != null && !string.IsNullOrWhiteSpace(ChallengeConfig.AutoBattle)) ? ChallengeConfig.AutoBattle : "全配队通用";
+		return "全配队通用";
 	}
 
 	public void InitLostVoidDetectorModel()
@@ -111,7 +110,6 @@ public class LostVoidContext
 	public void LoadChallengeConfig()
 	{
 		ChallengeConfig = LostVoidChallengeConfig.Load(_ctx.Environment, ChallengeConfigName);
-		PredefinedTeamIdx = ChallengeConfig.PredefinedTeamIdx;
 	}
 
 	public void LoadArtifactData()
@@ -543,6 +541,49 @@ public class LostVoidContext
 		return rule.Trim().Contains(' ', StringComparison.Ordinal);
 	}
 
+	/// <summary>
+	/// 归一化分类文本：去除空白与分隔符，并将常见别名统一（如"击破"归一为"异常击破"）。
+	/// </summary>
+	private static string NormalizeCategoryText(string? category)
+	{
+		if (string.IsNullOrEmpty(category))
+		{
+			return string.Empty;
+		}
+		string text = category.Trim();
+		foreach (char ch in new char[] { ' ', '　', '·', ':', '：', '[', ']', '【', '】' })
+		{
+			text = text.Replace(ch.ToString(), string.Empty, StringComparison.Ordinal);
+		}
+		return (text == "击破") ? "异常击破" : text;
+	}
+
+	/// <summary>
+	/// 判断藏品分类与优先级规则分类是否匹配：先精确比较，再归一化后做双向子串包含（兼容"异常·击破"与"击破"这类前后缀差异）。
+	/// </summary>
+	private static bool IsCategoryMatch(string artifactCategory, string priorityCategory)
+	{
+		if (string.Equals(artifactCategory, priorityCategory, StringComparison.Ordinal))
+		{
+			return true;
+		}
+		string normalizedArtifact = NormalizeCategoryText(artifactCategory);
+		string normalizedPriority = NormalizeCategoryText(priorityCategory);
+		if (normalizedArtifact.Length == 0 || normalizedPriority.Length == 0)
+		{
+			return false;
+		}
+		if (string.Equals(normalizedArtifact, normalizedPriority, StringComparison.Ordinal))
+		{
+			return true;
+		}
+		return normalizedPriority.Contains(normalizedArtifact, StringComparison.Ordinal) || normalizedArtifact.Contains(normalizedPriority, StringComparison.Ordinal);
+	}
+
+	/// <summary>
+	/// 判断某个候选是否命中优先级规则。
+	/// 支持：1. 纯分类（如"通用"）；2. 分类+名称（如"通用 喷水枪"）；3. 分类+等级 S/A/B（如"通用 A"）；4. 纯文本兜底（用于次选，按名称或原文匹配）。
+	/// </summary>
 	private static bool IsPriorityRuleMatch(LostVoidArtifactPos artifactPos, string rule)
 	{
 		string text = rule.Trim();
@@ -550,8 +591,40 @@ public class LostVoidContext
 		{
 			return false;
 		}
-		int num = text.IndexOf(' ');
-		return (num < 0) ? string.Equals(artifactPos.Artifact.Category, text, StringComparison.Ordinal) : string.Equals(artifactPos.Artifact.DisplayName, text, StringComparison.Ordinal);
+		LostVoidArtifact artifact = artifactPos.Artifact;
+		int splitIndex = text.IndexOf(' ');
+		if (splitIndex < 0)
+		{
+			// 单词条：优先按分类匹配，次选文本可按名称/原文匹配
+			if (IsCategoryMatch(artifact.Category, text))
+			{
+				return true;
+			}
+			if (string.Equals(artifact.Name, text, StringComparison.Ordinal))
+			{
+				return true;
+			}
+			return string.Equals(artifactPos.OcrText, text, StringComparison.Ordinal);
+		}
+		string categoryName = text.Substring(0, splitIndex).Trim();
+		string itemName = text.Substring(splitIndex + 1).Trim();
+		if (!IsCategoryMatch(artifact.Category, categoryName))
+		{
+			return false;
+		}
+		if (itemName.Length == 0)
+		{
+			return true;
+		}
+		if (itemName == "S" || itemName == "A" || itemName == "B")
+		{
+			return string.Equals(artifact.Level, itemName, StringComparison.Ordinal);
+		}
+		if (string.Equals(artifact.Name, itemName, StringComparison.Ordinal) || artifactPos.OcrText.EndsWith(itemName, StringComparison.Ordinal))
+		{
+			return true;
+		}
+		return StringUtils.FindByLcs(itemName, artifact.Name, 0.6) || StringUtils.FindByLcs(itemName, artifactPos.OcrText, 0.6);
 	}
 
 	public (List<string> Items, string ErrorMessage) CheckArtifactPriorityInput(string? input)
@@ -607,17 +680,7 @@ public class LostVoidContext
 			ignored.Add("战斗-道中危机");
 		}
 		LostVoidChallengeConfig? challengeConfig = ChallengeConfig;
-		IReadOnlyList<string> readOnlyList;
-		if (challengeConfig == null || challengeConfig.RegionTypePriority.Count <= 0)
-		{
-			readOnlyList = LostVoidRegionType.All;
-		}
-		else
-		{
-			IReadOnlyList<string> regionTypePriority = ChallengeConfig.RegionTypePriority;
-			readOnlyList = regionTypePriority;
-		}
-		IReadOnlyList<string> readOnlyList2 = readOnlyList;
+		IReadOnlyList<string> readOnlyList2 = (IReadOnlyList<string>?)challengeConfig?.RegionTypePriority ?? Array.Empty<string>();
 		foreach (string priority in readOnlyList2)
 		{
 			if (ignored.Contains(priority))

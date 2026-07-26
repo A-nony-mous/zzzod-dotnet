@@ -75,8 +75,7 @@ public sealed class LostVoidBangbooStoreOperation(ZContext context) : ZOperation
 		{
 			return RoundFail("不使用金币购买");
 		}
-		TimeSpan? successDelay = TimeSpan.FromSeconds(1L);
-		OperationRoundResult operationRoundResult = RoundByFindAndClickArea(null, "迷失之地-邦布商店", "按钮-刷新-确认", null, successDelay);
+		OperationRoundResult operationRoundResult = RoundByFindAndClickArea(null, "迷失之地-邦布商店", "按钮-刷新-确认", null, null);
 		if (operationRoundResult.IsSuccess)
 		{
 			_refreshTimes++;
@@ -109,8 +108,8 @@ public sealed class LostVoidBangbooStoreOperation(ZContext context) : ZOperation
 				return SlideOrRetry("向右滑动");
 			}
 			Mat? lastScreenshot = base.LastScreenshot;
-			successDelay = TimeSpan.FromSeconds(1L);
-			OperationRoundResult operationRoundResult2 = RoundByFindAndClickArea(lastScreenshot, "迷失之地-邦布商店", "按钮-刷新-可用", null, successDelay);
+			TimeSpan? successDelay = TimeSpan.FromSeconds(1L);
+			OperationRoundResult operationRoundResult2 = RoundByFindAndClickArea(lastScreenshot, "迷失之地-邦布商店", "按钮-刷新-可用", null, null);
 			if (operationRoundResult2.IsSuccess)
 			{
 				_slidToRight = false;
@@ -143,7 +142,7 @@ public sealed class LostVoidBangbooStoreOperation(ZContext context) : ZOperation
 		OneDragon.Core.Abstractions.Geometry.Point point = new OneDragon.Core.Abstractions.Geometry.Point(base.ZContext.Controller.StandardWidth / 2, base.ZContext.Controller.StandardHeight / 2);
 		base.ZContext.Controller.DragTo(point + new OneDragon.Core.Abstractions.Geometry.Point(-400, 0), point);
 		_slidToRight = true;
-		return RoundWait("向右滑动", null, TimeSpan.FromSeconds(1L));
+		return RoundWait("向右滑动");
 	}
 
 	private (IReadOnlyList<LostVoidArtifactPos> All, IReadOnlyList<LostVoidArtifactPos> Purchasable) GetStoreArtifactPositions(Mat screen)

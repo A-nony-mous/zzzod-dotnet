@@ -10,6 +10,9 @@ public sealed class LostVoidRunner : ILostVoidRunner, ILostVoidRunnerLifecycle
 {
 	private readonly ILostVoidLevelExecutor _levelExecutor;
 
+	/// <summary>
+	/// <see cref="RunAsync"/> 使用的层数硬顶。仅服务于该未接入生产路径的方法，见其说明。
+	/// </summary>
 	public int MaxLevelRuns { get; init; } = 20;
 
 	public LostVoidRunner(ILostVoidLevelExecutor? levelExecutor = null)
@@ -52,6 +55,12 @@ public sealed class LostVoidRunner : ILostVoidRunner, ILostVoidRunnerLifecycle
 		}
 	}
 
+	/// <summary>
+	/// 循环执行迷失之地关卡直至通关或失败，层数达到 <see cref="MaxLevelRuns"/> 时视为失败退出。
+	/// 未接入生产路径：生产侧的层间跳转由 <c>LostVoidAppOperation</c> 的节点图驱动，
+	/// 按节点状态逐层调用 <see cref="RunLevelAsync"/>，并不经过本方法的循环与层数硬顶；
+	/// 这里硬编码的层数上限在真实游戏中也没有对应依据。仅因既有单元测试直接调用而保留，未删除。
+	/// </summary>
 	public async Task<OperationResult> RunAsync(ZContext context, LostVoidConfig config, LostVoidRunRecord runRecord, CancellationToken cancellationToken)
 	{
 		context.LostVoid.InitLostVoidDetectorModel();

@@ -43,10 +43,14 @@ public sealed class LostVoidChooseGearOperation : ZOperation
 		base.ZContext.Controller.MouseMove(area.Center + new OneDragon.Core.Abstractions.Geometry.Point(0, 100));
 		Thread.Sleep(TimeSpan.FromMilliseconds(100L));
 		Thread.Sleep(OneSecond);
-		IReadOnlyList<(LostVoidArtifactPos, bool)> readOnlyList = ReadGearCandidates(base.LastScreenshot, area2);
+		var (readOnlyList, hasGearSlots) = ReadGearCandidates(base.LastScreenshot, area2);
+		if (!hasGearSlots)
+		{
+			return RoundRetry("无法识别武备槽位");
+		}
 		if (readOnlyList.Count == 0)
 		{
-			return RoundRetry("无法识别武备槽位或名称", null, OneSecond);
+			return RoundRetry("无法识别武备名称");
 		}
 		LostVoidChallengeConfig challengeConfig = base.ZContext.LostVoid.ChallengeConfig;
 		if (challengeConfig == null)
@@ -88,19 +92,19 @@ public sealed class LostVoidChooseGearOperation : ZOperation
 		return RoundSuccess(null, null, TimeSpan.FromMilliseconds(500L));
 	}
 
-	private IReadOnlyList<(LostVoidArtifactPos Position, bool HasLevel)> ReadGearCandidates(Mat screen, OneDragon.Core.Screen.ScreenArea nameArea)
+	private (IReadOnlyList<(LostVoidArtifactPos Position, bool HasLevel)> Candidates, bool HasGearSlots) ReadGearCandidates(Mat screen, OneDragon.Core.Screen.ScreenArea nameArea)
 	{
 		OneDragon.Core.Screen.ScreenArea area = base.ZContext.ScreenContext.GetArea("迷失之地-武备选择", "武备列表");
 		OneDragon.Core.Screen.ScreenArea area2 = base.ZContext.ScreenContext.GetArea("迷失之地-武备选择", "等级列表");
 		if (area == null || area2 == null || base.ZContext.Controller == null)
 		{
-			return Array.Empty<(LostVoidArtifactPos, bool)>();
+			return (Array.Empty<(LostVoidArtifactPos, bool)>(), false);
 		}
 		IReadOnlyList<OneDragon.Core.Abstractions.Geometry.Rect> gearRects = FindPipelineRects(screen, area, new Scalar(0.0, 0.0, 75.0), new Scalar(180.0, 255.0, 255.0), 2, 2000.0, 100000.0);
-		IReadOnlyList<OneDragon.Core.Abstractions.Geometry.Rect> source = FindPipelineRects(screen, area2, new Scalar(128.0, 0.0, 0.0), new Scalar(138.0, 255.0, 255.0), 0, 300.0, 10000.0);
+		List<OneDragon.Core.Abstractions.Geometry.Rect> remainingLevels = FindPipelineRects(screen, area2, new Scalar(128.0, 0.0, 0.0), new Scalar(138.0, 255.0, 255.0), 0, 300.0, 10000.0).ToList();
 		if (gearRects.Count == 0)
 		{
-			return Array.Empty<(LostVoidArtifactPos, bool)>();
+			return (Array.Empty<(LostVoidArtifactPos, bool)>(), false);
 		}
 		List<Mat> list = new List<Mat>();
 		try
@@ -112,7 +116,7 @@ public sealed class LostVoidChooseGearOperation : ZOperation
 				Mat mat = Screenshot();
 				if (mat == null)
 				{
-					return Array.Empty<(LostVoidArtifactPos, bool)>();
+					return (Array.Empty<(LostVoidArtifactPos, bool)>(), true);
 				}
 				list.Add(CvImageUtils.Crop(mat, nameArea.Rect));
 			}
@@ -127,12 +131,18 @@ public sealed class LostVoidChooseGearOperation : ZOperation
 				LostVoidArtifactNameResult lostVoidArtifactNameResult = LostVoidInteractService.Instance.BuildArtifactFromOcrName(readOnlyList[index]);
 				if (lostVoidArtifactNameResult.Artifact != null)
 				{
-					bool item = source.Any((OneDragon.Core.Abstractions.Geometry.Rect levelRect) => Overlaps(gearRects[index], levelRect));
+					// 等级徽章命中后立即从候选池移除，避免同一枚等级徽章被相邻的武备槽位重复匹配
+					int levelIndex = remainingLevels.FindIndex((OneDragon.Core.Abstractions.Geometry.Rect levelRect) => Overlaps(gearRects[index], levelRect));
+					bool item = levelIndex >= 0;
+					if (item)
+					{
+						remainingLevels.RemoveAt(levelIndex);
+					}
 					list2.Add((new LostVoidArtifactPos(lostVoidArtifactNameResult.Artifact, gearRects[index], "", lostVoidArtifactNameResult.IsPrimaryName), item));
 				}
 			}
 			base.ZContext.Logger.Information("当前识别武备 {Gears}", string.Join(" ", list2.Select<(LostVoidArtifactPos, bool), string>(((LostVoidArtifactPos Position, bool HasLevel) tuple) => tuple.Position.Artifact.DisplayName + "(" + (tuple.HasLevel ? "已获取" : "未获取") + ")")));
-			return list2;
+			return (list2, true);
 		}
 		finally
 		{

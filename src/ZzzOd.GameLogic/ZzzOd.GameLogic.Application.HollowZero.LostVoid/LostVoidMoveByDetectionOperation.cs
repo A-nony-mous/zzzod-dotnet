@@ -435,7 +435,7 @@ public sealed class LostVoidMoveByDetectionOperation : ZOperation
 				},
 				ActionKind = "targeted_failure_capture",
 				ActionTarget = _targetType,
-				ExpectedNextState = (afterEscape ? "重新检测到入口、距离或更高优先级目标" : "执行 Python 等价脱困后重新识别"),
+				ExpectedNextState = (afterEscape ? "重新检测到入口、距离或更高优先级目标" : "执行等价脱困后重新识别"),
 				TransitionResult = reason,
 				FailureReason = reason,
 				RetryStoppedBecauseOfSuspectedLoop = false

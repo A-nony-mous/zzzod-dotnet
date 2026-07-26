@@ -339,11 +339,16 @@ public sealed class LostVoidRunLevel : ZOperation
 		}
 		if (string.Equals(RegionType, "挚交会谈", StringComparison.Ordinal))
 		{
-			OperationRoundResult friendlyTalkInit = _runtime.HandleFriendlyTalkInit(this, _roomInitedTimes);
-			if (friendlyTalkInit != null)
+			// 计数推进与是否提前返回解耦：即使本次不提前返回（如已执行过开局移动），
+			// 计数也必须推进，否则会在下一轮被重复触发。
+			(OperationRoundResult? Result, bool Advance) friendlyTalkInit = _runtime.HandleFriendlyTalkInit(this, _roomInitedTimes);
+			if (friendlyTalkInit.Advance)
 			{
 				_roomInitedTimes++;
-				return friendlyTalkInit;
+			}
+			if (friendlyTalkInit.Result != null)
+			{
+				return friendlyTalkInit.Result;
 			}
 		}
 		var (withInteract, withDistance, withEntry) = LostVoidDetectorResultHelper.IsFrameWithAll(frame.DetectResult);
@@ -710,7 +715,13 @@ public sealed class LostVoidRunLevel : ZOperation
 		base.ZContext.Logger.Information("迷失之地状态动作: Action=PathfindingResult, Region={Region}, Target={Target}, Status={Status}, Success={Success}", RegionType, targetType, moveResult.Status, moveResult.IsSuccess);
 		if (!moveResult.IsSuccess)
 		{
-			return (string.Equals(moveResult.Status, "执行超时", StringComparison.Ordinal) || string.Equals(moveResult.Status, "节点超时", StringComparison.Ordinal)) ? RoundFail("执行超时") : RoundRetry(moveResult.Status ?? "移动失败");
+			// 超时硬失败仅对"感叹号"交互目标生效；"距离"与"入口"类目标的任何失败（含超时）都按可重试处理。
+			bool isTimeoutStatus = string.Equals(moveResult.Status, "执行超时", StringComparison.Ordinal) || string.Equals(moveResult.Status, "节点超时", StringComparison.Ordinal);
+			if (string.Equals(targetType, "0000-感叹号", StringComparison.Ordinal) && isTimeoutStatus)
+			{
+				return RoundFail("执行超时");
+			}
+			return RoundRetry(moveResult.Status ?? "移动失败");
 		}
 		if (string.Equals(moveResult.Status, "遭遇战斗", StringComparison.Ordinal))
 		{

@@ -19,7 +19,12 @@ public interface ILostVoidRunLevelRuntime
 
 	bool CheckBattleEncounterInPeriod(LostVoidRunLevel operation, float totalCheckSeconds);
 
-	OperationRoundResult? HandleFriendlyTalkInit(LostVoidRunLevel operation, int roomInitedTimes);
+	/// <summary>
+	/// 处理挚交会谈进入大世界后的一次性初始化。
+	/// Result 非空时调用方应提前返回；Advance 指示调用方是否需要推进 roomInitedTimes 计数
+	/// （即使 Result 为空也可能需要推进，避免一次性动作被重复执行）。
+	/// </summary>
+	(OperationRoundResult? Result, bool Advance) HandleFriendlyTalkInit(LostVoidRunLevel operation, int roomInitedTimes);
 
 	void TurnToFindTarget(LostVoidRunLevel operation);
 

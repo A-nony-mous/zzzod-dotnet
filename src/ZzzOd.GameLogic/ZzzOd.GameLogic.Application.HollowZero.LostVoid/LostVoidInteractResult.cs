@@ -6,7 +6,7 @@ namespace ZzzOd.GameLogic.Application.HollowZero.LostVoid;
 /// 迷失之地交互处理结果。
 /// </summary>
 /// <remarks>
-/// <c>Delay</c> 是固定延时（对应 Python <c>wait</c>），<c>DelayUntilRoundTime</c> 是补足制目标（对应 <c>wait_round_time</c>）。
+/// <c>Delay</c> 是固定延时（对应参考实现 <c>wait</c>），<c>DelayUntilRoundTime</c> 是补足制目标（对应 <c>wait_round_time</c>）。
 /// </remarks>
 public sealed record LostVoidInteractResult(LostVoidInteractResultKind Kind, string? Status = null, object? Data = null, LostVoidInteractTarget? Target = null, string? HadBeenType = null, TimeSpan? Delay = null, TimeSpan? DelayUntilRoundTime = null)
 {

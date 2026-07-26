@@ -93,7 +93,7 @@ public sealed class LostVoidInteractService
 			where item.Length > 0
 			select item)
 		{
-			int? num = StringUtils.FindBestMatchByLcs(item, FuzzyTitlePhrases, 0.9);
+			int? num = StringUtils.FindBestMatchByDifflib(item, FuzzyTitlePhrases, 0.9);
 			if (!num.HasValue)
 			{
 				continue;

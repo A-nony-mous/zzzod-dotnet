@@ -243,11 +243,14 @@ internal sealed class LostVoidAppOperation : ZOperation
 		}
 		base.ZContext.LostVoid.PredefinedTeamIdx = num;
 		string name = base.ZContext.TeamConfig.TeamList[num].Name;
-		double cutoff = ((base.NodeRetryTimes < 5) ? 0.7 : 0.5);
+		double lcsPercent = ((base.NodeRetryTimes < 5) ? 0.7 : 0.5);
 		string word = StringUtils.RemoveWhitespace(name);
 		IReadOnlyList<OcrMatchResult> ocrResultList = base.ZContext.OcrService.GetOcrResultList(base.LastScreenshot);
-		int? num2 = StringUtils.FindBestMatchByDifflib(word, ocrResultList.Select((OcrMatchResult result) => StringUtils.RemoveWhitespace(result.Text)).ToArray(), cutoff);
-		OcrMatchResult ocrMatchResult = ((!num2.HasValue) ? null : ocrResultList[num2.Value]);
+		IReadOnlyList<string> ocrTextList = ocrResultList.Select((OcrMatchResult result) => StringUtils.RemoveWhitespace(result.Text)).ToArray();
+		// 两阶段匹配：先用 difflib 固定阈值 0.6 从全部 OCR 候选里粗选唯一最优，
+		// 再用 LCS 按当前重试阶段阈值（0.7/0.5）校验该候选，避免宽松阈值下误判为不相关文本。
+		int? num2 = StringUtils.FindBestMatchByDifflib(word, ocrTextList, 0.6);
+		OcrMatchResult ocrMatchResult = ((!num2.HasValue) || !StringUtils.FindByLcs(word, ocrTextList[num2.Value], lcsPercent)) ? null : ocrResultList[num2.Value];
 		if (ocrMatchResult == null)
 		{
 			ScreenUtils.ScrollArea(base.ZContext, area);

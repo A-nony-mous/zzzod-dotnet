@@ -21,16 +21,12 @@ public sealed class LostVoidUpdatePriorityOperation : ZOperation
 	[OperationNode("进入藏品页面", IsStartNode = true)]
 	private OperationRoundResult EnterCollections()
 	{
-		TimeSpan? successDelay = TimeSpan.FromSeconds(1L);
-		TimeSpan? retryDelay = TimeSpan.FromSeconds(1L);
-		OperationRoundResult operationRoundResult = RoundByFindAndClickArea(null, "迷失之地-大世界", "迷失之地-TAB", null, successDelay, retryDelay);
+		OperationRoundResult operationRoundResult = RoundByFindAndClickArea(null, "迷失之地-大世界", "迷失之地-TAB", null, null, null);
 		if (operationRoundResult.IsSuccess)
 		{
 			return RoundWait(operationRoundResult.Status, null, TimeSpan.FromSeconds(1L));
 		}
-		retryDelay = TimeSpan.FromSeconds(1L);
-		successDelay = TimeSpan.FromSeconds(1L);
-		OperationRoundResult operationRoundResult2 = RoundByFindAndClickArea(null, "迷失之地-藏品面板", "藏品", null, retryDelay, successDelay);
+		OperationRoundResult operationRoundResult2 = RoundByFindAndClickArea(null, "迷失之地-藏品面板", "藏品", null, null, null);
 		return operationRoundResult2.IsSuccess ? RoundSuccess(operationRoundResult2.Status, null, TimeSpan.FromSeconds(1L)) : RoundRetry(operationRoundResult2.Status, null, TimeSpan.FromSeconds(1L));
 	}
 
