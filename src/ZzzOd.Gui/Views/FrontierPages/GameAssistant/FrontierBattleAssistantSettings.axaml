@@ -85,7 +85,7 @@
                           Height="3"
                           CornerRadius="2"
                           HorizontalAlignment="Center"
-                          Background="{DynamicResource SystemAccentColor}" />
+                          Background="{DynamicResource AccentFillColorDefaultBrush}" />
                 </Grid>
               </DataTemplate>
             </fa:FATabViewItem.HeaderTemplate>
@@ -180,7 +180,7 @@
                           Height="3"
                           CornerRadius="2"
                           HorizontalAlignment="Center"
-                          Background="{DynamicResource SystemAccentColor}" />
+                          Background="{DynamicResource AccentFillColorDefaultBrush}" />
                 </Grid>
               </DataTemplate>
             </fa:FATabViewItem.HeaderTemplate>

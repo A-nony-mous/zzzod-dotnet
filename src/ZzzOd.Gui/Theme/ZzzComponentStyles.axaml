@@ -201,29 +201,4 @@
                                  Direction="270" />
     </Setter>
   </Style>
-  <Style Selector="Button.zzz-tool-button">
-    <Setter Property="Background" Value="Transparent" />
-    <Setter Property="BorderThickness" Value="0" />
-    <Setter Property="Padding" Value="0" />
-    <Setter Property="Foreground" Value="{DynamicResource TextFillColorSecondaryBrush}" />
-  </Style>
-  <Style Selector="Button.zzz-tool-button /template/ ContentPresenter#PART_ContentPresenter">
-    <Setter Property="Background" Value="Transparent" />
-    <Setter Property="BorderBrush" Value="Transparent" />
-  </Style>
-  <Style Selector="Button.zzz-tool-button:pointerover">
-    <Setter Property="Foreground" Value="{DynamicResource TextFillColorPrimaryBrush}" />
-  </Style>
-  <Style Selector="Button.zzz-tool-button:pointerover /template/ ContentPresenter#PART_ContentPresenter">
-    <Setter Property="Background" Value="{DynamicResource SubtleFillColorSecondaryBrush}" />
-    <Setter Property="BorderBrush" Value="Transparent" />
-  </Style>
-  <Style Selector="Button.zzz-tool-button:pressed /template/ ContentPresenter#PART_ContentPresenter">
-    <Setter Property="Background" Value="{DynamicResource SubtleFillColorTertiaryBrush}" />
-    <Setter Property="BorderBrush" Value="Transparent" />
-  </Style>
-  <Style Selector="Button.zzz-tool-button:disabled /template/ ContentPresenter#PART_ContentPresenter">
-    <Setter Property="Background" Value="Transparent" />
-    <Setter Property="BorderBrush" Value="Transparent" />
-  </Style>
 </Styles>

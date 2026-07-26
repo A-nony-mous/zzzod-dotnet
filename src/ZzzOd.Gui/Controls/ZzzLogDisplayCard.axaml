@@ -2,10 +2,10 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              x:Class="ZzzOd.Gui.Controls.ZzzLogDisplayCard"
              ClipToBounds="True">
-  <Border Background="{DynamicResource ControlFillColorDefaultBrush}"
-          BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}"
-          BorderThickness="1"
-          CornerRadius="4"
+  <Border Background="{DynamicResource CardBackgroundFillColorDefaultBrush}"
+          BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}"
+          BorderThickness="{DynamicResource ExpanderHeaderBorderThickness}"
+          CornerRadius="{DynamicResource ControlCornerRadius}"
           ClipToBounds="True">
     <ScrollViewer x:Name="LogScrollViewer"
                   HorizontalScrollBarVisibility="Disabled"

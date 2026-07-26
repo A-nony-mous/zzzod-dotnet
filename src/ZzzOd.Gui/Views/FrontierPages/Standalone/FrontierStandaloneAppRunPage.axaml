@@ -12,7 +12,7 @@
       <Setter Property="Margin" Value="0" />
       <Setter Property="FocusAdorner" Value="{x:Null}" />
     </Style>
-    <Style Selector="ItemsControl#AppList Button.zzz-tool-button">
+    <Style Selector="ItemsControl#AppList Button">
       <Setter Property="Cursor" Value="Arrow" />
     </Style>
   </UserControl.Styles>
@@ -31,8 +31,8 @@
                     VerticalScrollBarVisibility="Auto">
         <Border Background="{DynamicResource CardStrokeColorDefaultBrush}"
                 BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}"
-                BorderThickness="1"
-                CornerRadius="4"
+                BorderThickness="{DynamicResource ExpanderHeaderBorderThickness}"
+                CornerRadius="{DynamicResource ControlCornerRadius}"
                 ClipToBounds="True">
         <ItemsControl x:Name="AppList">
           <ItemsControl.ItemsPanel>
@@ -59,7 +59,8 @@
                               Spacing="4">
                     <Button Width="36"
                             Height="32"
-                            Classes="zzz-tool-button"
+                            Theme="{DynamicResource TransparentButton}"
+                              Padding="0"
                             ToolTip.Tip="应用设置"
                             IsVisible="{Binding SettingVisible}"
                             Tag="{Binding}"
@@ -68,7 +69,8 @@
                     </Button>
                     <Button Width="36"
                             Height="32"
-                            Classes="zzz-tool-button"
+                            Theme="{DynamicResource TransparentButton}"
+                              Padding="0"
                             ToolTip.Tip="移除"
                             Tag="{Binding}"
                             Click="OnRemoveClicked">
