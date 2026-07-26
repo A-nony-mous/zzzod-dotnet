@@ -9,7 +9,7 @@
     </Style>
     <Style Selector="ItemsControl#AppList fa|FASettingsExpanderItem">
       <Setter Property="CornerRadius" Value="0" />
-      <Setter Property="Margin" Value="0,0,0,1" />
+      <Setter Property="Margin" Value="0" />
       <Setter Property="FocusAdorner" Value="{x:Null}" />
     </Style>
     <Style Selector="ItemsControl#AppList Button.zzz-tool-button">
@@ -17,13 +17,6 @@
     </Style>
     <Style Selector="ItemsControl#AppList ToggleSwitch">
       <Setter Property="Cursor" Value="Arrow" />
-    </Style>
-    <Style Selector="ItemsControl#AppList ContentPresenter:nth-child(1) fa|FASettingsExpanderItem">
-      <Setter Property="CornerRadius" Value="4,4,0,0" />
-    </Style>
-    <Style Selector="ItemsControl#AppList ContentPresenter:nth-last-child(1) fa|FASettingsExpanderItem">
-      <Setter Property="CornerRadius" Value="0,0,4,4" />
-      <Setter Property="Margin" Value="0" />
     </Style>
   </UserControl.Styles>
 
@@ -35,7 +28,17 @@
                     Grid.RowSpan="2"
                     HorizontalScrollBarVisibility="Disabled"
                     VerticalScrollBarVisibility="Auto">
+        <Border Background="{DynamicResource CardStrokeColorDefaultBrush}"
+                BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}"
+                BorderThickness="1"
+                CornerRadius="4"
+                ClipToBounds="True">
         <ItemsControl x:Name="AppList">
+            <ItemsControl.ItemsPanel>
+              <ItemsPanelTemplate>
+                <StackPanel Spacing="1" />
+              </ItemsPanelTemplate>
+            </ItemsControl.ItemsPanel>
             <ItemsControl.ItemTemplate>
               <DataTemplate x:DataType="local:ZzzOneDragonAppRowModel">
                 <fa:FASettingsExpanderItem Content="{Binding Name}"
@@ -106,6 +109,7 @@
               </DataTemplate>
             </ItemsControl.ItemTemplate>
         </ItemsControl>
+        </Border>
       </ScrollViewer>
     </Grid>
 
