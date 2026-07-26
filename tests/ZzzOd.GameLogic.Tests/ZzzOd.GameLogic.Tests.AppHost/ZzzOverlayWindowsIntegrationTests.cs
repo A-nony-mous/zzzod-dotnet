@@ -33,6 +33,19 @@ public sealed class ZzzOverlayWindowsIntegrationTests
 {
     private const string EnabledEnvironmentVariable = "ZZZOD_RUN_WINDOWS_INTEGRATION";
     private const string EvidenceDirectoryEnvironmentVariable = "ZZZOD_WINDOWS_INTEGRATION_EVIDENCE_DIR";
+    private const double PreviewCanvasPanelWidthRatio = 0.3d;
+    private const double PreviewCanvasPanelHeightRatio = 0.16d;
+
+    /// <summary>
+    /// 预览画布场景使用的归一化停靠比例，四条互不相交的横带。
+    /// </summary>
+    private static readonly Dictionary<string, (double X, double Y)> PreviewCanvasPanelRatios = new(StringComparer.Ordinal)
+    {
+        ["state"] = (0.05d, 0.04d),
+        ["decision"] = (0.05d, 0.26d),
+        ["timeline"] = (0.05d, 0.48d),
+        ["performance"] = (0.05d, 0.70d),
+    };
 
     [WindowsIntegrationFact]
     [Trait("Category", "WindowsIntegration")]
@@ -337,6 +350,163 @@ public sealed class ZzzOverlayWindowsIntegrationTests
                 }
             }
         });
+    }
+
+    /// <summary>
+    /// 布局编辑模式下无有效游戏窗口时显示虚拟预览画布，面板按归一化几何停靠其上；
+    /// 真实游戏窗口出现后画布让位，面板按同一比例还原到真实客户区。
+    /// </summary>
+    [WindowsIntegrationFact]
+    [Trait("Category", "WindowsIntegration")]
+    public void LayoutEditModeDocksPanelsOnPreviewCanvasAndRestoresThemOnRealClientArea()
+    {
+        // 程序集加载时的 AvaloniaTestBootstrap 已在共享 UI 线程完成 Avalonia 初始化，
+        // 这里必须复用同一条线程，不能再走 RunOnStaThread 重新 Setup。
+        GuiParityAndFacadeTests.RunOnUiThread(() =>
+        {
+            EnsureFluentTheme();
+            string root = Path.Combine(Path.GetTempPath(), $"zzz-overlay-preview-{Guid.NewGuid():N}");
+            Directory.CreateDirectory(root);
+            ZzzOverlayController? controller = null;
+            AvaloniaWindow owner = new()
+            {
+                Width = 8,
+                Height = 8,
+                Position = new PixelPoint(8, 8),
+                ShowActivated = false,
+                ShowInTaskbar = false,
+                WindowDecorations = WindowDecorations.None,
+            };
+            using ControlledWin32Window target = ControlledWin32Window.Create();
+            try
+            {
+                owner.Show();
+                Assert.True(WaitFor(() => owner.IsVisible));
+
+                ZzzConfigScopeService scopes = new(root);
+                Assert.True(
+                    scopes.Save(new ZzzSaveConfigScopeRequest("overlay", BuildPreviewCanvasOverlayScope())).Success);
+
+                IZzzAppBackend backend = DispatchProxy.Create<IZzzAppBackend, WindowsIntegrationBackendProxy>();
+                WindowsIntegrationBackendProxy proxy = (WindowsIntegrationBackendProxy)backend;
+                proxy.Scopes = scopes;
+                proxy.Window = new ZzzWindowStatusDto(null, false, false, false, null, null, null, null, false, 96u);
+
+                using ZzzOverlayService service = new();
+                controller = new ZzzOverlayController(service, backend);
+                controller.AttachOwner(owner);
+                controller.Show();
+
+                Assert.True(WaitFor(() => controller.VisionWindowForTesting?.IsVisible == true));
+                ZzzOverlayTechnicalWindow vision = Assert.IsType<ZzzOverlayTechnicalWindow>(controller.VisionWindowForTesting);
+                Assert.True(vision.PreviewMode);
+                Assert.True(WaitFor(() =>
+                    controller!.PanelWindowsForTesting.Count == PreviewCanvasPanelRatios.Count &&
+                    controller.PanelWindowsForTesting.All(panel => panel.IsVisible)));
+
+                PixelRect canvas = vision.PhysicalBounds;
+                AssertPanelsFollowNormalizedLayout(controller, canvas);
+
+                target.Show();
+                Assert.True(target.Activate());
+                Assert.True(WaitFor(() => target.IsForeground));
+                proxy.Window = target.Snapshot();
+                controller.FollowWindowForTesting(force: true);
+
+                Assert.True(WaitFor(() => !vision.PreviewMode));
+                ZzzWindowStatusDto client = target.Snapshot();
+                AssertPanelsFollowNormalizedLayout(
+                    controller,
+                    new PixelRect(client.X!.Value, client.Y!.Value, client.Width!.Value, client.Height!.Value));
+            }
+            finally
+            {
+                controller?.Dispose();
+                owner.Close();
+                Directory.Delete(root, recursive: true);
+            }
+        });
+    }
+
+    private static void AssertPanelsFollowNormalizedLayout(ZzzOverlayController controller, PixelRect game)
+    {
+        Dictionary<string, NativeRect> bounds = new(StringComparer.Ordinal);
+        foreach (ZzzOverlayInfoPanelWindow panel in controller.PanelWindowsForTesting)
+        {
+            string id = panel.Panel!.Id;
+            NativeRect actual = default;
+            (double X, double Y) ratio = PreviewCanvasPanelRatios[id];
+            int expectedX = (int)Math.Round(game.X + (game.Width * ratio.X));
+            int expectedY = (int)Math.Round(game.Y + (game.Height * ratio.Y));
+            Assert.True(
+                WaitFor(() =>
+                {
+                    actual = GetWindowBounds(panel);
+                    return Math.Abs(actual.Left - expectedX) <= 2 && Math.Abs(actual.Top - expectedY) <= 2;
+                }),
+                $"面板 {id} 期望停靠在 ({expectedX}, {expectedY})，实际为 ({actual.Left}, {actual.Top})。");
+            Assert.True(
+                actual.Left >= game.X - 2 && actual.Top >= game.Y - 2 &&
+                actual.Left + actual.Width <= game.Right + 2 && actual.Top + actual.Height <= game.Bottom + 2,
+                $"面板 {id} 超出了画布矩形 {game}。");
+            bounds[id] = actual;
+        }
+
+        string[] ids = [.. bounds.Keys];
+        for (int i = 0; i < ids.Length; i++)
+        {
+            for (int j = i + 1; j < ids.Length; j++)
+            {
+                NativeRect left = bounds[ids[i]];
+                NativeRect right = bounds[ids[j]];
+                Assert.False(
+                    left.Left < right.Left + right.Width && right.Left < left.Left + left.Width &&
+                    left.Top < right.Top + right.Height && right.Top < left.Top + left.Height,
+                    $"面板 {ids[i]} 与 {ids[j]} 重叠。");
+            }
+        }
+    }
+
+    private static Dictionary<string, object?> BuildPreviewCanvasOverlayScope()
+    {
+        Dictionary<string, object?> geometry = new(StringComparer.Ordinal);
+        foreach (KeyValuePair<string, (double X, double Y)> entry in PreviewCanvasPanelRatios)
+        {
+            geometry[$"{entry.Key}_panel"] = new Dictionary<string, object?>
+            {
+                ["x"] = 0,
+                ["y"] = 0,
+                ["w"] = 300,
+                ["h"] = 120,
+                ["layout_version"] = 3,
+                ["locked_x"] = entry.Value.X,
+                ["locked_y"] = entry.Value.Y,
+                ["locked_w"] = PreviewCanvasPanelWidthRatio,
+                ["locked_h"] = PreviewCanvasPanelHeightRatio,
+            };
+        }
+
+        geometry["log_panel"] = new Dictionary<string, object?>
+        {
+            ["x"] = 100,
+            ["y"] = 100,
+            ["w"] = 480,
+            ["h"] = 200,
+        };
+
+        return new Dictionary<string, object?>(StringComparer.Ordinal)
+        {
+            ["enabled"] = true,
+            ["visible"] = true,
+            ["anti_capture"] = false,
+            ["panel_edit_mode"] = true,
+            ["log_panel_enabled"] = false,
+            ["state_panel_enabled"] = true,
+            ["decision_panel_enabled"] = true,
+            ["timeline_panel_enabled"] = true,
+            ["performance_panel_enabled"] = true,
+            ["panel_geometry"] = geometry,
+        };
     }
 
     /// <summary>

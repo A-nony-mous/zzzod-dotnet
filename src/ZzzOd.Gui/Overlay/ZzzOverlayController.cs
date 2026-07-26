@@ -13,6 +13,16 @@ internal sealed class ZzzOverlayController : IDisposable
 {
     private static readonly TimeSpan HotkeyToggleDebounce = TimeSpan.FromMilliseconds(350);
 
+    /// <summary>
+    /// 布局预览画布占主显示器工作区宽度的比例。
+    /// </summary>
+    private const double PreviewCanvasWidthRatio = 0.8d;
+
+    /// <summary>
+    /// 布局预览画布的最小物理宽度。
+    /// </summary>
+    private const int PreviewCanvasMinWidth = 640;
+
     private readonly IZzzOverlayService _overlayService;
     private readonly IZzzAppBackend _backend;
     private readonly DispatcherTimer _refreshTimer;
@@ -326,17 +336,27 @@ internal sealed class ZzzOverlayController : IDisposable
             return;
         }
 
-        if (!windowResult.Success || windowResult.Value is null || !CanShowForWindow(windowResult.Value))
+        ZzzWindowStatusDto? gameWindow = windowResult.Success ? windowResult.Value : null;
+        bool previewMode = false;
+        if (gameWindow is null || !CanShowForWindow(gameWindow))
         {
-            HideWindows();
-            return;
+            // 普通模式无有效游戏窗口一律隐藏；只有布局编辑模式才用虚拟画布顶上，
+            // 让用户在游戏未启动时也能摆放面板。任何情况下都不得退而求其次贴到别的真实窗口上。
+            gameWindow = Settings.LayoutEditMode ? ResolvePreviewWindowStatus() : null;
+            if (gameWindow is null)
+            {
+                HideWindows();
+                return;
+            }
+
+            previewMode = true;
         }
 
-        ZzzWindowStatusDto gameWindow = windowResult.Value;
         bool windowCreated = _window is null;
         bool geometryChanged = ShouldApplyGeometry(force, windowCreated, _currentGameWindow, gameWindow);
         _currentGameWindow = gameWindow;
         _window ??= CreateWindow();
+        _window.PreviewMode = previewMode;
         if (geometryChanged)
         {
             _window.ApplySettings(Settings);
@@ -374,6 +394,41 @@ internal sealed class ZzzOverlayController : IDisposable
         _refreshTimer.Start();
     }
 
+    /// <summary>
+    /// 合成布局编辑模式下的虚拟预览画布：主显示器工作区内居中、宽度取工作区宽的 80%、16:9。
+    /// </summary>
+    /// <returns>可用时返回合成窗口状态，取不到显示器时返回 null。</returns>
+    private ZzzWindowStatusDto? ResolvePreviewWindowStatus()
+    {
+        Screens? screens = _window?.Screens ?? _ownerWindow?.Screens;
+        Screen? screen = screens?.Primary ?? screens?.All.FirstOrDefault();
+        if (screen is null)
+        {
+            return null;
+        }
+
+        PixelRect workArea = screen.WorkingArea;
+        int width = Math.Max(PreviewCanvasMinWidth, (int)Math.Round(workArea.Width * PreviewCanvasWidthRatio));
+        int height = (int)Math.Round(width * 9d / 16d);
+        if (height > workArea.Height)
+        {
+            height = Math.Max(PreviewCanvasMinWidth * 9 / 16, workArea.Height);
+            width = (int)Math.Round(height * 16d / 9d);
+        }
+
+        return new ZzzWindowStatusDto(
+            null,
+            true,
+            true,
+            false,
+            workArea.X + ((workArea.Width - width) / 2),
+            workArea.Y + ((workArea.Height - height) / 2),
+            width,
+            height,
+            false,
+            (uint)Math.Max(1d, Math.Round(Math.Max(0.5d, screen.Scaling) * 96d)));
+    }
+
     private void RenderSnapshot(ZzzWindowStatusDto gameWindow, bool geometryChanged)
     {
         if (_window is null)
@@ -400,6 +455,14 @@ internal sealed class ZzzOverlayController : IDisposable
             panelWindow.UpdateContent(ZzzOverlayPanelTextFormatter.Format(panel.Id, snapshot, Settings));
             if (!panelWindow.IsVisible)
             {
+                // 几何未生效就 Show，Avalonia 会把面板摆到宿主窗口的默认位置上，
+                // 表现为面板糊在 GUI 主窗上。本轮跳过，几何生效后的下一轮自然显示。
+                if (!panelWindow.GeometryApplied)
+                {
+                    Debug.WriteLine($"[overlay] 面板 {panel.Id} 停靠几何未生效，本轮跳过显示。");
+                    continue;
+                }
+
                 if (_ownerWindow is not null)
                 {
                     panelWindow.Show(_ownerWindow);
