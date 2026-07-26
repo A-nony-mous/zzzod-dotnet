@@ -438,6 +438,45 @@ public sealed class AutoBattleOperatorTests
 	}
 
 	[Fact]
+	public async Task NormalSceneLoop_LogsIdleWhenNoHandlerMatches()
+	{
+		// 战斗中"发呆"此前在日志上完全静默：主循环匹配不到 handler 时不打任何日志。
+		// 该诊断必须真的会触发，否则实机复现时仍然无从区分空转与卡死。
+		string rootDirectory = CreateTempRoot();
+		RecordingLogSink sink = new RecordingLogSink();
+		using Logger logger = new LoggerConfiguration().MinimumLevel.Verbose().WriteTo.Sink(sink).CreateLogger();
+		try
+		{
+			WriteNeverMatchingNormalSceneConfig(rootDirectory);
+			using ZContext zctx = new ZContext(new OneDragonEnvironment(rootDirectory), logger);
+			AutoBattleOperator op = new AutoBattleOperator(zctx.AutoBattleContext, "auto_battle", "空转配置", readFromMerged: false);
+			Assert.True(op.InitBeforeRunning().Success);
+			op.StartRunningAsync();
+			LogEvent entry = null;
+			for (int i = 0; i < 150 && entry == null; i++)
+			{
+				await Task.Delay(TimeSpan.FromMilliseconds(20L));
+				lock (sink.Events)
+				{
+					entry = sink.Events.LastOrDefault(e => e.MessageTemplate.Text.StartsWith("[.NET诊断] 自动战斗主循环空转:", StringComparison.Ordinal));
+				}
+			}
+			op.StopRunning();
+			Assert.True(entry != null, "主循环空转超过 1 秒却没有诊断日志");
+			Assert.True(entry.Properties.TryGetValue("Reason", out LogEventPropertyValue reason));
+			Assert.Contains("NoMatch", reason.ToString(), StringComparison.Ordinal);
+			Assert.True(entry.Properties.TryGetValue("IdleMilliseconds", out LogEventPropertyValue idle));
+			Assert.True(int.Parse(idle.ToString(), CultureInfo.InvariantCulture) >= 1000);
+			Assert.True(entry.Properties.ContainsKey("RunningExecutorCount"));
+			Assert.True(entry.Properties.ContainsKey("PositionStateAges"));
+		}
+		finally
+		{
+			Directory.Delete(rootDirectory, recursive: true);
+		}
+	}
+
+	[Fact]
 	public async Task BatchUpdateStates_DoesNotMatchExpiredDelayedCapture()
 	{
 		string rootDirectory = CreateTempRoot();
@@ -650,6 +689,14 @@ public sealed class AutoBattleOperatorTests
 		string text = Path.Combine(rootDirectory, "config", "auto_battle");
 		Directory.CreateDirectory(text);
 		File.WriteAllText(Path.Combine(text, "主循环优先级配置.yml"), "scenes:\n  - triggers: []\n    priority: 9\n    interval: 0\n    handlers:\n      - states: \"\"\n        operations:\n          - op_name: \"等待秒数\"\n            seconds: 5\n  - triggers: [\"自定义-高优先级\"]\n    priority: 97\n    interval: 0\n    handlers:\n      - states: \"[自定义-高优先级, 0, 1]\"\n        operations:\n          - op_name: \"等待秒数\"\n            seconds: 1");
+	}
+
+	private static void WriteNeverMatchingNormalSceneConfig(string rootDirectory)
+	{
+		string text = Path.Combine(rootDirectory, "config", "auto_battle");
+		Directory.CreateDirectory(text);
+		// 主循环场景的守卫依赖一个永远不会被设置的状态：模拟"引擎在转但没有 handler 成立"
+		File.WriteAllText(Path.Combine(text, "空转配置.yml"), "scenes:\n  - triggers: []\n    priority: 9\n    interval: 0.02\n    handlers:\n      - states: \"[自定义-永不设置, 0, 1]\"\n        operations:\n          - op_name: \"设置状态\"\n            state: \"自定义-不该命中\"");
 	}
 
 	private static void WritePositionStateConfig(string rootDirectory)

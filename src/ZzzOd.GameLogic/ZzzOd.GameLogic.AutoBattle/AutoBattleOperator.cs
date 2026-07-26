@@ -48,6 +48,10 @@ public class AutoBattleOperator : IStateRecordUpdateListener
 
 	private readonly Dictionary<int, double> _lastTriggerTime = new Dictionary<int, double>();
 
+	private long _lastNormalLoopProgressAtMs;
+
+	private long _lastNormalLoopDiagnosticAtMs;
+
 	private readonly object _scenePositionStatesLock = new object();
 
 	private readonly Dictionary<AutoBattleCondOpScene, IReadOnlyList<string>> _scenePositionStates = new Dictionary<AutoBattleCondOpScene, IReadOnlyList<string>>();
@@ -297,6 +301,8 @@ public class AutoBattleOperator : IStateRecordUpdateListener
 			_cts = new CancellationTokenSource();
 			IsRunning = true;
 			_runningExecutorCount = 0;
+			Interlocked.Exchange(ref _lastNormalLoopProgressAtMs, DateTimeOffset.UtcNow.ToUnixTimeMilliseconds());
+			Interlocked.Exchange(ref _lastNormalLoopDiagnosticAtMs, 0L);
 			_periodicGeneration++;
 			int gen = _periodicGeneration;
 			CancellationToken token = _cts.Token;
@@ -573,6 +579,7 @@ public class AutoBattleOperator : IStateRecordUpdateListener
 			}
 			if (Volatile.Read(in _runningExecutorCount) > 0)
 			{
+				LogNormalLoopIdle("WaitingExecutor", scene);
 				await DelayNoThrow(TimeSpan.FromMilliseconds(20L), token);
 				continue;
 			}
@@ -596,9 +603,35 @@ public class AutoBattleOperator : IStateRecordUpdateListener
 					CreateSceneDecisionMetadata(scene, triggerTime));
 				_lastTriggerTime[sceneId] = triggerTime;
 				SubmitExecution(executionInfo, null, triggerTime);
+				Interlocked.Exchange(ref _lastNormalLoopProgressAtMs, DateTimeOffset.UtcNow.ToUnixTimeMilliseconds());
+			}
+			else
+			{
+				LogNormalLoopIdle("NoMatch", scene);
 			}
 			await DelayNoThrow(TimeSpan.FromMilliseconds(20L), token);
 		}
+	}
+
+	/// <summary>
+	/// 主循环连续空转（既没提交执行、也没被打断）超过 1 秒时按秒记录一次。
+	/// 战斗中"发呆"在日志上此前是完全静默的：主循环匹配不到 handler 时不打任何日志，
+	/// 因而无法区分"引擎在转但没有 handler 的守卫成立"与"引擎被未归还的执行计数卡住"。
+	/// </summary>
+	private void LogNormalLoopIdle(string reason, AutoBattleCondOpScene scene)
+	{
+		long nowMs = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+		long idleMilliseconds = nowMs - Interlocked.Read(ref _lastNormalLoopProgressAtMs);
+		if (idleMilliseconds < 1000L)
+		{
+			return;
+		}
+		long lastDiagnostic = Interlocked.Read(ref _lastNormalLoopDiagnosticAtMs);
+		if (nowMs - lastDiagnostic < 1000L || Interlocked.CompareExchange(ref _lastNormalLoopDiagnosticAtMs, nowMs, lastDiagnostic) != lastDiagnostic)
+		{
+			return;
+		}
+		_ctx.ZContext.Logger.Information("[.NET诊断] 自动战斗主循环空转: Reason={Reason}, IdleMilliseconds={IdleMilliseconds}, RunningExecutorCount={RunningExecutorCount}, PositionStateAges={PositionStateAges}", reason, idleMilliseconds, Volatile.Read(in _runningExecutorCount), DescribePositionStateAges(scene, Now()));
 	}
 
 	private void TriggerScene(string triggerState, AutoBattleCondOpScene scene, double stateMatchTime)
