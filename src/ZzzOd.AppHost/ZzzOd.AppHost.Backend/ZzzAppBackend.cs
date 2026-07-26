@@ -1913,20 +1913,18 @@ public sealed class ZzzAppBackend : IZzzAppBackend, IZzzIntelBoardProgressBacken
 			{
 				return ZzzBackendResult<ZzzBattleAssistantRuntimeDto>.Ok(EmptyBattleAssistantRuntime());
 			}
-			AutoBattleOperatorRuntimeSnapshot runtimeSnapshot = autoOp.GetRuntimeSnapshot();
-			if (!runtimeSnapshot.IsRunning)
+			AutoBattleExecutionInfo executionInfo = AutoBattleExecutionInfoReader.Read(
+				autoOp,
+				zContext.AutoBattleContext.StateRecordService.GetSnapshot(),
+				DateTimeOffset.UtcNow);
+			if (!executionInfo.IsRunning)
 			{
 				return ZzzBackendResult<ZzzBattleAssistantRuntimeDto>.Ok(EmptyBattleAssistantRuntime());
 			}
-			DateTimeOffset now = DateTimeOffset.UtcNow;
-			IReadOnlyDictionary<string, StateRecorderSnapshot> recorderSnapshots = zContext.AutoBattleContext.StateRecordService.GetSnapshot();
-			ZzzBattleAssistantStateDto[] states = (from stateName in runtimeSnapshot.UsageStates
-				select recorderSnapshots.TryGetValue(stateName, out StateRecorderSnapshot value) ? value : null into recorder
-				where (object)recorder != null && recorder.LastRecordTime != -1.0
-				where recorder.LastRecordTime != 0.0 || (!recorder.StateName.StartsWith("前台-", StringComparison.Ordinal) && !recorder.StateName.StartsWith("后台-", StringComparison.Ordinal))
-				select new ZzzBattleAssistantStateDto(recorder.StateName, recorder.LastRecordTime, GetTriggerSeconds(now, recorder), recorder.LastValue, recorder.Revision)).ToArray();
-			double? executionDurationSeconds = ((!runtimeSnapshot.ExecutionStartedAtUtc.HasValue) ? ((double?)null) : new double?(Math.Max(0.0, (now - runtimeSnapshot.ExecutionStartedAtUtc.Value).TotalSeconds)));
-			return ZzzBackendResult<ZzzBattleAssistantRuntimeDto>.Ok(new ZzzBattleAssistantRuntimeDto(IsRunning: true, runtimeSnapshot.TriggerDisplay, runtimeSnapshot.ExpressionDisplay, executionDurationSeconds, states));
+			ZzzBattleAssistantStateDto[] states = executionInfo.States
+				.Select(row => new ZzzBattleAssistantStateDto(row.StateName, row.LastRecordTime, row.SecondsSinceTrigger, row.Value, row.Revision))
+				.ToArray();
+			return ZzzBackendResult<ZzzBattleAssistantRuntimeDto>.Ok(new ZzzBattleAssistantRuntimeDto(IsRunning: true, executionInfo.TriggerDisplay, executionInfo.ExpressionDisplay, executionInfo.DurationSeconds, states));
 		}
 		catch (Exception ex)
 		{
@@ -2553,15 +2551,6 @@ public sealed class ZzzAppBackend : IZzzAppBackend, IZzzIntelBoardProgressBacken
 	private static ZzzBattleAssistantRuntimeDto EmptyBattleAssistantRuntime()
 	{
 		return new ZzzBattleAssistantRuntimeDto(IsRunning: false, null, null, null, Array.Empty<ZzzBattleAssistantStateDto>());
-	}
-
-	private static double GetTriggerSeconds(DateTimeOffset now, StateRecorderSnapshot recorder)
-	{
-		if (recorder.LastRecordTime == 0.0 || !recorder.LastRecordTimestampUtc.HasValue)
-		{
-			return 999.0;
-		}
-		return Math.Clamp((now - recorder.LastRecordTimestampUtc.Value).TotalSeconds, 0.0, 999.0);
 	}
 
 	private static bool IsUnchangedInstanceUpdate(ZzzInstanceDto current, ZzzUpdateInstanceRequest request)
