@@ -9,6 +9,7 @@ internal static class ZzzOverlaySettingsMapper
     [
         "log_panel",
         "state_panel",
+        "battle_panel",
         "decision_panel",
         "timeline_panel",
         "performance_panel",
@@ -38,6 +39,7 @@ internal static class ZzzOverlaySettingsMapper
             FontSize = fontSize,
             Opacity = panelOpacity / 100d,
             PanelTextColor = ReadString(values, "panel_text_color"),
+            BattleStateFilter = ReadString(values, "battle_state_filter"),
             LogMaxLines = ReadInt(values, "log_max_lines"),
             LogFadeSeconds = ReadInt(values, "log_fade_seconds"),
             FollowIntervalMs = ReadInt(values, "follow_interval_ms"),
@@ -64,6 +66,7 @@ internal static class ZzzOverlaySettingsMapper
             [
                 CreatePanel("log", "日志面板", "log_panel", ReadBool(values, "log_panel_enabled"), geometry, panelFreeModes, panelAppearance, panelLockToGameWindow, fontSize, panelOpacity),
                 CreatePanel("state", "状态面板", "state_panel", ReadBool(values, "state_panel_enabled"), geometry, panelFreeModes, panelAppearance, panelLockToGameWindow, fontSize, panelOpacity),
+                CreatePanel("battle", "战斗面板", "battle_panel", ReadBool(values, "battle_panel_enabled"), geometry, panelFreeModes, panelAppearance, panelLockToGameWindow, fontSize, panelOpacity),
                 CreatePanel("decision", "决策面板", "decision_panel", ReadBool(values, "decision_panel_enabled"), geometry, panelFreeModes, panelAppearance, panelLockToGameWindow, fontSize, panelOpacity),
                 CreatePanel("timeline", "时间轴面板", "timeline_panel", ReadBool(values, "timeline_panel_enabled"), geometry, panelFreeModes, panelAppearance, panelLockToGameWindow, fontSize, panelOpacity),
                 CreatePanel("performance", "性能面板", "performance_panel", ReadBool(values, "performance_panel_enabled"), geometry, panelFreeModes, panelAppearance, panelLockToGameWindow, fontSize, panelOpacity),
@@ -75,6 +78,7 @@ internal static class ZzzOverlaySettingsMapper
     {
         ["log_panel"] = CreateDefaultPanelGeometry(100, 100, 480, 200),
         ["state_panel"] = CreateDefaultPanelGeometry(0, 0, 300, 120),
+        ["battle_panel"] = CreateDefaultPanelGeometry(0, 0, 320, 220),
         ["decision_panel"] = CreateDefaultPanelGeometry(0, 0, 300, 140),
         ["timeline_panel"] = CreateDefaultPanelGeometry(0, 0, 300, 170),
         ["performance_panel"] = CreateDefaultPanelGeometry(0, 0, 300, 110),

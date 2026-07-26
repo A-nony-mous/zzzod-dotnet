@@ -68,7 +68,22 @@ public sealed record ZzzOverlayAutoBattleStateDto(
 	string? LatestDodgeState,
 	bool? ChainReady,
 	string? LatestQuickAssistAgent,
-	double? DistanceMeters);
+	double? DistanceMeters,
+	string? CurrentTrigger = null,
+	string? CurrentExpression = null,
+	double? CurrentDurationSeconds = null,
+	IReadOnlyList<ZzzOverlayBattleStateRowDto>? StateRows = null);
+
+/// <summary>
+/// battle 面板的单条状态行。
+/// </summary>
+/// <param name="StateName">状态名。</param>
+/// <param name="SecondsSinceTrigger">距上次触发的秒数。</param>
+/// <param name="Value">状态值。</param>
+public sealed record ZzzOverlayBattleStateRowDto(
+	string StateName,
+	double SecondsSinceTrigger,
+	int? Value);
 
 /// <summary>
 /// Operation 轨迹的数据传输对象。

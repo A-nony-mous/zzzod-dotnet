@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using OneDragon.Core.Operation;
 using OneDragon.Core.Runtime;
 using Xunit;
@@ -70,6 +71,77 @@ public sealed class AutoBattleOverlayStatusSnapshotTests
 		_ = context.AutoBattleContext;
 
 		Assert.NotNull(context.TryGetAutoBattleOverlayStatus());
+	}
+
+	/// <summary>
+	/// battle 面板取样：只保留已触发过的状态，按最近触发降序，并截断到上限。
+	/// </summary>
+	[Fact]
+	public void Sample_KeepsTriggeredStatesInDescendingOrderWithinLimit()
+	{
+		List<AutoBattleStateRow> rows = [];
+		for (int index = 0; index < 20; index++)
+		{
+			rows.Add(new AutoBattleStateRow($"状态{index:00}", index + 1, index, null, index));
+		}
+
+		rows.Add(new AutoBattleStateRow("从未触发", 0d, 999d, null, 0));
+
+		IReadOnlyList<AutoBattleStateRow> sampled = AutoBattleExecutionInfoReader.Sample(rows, null, 12);
+
+		Assert.Equal(12, sampled.Count);
+		Assert.Equal("状态19", sampled[0].StateName);
+		Assert.Equal("状态08", sampled[11].StateName);
+		Assert.DoesNotContain(sampled, row => row.StateName == "从未触发");
+	}
+
+	/// <summary>
+	/// 过滤关键词按空白拆分，状态名命中任一关键词即保留。
+	/// </summary>
+	[Fact]
+	public void Sample_KeepsOnlyStatesMatchingAnyFilterKeyword()
+	{
+		List<AutoBattleStateRow> rows =
+		[
+			new("前台-安比", 3d, 1d, null, 1),
+			new("后台-妮可", 2d, 2d, null, 2),
+			new("连携技-准备", 1d, 3d, null, 3),
+		];
+
+		IReadOnlyList<AutoBattleStateRow> sampled = AutoBattleExecutionInfoReader.Sample(rows, " 妮可  连携 ", 12);
+
+		Assert.Equal(2, sampled.Count);
+		Assert.Equal("后台-妮可", sampled[0].StateName);
+		Assert.Equal("连携技-准备", sampled[1].StateName);
+	}
+
+	/// <summary>
+	/// 判定现场应带出触发器、条件集与持续时间，并过滤从未触发的前台/后台状态。
+	/// </summary>
+	[Fact]
+	public void Read_MapsExecutionInfoAndDropsNeverTriggeredPrefixedStates()
+	{
+		DateTimeOffset now = DateTimeOffset.UtcNow;
+		AutoBattleOperatorRuntimeSnapshot runtime = new(
+			IsRunning: true,
+			"闪避识别-黄光",
+			"[前台-安比] and not [后台-妮可]",
+			now.AddSeconds(-2.5d),
+			["前台-安比", "后台-妮可", "连携技-准备"]);
+		Dictionary<string, StateRecorderSnapshot> states = new(StringComparer.Ordinal)
+		{
+			["前台-安比"] = CreateState("前台-安比", now.AddSeconds(-1d)),
+			["后台-妮可"] = new StateRecorderSnapshot("后台-妮可", 0d, null, Array.Empty<string>()),
+			["连携技-准备"] = CreateState("连携技-准备", now.AddMilliseconds(-500d)),
+		};
+
+		AutoBattleExecutionInfo info = AutoBattleExecutionInfoReader.Read(runtime, states, now);
+
+		Assert.True(info.IsRunning);
+		Assert.Equal("闪避识别-黄光", info.TriggerDisplay);
+		Assert.Equal("[前台-安比] and not [后台-妮可]", info.ExpressionDisplay);
+		Assert.Equal(2.5d, info.DurationSeconds!.Value, 1);
+		Assert.Equal(["前台-安比", "连携技-准备"], info.States.Select(row => row.StateName));
 	}
 
 	private static StateRecorderSnapshot CreateState(string name, DateTimeOffset timestamp)

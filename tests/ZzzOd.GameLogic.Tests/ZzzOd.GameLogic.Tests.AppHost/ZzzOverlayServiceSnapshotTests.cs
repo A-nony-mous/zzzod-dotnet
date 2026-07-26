@@ -136,6 +136,7 @@ public sealed class ZzzOverlayServiceSnapshotTests
 				PanelEnabledMap = new Dictionary<string, bool>(StringComparer.Ordinal)
 				{
 					["state"] = false,
+					["battle"] = false,
 					["decision"] = false,
 					["timeline"] = false,
 					["performance"] = true,

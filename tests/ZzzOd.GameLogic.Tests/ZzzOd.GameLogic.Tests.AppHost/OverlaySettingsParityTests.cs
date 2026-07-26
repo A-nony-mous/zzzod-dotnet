@@ -604,6 +604,45 @@ public sealed class OverlaySettingsParityTests
 		}
 	}
 
+	/// <summary>
+	/// battle 面板的开关、几何与状态过滤词都要能通过 overlay scope 往返。
+	/// </summary>
+	[Fact]
+	public void BattlePanelSettingsRoundTripThroughOverlayScope()
+	{
+		string root = CreateTempRoot();
+		try
+		{
+			ZzzConfigScopeService scopes = new ZzzConfigScopeService(root);
+			ZzzOverlayController controller = new ZzzOverlayController(new ZzzOverlayService(), CreateBackend(scopes));
+
+			ZzzOverlayPanelSettings battle = controller.Settings.Panels.Single(panel => panel.Id == "battle");
+			Assert.True(battle.Enabled);
+			Assert.Equal(320d, battle.Width);
+			Assert.Equal(220d, battle.Height);
+			Assert.Equal(string.Empty, controller.Settings.BattleStateFilter);
+
+			ZzzBackendResult<ZzzConfigScopeValuesDto> saved = controller.SaveConfiguration(new Dictionary<string, object?>
+			{
+				["battle_state_filter"] = " 妮可 连携 ",
+				["battle_panel_enabled"] = false,
+			});
+
+			Assert.True(saved.Success, saved.Error);
+			Assert.Equal("妮可 连携", controller.Settings.BattleStateFilter);
+			Assert.False(controller.Settings.Panels.Single(panel => panel.Id == "battle").Enabled);
+
+			ZzzBackendResult<ZzzConfigScopeValuesDto> reread = scopes.Read("overlay", null, null);
+			Assert.True(reread.Success, reread.Error);
+			Assert.Equal("妮可 连携", reread.Value.Values["battle_state_filter"]);
+			Assert.False(Assert.IsType<bool>(reread.Value.Values["battle_panel_enabled"]));
+		}
+		finally
+		{
+			Directory.Delete(root, recursive: true);
+		}
+	}
+
 	private static void AssertOrder(string text, params string[] markers)
 	{
 		int num = -1;

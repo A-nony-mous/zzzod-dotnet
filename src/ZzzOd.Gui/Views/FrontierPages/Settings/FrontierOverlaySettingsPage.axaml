@@ -121,6 +121,16 @@
             <ToggleSwitch x:Name="StatePanelToggle" Tag="state_panel_enabled" Click="OnToggleChanged" />
           </fa:FASettingsExpanderItem.Footer>
         </fa:FASettingsExpanderItem>
+        <fa:FASettingsExpanderItem Content="显示战斗面板">
+          <fa:FASettingsExpanderItem.Footer>
+            <ToggleSwitch x:Name="BattlePanelToggle" Tag="battle_panel_enabled" Click="OnToggleChanged" />
+          </fa:FASettingsExpanderItem.Footer>
+        </fa:FASettingsExpanderItem>
+        <fa:FASettingsExpanderItem Content="战斗面板状态过滤词">
+          <fa:FASettingsExpanderItem.Footer>
+            <TextBox x:Name="BattleStateFilterTextBox" Tag="battle_state_filter" Width="180" MaxLength="120" LostFocus="OnTextChanged" />
+          </fa:FASettingsExpanderItem.Footer>
+        </fa:FASettingsExpanderItem>
         <fa:FASettingsExpanderItem Content="显示决策链路面板">
           <fa:FASettingsExpanderItem.Footer>
             <ToggleSwitch x:Name="DecisionPanelToggle" Tag="decision_panel_enabled" Click="OnToggleChanged" />

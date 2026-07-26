@@ -61,6 +61,7 @@ internal sealed partial class FrontierOverlaySettingsPage : UserControl, IZzzPag
             ["vision_cv_enabled"] = Required<ToggleSwitch>("VisionCvToggle"),
             ["log_panel_enabled"] = Required<ToggleSwitch>("LogPanelToggle"),
             ["state_panel_enabled"] = Required<ToggleSwitch>("StatePanelToggle"),
+            ["battle_panel_enabled"] = Required<ToggleSwitch>("BattlePanelToggle"),
             ["decision_panel_enabled"] = Required<ToggleSwitch>("DecisionPanelToggle"),
             ["timeline_panel_enabled"] = Required<ToggleSwitch>("TimelinePanelToggle"),
             ["performance_panel_enabled"] = Required<ToggleSwitch>("PerformancePanelToggle"),
@@ -85,6 +86,7 @@ internal sealed partial class FrontierOverlaySettingsPage : UserControl, IZzzPag
         {
             ["toggle_hotkey"] = Required<TextBox>("HotkeyTextBox"),
             ["panel_text_color"] = Required<TextBox>("PanelTextColorTextBox"),
+            ["battle_state_filter"] = Required<TextBox>("BattleStateFilterTextBox"),
             ["patched_capture_suffix"] = Required<TextBox>("PatchedSuffixTextBox"),
         };
         _metricToggles = new Dictionary<string, ToggleSwitch>(StringComparer.Ordinal)

@@ -275,9 +275,10 @@ public sealed class OverlayGuiRuntimeTests
                 StringComparer.Ordinal);
 
         Assert.Equal(16d, docks["state"].Y, 4);
-        Assert.Equal(144d, docks["decision"].Y, 4);
-        Assert.Equal(292d, docks["timeline"].Y, 4);
-        Assert.Equal(470d, docks["performance"].Y, 4);
+        Assert.Equal(144d, docks["battle"].Y, 4);
+        Assert.Equal(372d, docks["decision"].Y, 4);
+        Assert.Equal(520d, docks["timeline"].Y, 4);
+        Assert.Equal(698d, docks["performance"].Y, 4);
 
         foreach (KeyValuePair<string, ZzzOverlayPhysicalRect> entry in docks)
         {
@@ -318,8 +319,64 @@ public sealed class OverlayGuiRuntimeTests
             game,
             settings.Panels);
 
-        Assert.Equal(144d, timeline.Y, 4);
-        Assert.Equal(322d, performance.Y, 4);
+        Assert.Equal(372d, timeline.Y, 4);
+        Assert.Equal(550d, performance.Y, 4);
+    }
+
+    /// <summary>
+    /// 战斗运行中，battle 面板输出三行现场加状态行。
+    /// </summary>
+    [Fact]
+    public void BattlePanelFormatsCurrentExecutionAndStateRows()
+    {
+        ZzzOverlayAutoBattleStateDto autoBattle = new(
+            IsRunning: true,
+            "安比",
+            true,
+            false,
+            null,
+            null,
+            null,
+            null,
+            "闪避识别-黄光",
+            "[前台-安比] and not [后台-妮可]",
+            2.46d,
+            [
+                new ZzzOverlayBattleStateRowDto("前台-安比", 0.42d, 3),
+                new ZzzOverlayBattleStateRowDto("连携技-准备", 1.5d, null),
+            ]);
+
+        string text = ZzzOverlayPanelTextFormatter.FormatBattle(autoBattle);
+
+        Assert.Equal(
+            string.Join(
+                Environment.NewLine,
+                "[触发器] 闪避识别-黄光",
+                "[条件集] [前台-安比] and not [后台-妮可]",
+                "[持续] 2.5s",
+                string.Empty,
+                "前台-安比 0.4 3",
+                "连携技-准备 1.5"),
+            text);
+    }
+
+    /// <summary>
+    /// 自动战斗未运行时三行现场为 `/`，状态区为空，且不输出任何说明文字。
+    /// </summary>
+    [Fact]
+    public void BattlePanelFormatsEmptyStateWithoutExplanatoryCopy()
+    {
+        string stopped = ZzzOverlayPanelTextFormatter.FormatBattle(
+            new ZzzOverlayAutoBattleStateDto(false, null, null, null, null, null, null, null));
+        string missing = ZzzOverlayPanelTextFormatter.FormatBattle(null);
+        string expected = string.Join(
+            Environment.NewLine,
+            "[触发器] /",
+            "[条件集] /",
+            "[持续] /");
+
+        Assert.Equal(expected, stopped);
+        Assert.Equal(expected, missing);
     }
 
     private static bool Intersects(ZzzOverlayPhysicalRect left, ZzzOverlayPhysicalRect right) =>

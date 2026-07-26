@@ -29,7 +29,7 @@ internal static class ZzzOverlayPanelLayout
     /// <summary>
     /// 右列面板的出厂停靠顺序。log 面板停靠左上，不参与右列累计。
     /// </summary>
-    private static readonly string[] RightColumnDockOrder = ["state", "decision", "timeline", "performance"];
+    private static readonly string[] RightColumnDockOrder = ["state", "battle", "decision", "timeline", "performance"];
 
     /// <summary>
     /// 解析锁定模式面板的物理矩形。
@@ -413,7 +413,7 @@ internal static class ZzzOverlayPanelLayout
     private static bool IsFactoryGeometry(ZzzOverlayPanelSettings panel) => panel.Id switch
     {
         "log" => panel.X == 100d && panel.Y == 100d && panel.Width == 480d && panel.Height == 200d,
-        "state" or "decision" or "timeline" or "performance" => panel.X == 0d && panel.Y == 0d,
+        "state" or "battle" or "decision" or "timeline" or "performance" => panel.X == 0d && panel.Y == 0d,
         _ => false,
     };
 

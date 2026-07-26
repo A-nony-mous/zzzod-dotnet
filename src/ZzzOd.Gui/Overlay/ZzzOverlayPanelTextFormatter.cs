@@ -1,9 +1,11 @@
+using System.Globalization;
 using ZzzOd.AppHost.Overlay;
 
 namespace ZzzOd.Gui.Overlay;
 
 internal static class ZzzOverlayPanelTextFormatter
 {
+    private const string EmptyValue = "/";
     private static readonly string[] CoreMetricOrder = ["ocr_ms", "yolo_ms", "cv_pipeline_ms", "operation_round_ms", "overlay_refresh_ms"];
 
     public static string Format(string panelId, ZzzOverlaySnapshotDto snapshot, ZzzOverlayGuiSettings settings, DateTimeOffset? now = null)
@@ -15,6 +17,7 @@ internal static class ZzzOverlayPanelTextFormatter
         {
             "log" => FormatLogs(snapshot.Logs, settings.LogMaxLines, settings.LogFadeSeconds, now),
             "state" => FormatState(snapshot.State),
+            "battle" => FormatBattle(snapshot.State?.AutoBattle),
             "decision" => FormatDecisions(snapshot.Decisions),
             "timeline" => FormatTimeline(snapshot.Timeline),
             "performance" => FormatPerformance(snapshot.Performance, settings.PerformanceMetrics, now),
@@ -40,6 +43,38 @@ internal static class ZzzOverlayPanelTextFormatter
                     $" {item.Message}" +
                     (string.IsNullOrWhiteSpace(item.Exception) ? string.Empty : Environment.NewLine + item.Exception)));
     }
+
+    internal static string FormatBattle(ZzzOverlayAutoBattleStateDto? autoBattle)
+    {
+        bool running = autoBattle?.IsRunning == true;
+        string trigger = running ? Fallback(autoBattle!.CurrentTrigger) : EmptyValue;
+        string expression = running ? Fallback(autoBattle!.CurrentExpression) : EmptyValue;
+        string duration = running && autoBattle!.CurrentDurationSeconds is double seconds
+            ? seconds.ToString("0.0", CultureInfo.InvariantCulture) + "s"
+            : EmptyValue;
+        List<string> rows =
+        [
+            $"[触发器] {trigger}",
+            $"[条件集] {expression}",
+            $"[持续] {duration}",
+        ];
+
+        IReadOnlyList<ZzzOverlayBattleStateRowDto> stateRows = running
+            ? autoBattle!.StateRows ?? []
+            : [];
+        if (stateRows.Count > 0)
+        {
+            rows.Add(string.Empty);
+            rows.AddRange(stateRows.Select(row =>
+                $"{row.StateName} {row.SecondsSinceTrigger.ToString("0.0", CultureInfo.InvariantCulture)}" +
+                (row.Value.HasValue ? $" {row.Value.Value.ToString(CultureInfo.InvariantCulture)}" : string.Empty)));
+        }
+
+        return string.Join(Environment.NewLine, rows);
+    }
+
+    private static string Fallback(string? value) =>
+        string.IsNullOrWhiteSpace(value) ? EmptyValue : value;
 
     internal static string FormatState(ZzzOverlayRunStateDto? state)
     {

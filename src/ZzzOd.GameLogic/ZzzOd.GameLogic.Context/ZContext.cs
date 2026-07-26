@@ -103,11 +103,11 @@ public class ZContext : OneDragonContext
 	/// <summary>
 	/// 获取已初始化自动战斗上下文的 Overlay 状态，不会触发上下文初始化。
 	/// </summary>
-	public AutoBattleOverlayStatusSnapshot? TryGetAutoBattleOverlayStatus()
+	public AutoBattleOverlayStatusSnapshot? TryGetAutoBattleOverlayStatus(string? battleStateFilter = null)
 	{
 		Lazy<AutoBattleContext> autoBattleContext = _autoBattleContext;
 		return autoBattleContext.IsValueCreated
-			? autoBattleContext.Value.GetOverlayStatusSnapshot()
+			? autoBattleContext.Value.GetOverlayStatusSnapshot(null, battleStateFilter)
 			: null;
 	}
 

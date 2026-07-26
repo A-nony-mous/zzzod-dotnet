@@ -987,6 +987,7 @@ internal sealed class ZzzOverlayController : IDisposable
             PerformanceMetricEnabledMap = new Dictionary<string, bool>(settings.PerformanceMetrics, StringComparer.Ordinal),
             LogMaxLines = settings.LogMaxLines,
             LogFadeSeconds = settings.LogFadeSeconds,
+            BattleStateFilter = settings.BattleStateFilter,
         });
     }
 
