@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -787,8 +788,10 @@ public sealed class IntelBoardAppTests
 		{
 			string recordDirectory = Path.Combine(rootDirectory, "config", "00", "app_run_record");
 			Directory.CreateDirectory(recordDirectory);
-			File.WriteAllText(Path.Combine(recordDirectory, "intel_board.yml"), $"dt: \"{DateTimeOffset.Now:yyyyMMdd}\"\nrun_time: \"07-14 01:00\"\nrun_time_float: 1783990800\nrun_status: 0\nprogress_complete: false\nnotorious_hunt_count: 2\nexpert_challenge_count: 3\nbase_exp: 500");
 			using ZContext context = new ZContext(new OneDragonEnvironment(rootDirectory));
+			// 运行记录按游戏刷新日判定是否跨天，本地日历日在刷新时刻之前会与之相差一天
+			string currentDt = DateTimeOffset.UtcNow.ToOffset(TimeSpan.FromHours(context.GameAccountConfig.GameRefreshHourOffset)).ToString("yyyyMMdd", CultureInfo.InvariantCulture);
+			File.WriteAllText(Path.Combine(recordDirectory, "intel_board.yml"), $"dt: \"{currentDt}\"\nrun_time: \"07-14 01:00\"\nrun_time_float: 1783990800\nrun_status: 0\nprogress_complete: false\nnotorious_hunt_count: 2\nexpert_challenge_count: 3\nbase_exp: 500");
 			using TestScreenshotController controller = new TestScreenshotController();
 			context.AttachController(controller);
 			RecordingIntelBoardFlow flow = new RecordingIntelBoardFlow();
