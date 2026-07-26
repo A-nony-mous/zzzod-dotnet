@@ -29,6 +29,7 @@ internal sealed partial class FrontierCustomSettingsPage : UserControl, IZzzPage
     private readonly ComboBox _themeCombo;
     private readonly ComboBox _shellPresetCombo;
     private readonly ComboBox _backgroundTypeCombo;
+    private readonly ComboBox _closeWindowActionCombo;
     private readonly ToggleSwitch _customThemeColorToggle;
     private readonly ToggleSwitch _customBannerToggle;
     private readonly TextBox _themeColorPassword;
@@ -75,6 +76,7 @@ internal sealed partial class FrontierCustomSettingsPage : UserControl, IZzzPage
         _themeCombo = Required<ComboBox>("ThemeCombo");
         _shellPresetCombo = Required<ComboBox>("ShellPresetCombo");
         _backgroundTypeCombo = Required<ComboBox>("BackgroundTypeCombo");
+        _closeWindowActionCombo = Required<ComboBox>("CloseWindowActionCombo");
     }
 
     public void OnPageShown()
@@ -269,10 +271,12 @@ internal sealed partial class FrontierCustomSettingsPage : UserControl, IZzzPage
         _themeCombo.ItemsSource = _viewModel.ThemeOptions;
         _shellPresetCombo.ItemsSource = _viewModel.ShellPresetOptions;
         _backgroundTypeCombo.ItemsSource = _viewModel.BackgroundTypeOptions;
+        _closeWindowActionCombo.ItemsSource = _viewModel.CloseWindowActionOptions;
         _languageCombo.SelectedItem = _viewModel.SelectedLanguage;
         _themeCombo.SelectedItem = _viewModel.SelectedTheme;
         _shellPresetCombo.SelectedItem = _viewModel.SelectedShellPreset;
         _backgroundTypeCombo.SelectedItem = _viewModel.SelectedBackgroundType;
+        _closeWindowActionCombo.SelectedItem = _viewModel.SelectedCloseWindowAction;
     }
 
     private static void ConfigureShellRestartDialog(FAContentDialog dialog)

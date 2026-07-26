@@ -69,7 +69,7 @@ public sealed partial class App : Application
                 ZzzGuiControlTreeEvidence.TryWrite(mainWindow);
             };
             InstallTray(desktop, mainWindow);
-            InstallCloseToTray(mainWindow);
+            InstallCloseToTray(desktop, mainWindow, backend);
             if (!string.IsNullOrWhiteSpace(RunRoot))
             {
                 _singleInstanceSignal = ZzzGuiSingleInstanceSignal.Start(RunRoot, () =>
@@ -111,12 +111,20 @@ public sealed partial class App : Application
         _trayIcon.Clicked += (_, _) => ShowMainWindow(mainWindow);
     }
 
-    private void InstallCloseToTray(Window mainWindow)
+    private void InstallCloseToTray(IClassicDesktopStyleApplicationLifetime desktop, Window mainWindow, IZzzAppBackend backend)
     {
         mainWindow.Closing += (_, args) =>
         {
             if (_exitRequested)
             {
+                return;
+            }
+
+            if (ZzzCloseWindowActionService.Read(backend) is ZzzCloseWindowAction.Exit)
+            {
+                // 让本次关闭正常进行，窗口关掉后再显式退出（ShutdownMode 是 OnExplicitShutdown）。
+                _exitRequested = true;
+                Dispatcher.UIThread.Post(() => desktop.Shutdown(0));
                 return;
             }
 

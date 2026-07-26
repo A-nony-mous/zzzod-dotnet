@@ -131,6 +131,20 @@
           </fa:FASettingsExpanderItem.Footer>
         </fa:FASettingsExpanderItem>
       </fa:FASettingsExpander>
+      <fa:FASettingsExpander Header="窗口">
+        <fa:FASettingsExpanderItem Content="点击关闭按钮时"
+                                 Description="最小化到托盘后可从托盘图标重新打开窗口">
+          <fa:FASettingsExpanderItem.IconSource>
+            <fa:FAFontIconSource Glyph="&#xE7C4;" />
+          </fa:FASettingsExpanderItem.IconSource>
+          <fa:FASettingsExpanderItem.Footer>
+            <ComboBox x:Name="CloseWindowActionCombo"
+                      Width="180"
+                      ItemsSource="{Binding CloseWindowActionOptions}"
+                      SelectedItem="{Binding SelectedCloseWindowAction, Mode=TwoWay}" />
+          </fa:FASettingsExpanderItem.Footer>
+        </fa:FASettingsExpanderItem>
+      </fa:FASettingsExpander>
     </StackPanel>
   </ScrollViewer>
 </UserControl>

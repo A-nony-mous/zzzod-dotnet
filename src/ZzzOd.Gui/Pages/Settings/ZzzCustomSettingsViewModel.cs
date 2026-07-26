@@ -30,6 +30,9 @@ internal sealed partial class ZzzCustomSettingsViewModel : ZzzPageViewModel
     private string _selectedBackgroundTypeValue = "version_poster";
 
     [ObservableProperty]
+    private string _selectedCloseWindowActionValue = "tray";
+
+    [ObservableProperty]
     private bool _customThemeColor;
 
     [ObservableProperty]
@@ -51,6 +54,7 @@ internal sealed partial class ZzzCustomSettingsViewModel : ZzzPageViewModel
             ("静态背景", "static_background"),
             ("动态背景", "dynamic_background"),
             ("无", "none"));
+        CloseWindowActionOptions = Options(("最小化到托盘", "tray"), ("直接退出", "exit"));
     }
 
     public IReadOnlyList<ZzzCustomOption> LanguageOptions { get; }
@@ -60,6 +64,8 @@ internal sealed partial class ZzzCustomSettingsViewModel : ZzzPageViewModel
     public IReadOnlyList<ZzzCustomOption> ShellPresetOptions { get; }
 
     public IReadOnlyList<ZzzCustomOption> BackgroundTypeOptions { get; }
+
+    public IReadOnlyList<ZzzCustomOption> CloseWindowActionOptions { get; }
 
     public bool HasError => !string.IsNullOrWhiteSpace(ErrorMessage);
 
@@ -135,6 +141,24 @@ internal sealed partial class ZzzCustomSettingsViewModel : ZzzPageViewModel
         set => SetOptionValue(BackgroundTypeOptions, value, selectedValue => SelectedBackgroundTypeValue = selectedValue);
     }
 
+    public ZzzCustomOption SelectedCloseWindowAction
+    {
+        get => SelectedOption(CloseWindowActionOptions, SelectedCloseWindowActionValue);
+        set
+        {
+            if (value is not null)
+            {
+                SelectedCloseWindowActionValue = value.Value;
+            }
+        }
+    }
+
+    public int SelectedCloseWindowActionIndex
+    {
+        get => OptionIndex(CloseWindowActionOptions, SelectedCloseWindowActionValue);
+        set => SetOptionValue(CloseWindowActionOptions, value, selectedValue => SelectedCloseWindowActionValue = selectedValue);
+    }
+
     public event EventHandler<string>? RestartRequested;
 
     public event EventHandler? ShellRestartRequested;
@@ -179,6 +203,10 @@ internal sealed partial class ZzzCustomSettingsViewModel : ZzzPageViewModel
                 ? ZzzGuiShellPresetService.ToConfigValue(preset)
                 : "frontier";
             SelectedBackgroundTypeValue = OptionValue(BackgroundTypeOptions, ReadString(values, "background_type", "version_poster"));
+            string closeWindowAction = ReadString(values, ZzzCloseWindowActionService.ConfigKey, "tray");
+            SelectedCloseWindowActionValue = ZzzCloseWindowActionService.TryParse(closeWindowAction, out ZzzCloseWindowAction action)
+                ? ZzzCloseWindowActionService.ToConfigValue(action)
+                : "tray";
             CustomThemeColor = ReadBool(values, "custom_theme_color", false);
             CustomBanner = ReadBool(values, "custom_banner", false);
             GlobalThemeColor = ReadString(values, "global_theme_color", "0,120,215");
@@ -258,6 +286,16 @@ internal sealed partial class ZzzCustomSettingsViewModel : ZzzPageViewModel
         }
     }
 
+    partial void OnSelectedCloseWindowActionValueChanged(string value)
+    {
+        OnPropertyChanged(nameof(SelectedCloseWindowAction));
+        OnPropertyChanged(nameof(SelectedCloseWindowActionIndex));
+        if (!IsLoading && ZzzCloseWindowActionService.TryParse(value, out ZzzCloseWindowAction action))
+        {
+            Save(ZzzCloseWindowActionService.ConfigKey, ZzzCloseWindowActionService.ToConfigValue(action));
+        }
+    }
+
     partial void OnCustomThemeColorChanged(bool value)
     {
         if (!IsLoading)
@@ -280,6 +318,7 @@ internal sealed partial class ZzzCustomSettingsViewModel : ZzzPageViewModel
         OnPropertyChanged(nameof(SelectedThemeValue));
         OnPropertyChanged(nameof(SelectedShellPresetValue));
         OnPropertyChanged(nameof(SelectedBackgroundTypeValue));
+        OnPropertyChanged(nameof(SelectedCloseWindowActionValue));
     }
 
     private bool Save(string key, object? value)

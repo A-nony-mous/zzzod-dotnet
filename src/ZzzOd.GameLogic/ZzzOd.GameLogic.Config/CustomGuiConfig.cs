@@ -16,6 +16,12 @@ public sealed class CustomGuiConfig
 	[YamlMember(Alias = "gui_shell_preset", ApplyNamingConventions = false)]
 	public string GuiShellPreset { get; set; } = "frontier";
 
+	/// <summary>
+	/// 点击关闭按钮后的行为：tray 表示最小化到托盘，exit 表示直接退出。
+	/// </summary>
+	[YamlMember(Alias = "close_window_action", ApplyNamingConventions = false)]
+	public string CloseWindowAction { get; set; } = "tray";
+
 	[YamlMember(Alias = "custom_theme_color", ApplyNamingConventions = false)]
 	public bool CustomThemeColor { get; set; }
 
