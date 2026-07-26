@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
@@ -7,6 +8,9 @@ using System.Threading;
 using System.Threading.Tasks;
 using OneDragon.Core.Operation;
 using OneDragon.Core.Runtime;
+using Serilog;
+using Serilog.Core;
+using Serilog.Events;
 using Xunit;
 using ZzzOd.GameLogic.AutoBattle;
 using ZzzOd.GameLogic.Context;
@@ -21,6 +25,8 @@ public sealed class AutoBattleOperatorTests
 
 		private readonly bool _throwOnExecute;
 
+		private readonly int _executeMilliseconds;
+
 		private readonly ManualResetEventSlim _stopEvent = new ManualResetEventSlim(initialState: false);
 
 		public int ExecuteCount { get; private set; }
@@ -29,11 +35,12 @@ public sealed class AutoBattleOperatorTests
 
 		public ManualResetEventSlim Started { get; } = new ManualResetEventSlim(initialState: false);
 
-		public RecordingAtomicOp(string opName, bool asyncOp = false, bool blockUntilStopped = false, bool throwOnExecute = false)
+		public RecordingAtomicOp(string opName, bool asyncOp = false, bool blockUntilStopped = false, bool throwOnExecute = false, int executeMilliseconds = 0)
 			: base(opName, asyncOp)
 		{
 			_blockUntilStopped = blockUntilStopped;
 			_throwOnExecute = throwOnExecute;
+			_executeMilliseconds = executeMilliseconds;
 		}
 
 		public override void Execute()
@@ -43,6 +50,10 @@ public sealed class AutoBattleOperatorTests
 			if (_throwOnExecute)
 			{
 				throw new InvalidOperationException("boom");
+			}
+			if (_executeMilliseconds > 0)
+			{
+				Thread.Sleep(_executeMilliseconds);
 			}
 			if (_blockUntilStopped)
 			{
@@ -160,6 +171,25 @@ public sealed class AutoBattleOperatorTests
 		Assert.Equal(1, asyncPress.StopCount);
 		Assert.Equal(1, blocking.StopCount);
 		Assert.Contains((IEnumerable<OperationExecutionStepRecord>)executor.Records, (Predicate<OperationExecutionStepRecord>)((OperationExecutionStepRecord record) => record.OpName == "press" && record.Event == "stopping-async"));
+	}
+
+	[Fact]
+	public async Task OperationExecutor_KeepsStepsOnDedicatedSchedulerNotThreadPool()
+	{
+		// 指令之间的续体必须留在专用执行线程上；落回共享 ThreadPool 会与视觉识别任务抢线程，
+		// 把名义 0.1 秒的指令串拖到秒级（见 restore-auto-battle-state-freshness 基线）。
+		// 指令必须慢到触发轮询等待，否则整串会同步跑完、测不出续体落在哪个线程
+		RecordingAtomicOp first = new RecordingAtomicOp("first", asyncOp: false, blockUntilStopped: false, throwOnExecute: false, executeMilliseconds: 120);
+		RecordingAtomicOp second = new RecordingAtomicOp("second", asyncOp: false, blockUntilStopped: false, throwOnExecute: false, executeMilliseconds: 120);
+		OperationExecutor executor = new OperationExecutor(new AtomicOp[2] { first, second }, 1.0);
+		Assert.True(await executor.RunAsync());
+		OperationExecutionStepRecord lastCompleted = executor.Records.Last(record => record.OpName == "second" && record.Event == "completed");
+		Assert.NotNull(lastCompleted.ThreadName);
+		Assert.StartsWith("od-operation-executor", lastCompleted.ThreadName, StringComparison.Ordinal);
+		foreach (OperationExecutionStepRecord record in executor.Records)
+		{
+			Assert.StartsWith("od-operation-executor", record.ThreadName ?? string.Empty, StringComparison.Ordinal);
+		}
 	}
 
 	[Fact]
@@ -360,6 +390,46 @@ public sealed class AutoBattleOperatorTests
 				item.Trigger == "自定义-触发" &&
 				item.Operation == "设置状态 自定义-命中" &&
 				item.Status == "accepted");
+		}
+		finally
+		{
+			Directory.Delete(rootDirectory, recursive: true);
+		}
+	}
+
+	[Fact]
+	public async Task TriggerScene_LogsPositionStateAgesForFreshnessDiagnosis()
+	{
+		string rootDirectory = CreateTempRoot();
+		RecordingLogSink sink = new RecordingLogSink();
+		using Logger logger = new LoggerConfiguration().MinimumLevel.Verbose().WriteTo.Sink(sink).CreateLogger();
+		try
+		{
+			WritePositionStateConfig(rootDirectory);
+			using ZContext zctx = new ZContext(new OneDragonEnvironment(rootDirectory), logger);
+			AutoBattleOperator op = new AutoBattleOperator(zctx.AutoBattleContext, "auto_battle", "位置状态配置", readFromMerged: false);
+			Assert.True(op.InitBeforeRunning().Success);
+			op.StartRunningAsync();
+			// 位置状态记录在 1.2 秒前：超出裸状态默认 1 秒窗口，分支不该命中，但状态龄必须可从日志读出
+			zctx.AutoBattleContext.StateRecordService.UpdateState(new StateRecord("前台-耀嘉音", Now() - 1.2));
+			zctx.AutoBattleContext.StateRecordService.UpdateState(new StateRecord("自定义-位置触发", Now()));
+			LogEvent entry = null;
+			for (int i = 0; i < 100 && entry == null; i++)
+			{
+				await Task.Delay(TimeSpan.FromMilliseconds(20L));
+				lock (sink.Events)
+				{
+					entry = sink.Events.LastOrDefault(e => e.MessageTemplate.Text.StartsWith("自动战斗条件未匹配:", StringComparison.Ordinal));
+				}
+			}
+			await WaitUntilIdle(op);
+			op.StopRunning();
+			Assert.True(entry != null, "未找到条件未匹配日志");
+			Assert.True(entry.Properties.TryGetValue("PositionStateAges", out LogEventPropertyValue ages));
+			string agesText = ages.ToString();
+			Assert.Contains("前台-耀嘉音=", agesText, StringComparison.Ordinal);
+			int recordedAge = int.Parse(agesText.Split("前台-耀嘉音=")[1].TrimEnd('"').Split(',')[0], CultureInfo.InvariantCulture);
+			Assert.InRange(recordedAge, 1000, 5000);
 		}
 		finally
 		{
@@ -580,6 +650,26 @@ public sealed class AutoBattleOperatorTests
 		string text = Path.Combine(rootDirectory, "config", "auto_battle");
 		Directory.CreateDirectory(text);
 		File.WriteAllText(Path.Combine(text, "主循环优先级配置.yml"), "scenes:\n  - triggers: []\n    priority: 9\n    interval: 0\n    handlers:\n      - states: \"\"\n        operations:\n          - op_name: \"等待秒数\"\n            seconds: 5\n  - triggers: [\"自定义-高优先级\"]\n    priority: 97\n    interval: 0\n    handlers:\n      - states: \"[自定义-高优先级, 0, 1]\"\n        operations:\n          - op_name: \"等待秒数\"\n            seconds: 1");
+	}
+
+	private static void WritePositionStateConfig(string rootDirectory)
+	{
+		string text = Path.Combine(rootDirectory, "config", "auto_battle");
+		Directory.CreateDirectory(text);
+		File.WriteAllText(Path.Combine(text, "位置状态配置.yml"), "scenes:\n  - triggers: [\"自定义-位置触发\"]\n    priority: 5\n    interval: 0\n    handlers:\n      - states: \"[前台-耀嘉音]\"\n        operations:\n          - op_name: \"设置状态\"\n            state: \"自定义-位置命中\"");
+	}
+
+	private sealed class RecordingLogSink : ILogEventSink
+	{
+		public List<LogEvent> Events { get; } = new List<LogEvent>();
+
+		public void Emit(LogEvent logEvent)
+		{
+			lock (Events)
+			{
+				Events.Add(logEvent);
+			}
+		}
 	}
 
 	private static void WriteDelayedCaptureConfig(string rootDirectory)

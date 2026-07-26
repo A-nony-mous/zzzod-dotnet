@@ -2353,6 +2353,64 @@ public sealed class LostVoidContextTests
 	}
 
 	[Fact]
+	public void InBattleProbe_ThrottlesSchedulingAndKeepsSingleFlight()
+	{
+		List<Action> queued = new List<Action>();
+		LostVoidInBattleProbe probe = new LostVoidInBattleProbe(TimeSpan.FromMilliseconds(800L), queued.Add);
+		DateTimeOffset start = new DateTimeOffset(2026, 7, 26, 7, 39, 0, TimeSpan.Zero);
+		LostVoidInBattleProbeResult Result(DateTimeOffset frameTime) => new LostVoidInBattleProbeResult(frameTime, NoLongerInBattleByDetection: false, NextRegionHint: false, "无", 1.0, DetectorRan: true);
+
+		Assert.True(probe.TrySchedule(start, () => Result(start)));
+		// 上一次探测仍在飞行：不重复调度
+		Assert.False(probe.TrySchedule(start.AddSeconds(5L), () => Result(start.AddSeconds(5L))));
+		queued[0]();
+		queued.Clear();
+		// 已完成但未到节流间隔：不调度
+		Assert.False(probe.TrySchedule(start.AddMilliseconds(799L), () => Result(start.AddMilliseconds(799L))));
+		Assert.Empty(queued);
+		Assert.True(probe.TrySchedule(start.AddMilliseconds(800L), () => Result(start.AddMilliseconds(800L))));
+		// 节流间隔可按区域覆盖（道中危机/终结之役 不受 0.8 秒限制）
+		queued[0]();
+		Assert.True(probe.TryConsume(out LostVoidInBattleProbeResult _));
+		Assert.True(probe.TrySchedule(start.AddMilliseconds(801L), () => Result(start.AddMilliseconds(801L)), TimeSpan.Zero));
+	}
+
+	[Fact]
+	public void InBattleProbe_ConsumesEachResultOnceAndDropsStaleFrames()
+	{
+		List<Action> queued = new List<Action>();
+		LostVoidInBattleProbe probe = new LostVoidInBattleProbe(TimeSpan.Zero, queued.Add);
+		DateTimeOffset start = new DateTimeOffset(2026, 7, 26, 7, 39, 0, TimeSpan.Zero);
+		LostVoidInBattleProbeResult Result(DateTimeOffset frameTime, bool noLongerInBattle) => new LostVoidInBattleProbeResult(frameTime, noLongerInBattle, NextRegionHint: false, "无", 1.0, DetectorRan: true);
+
+		Assert.False(probe.TryConsume(out LostVoidInBattleProbeResult _));
+		Assert.True(probe.TrySchedule(start, () => Result(start, noLongerInBattle: true)));
+		queued[0]();
+		queued.Clear();
+		Assert.True(probe.TryConsume(out LostVoidInBattleProbeResult first));
+		Assert.True(first.NoLongerInBattleByDetection);
+		Assert.Equal(start, first.FrameTimeUtc);
+		// 同一结果不会被重复消费（脱战计数不会因重复读取加速）
+		Assert.False(probe.TryConsume(out LostVoidInBattleProbeResult _));
+		// 迟到的旧帧结果被丢弃
+		Assert.True(probe.TrySchedule(start.AddSeconds(1L), () => Result(start.AddSeconds(-1L), noLongerInBattle: true)));
+		queued[0]();
+		queued.Clear();
+		Assert.False(probe.TryConsume(out LostVoidInBattleProbeResult _));
+		// 探测失败（返回 null）只解除飞行标记，不产生证据
+		Assert.True(probe.TrySchedule(start.AddSeconds(2L), () => null));
+		queued[0]();
+		queued.Clear();
+		Assert.False(probe.TryConsume(out LostVoidInBattleProbeResult _));
+		// Reset 后旧的已消费帧时间不再抑制新结果
+		probe.Reset();
+		Assert.True(probe.TrySchedule(start.AddSeconds(-5L), () => Result(start.AddSeconds(-5L), noLongerInBattle: false)));
+		queued[0]();
+		Assert.True(probe.TryConsume(out LostVoidInBattleProbeResult afterReset));
+		Assert.Equal(start.AddSeconds(-5L), afterReset.FrameTimeUtc);
+	}
+
+	[Fact]
 	public async Task ScreenRuntime_LostVoidYoloPeriodSubmitsIndependentAutoBattleWorkersBeforeDetection()
 	{
 		RecordingLogSink sink = new RecordingLogSink();
@@ -2382,14 +2440,29 @@ public sealed class LostVoidContextTests
 						LostVoidRunLevel operation = new LostVoidRunLevel(context, new LostVoidRunRecord(new LostVoidConfig()), "挚交会谈");
 						DateTimeOffset frameTime = DateTimeOffset.UtcNow;
 						Assert.Null(operation.LastDetectTimeUtc);
-						Task<LostVoidBattleState> battle = Task.Run(async () => await runtime.GetBattleStateAsync(operation, screen, frameTime, CancellationToken.None).ConfigureAwait(continueOnCapturedContext: false));
+						// 战斗轮不再阻塞在 YOLO 上：探测仍在跑的同时本轮已经返回
+						Stopwatch roundWatch = Stopwatch.StartNew();
+						LostVoidBattleState firstRound = await runtime.GetBattleStateAsync(operation, screen, frameTime, CancellationToken.None).WaitAsync(TimeSpan.FromSeconds(2L));
+						roundWatch.Stop();
 						Assert.True(detectorEntered.Wait(TimeSpan.FromSeconds(2L)));
+						Assert.True(roundWatch.Elapsed < TimeSpan.FromSeconds(1L), $"战斗轮耗时 {roundWatch.ElapsedMilliseconds}ms 不应包含被阻塞的检测");
+						Assert.True(firstRound.CurrentFrameInBattle);
+						Assert.False(firstRound.DetectorChecked);
+						Assert.False(firstRound.TransitionCheckPerformed);
 						context.AutoBattleContext.StateRecordService.UpdateState(new StateRecord("自定义-迷失并发", (double)frameTime.ToUnixTimeMilliseconds() / 1000.0));
 						Assert.Equal((double)frameTime.ToUnixTimeMilliseconds() / 1000.0, context.AutoBattleContext.StateRecordService.GetStateRecorder("自定义-迷失并发").LastRecordTime);
 						releaseDetector.Set();
-						LostVoidBattleState state = await battle.WaitAsync(TimeSpan.FromSeconds(2L));
+						// 探测完成后由后续轮次消费其结果
+						LostVoidBattleState state = null;
+						for (int round = 0; round < 40 && (state == null || !state.DetectorChecked); round++)
+						{
+							await Task.Delay(TimeSpan.FromMilliseconds(25L));
+							state = await runtime.GetBattleStateAsync(operation, screen, frameTime.AddMilliseconds(50 + round * 25), CancellationToken.None).WaitAsync(TimeSpan.FromSeconds(2L));
+						}
+						Assert.NotNull(state);
 						Assert.True(state.CurrentFrameInBattle);
 						Assert.True(state.DetectorChecked);
+						Assert.True(state.TransitionCheckPerformed);
 						Assert.Contains((IEnumerable<LogEvent>)sink.Events, (Predicate<LogEvent>)((LogEvent entry) => entry.MessageTemplate.Text.StartsWith("迷失之地战斗检测:", StringComparison.Ordinal) && entry.Properties.ContainsKey("Region") && entry.Properties.ContainsKey("FrameTimeUtc") && entry.Properties.ContainsKey("Detect") && entry.Properties.ContainsKey("ElapsedMilliseconds")));
 						Assert.Contains((IEnumerable<LogEvent>)sink.Events, (Predicate<LogEvent>)((LogEvent entry) => entry.MessageTemplate.Text.StartsWith("[.NET诊断] 迷失之地战斗状态:", StringComparison.Ordinal) && entry.Properties.ContainsKey("DetectorChecked") && entry.Properties.ContainsKey("NoLongerInBattleByDetection") && entry.Properties.ContainsKey("DetectorElapsedMilliseconds")));
 					}

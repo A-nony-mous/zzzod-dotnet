@@ -27,17 +27,21 @@ public sealed class ScreenLostVoidRunLevelRuntime : ILostVoidRunLevelRuntime
 
 	private readonly Func<Mat, double?, YoloDetectFrameResult>? _inBattleDetectorOverride;
 
+	private readonly LostVoidInBattleProbe _inBattleProbe;
+
 	public static ScreenLostVoidRunLevelRuntime Instance { get; } = new ScreenLostVoidRunLevelRuntime();
 
 	public ScreenLostVoidRunLevelRuntime(TimeSpan? battleMenuRetryDelay = null, TimeSpan? battleMenuPreClickDelay = null)
 	{
 		_battleMenuRetryDelay = battleMenuRetryDelay;
 		_battleMenuPreClickDelay = battleMenuPreClickDelay;
+		_inBattleProbe = new LostVoidInBattleProbe();
 	}
 
-	internal ScreenLostVoidRunLevelRuntime(Func<Mat, double?, YoloDetectFrameResult> inBattleDetectorOverride)
+	internal ScreenLostVoidRunLevelRuntime(Func<Mat, double?, YoloDetectFrameResult> inBattleDetectorOverride, TimeSpan? probeMinInterval = null, Action<Action>? probeDispatchOverride = null)
 	{
 		_inBattleDetectorOverride = inBattleDetectorOverride;
+		_inBattleProbe = new LostVoidInBattleProbe(probeMinInterval, probeDispatchOverride);
 	}
 
 	public Task<LostVoidRunLevelLoadingState> GetLoadingStateAsync(LostVoidRunLevel operation, Mat? screen, DateTimeOffset? screenshotTimeUtc, CancellationToken cancellationToken)
@@ -345,13 +349,78 @@ public sealed class ScreenLostVoidRunLevelRuntime : ILostVoidRunLevelRuntime
 	public void StartAutoBattle(LostVoidRunLevel operation)
 	{
 		operation.GameContext.Logger.Information("迷失之地运行时动作: Action=StartAutoBattle, Region={Region}", operation.RegionType);
+		_inBattleProbe.Reset();
 		operation.GameContext.AutoBattleContext.StartAutoBattle();
 	}
 
 	public void StopAutoBattle(LostVoidRunLevel operation)
 	{
 		operation.GameContext.Logger.Information("迷失之地运行时动作: Action=StopAutoBattle, Region={Region}", operation.RegionType);
+		_inBattleProbe.Reset();
 		operation.GameContext.AutoBattleContext.StopAutoBattle();
+	}
+
+	/// <summary>
+	/// 按节流间隔调度一次战斗中识别探测（YOLO 交互/距离/入口 + 前往下一个区域 OCR）。
+	/// 探测在专用线程上使用帧租借执行，不占用战斗轮时间。
+	/// </summary>
+	private void ScheduleInBattleProbe(LostVoidRunLevel operation, Mat screen, DateTimeOffset frameTimeUtc)
+	{
+		// 对齐 Python：道中危机与终结之役不识别下层入口，因此也不受 0.8 秒检测节流限制，
+		// 只按单飞节奏持续做 前往下一个区域 OCR。
+		bool skipDetector = string.Equals(operation.RegionType, "战斗-道中危机", StringComparison.Ordinal) || string.Equals(operation.RegionType, "战斗-终结之役", StringComparison.Ordinal);
+		TimeSpan? minIntervalOverride = (skipDetector ? new TimeSpan?(TimeSpan.Zero) : null);
+		Mat? leasedScreen = null;
+		try
+		{
+			leasedScreen = AutoBattleContext.CreateFrameLease(screen);
+			Mat probeScreen = leasedScreen;
+			if (!_inBattleProbe.TrySchedule(frameTimeUtc, () => RunInBattleProbe(operation, probeScreen, frameTimeUtc, skipDetector), minIntervalOverride))
+			{
+				return;
+			}
+			leasedScreen = null;
+		}
+		finally
+		{
+			leasedScreen?.Dispose();
+		}
+	}
+
+	private LostVoidInBattleProbeResult? RunInBattleProbe(LostVoidRunLevel operation, Mat screen, DateTimeOffset frameTimeUtc, bool skipDetector)
+	{
+		try
+		{
+			bool detectorRan = false;
+			bool noLongerInBattleByDetection = false;
+			string detect = "未检测";
+			double elapsedMilliseconds = 0.0;
+			if (!skipDetector && (_inBattleDetectorOverride != null || operation.GameContext.LostVoid.Detector != null))
+			{
+				detectorRan = true;
+				long timestamp = Stopwatch.GetTimestamp();
+				YoloDetectFrameResult frameResult = _inBattleDetectorOverride?.Invoke(screen, (double)frameTimeUtc.ToUnixTimeMilliseconds() / 1000.0) ?? operation.GameContext.LostVoid.Detector.Run(screen, 0.9f, 0.5f, (double)frameTimeUtc.ToUnixTimeMilliseconds() / 1000.0);
+				elapsedMilliseconds = Stopwatch.GetElapsedTime(timestamp).TotalMilliseconds;
+				(bool WithInteract, bool WithDistance, bool WithEntry) tuple = LostVoidDetectorResultHelper.IsFrameWithAll(frameResult);
+				bool item = tuple.WithInteract;
+				bool item2 = tuple.WithDistance;
+				bool item3 = tuple.WithEntry;
+				noLongerInBattleByDetection = item || item2 || item3;
+				detect = LostVoidDetectorResultHelper.DescribeDetectedClasses(frameResult);
+				operation.GameContext.Logger.Information("迷失之地战斗检测: Region={Region}, FrameTimeUtc={FrameTimeUtc}, Detect={Detect}, Interact={Interact}, Distance={Distance}, Entry={Entry}, ElapsedMilliseconds={ElapsedMilliseconds:F2}", operation.RegionType, frameTimeUtc, detect, item, item2, item3, elapsedMilliseconds);
+			}
+			bool nextRegionHint = !noLongerInBattleByDetection && ScreenUtils.FindByOcr(operation.GameContext, screen, "前往下一个区域", operation.GameContext.ScreenContext.GetArea("迷失之地-大世界", "区域-文本提示"), 0.5);
+			return new LostVoidInBattleProbeResult(frameTimeUtc, noLongerInBattleByDetection, nextRegionHint, detect, elapsedMilliseconds, detectorRan);
+		}
+		catch (Exception exception)
+		{
+			operation.GameContext.Logger.Error(exception, "迷失之地战斗中识别交互出现异常");
+			return null;
+		}
+		finally
+		{
+			screen.Dispose();
+		}
 	}
 
 	public Task<LostVoidBattleState> GetBattleStateAsync(LostVoidRunLevel operation, Mat? screen, DateTimeOffset? screenshotTimeUtc, CancellationToken cancellationToken)
@@ -362,6 +431,27 @@ public sealed class ScreenLostVoidRunLevelRuntime : ILostVoidRunLevelRuntime
 		}
 		DateTimeOffset dateTimeOffset = screenshotTimeUtc ?? DateTimeOffset.UtcNow;
 		bool flag = operation.GameContext.AutoBattleContext.CheckBattleState(screen, dateTimeOffset, checkBattleEndNormalResult: false, checkBattleEndHollowResult: false, checkBattleEndDefenseResult: false, checkDistance: false, sync: false, "lost_void");
+		// 战斗中的 YOLO 与 OCR 走异步探测：本轮只消费已完成的结果、并按节流调度下一次，
+		// 不阻塞战斗轮，从而保证同一轮提交的角色状态识别维持高频供帧。
+		bool flag2 = false;
+		bool flag3 = false;
+		bool probeConsumed = false;
+		bool nextRegionHint = false;
+		string text = "未检测";
+		double num2 = 0.0;
+		if (flag)
+		{
+			if (_inBattleProbe.TryConsume(out LostVoidInBattleProbeResult probeResult))
+			{
+				probeConsumed = true;
+				flag3 = probeResult.DetectorRan;
+				flag2 = probeResult.NoLongerInBattleByDetection;
+				nextRegionHint = probeResult.NextRegionHint;
+				text = probeResult.Detect;
+				num2 = probeResult.DetectorElapsedMilliseconds;
+			}
+			ScheduleInBattleProbe(operation, screen, dateTimeOffset);
+		}
 		bool num;
 		if (!flag)
 		{
@@ -375,8 +465,9 @@ public sealed class ScreenLostVoidRunLevelRuntime : ILostVoidRunLevelRuntime
 				goto IL_013b;
 			}
 		}
-		else if (operation.LastFrameInBattle && !HasElapsed(dateTimeOffset, operation.LastDetectTimeUtc, TimeSpan.FromMilliseconds(800L)))
+		else if (!probeConsumed && operation.LastFrameInBattle)
 		{
+			// 战斗中且本轮没有新的识别证据：保持轮次轻量，不做状态转移判定
 			if (operation.NoInBattleTimes > 0)
 			{
 				num = HasElapsed(dateTimeOffset, operation.LastCheckFinishTimeUtc, TimeSpan.FromMilliseconds(100L));
@@ -386,32 +477,6 @@ public sealed class ScreenLostVoidRunLevelRuntime : ILostVoidRunLevelRuntime
 		}
 		goto IL_01ca;
 		IL_01ca:
-		bool flag2 = false;
-		bool flag3 = false;
-		string text = "未检测";
-		double num2 = 0.0;
-		if (flag && !string.Equals(operation.RegionType, "战斗-道中危机", StringComparison.Ordinal) && !string.Equals(operation.RegionType, "战斗-终结之役", StringComparison.Ordinal) && screen != null && (_inBattleDetectorOverride != null || operation.GameContext.LostVoid.Detector != null))
-		{
-			flag3 = true;
-			try
-			{
-				long timestamp = Stopwatch.GetTimestamp();
-				YoloDetectFrameResult frameResult = _inBattleDetectorOverride?.Invoke(screen, (double)dateTimeOffset.ToUnixTimeMilliseconds() / 1000.0) ?? operation.GameContext.LostVoid.Detector.Run(screen, 0.9f, 0.5f, (double)dateTimeOffset.ToUnixTimeMilliseconds() / 1000.0);
-				num2 = Stopwatch.GetElapsedTime(timestamp).TotalMilliseconds;
-				(bool WithInteract, bool WithDistance, bool WithEntry) tuple = LostVoidDetectorResultHelper.IsFrameWithAll(frameResult);
-				bool item = tuple.WithInteract;
-				bool item2 = tuple.WithDistance;
-				bool item3 = tuple.WithEntry;
-				flag2 = item || item2 || item3;
-				text = LostVoidDetectorResultHelper.DescribeDetectedClasses(frameResult);
-				operation.GameContext.Logger.Information("迷失之地战斗检测: Region={Region}, FrameTimeUtc={FrameTimeUtc}, Detect={Detect}, Interact={Interact}, Distance={Distance}, Entry={Entry}, ElapsedMilliseconds={ElapsedMilliseconds:F2}", operation.RegionType, dateTimeOffset, text, item, item2, item3, num2);
-			}
-			catch (Exception exception)
-			{
-				operation.GameContext.Logger.Error(exception, "迷失之地战斗中识别交互出现异常");
-				return Task.FromResult(new LostVoidBattleState(flag, NextRegionHint: false, NoLongerInBattleByDetection: false, InInteractScreen: false, BattleFailed: false, TransitionCheckPerformed: false, DetectorChecked: true));
-			}
-		}
 		bool flag4 = !flag;
 		long startingTimestamp = (flag4 ? Stopwatch.GetTimestamp() : 0);
 		if (flag4)
@@ -435,7 +500,7 @@ public sealed class ScreenLostVoidRunLevelRuntime : ILostVoidRunLevelRuntime
 		}
 		bool flag6 = flag4 && TryFindAndClickArea(operation.GameContext, screen, "迷失之地-大世界", "按钮-挑战-确认");
 		double num5 = (flag4 ? Stopwatch.GetElapsedTime(startingTimestamp3).TotalMilliseconds : 0.0);
-		bool flag7 = flag && !flag2 && screen != null && ScreenUtils.FindByOcr(operation.GameContext, screen, "前往下一个区域", operation.GameContext.ScreenContext.GetArea("迷失之地-大世界", "区域-文本提示"), 0.5);
+		bool flag7 = nextRegionHint;
 		bool inInteractScreen = flag5 || text2 != null || flag6;
 		operation.GameContext.Logger.Information("[.NET诊断] 迷失之地战斗状态: Region={Region}, FrameTimeUtc={FrameTimeUtc}, InBattle={InBattle}, DetectorChecked={DetectorChecked}, Detect={Detect}, NoLongerInBattleByDetection={NoLongerInBattleByDetection}, Screen={Screen}, Interact={Interact}, ConfirmClicked={ConfirmClicked}, NextRegion={NextRegion}, InteractElapsedMilliseconds={InteractElapsedMilliseconds:F2}, ScreenMatchElapsedMilliseconds={ScreenMatchElapsedMilliseconds:F2}, ChallengeConfirmElapsedMilliseconds={ChallengeConfirmElapsedMilliseconds:F2}, DetectorElapsedMilliseconds={DetectorElapsedMilliseconds:F2}", operation.RegionType, dateTimeOffset, flag, flag3, text, flag2, text2 ?? "无", flag5, flag6, flag7, num3, num4, num5, num2);
 		return Task.FromResult(new LostVoidBattleState(flag, flag7, flag2, inInteractScreen, battleFailed, TransitionCheckPerformed: true, flag3, flag4));

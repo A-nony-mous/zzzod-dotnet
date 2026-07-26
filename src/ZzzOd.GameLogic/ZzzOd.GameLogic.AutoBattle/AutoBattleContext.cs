@@ -1212,19 +1212,10 @@ public class AutoBattleContext : IRunParticipant
 		}
 		using Mat mat = new Mat();
 		Cv2.CvtColor(part, mat, ColorConversionCodes.RGB2HSV);
-		int num = 0;
 		int num2 = mat.Rows * mat.Cols;
-		for (int i = 0; i < mat.Rows; i++)
-		{
-			for (int j = 0; j < mat.Cols; j++)
-			{
-				Vec3b vec3b = mat.At<Vec3b>(i, j);
-				if (vec3b.Item1 <= 10 && vec3b.Item2 <= 20)
-				{
-					num++;
-				}
-			}
-		}
+		using Mat blackMask = new Mat();
+		Cv2.InRange(mat, new Scalar(0.0, 0.0, 0.0), new Scalar(179.0, 10.0, 20.0), blackMask);
+		int num = Cv2.CountNonZero(blackMask);
 		return num2 > 0 && (double)num / (double)num2 >= 0.9;
 	}
 
@@ -1236,24 +1227,13 @@ public class AutoBattleContext : IRunParticipant
 		}
 		using Mat mat = new Mat();
 		Cv2.CvtColor(part, mat, ColorConversionCodes.RGB2HSV);
-		int num = 0;
-		int num2 = 0;
 		int num3 = mat.Rows * mat.Cols;
-		for (int i = 0; i < mat.Rows; i++)
-		{
-			for (int j = 0; j < mat.Cols; j++)
-			{
-				Vec3b vec3b = mat.At<Vec3b>(i, j);
-				if (vec3b.Item1 >= 40 && vec3b.Item2 >= 90)
-				{
-					num++;
-				}
-				if (vec3b.Item1 <= 10 && Math.Abs(vec3b.Item2 - 150) <= 20)
-				{
-					num2++;
-				}
-			}
-		}
+		using Mat colorfulMask = new Mat();
+		using Mat grayishMask = new Mat();
+		Cv2.InRange(mat, new Scalar(0.0, 40.0, 90.0), new Scalar(179.0, 255.0, 255.0), colorfulMask);
+		Cv2.InRange(mat, new Scalar(0.0, 0.0, 130.0), new Scalar(179.0, 10.0, 170.0), grayishMask);
+		int num = Cv2.CountNonZero(colorfulMask);
+		int num2 = Cv2.CountNonZero(grayishMask);
 		if (num3 == 0 || (double)num / (double)num3 < 0.5)
 		{
 			return false;

@@ -191,16 +191,24 @@ public static class AgentStateChecker
 	public static int CountByColorChannelEqualRange(Mat image, AgentStateDef stateDef, Mat? mask = null)
 	{
 		using Mat mat = ApplyMask(image, mask);
-		int num = 0;
-		for (int i = 0; i < mat.Rows; i++)
+		// 对齐 Python 的三通道相等判定：用通道比较代替逐像素访问
+		Mat[] channels = Cv2.Split(mat);
+		int num;
+		try
 		{
-			for (int j = 0; j < mat.Cols; j++)
+			using Mat equal01 = new Mat();
+			using Mat equal12 = new Mat();
+			using Mat equalAll = new Mat();
+			Cv2.Compare(channels[0], channels[1], equal01, CmpType.EQ);
+			Cv2.Compare(channels[1], channels[2], equal12, CmpType.EQ);
+			Cv2.BitwiseAnd(equal01, equal12, equalAll);
+			num = Cv2.CountNonZero(equalAll);
+		}
+		finally
+		{
+			foreach (Mat channel in channels)
 			{
-				Vec3b vec3b = mat.At<Vec3b>(i, j);
-				if (vec3b.Item0 == vec3b.Item1 && vec3b.Item1 == vec3b.Item2)
-				{
-					num++;
-				}
+				channel.Dispose();
 			}
 		}
 		return (num >= stateDef.ConnectCnt) ? 1 : 0;
@@ -240,35 +248,16 @@ public static class AgentStateChecker
 
 	private static Mat FilterByRgb(Mat image, IReadOnlyList<int> lower, IReadOnlyList<int> upper)
 	{
-		Mat mat = new Mat(image.Rows, image.Cols, MatType.CV_8UC1, Scalar.Black);
-		for (int i = 0; i < image.Rows; i++)
-		{
-			for (int j = 0; j < image.Cols; j++)
-			{
-				Vec3b vec3b = image.At<Vec3b>(i, j);
-				bool num;
-				if (lower.Count != 1 && upper.Count != 1)
-				{
-					if (!InRange((int)vec3b.Item0, lower[0], upper[0]) || !InRange((int)vec3b.Item1, lower[1], upper[1]))
-					{
-						continue;
-					}
-					num = InRange((int)vec3b.Item2, lower[2], upper[2]);
-				}
-				else
-				{
-					if (!InRange((int)vec3b.Item0, lower[0], upper[0]) || !InRange((int)vec3b.Item1, lower[0], upper[0]))
-					{
-						continue;
-					}
-					num = InRange((int)vec3b.Item2, lower[0], upper[0]);
-				}
-				if (num)
-				{
-					mat.Set(i, j, byte.MaxValue);
-				}
-			}
-		}
+		// 对齐 Python cv2.inRange 的向量化实现；单元素上下界表示三通道共用同一区间
+		bool perChannel = lower.Count != 1 && upper.Count != 1;
+		Scalar lowerBound = perChannel
+			? new Scalar(ClampLow(lower[0]), ClampLow(lower[1]), ClampLow(lower[2]))
+			: new Scalar(ClampLow(lower[0]), ClampLow(lower[0]), ClampLow(lower[0]));
+		Scalar upperBound = perChannel
+			? new Scalar(ClampHigh(upper[0]), ClampHigh(upper[1]), ClampHigh(upper[2]))
+			: new Scalar(ClampHigh(upper[0]), ClampHigh(upper[0]), ClampHigh(upper[0]));
+		Mat mat = new Mat();
+		Cv2.InRange(image, lowerBound, upperBound, mat);
 		return mat;
 	}
 
@@ -276,19 +265,47 @@ public static class AgentStateChecker
 	{
 		using Mat mat = new Mat();
 		Cv2.CvtColor(image, mat, ColorConversionCodes.RGB2HSV);
-		Mat mat2 = new Mat(image.Rows, image.Cols, MatType.CV_8UC1, Scalar.Black);
-		for (int i = 0; i < mat.Rows; i++)
+		// 色相是环形量：中心 ± 容差跨越 0/180 时要拆成两段区间并取并集
+		int hueCenter = (hsvColor[0] % 180 + 180) % 180;
+		int hueDiff = hsvDiff[0];
+		double saturationLow = ClampLow(hsvColor[1] - hsvDiff[1]);
+		double saturationHigh = ClampHigh(hsvColor[1] + hsvDiff[1]);
+		double valueLow = ClampLow(hsvColor[2] - hsvDiff[2]);
+		double valueHigh = ClampHigh(hsvColor[2] + hsvDiff[2]);
+		Mat mat2;
+		if (hueDiff >= 90)
 		{
-			for (int j = 0; j < mat.Cols; j++)
-			{
-				Vec3b vec3b = mat.At<Vec3b>(i, j);
-				if (HueInCircularRange(vec3b.Item0, hsvColor[0], hsvDiff[0]) && InRange((int)vec3b.Item1, hsvColor[1] - hsvDiff[1], hsvColor[1] + hsvDiff[1]) && InRange((int)vec3b.Item2, hsvColor[2] - hsvDiff[2], hsvColor[2] + hsvDiff[2]))
-				{
-					mat2.Set(i, j, byte.MaxValue);
-				}
-			}
+			mat2 = new Mat();
+			Cv2.InRange(mat, new Scalar(0.0, saturationLow, valueLow), new Scalar(179.0, saturationHigh, valueHigh), mat2);
+			return mat2;
 		}
+		int hueLow = hueCenter - hueDiff;
+		int hueHigh = hueCenter + hueDiff;
+		if (hueLow >= 0 && hueHigh <= 179)
+		{
+			mat2 = new Mat();
+			Cv2.InRange(mat, new Scalar(hueLow, saturationLow, valueLow), new Scalar(hueHigh, saturationHigh, valueHigh), mat2);
+			return mat2;
+		}
+		int wrappedLow = (hueLow + 180) % 180;
+		int wrappedHigh = hueHigh % 180;
+		using Mat lowerPart = new Mat();
+		using Mat upperPart = new Mat();
+		Cv2.InRange(mat, new Scalar(wrappedLow, saturationLow, valueLow), new Scalar(179.0, saturationHigh, valueHigh), lowerPart);
+		Cv2.InRange(mat, new Scalar(0.0, saturationLow, valueLow), new Scalar(wrappedHigh, saturationHigh, valueHigh), upperPart);
+		mat2 = new Mat();
+		Cv2.BitwiseOr(lowerPart, upperPart, mat2);
 		return mat2;
+	}
+
+	private static double ClampLow(double low)
+	{
+		return Math.Max(0.0, low);
+	}
+
+	private static double ClampHigh(double high)
+	{
+		return Math.Min(255.0, high);
 	}
 
 	private static Mat ApplyMask(Mat image, Mat? mask)
@@ -336,15 +353,13 @@ public static class AgentStateChecker
 		}
 		using Mat mat = new Mat();
 		Cv2.CvtColor(image, mat, ColorConversionCodes.RGB2GRAY);
+		// 对齐 Python numpy 的按列求均值：用 Reduce 一次算完，避免逐像素访问
+		using Mat columnSums = new Mat();
+		Cv2.Reduce(mat, columnSums, ReduceDimension.Row, ReduceTypes.Avg, MatType.CV_64F);
 		double[] array = new double[mat.Cols];
 		for (int i = 0; i < mat.Cols; i++)
 		{
-			double num = 0.0;
-			for (int j = 0; j < mat.Rows; j++)
-			{
-				num += (double)(int)mat.At<byte>(j, i);
-			}
-			array[i] = num / (double)mat.Rows;
+			array[i] = columnSums.At<double>(0, i);
 		}
 		return array;
 	}
@@ -372,20 +387,24 @@ public static class AgentStateChecker
 	{
 		int num = lower?[0] ?? 0;
 		int num2 = upper?[0] ?? 255;
-		Mat mat = new Mat(image.Rows, image.Cols, MatType.CV_8UC1, Scalar.Black);
-		for (int i = 0; i < image.Rows; i++)
+		// 对齐 Python np.max(axis=0) + cv2.inRange：先取三通道逐像素最大值，再做区间判定
+		Mat[] channels = Cv2.Split(image);
+		try
 		{
-			for (int j = 0; j < image.Cols; j++)
+			using Mat maxChannel = new Mat();
+			Cv2.Max(channels[0], channels[1], maxChannel);
+			Cv2.Max(maxChannel, channels[2], maxChannel);
+			Mat mat = new Mat();
+			Cv2.InRange(maxChannel, ClampLow(num), ClampHigh(num2), mat);
+			return mat;
+		}
+		finally
+		{
+			foreach (Mat channel in channels)
 			{
-				Vec3b vec3b = image.At<Vec3b>(i, j);
-				int num3 = Math.Max(vec3b.Item0, Math.Max(vec3b.Item1, vec3b.Item2));
-				if (InRange(num3, num, num2))
-				{
-					mat.Set(i, j, byte.MaxValue);
-				}
+				channel.Dispose();
 			}
 		}
-		return mat;
 	}
 
 	private static bool InRange(double value, double low, double high)
