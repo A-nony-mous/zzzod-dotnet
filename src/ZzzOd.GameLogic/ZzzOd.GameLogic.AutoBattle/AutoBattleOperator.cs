@@ -20,11 +20,13 @@ public class AutoBattleOperator : IStateRecordUpdateListener
 {
 	private const string FallbackTemplateName = "全配队通用";
 
-	private static readonly DedicatedTaskScheduler ConditionalOperationScheduler = new DedicatedTaskScheduler("zzz-conditional-operation", 4);
+	// 调度器为进程内共享：容量需覆盖并发运行的 operator 数量（主循环 + 周期动作各占一条），
+	// 续体现在固定回到这些线程上，容量不足会直接表现为循环节奏被拖慢。
+	private static readonly DedicatedTaskScheduler ConditionalOperationScheduler = new DedicatedTaskScheduler("zzz-conditional-operation", 8);
 
 	private static readonly TaskFactory ConditionalOperationExecutor = new TaskFactory(ConditionalOperationScheduler);
 
-	private static readonly DedicatedTaskScheduler PeriodicOperationScheduler = new DedicatedTaskScheduler("zzz-periodic-operation", 2);
+	private static readonly DedicatedTaskScheduler PeriodicOperationScheduler = new DedicatedTaskScheduler("zzz-periodic-operation", 8);
 
 	private static readonly TaskFactory PeriodicOperationExecutor = new TaskFactory(PeriodicOperationScheduler);
 
@@ -45,6 +47,10 @@ public class AutoBattleOperator : IStateRecordUpdateListener
 	private readonly Dictionary<string, AutoBattleCondOpScene> _triggerToScene = new Dictionary<string, AutoBattleCondOpScene>(StringComparer.Ordinal);
 
 	private readonly Dictionary<int, double> _lastTriggerTime = new Dictionary<int, double>();
+
+	private readonly object _scenePositionStatesLock = new object();
+
+	private readonly Dictionary<AutoBattleCondOpScene, IReadOnlyList<string>> _scenePositionStates = new Dictionary<AutoBattleCondOpScene, IReadOnlyList<string>>();
 
 	private bool _inited;
 
@@ -227,10 +233,12 @@ public class AutoBattleOperator : IStateRecordUpdateListener
 					["trigger_time"] = triggerTime ?? executor.TriggerTime,
 				});
 			_ctx.ZContext.Logger.Information("自动战斗执行开始: Template={Template}, Trigger={Trigger}, Operations={Operations}", _templateName, executionInfo.TriggerDisplay, string.Join(" | ", executionInfo.OpList.Select((OneDragon.Core.Operation.AtomicOp operation) => operation.OpName)));
+			// 收尾回调走专用调度器：留在共享 ThreadPool 上会被视觉识别任务挤占，
+			// 使执行计数的归还与"执行结束"日志时间都被推迟数百毫秒。
 			_runningExecutionTask.ContinueWith(delegate(Task<bool> task)
 			{
 				OnExecutionDone(executor, executionInfo, task);
-			}, TaskScheduler.Default);
+			}, CancellationToken.None, TaskContinuationOptions.None, ConditionalOperationScheduler);
 			return true;
 		}
 	}
@@ -565,7 +573,7 @@ public class AutoBattleOperator : IStateRecordUpdateListener
 			}
 			if (Volatile.Read(in _runningExecutorCount) > 0)
 			{
-				await DelayNoThrow(TimeSpan.FromMilliseconds(20L), token).ConfigureAwait(continueOnCapturedContext: false);
+				await DelayNoThrow(TimeSpan.FromMilliseconds(20L), token);
 				continue;
 			}
 			double triggerTime = Now();
@@ -574,7 +582,7 @@ public class AutoBattleOperator : IStateRecordUpdateListener
 			double pastTime = triggerTime - lastTriggerTime;
 			if (pastTime < scene.IntervalSeconds)
 			{
-				await DelayNoThrow(TimeSpan.FromSeconds(scene.IntervalSeconds - pastTime), token).ConfigureAwait(continueOnCapturedContext: false);
+				await DelayNoThrow(TimeSpan.FromSeconds(scene.IntervalSeconds - pastTime), token);
 				continue;
 			}
 			ExecutionInfo executionInfo = scene.MatchExecution(triggerTime);
@@ -589,7 +597,7 @@ public class AutoBattleOperator : IStateRecordUpdateListener
 				_lastTriggerTime[sceneId] = triggerTime;
 				SubmitExecution(executionInfo, null, triggerTime);
 			}
-			await DelayNoThrow(TimeSpan.FromMilliseconds(20L), token).ConfigureAwait(continueOnCapturedContext: false);
+			await DelayNoThrow(TimeSpan.FromMilliseconds(20L), token);
 		}
 	}
 
@@ -608,6 +616,7 @@ public class AutoBattleOperator : IStateRecordUpdateListener
 				return;
 			}
 			double num2 = Math.Max(0.0, num - stateMatchTime) * 1000.0;
+			string positionStateAges = DescribePositionStateAges(scene, num);
 			ExecutionInfo executionInfo = scene.MatchExecution(num);
 			if (executionInfo == null)
 			{
@@ -617,10 +626,10 @@ public class AutoBattleOperator : IStateRecordUpdateListener
 					"not-matched",
 					stateMatchTime,
 					num2);
-				_ctx.ZContext.Logger.Information("自动战斗条件未匹配: TriggerState={TriggerState}, StateAgeMilliseconds={StateAgeMilliseconds:F0}, StateMatchTime={StateMatchTime}, Expression={Expression}", triggerState, num2, stateMatchTime, GetSceneExpressionDisplay(scene));
+				_ctx.ZContext.Logger.Information("自动战斗条件未匹配: TriggerState={TriggerState}, StateAgeMilliseconds={StateAgeMilliseconds:F0}, StateMatchTime={StateMatchTime}, PositionStateAges={PositionStateAges}, Expression={Expression}", triggerState, num2, stateMatchTime, positionStateAges, GetSceneExpressionDisplay(scene));
 				return;
 			}
-			_ctx.ZContext.Logger.Information("自动战斗条件命中: TriggerState={TriggerState}, StateAgeMilliseconds={StateAgeMilliseconds:F0}, StateMatchTime={StateMatchTime}, Expression={Expression}", triggerState, num2, stateMatchTime, executionInfo.ExprDisplay);
+			_ctx.ZContext.Logger.Information("自动战斗条件命中: TriggerState={TriggerState}, StateAgeMilliseconds={StateAgeMilliseconds:F0}, StateMatchTime={StateMatchTime}, PositionStateAges={PositionStateAges}, Expression={Expression}", triggerState, num2, stateMatchTime, positionStateAges, executionInfo.ExprDisplay);
 			executionInfo.Priority = scene.Priority;
 			PublishExecutionDecision(
 				executionInfo,
@@ -637,6 +646,53 @@ public class AutoBattleOperator : IStateRecordUpdateListener
 	private static string GetSceneExpressionDisplay(AutoBattleCondOpScene scene)
 	{
 		return string.Join(" || ", scene.Handlers.Select((AutoBattleCondOpStateHandler handler) => handler.DisplayName ?? handler.States));
+	}
+
+	/// <summary>
+	/// 输出本场景分支表达式所依赖的前台/后台位置状态在评估时刻的状态龄（毫秒）。
+	/// 条件引擎对裸状态默认只认最近 1 秒，这些状态一旦过期就会让分支落到兜底路径，
+	/// 因此验收和排查都需要能从日志直接读出它们的新鲜度。
+	/// </summary>
+	private string DescribePositionStateAges(AutoBattleCondOpScene scene, double now)
+	{
+		IReadOnlyList<string> positionStates = GetScenePositionStates(scene);
+		if (positionStates.Count == 0)
+		{
+			return "无";
+		}
+		List<string> parts = new List<string>(positionStates.Count);
+		foreach (string stateName in positionStates)
+		{
+			StateRecorder recorder = _ctx.StateRecordService.GetStateRecorder(stateName);
+			if (recorder == null)
+			{
+				continue;
+			}
+			double lastRecordTime = recorder.LastRecordTime;
+			if (lastRecordTime <= 0.0)
+			{
+				continue;
+			}
+			parts.Add($"{stateName}={Math.Max(0.0, now - lastRecordTime) * 1000.0:F0}");
+		}
+		return (parts.Count == 0) ? "无" : string.Join(",", parts);
+	}
+
+	private IReadOnlyList<string> GetScenePositionStates(AutoBattleCondOpScene scene)
+	{
+		lock (_scenePositionStatesLock)
+		{
+			if (_scenePositionStates.TryGetValue(scene, out IReadOnlyList<string> cached))
+			{
+				return cached;
+			}
+			string[] positionStates = (from state in scene.UsageStates
+				where state.StartsWith("前台-", StringComparison.Ordinal) || state.StartsWith("后台-", StringComparison.Ordinal)
+				orderby state, StringComparer.Ordinal
+				select state).ToArray();
+			_scenePositionStates[scene] = positionStates;
+			return positionStates;
+		}
 	}
 
 	private string ResolveTemplateName()
