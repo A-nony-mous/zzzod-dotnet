@@ -10,6 +10,7 @@ namespace ZzzOd.GameLogic.Tests.Audit;
 /// <summary>
 /// 独立运行页的 BaselineParity parity 静态合同。
 /// </summary>
+[Trait("Category", "Audit")]
 public sealed class StandaloneRunPageAuditTests
 {
 	private static readonly string RepoRoot = FindRepoRoot();

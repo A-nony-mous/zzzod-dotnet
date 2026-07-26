@@ -57,4 +57,12 @@ public sealed class ExpertChallenge : CompendiumChallengeOperationBase
 	{
 		return base.ClickNext();
 	}
+
+	/// <inheritdoc />
+	[NodeFrom("战斗超时")]
+	[OperationNode("点击挑战结果退出")]
+	protected override OperationRoundResult ClickResultExit()
+	{
+		return base.ClickResultExit();
+	}
 }

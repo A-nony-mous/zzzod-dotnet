@@ -67,6 +67,7 @@ public sealed class IntelBoardFixedAssetTests
 		}
 	}
 
+	[Trait("Category", "Integration")]
 	[Fact]
 	public async Task RealGameFixtures_RunProductionOcrTemplatesAndIntelBoardServices()
 	{

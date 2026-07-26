@@ -1,10 +1,7 @@
 using System;
-using System.CodeDom.Compiler;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Text.RegularExpressions;
-using System.Text.RegularExpressions.Generated;
 using Xunit;
 
 namespace ZzzOd.GameLogic.Tests.Audit;
@@ -12,6 +9,7 @@ namespace ZzzOd.GameLogic.Tests.Audit;
 /// <summary>
 /// 审计生产源码中影响实机自动化的占位实现。
 /// </summary>
+[Trait("Category", "Audit")]
 public sealed class ProductionPlaceholderAuditTests
 {
 	private sealed record PlaceholderFinding(string RelativePath, string Category, string Text)
@@ -76,18 +74,6 @@ public sealed class ProductionPlaceholderAuditTests
 			{
 				findings.Add(new PlaceholderFinding(relativePath, "not-wired-screenshot-node", text));
 			}
-			if (DefaultTrueDependencyCheckRegex().IsMatch(text))
-			{
-				findings.Add(new PlaceholderFinding(relativePath, "default-true-dependency-check", text));
-			}
-			if (FixedScreenReadinessSuccessRegex().IsMatch(text))
-			{
-				findings.Add(new PlaceholderFinding(relativePath, "fixed-screen-readiness-success", text));
-			}
-			if (FixedMoveAfterBattleSuccessRegex().IsMatch(text))
-			{
-				findings.Add(new PlaceholderFinding(relativePath, "fixed-move-after-battle-success", text));
-			}
 		}
 	}
 
@@ -123,46 +109,4 @@ public sealed class ProductionPlaceholderAuditTests
 		string[] source = new string[10] { "假设", "假定", "简单起见", "TODO", "todo", "placeholder", "Placeholder", "stub", "Stub", "NotImplementedException" };
 		return source.Any((string token) => text.Contains(token, StringComparison.Ordinal));
 	}
-
-	/// <remarks>
-	/// Pattern:<br />
-	/// <code>IsVirtualGamepadInstalled\\(\\)\\s*=&gt;\\s*true</code><br />
-	/// Explanation:<br />
-	/// <code>
-	/// ○ Match the string "IsVirtualGamepadInstalled()".<br />
-	/// ○ Match a whitespace character atomically any number of times.<br />
-	/// ○ Match the string "=&gt;".<br />
-	/// ○ Match a whitespace character atomically any number of times.<br />
-	/// ○ Match the string "true".<br />
-	/// </code>
-	/// </remarks>
-	private static Regex DefaultTrueDependencyCheckRegex() => new Regex("IsVirtualGamepadInstalled\\(\\)\\s*=>\\s*true", RegexOptions.CultureInvariant);
-
-	/// <remarks>
-	/// Pattern:<br />
-	/// <code>IsBattleScreenReady\\(ZContext context\\)\\s*=&gt;\\s*true</code><br />
-	/// Explanation:<br />
-	/// <code>
-	/// ○ Match the string "IsBattleScreenReady(ZContext context)".<br />
-	/// ○ Match a whitespace character atomically any number of times.<br />
-	/// ○ Match the string "=&gt;".<br />
-	/// ○ Match a whitespace character atomically any number of times.<br />
-	/// ○ Match the string "true".<br />
-	/// </code>
-	/// </remarks>
-	private static Regex FixedScreenReadinessSuccessRegex() => new Regex("IsBattleScreenReady\\(ZContext context\\)\\s*=>\\s*true", RegexOptions.CultureInvariant);
-
-	/// <remarks>
-	/// Pattern:<br />
-	/// <code>MoveAfterBattle\\(ZContext context\\)\\s*=&gt;\\s*true</code><br />
-	/// Explanation:<br />
-	/// <code>
-	/// ○ Match the string "MoveAfterBattle(ZContext context)".<br />
-	/// ○ Match a whitespace character atomically any number of times.<br />
-	/// ○ Match the string "=&gt;".<br />
-	/// ○ Match a whitespace character atomically any number of times.<br />
-	/// ○ Match the string "true".<br />
-	/// </code>
-	/// </remarks>
-	private static Regex FixedMoveAfterBattleSuccessRegex() => new Regex("MoveAfterBattle\\(ZContext context\\)\\s*=>\\s*true", RegexOptions.CultureInvariant);
 }

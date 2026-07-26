@@ -275,9 +275,7 @@ public abstract class CompendiumChallengeOperationBase : ZOperation
 		return ClickResultExitAfterTimeout ? RoundSuccess(result.Status) : RoundFail(FightTimeoutStatus);
 	}
 
-	/// <summary>点击挑战结果页退出。</summary>
-	[NodeFrom("战斗超时")]
-	[OperationNode("点击挑战结果退出")]
+	/// <summary>点击挑战结果页退出。需要该节点的子类在重写方法上自行声明节点与连线。</summary>
 	protected virtual OperationRoundResult ClickResultExit()
 	{
 		OperationRoundResult operationRoundResult = RoundByFindAndClickArea(null, "战斗-挑战结果-失败", "按钮-退出", _preClickDelay, _retryDelay, _retryDelay, cropFirst: true, centerX: false, null, new (string, string)[] { ("战斗-挑战结果-失败", "按钮-退出") });

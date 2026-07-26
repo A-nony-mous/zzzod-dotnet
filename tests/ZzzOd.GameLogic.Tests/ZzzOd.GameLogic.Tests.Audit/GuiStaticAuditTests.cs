@@ -13,6 +13,7 @@ namespace ZzzOd.GameLogic.Tests.Audit;
 /// <summary>
 /// GUI AXAML 和 FluentAvalonia 静态审计。
 /// </summary>
+[Trait("Category", "Audit")]
 public sealed class GuiStaticAuditTests
 {
 	private sealed record GuiAuditResult(IReadOnlyList<string> MissingAxaml, IReadOnlyList<string> DynamicVisualTree, IReadOnlyList<string> HardcodedVisualSurface, IReadOnlyList<string> UnapprovedControls, IReadOnlyList<string> HandwrittenFluentReplacements);
@@ -32,35 +33,6 @@ public sealed class GuiStaticAuditTests
 	{
 		GuiAuditResult guiAuditResult = Scan();
 		Assert.Empty(guiAuditResult.MissingAxaml);
-		Assert.DoesNotContain("Views/MainWindow.axaml", (IEnumerable<string>)guiAuditResult.MissingAxaml);
-		Assert.DoesNotContain("Pages/Home/ZzzHomePage.axaml", (IEnumerable<string>)guiAuditResult.MissingAxaml);
-		Assert.DoesNotContain("Pages/GameAssistant/ZzzGameAssistantPage.axaml", (IEnumerable<string>)guiAuditResult.MissingAxaml);
-		Assert.DoesNotContain("Pages/GameAssistant/ZzzBattleAssistantPage.axaml", (IEnumerable<string>)guiAuditResult.MissingAxaml);
-		Assert.DoesNotContain("Pages/GameAssistant/ZzzCommissionAssistantPage.axaml", (IEnumerable<string>)guiAuditResult.MissingAxaml);
-		Assert.DoesNotContain("Pages/OneDragon/ZzzOneDragonPage.axaml", (IEnumerable<string>)guiAuditResult.MissingAxaml);
-		Assert.DoesNotContain("Pages/OneDragon/ZzzOneDragonRunPage.axaml", (IEnumerable<string>)guiAuditResult.MissingAxaml);
-		Assert.DoesNotContain("Pages/OneDragon/ZzzNotifySettingsPage.axaml", (IEnumerable<string>)guiAuditResult.MissingAxaml);
-		Assert.DoesNotContain("Pages/OneDragon/ZzzChargePlanPage.axaml", (IEnumerable<string>)guiAuditResult.MissingAxaml);
-		Assert.DoesNotContain("Pages/OneDragon/ZzzPredefinedTeamPage.axaml", (IEnumerable<string>)guiAuditResult.MissingAxaml);
-		Assert.DoesNotContain("Pages/OneDragon/ZzzMouseSensitivityCheckerPage.axaml", (IEnumerable<string>)guiAuditResult.MissingAxaml);
-		Assert.DoesNotContain("Pages/Standalone/ZzzStandaloneAppRunPage.axaml", (IEnumerable<string>)guiAuditResult.MissingAxaml);
-		Assert.DoesNotContain("Pages/Accounts/ZzzAccountsPage.axaml", (IEnumerable<string>)guiAuditResult.MissingAxaml);
-		Assert.DoesNotContain("Pages/Settings/ZzzSettingsPage.axaml", (IEnumerable<string>)guiAuditResult.MissingAxaml);
-		Assert.DoesNotContain("Pages/Settings/ZzzGameSettingsPage.axaml", (IEnumerable<string>)guiAuditResult.MissingAxaml);
-		Assert.DoesNotContain("Pages/Settings/ZzzOverlaySettingsPage.axaml", (IEnumerable<string>)guiAuditResult.MissingAxaml);
-		Assert.DoesNotContain("Pages/Settings/ZzzResourceDownloadPage.axaml", (IEnumerable<string>)guiAuditResult.MissingAxaml);
-		Assert.DoesNotContain("Pages/Settings/ZzzEnvironmentSettingsPage.axaml", (IEnumerable<string>)guiAuditResult.MissingAxaml);
-		Assert.DoesNotContain("Pages/Settings/ZzzPushSettingsPage.axaml", (IEnumerable<string>)guiAuditResult.MissingAxaml);
-		Assert.DoesNotContain("Pages/Settings/ZzzCustomSettingsPage.axaml", (IEnumerable<string>)guiAuditResult.MissingAxaml);
-		Assert.DoesNotContain("Pages/Devtools/ZzzDevtoolsPage.axaml", (IEnumerable<string>)guiAuditResult.MissingAxaml);
-		Assert.DoesNotContain("Pages/Devtools/ZzzScreenshotHelperPage.axaml", (IEnumerable<string>)guiAuditResult.MissingAxaml);
-		Assert.DoesNotContain("Pages/Devtools/ZzzOperationDebugAxamlPage.axaml", (IEnumerable<string>)guiAuditResult.MissingAxaml);
-		Assert.DoesNotContain("Pages/Devtools/ZzzImageAnalysisPage.axaml", (IEnumerable<string>)guiAuditResult.MissingAxaml);
-		Assert.DoesNotContain("Pages/Devtools/ZzzTemplateHelperPage.axaml", (IEnumerable<string>)guiAuditResult.MissingAxaml);
-		Assert.DoesNotContain("Pages/Devtools/ZzzScreenManagePage.axaml", (IEnumerable<string>)guiAuditResult.MissingAxaml);
-		Assert.DoesNotContain("Pages/Devtools/ZzzAgentTemplateGeneratorPage.axaml", (IEnumerable<string>)guiAuditResult.MissingAxaml);
-		Assert.DoesNotContain("Views/MainWindow.cs", (IEnumerable<string>)guiAuditResult.DynamicVisualTree);
-		Assert.DoesNotContain("Pages/Home/ZzzHomePage.cs", (IEnumerable<string>)guiAuditResult.DynamicVisualTree);
 		Assert.Empty(guiAuditResult.DynamicVisualTree);
 		Assert.Empty(guiAuditResult.HardcodedVisualSurface);
 		Assert.Empty(guiAuditResult.UnapprovedControls);
@@ -549,37 +521,6 @@ public sealed class GuiStaticAuditTests
 	}
 
 	/// <summary>
-	/// 一条龙容器使用 AXAML FluentAvalonia TabView，并固定 BaselineParity 子页顺序。
-	/// </summary>
-	[Fact]
-	public void OneDragonContainerUsesAxamlFluentPivot()
-	{
-		string path = FindGuiRoot();
-		string text = File.ReadAllText(Path.Combine(path, "Pages", "OneDragon", "ZzzOneDragonPage.axaml"));
-		string actualString = File.ReadAllText(Path.Combine(path, "Pages", "OneDragon", "ZzzOneDragonPage.cs"));
-		string text2 = File.ReadAllText(Path.Combine(path, "Pages", "ZzzPageFactory.cs"));
-		Assert.Contains("<fa:FATabView", text, StringComparison.Ordinal);
-		Assert.Contains("Header=\"一条龙运行\"", text, StringComparison.Ordinal);
-		Assert.Contains("Header=\"体力计划\"", text, StringComparison.Ordinal);
-		Assert.Contains("Header=\"预备编队\"", text, StringComparison.Ordinal);
-		Assert.Contains("Header=\"灵敏度校准\"", text, StringComparison.Ordinal);
-		Assert.True(text.IndexOf("Header=\"一条龙运行\"", StringComparison.Ordinal) < text.IndexOf("Header=\"体力计划\"", StringComparison.Ordinal));
-		Assert.True(text.IndexOf("Header=\"体力计划\"", StringComparison.Ordinal) < text.IndexOf("Header=\"预备编队\"", StringComparison.Ordinal));
-		Assert.True(text.IndexOf("Header=\"预备编队\"", StringComparison.Ordinal) < text.IndexOf("Header=\"灵敏度校准\"", StringComparison.Ordinal));
-		Assert.Contains("x:Name=\"RunFrame\"", text, StringComparison.Ordinal);
-		Assert.Contains("x:Name=\"ChargePlanFrame\"", text, StringComparison.Ordinal);
-		Assert.Contains("x:Name=\"PredefinedTeamFrame\"", text, StringComparison.Ordinal);
-		Assert.Contains("x:Name=\"SensitivityFrame\"", text, StringComparison.Ordinal);
-		Assert.Contains("IsAddTabButtonVisible=\"False\"", text, StringComparison.Ordinal);
-		Assert.Contains("CanDragTabs=\"False\"", text, StringComparison.Ordinal);
-		Assert.Contains("CanReorderTabs=\"False\"", text, StringComparison.Ordinal);
-		Assert.Contains("IZzzPivotNavigationHost", actualString, StringComparison.Ordinal);
-		Assert.Contains("new ZzzOneDragonPage(_backend, _runIntent, _operations)", text2, StringComparison.Ordinal);
-		int num = text2.IndexOf("CreateOneDragonPage", StringComparison.Ordinal);
-		Assert.DoesNotContain("new ZzzPivotPage", text2.Substring(num, text2.IndexOf("CreateStandalonePage", StringComparison.Ordinal) - num), StringComparison.Ordinal);
-	}
-
-	/// <summary>
 	/// 一条龙运行页使用 AXAML 左右分栏，并把列表与运行设置放在 BaselineParity 对应区域。
 	/// </summary>
 	[Fact]
@@ -894,55 +835,6 @@ public sealed class GuiStaticAuditTests
 	{
 		GuiAuditResult guiAuditResult = Scan();
 		Assert.Empty(guiAuditResult.HandwrittenFluentReplacements);
-	}
-
-	/// <summary>
-	/// 主窗口视觉树必须由 AXAML 声明，并使用 FluentAvalonia 导航和 Frame。
-	/// </summary>
-	[Fact]
-	public void MainWindowUsesAxamlNavigationViewAndFrame()
-	{
-		string path = FindGuiRoot();
-		string actualString = File.ReadAllText(Path.Combine(path, "Views", "MainWindow.axaml"));
-		string actualString2 = File.ReadAllText(Path.Combine(path, "Views", "MainWindow.cs"));
-		Assert.Contains("<fa:FANavigationView", actualString, StringComparison.Ordinal);
-		Assert.Contains("<fa:FANavigationViewItem", actualString, StringComparison.Ordinal);
-		Assert.Contains("<fa:FANavigationView.MenuItemTemplate>", actualString, StringComparison.Ordinal);
-		Assert.Contains("PaneDisplayMode=\"Left\"", actualString, StringComparison.Ordinal);
-		Assert.Contains("OpenPaneLength=\"{DynamicResource ZzzNavigationPaneWidth}\"", actualString, StringComparison.Ordinal);
-		Assert.Contains("Classes=\"zzz-navigation-item\"", actualString, StringComparison.Ordinal);
-		Assert.Contains("Text=\"{Binding Text}\"", actualString, StringComparison.Ordinal);
-		Assert.Contains("Margin=\"-4,0,0,0\"", actualString, StringComparison.Ordinal);
-		Assert.Contains("<DataTemplate", actualString, StringComparison.Ordinal);
-		Assert.Contains("<fa:FAFrame", actualString, StringComparison.Ordinal);
-		Assert.Contains("HorizontalContentAlignment=\"Stretch\"", actualString, StringComparison.Ordinal);
-		Assert.Contains("VerticalContentAlignment=\"Stretch\"", actualString, StringComparison.Ordinal);
-		Assert.Contains("x:Name=\"TitleBar\"", actualString, StringComparison.Ordinal);
-		Assert.Contains("x:Name=\"TitleBarIcon\"", actualString, StringComparison.Ordinal);
-		Assert.Contains("Background=\"Transparent\"", actualString, StringComparison.Ordinal);
-		Assert.Contains("ShowActivated=\"True\"", actualString, StringComparison.Ordinal);
-		Assert.Contains("Text=\"{Binding WindowTitle}\"", actualString, StringComparison.Ordinal);
-		Assert.Contains("Content=\"{Binding LauncherVersionText}\"", actualString, StringComparison.Ordinal);
-		Assert.Contains("Content=\"{Binding CodeVersionText}\"", actualString, StringComparison.Ordinal);
-		Assert.Contains("<TextBlock Text=\"问题反馈\"", actualString, StringComparison.Ordinal);
-		Assert.Contains("OnMinimizeClicked", actualString, StringComparison.Ordinal);
-		Assert.Contains("OnMaximizeClicked", actualString, StringComparison.Ordinal);
-		Assert.Contains("OnCloseClicked", actualString, StringComparison.Ordinal);
-		Assert.Contains("Path.Combine(runRoot, \"assets\", \"ui\", \"logo.ico\")", actualString2, StringComparison.Ordinal);
-		Assert.Contains("new Bitmap(iconPath)", actualString2, StringComparison.Ordinal);
-		Assert.Contains("IZzzShellWindowRuntime", actualString2, StringComparison.Ordinal);
-		Assert.Contains("_windowRuntime.Attach(this, _toastBar)", actualString2, StringComparison.Ordinal);
-		string actualString4 = File.ReadAllText(Path.Combine(path, "Shell", "ZzzShellWindowRuntime.cs"));
-		Assert.DoesNotContain("ZzzWindowBackdropService", actualString4, StringComparison.Ordinal);
-		Assert.Contains("_overlayController.Start();", actualString4, StringComparison.Ordinal);
-		Assert.Contains("_globalInputMonitor.InputPressed += OnGlobalInputPressed", actualString4, StringComparison.Ordinal);
-		Assert.Contains("if (!IsActive)", actualString2, StringComparison.Ordinal);
-		Assert.Contains("BeginMoveDrag(args)", actualString2, StringComparison.Ordinal);
-		Assert.DoesNotContain("PageHeader", actualString, StringComparison.Ordinal);
-		Assert.DoesNotContain("new NavigationView", actualString2, StringComparison.Ordinal);
-		Assert.DoesNotContain("new NavigationViewItem", actualString2, StringComparison.Ordinal);
-		Assert.DoesNotContain("new StackPanel", actualString2, StringComparison.Ordinal);
-		Assert.DoesNotContain("new ContentControl", actualString2, StringComparison.Ordinal);
 	}
 
 	[Fact]

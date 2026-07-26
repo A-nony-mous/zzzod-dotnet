@@ -30,6 +30,8 @@ public sealed class NotoriousHuntOperation : ZOperation
 
 	private readonly Func<ZContext, Task<OperationResult>> _backToWorldAsync;
 
+	private readonly Func<ZContext, Task<OperationResult>> _backBeforeCompendiumAsync;
+
 	private ChargePlanItem? _nextPlan;
 
 	private ChargePlanItem? _lastTriedPlan;
@@ -39,7 +41,7 @@ public sealed class NotoriousHuntOperation : ZOperation
 	/// <summary>
 	/// 初始化恶名狩猎应用主流程。
 	/// </summary>
-	public NotoriousHuntOperation(ZContext context, NotoriousHuntConfig config, NotoriousHuntRunRecord runRecord, Func<ZContext, ChargePlanItem, Task<OperationResult>>? transportAsync = null, Func<ZContext, ChargePlanItem, Task<OperationResult>>? huntAsync = null, Func<ZContext, Task<OperationResult>>? backToWorldAsync = null)
+	public NotoriousHuntOperation(ZContext context, NotoriousHuntConfig config, NotoriousHuntRunRecord runRecord, Func<ZContext, ChargePlanItem, Task<OperationResult>>? transportAsync = null, Func<ZContext, ChargePlanItem, Task<OperationResult>>? huntAsync = null, Func<ZContext, Task<OperationResult>>? backToWorldAsync = null, Func<ZContext, Task<OperationResult>>? backBeforeCompendiumAsync = null)
 		: base(context, "恶名狩猎")
 	{
 		_config = config;
@@ -51,6 +53,7 @@ public sealed class NotoriousHuntOperation : ZOperation
 			return _huntOperation.ExecuteAsync();
 		});
 		_backToWorldAsync = backToWorldAsync ?? ((Func<ZContext, Task<OperationResult>>)((ZContext ctx) => new BackToNormalWorld(ctx).ExecuteAsync()));
+		_backBeforeCompendiumAsync = backBeforeCompendiumAsync ?? ((Func<ZContext, Task<OperationResult>>)((ZContext ctx) => new BackToNormalWorld(ctx, ensureNormalWorld: true).ExecuteAsync()));
 	}
 
 	/// <summary>
@@ -102,9 +105,19 @@ public sealed class NotoriousHuntOperation : ZOperation
 	}
 
 	/// <summary>
-	/// 传送到计划副本。
+	/// 前往大世界。特训目标查找失败可能把快捷手册列表滑到底部，返回大世界后重置列表位置。
 	/// </summary>
 	[NodeFrom("查找下一条计划")]
+	[OperationNode("前往大世界")]
+	public async Task<OperationRoundResult> BackBeforeOpenCompendium()
+	{
+		return RoundByOperationResult(await _backBeforeCompendiumAsync(base.ZContext).ConfigureAwait(continueOnCapturedContext: false));
+	}
+
+	/// <summary>
+	/// 传送到计划副本。
+	/// </summary>
+	[NodeFrom("前往大世界")]
 	[OperationNode("传送")]
 	public async Task<OperationRoundResult> Transport()
 	{

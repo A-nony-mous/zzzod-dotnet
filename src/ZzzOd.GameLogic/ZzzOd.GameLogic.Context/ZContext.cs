@@ -301,11 +301,15 @@ public class ZContext : OneDragonContext
 	}
 
 	/// <summary>
-	/// 切换实例后更新控制器窗口标题
+	/// 切换实例后更新控制器的窗口标题和账号配置
 	/// </summary>
 	public void OnSwitchInstance()
 	{
-		(base.Controller as WindowsGameController)?.SetWindowTitle(GetWindowTitle());
+		if (base.Controller is ZPcController zPcController)
+		{
+			zPcController.SetWindowTitle(GetWindowTitle());
+			zPcController.SyncGameConfig(GameConfig);
+		}
 	}
 
 	/// <summary>

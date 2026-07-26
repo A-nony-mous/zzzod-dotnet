@@ -20,6 +20,7 @@ public sealed class LostVoidFixedAssetTests
 	private const string LostVoidModelName = "yolov26n-736-lost-void-det-20260630";
 	private const string IntegrationEnvironmentVariable = "ZZZOD_RUN_YOLO_INTEGRATION";
 
+	[Trait("Category", "Integration")]
 	[Fact]
 	public void RealGameFixtures_UseProductionScreenContextAndTemplatesForWorldRecognition()
 	{

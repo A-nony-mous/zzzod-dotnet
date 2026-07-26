@@ -97,6 +97,10 @@ public sealed class MapTransport : ZOperation
 				num2 = value3;
 			}
 		}
+		if (num2 < 0)
+		{
+			return RoundRetry("未识别到地图区域", null, TimeSpan.FromMilliseconds(500L));
+		}
 		if (base.ZContext.Controller == null)
 		{
 			return RoundRetry("点击失败 " + _areaName, null, _retryDelay);

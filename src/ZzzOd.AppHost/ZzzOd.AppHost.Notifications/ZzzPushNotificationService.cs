@@ -10,6 +10,7 @@ using System.Net.Http.Json;
 using System.Net.Mail;
 using System.Security.Cryptography;
 using System.Text;
+using System.Text.Encodings.Web;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
@@ -24,6 +25,11 @@ namespace ZzzOd.AppHost.Notifications;
 public sealed class ZzzPushNotificationService : IZzzPushNotificationService
 {
 	private static readonly IDeserializer Deserializer = new DeserializerBuilder().Build();
+
+	private static readonly JsonSerializerOptions UnescapedJsonOptions = new JsonSerializerOptions
+	{
+		Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping
+	};
 
 	private readonly ZzzRunRoot _runRoot;
 
@@ -847,11 +853,22 @@ public sealed class ZzzPushNotificationService : IZzzPushNotificationService
 		MultipartFormDataContent multipartFormDataContent = new MultipartFormDataContent();
 		multipartFormDataContent.Add(new StringContent(JsonSerializer.Serialize(new
 		{
-			content = title + "\n" + content
-		}), Encoding.UTF8, "application/json"), "payload_json");
+			embeds = new[]
+			{
+				new
+				{
+					title = title,
+					description = content,
+					thumbnail = new
+					{
+						url = "attachment://screenshot.jpg"
+					}
+				}
+			}
+		}, UnescapedJsonOptions), Encoding.UTF8, "application/json"), "payload_json");
 		ByteArrayContent byteArrayContent = new ByteArrayContent(bytes);
-		byteArrayContent.Headers.ContentType = new MediaTypeHeaderValue("image/png");
-		multipartFormDataContent.Add(byteArrayContent, "file", "image.png");
+		byteArrayContent.Headers.ContentType = new MediaTypeHeaderValue("image/jpeg");
+		multipartFormDataContent.Add(byteArrayContent, "files[0]", "screenshot.jpg");
 		HttpRequestMessage httpRequestMessage = new HttpRequestMessage(HttpMethod.Post, url)
 		{
 			Content = multipartFormDataContent

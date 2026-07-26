@@ -340,16 +340,24 @@ public sealed class NotoriousHunt : CompendiumChallengeOperationBase
 		return operationRoundResult.IsSuccess ? RoundFail(operationRoundResult.Status, null, TimeSpan.FromSeconds(10L)) : RoundRetry(operationRoundResult.Status, null, _retryDelay);
 	}
 
-	/// <inheritdoc />
+	/// <summary>战前移动失败或自动战斗超时后退出战斗。</summary>
 	[NodeFrom("向前移动准备战斗", Success = false)]
 	[NodeFrom("自动战斗", Success = false)]
-	[OperationNode("战斗超时")]
+	[OperationNode("退出战斗")]
 	protected override async Task<OperationRoundResult> BattleTimeout()
 	{
 		base.ZContext.AutoBattleContext.StopContext();
 		ExitInBattle operation = new ExitInBattle(base.ZContext, "战斗-挑战结果-失败", "按钮-退出", _retryDelay, _preClickDelay);
 		OperationResult result = await operation.ExecuteAsync().ConfigureAwait(continueOnCapturedContext: false);
 		return result.IsSuccess ? RoundSuccess(result.Status) : RoundRetry(result.Status, null, _retryDelay);
+	}
+
+	/// <inheritdoc />
+	[NodeFrom("退出战斗")]
+	[OperationNode("点击挑战结果退出")]
+	protected override OperationRoundResult ClickResultExit()
+	{
+		return base.ClickResultExit();
 	}
 
 	/// <inheritdoc />

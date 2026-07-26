@@ -1,4 +1,5 @@
 using System;
+using OneDragon.Core.Abstractions.Operations;
 using ZzzOd.GameLogic.Application.ChargePlan;
 using ZzzOd.GameLogic.Context;
 
@@ -21,5 +22,13 @@ public sealed class AreaPatrol : CompendiumChallengeOperationBase
 	public AreaPatrol(ZContext context, ChargePlanItem plan, ChargePlanConfig? config = null, ChallengeMissionServices? services = null, TimeSpan? retryDelay = null, TimeSpan? preClickDelay = null)
 		: base(context, "区域巡防 " + plan.MissionTypeName, plan, config, services, retryDelay, preClickDelay)
 	{
+	}
+
+	/// <inheritdoc />
+	[NodeFrom("战斗超时")]
+	[OperationNode("点击挑战结果退出")]
+	protected override OperationRoundResult ClickResultExit()
+	{
+		return base.ClickResultExit();
 	}
 }
