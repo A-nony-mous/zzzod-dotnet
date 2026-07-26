@@ -61,8 +61,8 @@ public sealed class ZPcController : WindowsGameController, IZzzControllerActions
 	/// <summary>
 	/// 初始化 ZPcController。
 	/// </summary>
-	public ZPcController(GameConfig gameConfig, string? screenshotMethod = null, int standardWidth = 1920, int standardHeight = 1080, ScreenshotController? screenshotController = null, IInputController? foregroundInputController = null, IInputController? backgroundInputController = null, IButtonController? foregroundButtonController = null, IButtonController? backgroundButtonController = null, IButtonController? backgroundGamepadController = null, bool skipForegroundActivation = false, Action<float, float>? mouseMoveRelative = null)
-		: base(null, screenshotMethod, standardWidth, standardHeight, null, screenshotController, foregroundInputController, backgroundInputController, foregroundButtonController, backgroundButtonController, backgroundGamepadController, null, null, skipForegroundActivation)
+	public ZPcController(GameConfig gameConfig, string? screenshotMethod = null, int standardWidth = 1920, int standardHeight = 1080, ScreenshotController? screenshotController = null, IInputController? foregroundInputController = null, IInputController? backgroundInputController = null, IButtonController? foregroundButtonController = null, IButtonController? backgroundButtonController = null, IButtonController? backgroundGamepadController = null, bool skipForegroundActivation = false, Action<float, float>? mouseMoveRelative = null, ILogger? logger = null)
+		: base(null, screenshotMethod, standardWidth, standardHeight, null, screenshotController, foregroundInputController, backgroundInputController, foregroundButtonController, backgroundButtonController, backgroundGamepadController, null, null, skipForegroundActivation, logger)
 	{
 		_gameConfig = gameConfig;
 		RefreshActionKeys("keyboard");

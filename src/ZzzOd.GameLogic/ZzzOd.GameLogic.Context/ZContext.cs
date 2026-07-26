@@ -318,7 +318,9 @@ public class ZContext : OneDragonContext
 	public void InitController()
 	{
 		base.Controller?.CleanupAfterAppShutdown();
-		ZPcController zPcController = new ZPcController(GameConfig, EnvConfig.ScreenshotMethod, ProjectConfig.ScreenStandardWidth, ProjectConfig.ScreenStandardHeight);
+		// 必须传入上下文的日志器。省略时控制器会自建一个写向同一基路径的日志器，
+		// Serilog 会给后建者的文件名追加序号后缀，导致同一次运行的日志被劈成两个文件。
+		ZPcController zPcController = new ZPcController(GameConfig, EnvConfig.ScreenshotMethod, ProjectConfig.ScreenStandardWidth, ProjectConfig.ScreenStandardHeight, null, null, null, null, null, null, skipForegroundActivation: false, null, base.Logger);
 		zPcController.SetWindowTitle(GetWindowTitle());
 		AttachController(zPcController);
 	}
