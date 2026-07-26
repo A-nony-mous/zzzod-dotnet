@@ -73,6 +73,11 @@
       </fa:FASettingsExpander>
     </DataTemplate>
   </UserControl.Resources>
+  <UserControl.Styles>
+    <Style Selector="ContentControl#LogHost">
+      <Setter Property="Height" Value="220" />
+    </Style>
+  </UserControl.Styles>
 
   <Grid ColumnDefinitions="500,10,*">
     <ScrollViewer Grid.Column="0"

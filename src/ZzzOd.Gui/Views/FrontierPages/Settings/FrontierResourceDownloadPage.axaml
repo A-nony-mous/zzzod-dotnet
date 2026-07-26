@@ -132,7 +132,7 @@
                  FontSize="20"
                  FontWeight="SemiBold" />
       <ContentControl x:Name="LogHost"
-                      MinHeight="220" />
+                      Height="220" />
     </StackPanel>
   </ScrollViewer>
 </UserControl>

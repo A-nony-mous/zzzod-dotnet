@@ -10,7 +10,7 @@
       <Setter Property="TextAlignment" Value="Center" />
     </Style>
     <Style Selector="ContentControl#LogHost">
-      <Setter Property="MinHeight" Value="420" />
+      <Setter Property="Height" Value="420" />
     </Style>
   </UserControl.Styles>
 

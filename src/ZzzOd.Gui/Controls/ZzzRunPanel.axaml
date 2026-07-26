@@ -2,8 +2,9 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:fa="using:FluentAvalonia.UI.Controls"
              x:Class="ZzzOd.Gui.Controls.ZzzRunPanel">
-  <Grid>
-  <Grid RowDefinitions="Auto,Auto,Auto,Auto,*">
+  <Grid ClipToBounds="True">
+  <Grid RowDefinitions="Auto,Auto,Auto,Auto,*"
+        ClipToBounds="True">
     <fa:FAInfoBar x:Name="RunErrorBar"
                 Grid.Row="0" Margin="0,0,0,8"
                 IsOpen="False"
@@ -45,7 +46,9 @@
     </Grid>
     <ContentControl x:Name="LogHost"
                     Grid.Row="4"
-                    HorizontalContentAlignment="Stretch" />
+                    HorizontalContentAlignment="Stretch"
+                    VerticalContentAlignment="Stretch"
+                    ClipToBounds="True" />
   </Grid>
     <Border x:Name="RunOperationOverlay"
             Background="#66000000"

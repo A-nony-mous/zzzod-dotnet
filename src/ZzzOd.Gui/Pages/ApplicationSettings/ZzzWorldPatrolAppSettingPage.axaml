@@ -232,7 +232,7 @@
                           IsClosable="False"
                           Severity="Informational"
                           Title="大地图录制" />
-              <ContentControl x:Name="LargeMapLogHost" MinHeight="160" />
+              <ContentControl x:Name="LargeMapLogHost" Height="160" />
             </StackPanel>
           </ScrollViewer>
 
@@ -306,7 +306,7 @@
                   <ToggleSwitch x:Name="AutoAddRouteClickSwitch" IsChecked="True" />
                 </fa:FASettingsExpanderItem.Footer>
               </fa:FASettingsExpanderItem>
-              <ContentControl x:Name="RouteRecorderLogHost" MinHeight="160" />
+              <ContentControl x:Name="RouteRecorderLogHost" Height="160" />
             </StackPanel>
           </ScrollViewer>
 

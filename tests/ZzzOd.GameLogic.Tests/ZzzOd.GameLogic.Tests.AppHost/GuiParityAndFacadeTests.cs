@@ -37,6 +37,7 @@ using ZzzOd.Gui.Pages.GameAssistant;
 using ZzzOd.Gui.Pages.Home;
 using ZzzOd.Gui.Pages.OneDragon;
 using ZzzOd.Gui.Pages.Standalone;
+using ZzzOd.Gui.Overlay;
 using ZzzOd.Gui.Services.Config;
 using ZzzOd.Gui.Services.Dialogs;
 using ZzzOd.Gui.Services.Home;
@@ -45,6 +46,7 @@ using ZzzOd.Gui.Services.Notices;
 using ZzzOd.Gui.Services.RunIntent;
 using ZzzOd.Gui.Shell;
 using ZzzOd.Gui.Views.FrontierPages.OneDragon;
+using AvaloniaWindow = Avalonia.Controls.Window;
 
 namespace ZzzOd.GameLogic.Tests.AppHost;
 
@@ -2178,11 +2180,254 @@ public sealed class GuiParityAndFacadeTests
 			zzzLogDisplayCard.AppendLine("three");
 			Assert.False(zzzLogDisplayCard.IsFollowing);
 			Assert.Equal(new string[2] { "two", "three" }, zzzLogDisplayCard.Lines);
-			Assert.Equal("one" + Environment.NewLine + "two", zzzLogDisplayCard.DisplayText);
+			Assert.Equal("two" + Environment.NewLine + "three", zzzLogDisplayCard.DisplayText);
 			zzzLogDisplayCard.SetFollowing(following: true);
 			Assert.Equal("two" + Environment.NewLine + "three", zzzLogDisplayCard.DisplayText);
 			zzzLogDisplayCard.Pause();
 			Assert.Equal("已暂停", zzzLogDisplayCard.StatusText);
+		});
+	}
+
+	/// <summary>
+	/// 日志数量超过宿主高度时，视口保持边界并跟随最后一行。
+	/// </summary>
+	[Fact]
+	public void LogDisplayCardKeepsFiniteViewportAndFollowsLatestLine()
+	{
+		EnsureAvaloniaServices();
+		RunOnUiThread(delegate
+		{
+			EnsureFluentTheme();
+			ZzzLogDisplayCard card = new ZzzLogDisplayCard(new FakeBackend(), 64, TimeSpan.FromMilliseconds(20));
+			AvaloniaWindow host = new AvaloniaWindow
+			{
+				Width = 320,
+				Height = 140,
+				WindowDecorations = WindowDecorations.None,
+				ShowInTaskbar = false,
+				ShowActivated = false,
+				Content = card,
+			};
+			try
+			{
+				host.Show();
+				card.Start();
+				for (int index = 0; index < 64; index++)
+				{
+					card.AppendLine($"line-{index}");
+				}
+
+				Dispatcher.UIThread.RunJobs(DispatcherPriority.Render);
+				Dispatcher.UIThread.RunJobs(DispatcherPriority.Render);
+				ScrollViewer viewport = card.ScrollViewport;
+				double maximum = Math.Max(0d, viewport.Extent.Height - viewport.Viewport.Height);
+				Assert.True(viewport.Bounds.Height <= host.ClientSize.Height + 1d);
+				Assert.True(maximum > 0d);
+				Assert.InRange(viewport.Offset.Y, Math.Max(0d, maximum - 1d), maximum + 1d);
+				Assert.EndsWith("line-63", card.DisplayText, StringComparison.Ordinal);
+			}
+			finally
+			{
+				card.DisposePage();
+				host.Close();
+			}
+		});
+	}
+
+	/// <summary>
+	/// 用户查看历史日志时保持偏移，回到底部或空闲后恢复跟随。
+	/// </summary>
+	[Fact]
+	public void LogDisplayCardPausesAndResumesFollowingAroundUserScroll()
+	{
+		EnsureAvaloniaServices();
+		RunOnUiThread(delegate
+		{
+			EnsureFluentTheme();
+			ZzzLogDisplayCard card = new ZzzLogDisplayCard(new FakeBackend(), 64, TimeSpan.FromMilliseconds(20));
+			AvaloniaWindow host = new AvaloniaWindow
+			{
+				Width = 320,
+				Height = 140,
+				WindowDecorations = WindowDecorations.None,
+				ShowInTaskbar = false,
+				ShowActivated = false,
+				Content = card,
+			};
+			try
+			{
+				host.Show();
+				card.Start();
+				for (int index = 0; index < 64; index++)
+				{
+					card.AppendLine($"line-{index}");
+				}
+
+				Dispatcher.UIThread.RunJobs(DispatcherPriority.Render);
+				ScrollViewer viewport = card.ScrollViewport;
+				viewport.Offset = new Vector(0d, 0d);
+				Dispatcher.UIThread.RunJobs(DispatcherPriority.Render);
+				card.PauseFollowingUntilIdle();
+				card.AppendLine("history-view");
+				Dispatcher.UIThread.RunJobs(DispatcherPriority.Render);
+				Assert.False(card.IsFollowing);
+				Assert.Equal(0d, viewport.Offset.Y, precision: 3);
+				Assert.EndsWith("history-view", card.DisplayText, StringComparison.Ordinal);
+
+				double maximum = Math.Max(0d, viewport.Extent.Height - viewport.Viewport.Height);
+				viewport.Offset = new Vector(0d, maximum);
+				Dispatcher.UIThread.RunJobs();
+				Assert.True(card.IsFollowing);
+
+				card.PauseFollowingUntilIdle();
+				TextBox output = card.FindControl<TextBox>("OutputText")!;
+				output.SelectionStart = 0;
+				output.SelectionEnd = 1;
+				Thread.Sleep(35);
+				Dispatcher.UIThread.RunJobs();
+				Assert.False(card.IsFollowing);
+
+				output.SelectionEnd = output.SelectionStart;
+				card.PauseFollowingUntilIdle();
+				Thread.Sleep(35);
+				Dispatcher.UIThread.RunJobs();
+				Assert.True(card.IsFollowing);
+			}
+			finally
+			{
+				card.DisposePage();
+				host.Close();
+			}
+		});
+	}
+
+	/// <summary>
+	/// 页面隐藏后停止恢复计时器，重新显示时重新订阅并跟随末尾。
+	/// </summary>
+	[Fact]
+	public void LogDisplayCardStopsIdleResumeAcrossPageLifecycle()
+	{
+		EnsureAvaloniaServices();
+		RunOnUiThread(delegate
+		{
+			FakeBackend backend = new FakeBackend();
+			ZzzLogDisplayCard card = new ZzzLogDisplayCard(backend, 20, TimeSpan.FromMilliseconds(20));
+			card.OnPageShown();
+			Assert.Equal(1, backend.EventSubscriberCount);
+			card.PauseFollowingUntilIdle();
+			Assert.True(card.FollowResumeTimerEnabled);
+
+			card.OnPageHidden();
+			Assert.False(card.IsActive);
+			Assert.False(card.IsFollowing);
+			Assert.False(card.FollowResumeTimerEnabled);
+			Assert.Equal(0, backend.EventSubscriberCount);
+			Thread.Sleep(35);
+			Dispatcher.UIThread.RunJobs();
+			Assert.False(card.IsFollowing);
+
+			card.OnPageShown();
+			Assert.True(card.IsActive);
+			Assert.True(card.IsFollowing);
+			Assert.Equal(1, backend.EventSubscriberCount);
+			card.DisposePage();
+			Assert.False(card.FollowResumeTimerEnabled);
+			Assert.Equal(0, backend.EventSubscriberCount);
+		});
+	}
+
+	/// <summary>
+	/// 后端事件批量到达时只保留上限范围，并让显示文本与行集合一致。
+	/// </summary>
+	[Fact]
+	public void LogDisplayCardConsumesBatchedBackendEventsWithinMaxLines()
+	{
+		EnsureAvaloniaServices();
+		FakeBackend backend = new FakeBackend();
+		ZzzLogDisplayCard? card = null;
+		RunOnUiThread(delegate
+		{
+			card = new ZzzLogDisplayCard(backend, 3);
+			card.Start();
+			for (int index = 0; index < 5; index++)
+			{
+				backend.PublishEvent(
+					"log.appended",
+					new ZzzLogEntryDto(DateTimeOffset.UtcNow, "Information", "test", $"event-{index}", null));
+			}
+		});
+
+		Thread.Sleep(180);
+		RunOnUiThread(delegate
+		{
+			Dispatcher.UIThread.RunJobs();
+			Dispatcher.UIThread.RunJobs();
+			Assert.NotNull(card);
+			Assert.Equal(3, card.Lines.Count);
+			Assert.Contains("event-2", card.Lines[0], StringComparison.Ordinal);
+			Assert.Contains("event-3", card.Lines[1], StringComparison.Ordinal);
+			Assert.Contains("event-4", card.Lines[2], StringComparison.Ordinal);
+			Assert.EndsWith("event-4", card.DisplayText, StringComparison.Ordinal);
+			card.DisposePage();
+		});
+	}
+
+	/// <summary>
+	/// Overlay 超长日志保持在固定窗口内，并自动显示最后一行。
+	/// </summary>
+	[Fact]
+	public void OverlayInfoPanelKeepsLongLogInsideViewportAndScrollsToEnd()
+	{
+		EnsureAvaloniaServices();
+		RunOnUiThread(delegate
+		{
+			EnsureFluentTheme();
+			AvaloniaWindow owner = new AvaloniaWindow
+			{
+				Width = 8,
+				Height = 8,
+				ShowInTaskbar = false,
+				ShowActivated = false,
+				WindowDecorations = WindowDecorations.None,
+			};
+			ZzzOverlayInfoPanelWindow panel = new ZzzOverlayInfoPanelWindow();
+			try
+			{
+				owner.Show();
+				ZzzOverlayPanelSettings panelSettings = new ZzzOverlayPanelSettings("log", "日志面板", true, 100d, 100d, 480d, 200d)
+				{
+					IsFreeMode = true,
+				};
+				ZzzOverlayGuiSettings settings = new ZzzOverlayGuiSettings
+				{
+					LayoutEditMode = false,
+					ClickThrough = true,
+					PreventCapture = false,
+				};
+				ZzzWindowStatusDto gameWindow = new ZzzWindowStatusDto("test", true, true, false, 100, 100, 1140, 760);
+				panel.ApplyConfiguration(panelSettings, settings, gameWindow, forceGeometry: true);
+				panel.Show(owner);
+				double width = panel.Width;
+				double height = panel.Height;
+				panel.UpdateContent(string.Join(Environment.NewLine, Enumerable.Range(0, 80).Select(index => $"overlay-line-{index}")));
+				Dispatcher.UIThread.RunJobs(DispatcherPriority.Render);
+				Dispatcher.UIThread.RunJobs(DispatcherPriority.Render);
+
+				ScrollViewer viewport = panel.ContentScrollViewer;
+				double maximum = Math.Max(0d, viewport.Extent.Height - viewport.Viewport.Height);
+				Assert.Equal(width, panel.Width, precision: 3);
+				Assert.Equal(height, panel.Height, precision: 3);
+				Assert.True(viewport.Bounds.Height <= panel.ClientSize.Height + 1d);
+				Assert.True(maximum > 0d);
+				Assert.InRange(viewport.Offset.Y, Math.Max(0d, maximum - 1d), maximum + 1d);
+				Assert.EndsWith("overlay-line-79", panel.ContentText, StringComparison.Ordinal);
+				Assert.False(viewport.IsHitTestVisible);
+			}
+			finally
+			{
+				panel.Close();
+				owner.Close();
+			}
 		});
 	}
 
@@ -2269,6 +2514,7 @@ public sealed class GuiParityAndFacadeTests
 			Assert.Same(button, teachingTip.Target);
 			Assert.Equal("知道了", teachingTip.CloseButtonContent);
 			Assert.True(teachingTip.IsOpen);
+			teachingTip.IsOpen = false;
 		});
 	}
 
@@ -3162,6 +3408,14 @@ public sealed class GuiParityAndFacadeTests
 	private static void EnsureAvaloniaServices()
 	{
 		AvaloniaThread.Value.EnsureStarted();
+	}
+
+	private static void EnsureFluentTheme()
+	{
+		if (Avalonia.Application.Current?.Styles.OfType<FluentAvaloniaTheme>().Any() == false)
+		{
+			Avalonia.Application.Current.Styles.Add(new FluentAvaloniaTheme());
+		}
 	}
 
 	internal static void RunOnUiThread(Action action)
