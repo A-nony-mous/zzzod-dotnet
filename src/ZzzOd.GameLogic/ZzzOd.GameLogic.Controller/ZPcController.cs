@@ -20,7 +20,7 @@ namespace ZzzOd.GameLogic.Controller;
 /// </summary>
 public sealed class ZPcController : WindowsGameController, IZzzControllerActions, IBackendWindowStatusProvider
 {
-	private readonly GameConfig _gameConfig;
+	private GameConfig _gameConfig;
 
 	private string _actionKeyInteract = "";
 
@@ -56,12 +56,6 @@ public sealed class ZPcController : WindowsGameController, IZzzControllerActions
 
 	private bool _isMoving;
 
-	private float _turnDx;
-
-	private float _gamepadTurnSpeed;
-
-	private float _mouseFlashDuration;
-
 	private readonly Action<float, float> _mouseMoveRelative;
 
 	/// <summary>
@@ -72,11 +66,25 @@ public sealed class ZPcController : WindowsGameController, IZzzControllerActions
 	{
 		_gameConfig = gameConfig;
 		RefreshActionKeys("keyboard");
-		_mouseFlashDuration = gameConfig.MouseFlashDuration;
 		_isMoving = false;
-		_turnDx = gameConfig.TurnDx;
-		_gamepadTurnSpeed = gameConfig.GamepadTurnSpeed;
 		_mouseMoveRelative = mouseMoveRelative ?? new Action<float, float>(MouseMoveRelativeByUser32);
+	}
+
+	/// <summary>
+	/// 切换实例后同步控制器持有的账号级配置。
+	/// </summary>
+	/// <param name="gameConfig">新实例的游戏配置。</param>
+	public void SyncGameConfig(GameConfig gameConfig)
+	{
+		_gameConfig = gameConfig;
+		if (_gameConfig.BackgroundMode)
+		{
+			ApplyBackgroundGamepadMode();
+			return;
+		}
+		EnableForegroundMode();
+		RefreshActionKeys("keyboard");
+		ActivateWindow();
 	}
 
 	/// <inheritdoc />
@@ -117,10 +125,13 @@ public sealed class ZPcController : WindowsGameController, IZzzControllerActions
 			EnableForegroundMode();
 			RefreshActionKeys("keyboard");
 		}
-		_turnDx = _gameConfig.TurnDx;
-		_gamepadTurnSpeed = _gameConfig.GamepadTurnSpeed;
-		_mouseFlashDuration = _gameConfig.MouseFlashDuration;
 	}
+
+	/// <summary>
+	/// 从当前实例配置获取闪切键鼠模式时的单步等待时长。
+	/// </summary>
+	/// <returns>单步等待时长。</returns>
+	protected override TimeSpan GetMouseFlashDuration() => TimeSpan.FromSeconds(_gameConfig.MouseFlashDuration);
 
 	/// <summary>
 	/// 遮挡屏幕上 UID 的部分。
@@ -507,21 +518,19 @@ public sealed class ZPcController : WindowsGameController, IZzzControllerActions
 	/// <param name="angleDiff">角度差，逆时针为正</param>
 	public void TurnByAngleDiff(float angleDiff)
 	{
-		TurnByDistance(_turnDx * angleDiff);
+		TurnByDistance(_gameConfig.TurnDx * angleDiff);
 	}
 
 	/// <summary>更新运行期鼠标转向系数。</summary>
 	public void UpdateTurnDx(float turnDx)
 	{
 		_gameConfig.TurnDx = turnDx;
-		_turnDx = turnDx;
 	}
 
 	/// <summary>更新运行期手柄转向速度。</summary>
 	public void UpdateGamepadTurnSpeed(float gamepadTurnSpeed)
 	{
 		_gameConfig.GamepadTurnSpeed = gamepadTurnSpeed;
-		_gamepadTurnSpeed = gamepadTurnSpeed;
 	}
 
 	/// <summary>
@@ -550,12 +559,13 @@ public sealed class ZPcController : WindowsGameController, IZzzControllerActions
 		if (base.IsBackgroundMode)
 		{
 			float num = Math.Max(Math.Abs(dx), Math.Abs(dy));
-			if (!(num <= 0f) && !(_gamepadTurnSpeed <= 0f))
+			float gamepadTurnSpeed = _gameConfig.GamepadTurnSpeed;
+			if (!(num <= 0f) && !(gamepadTurnSpeed <= 0f))
 			{
 				EnsureGamepadMode();
 				float x = dx / num;
 				float y = (0f - dy) / num;
-				TimeSpan duration = TimeSpan.FromSeconds(num / _gamepadTurnSpeed);
+				TimeSpan duration = TimeSpan.FromSeconds(num / gamepadTurnSpeed);
 				TryMoveBackgroundGamepadRightStick(x, y, duration);
 			}
 		}
@@ -578,6 +588,8 @@ public sealed class ZPcController : WindowsGameController, IZzzControllerActions
 		SetGamepadActionKeys(CreateGamepadActionKeys(text));
 		EnableBackgroundMode();
 		RefreshActionKeys(text);
+		float keyPressSeconds = ((text == "ds4") ? _gameConfig.Ds4KeyPressTime : _gameConfig.XboxKeyPressTime);
+		SetBackgroundGamepadKeyPressTime(TimeSpan.FromSeconds(keyPressSeconds));
 	}
 
 	private IReadOnlyDictionary<string, IReadOnlyList<string>> CreateGamepadActionKeys(string gamepadType)
