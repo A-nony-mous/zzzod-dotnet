@@ -4,4 +4,8 @@
   <x:Double x:Key="SampleAppSectionSpacing">8</x:Double>
   <Thickness x:Key="SampleAppHeaderMargin">0 0 0 10</Thickness>
   <x:Double x:Key="SampleAppScrollBarSize">10</x:Double>
+  <!-- 覆盖 FluentAvalonia 的设置卡密度令牌（默认 16 / 68 / 48），前卫外壳一屏要放下更多设置项。 -->
+  <Thickness x:Key="SettingsExpanderPadding">12</Thickness>
+  <x:Double x:Key="SettingsExpanderMinHeight">56</x:Double>
+  <x:Double x:Key="SettingsExpanderItemMinHeight">44</x:Double>
 </ResourceDictionary>
