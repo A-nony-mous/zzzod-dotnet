@@ -1464,13 +1464,31 @@ public class AutoBattleContext : IRunParticipant
 		}, CancellationToken.None, TaskContinuationOptions.OnlyOnFaulted | TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default);
 	}
 
+	/// <summary>
+	/// 获取 CaptureAgeMilliseconds 所依据的时间戳来源。
+	/// </summary>
+	/// <returns>Frame 表示画面成帧时刻，WallClock 表示取图请求发起时刻，Unknown 表示控制器不可用。</returns>
+	/// <remarks>
+	/// 两种来源口径不同：成帧时刻反映画面产生的时间，请求时刻会把已经产生一段时间的画面记成刚拍到的。
+	/// 比较不同来源的记录前必须先对齐口径。
+	/// </remarks>
+	private string GetCaptureTimeSource()
+	{
+		if (_ctx.Controller == null)
+		{
+			return "Unknown";
+		}
+
+		return _ctx.Controller.LastCaptureTimeFromFrame ? "Frame" : "WallClock";
+	}
+
 	private void LogBattleSchedulingDiagnostic(double screenshotTime, bool sync, bool inBattle, int taskCount, double inBattleProbeElapsedMilliseconds, double asyncFrameLeaseElapsedMilliseconds, double submitElapsedMilliseconds, double totalElapsedMilliseconds, string source)
 	{
 		long num = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
 		long num2 = Interlocked.Read(in _lastBattleSchedulingDiagnosticAtMilliseconds);
 		if (num - num2 >= 1000 && Interlocked.CompareExchange(ref _lastBattleSchedulingDiagnosticAtMilliseconds, num, num2) == num2)
 		{
-			_ctx.Logger.Information("[.NET诊断] 自动战斗检测调度: Source={Source}, Sync={Sync}, InBattle={InBattle}, SubmittedTaskCount={SubmittedTaskCount}, CaptureAgeMilliseconds={CaptureAgeMilliseconds}, BeforeScreenshotElapsedMilliseconds={BeforeScreenshotElapsedMilliseconds:F2}, CaptureElapsedMilliseconds={CaptureElapsedMilliseconds:F2}, UidMaskElapsedMilliseconds={UidMaskElapsedMilliseconds:F2}, InBattleProbeElapsedMilliseconds={InBattleProbeElapsedMilliseconds:F2}, AsyncFrameLeaseElapsedMilliseconds={AsyncFrameLeaseElapsedMilliseconds:F2}, SubmitElapsedMilliseconds={SubmitElapsedMilliseconds:F2}, TotalElapsedMilliseconds={TotalElapsedMilliseconds:F2}, SecondaryDroppedBecauseBusy=Agent={AgentDropped},Target={TargetDropped},QuickAssist={QuickAssistDropped},SwitchBackup={SwitchBackupDropped},Distance={DistanceDropped},Chain={ChainDropped},BattleEnd={BattleEndDropped}", source, sync, inBattle, taskCount, num - (long)(screenshotTime * 1000.0), _ctx.Controller?.LastBeforeScreenshotElapsedMilliseconds ?? 0.0, _ctx.Controller?.LastCaptureElapsedMilliseconds ?? 0.0, _ctx.Controller?.LastUidMaskElapsedMilliseconds ?? 0.0, inBattleProbeElapsedMilliseconds, asyncFrameLeaseElapsedMilliseconds, submitElapsedMilliseconds, totalElapsedMilliseconds, _agentSubmissionGate.ConsumeDropped(), _targetSubmissionGate.ConsumeDropped(), _quickAssistSubmissionGate.ConsumeDropped(), _switchBackupSubmissionGate.ConsumeDropped(), _distanceSubmissionGate.ConsumeDropped(), _chainSubmissionGate.ConsumeDropped(), _battleEndSubmissionGate.ConsumeDropped());
+			_ctx.Logger.Information("[.NET诊断] 自动战斗检测调度: Source={Source}, Sync={Sync}, InBattle={InBattle}, SubmittedTaskCount={SubmittedTaskCount}, CaptureAgeMilliseconds={CaptureAgeMilliseconds}, CaptureTimeSource={CaptureTimeSource}, BeforeScreenshotElapsedMilliseconds={BeforeScreenshotElapsedMilliseconds:F2}, CaptureElapsedMilliseconds={CaptureElapsedMilliseconds:F2}, UidMaskElapsedMilliseconds={UidMaskElapsedMilliseconds:F2}, InBattleProbeElapsedMilliseconds={InBattleProbeElapsedMilliseconds:F2}, AsyncFrameLeaseElapsedMilliseconds={AsyncFrameLeaseElapsedMilliseconds:F2}, SubmitElapsedMilliseconds={SubmitElapsedMilliseconds:F2}, TotalElapsedMilliseconds={TotalElapsedMilliseconds:F2}, SecondaryDroppedBecauseBusy=Agent={AgentDropped},Target={TargetDropped},QuickAssist={QuickAssistDropped},SwitchBackup={SwitchBackupDropped},Distance={DistanceDropped},Chain={ChainDropped},BattleEnd={BattleEndDropped}", source, sync, inBattle, taskCount, num - (long)(screenshotTime * 1000.0), GetCaptureTimeSource(), _ctx.Controller?.LastBeforeScreenshotElapsedMilliseconds ?? 0.0, _ctx.Controller?.LastCaptureElapsedMilliseconds ?? 0.0, _ctx.Controller?.LastUidMaskElapsedMilliseconds ?? 0.0, inBattleProbeElapsedMilliseconds, asyncFrameLeaseElapsedMilliseconds, submitElapsedMilliseconds, totalElapsedMilliseconds, _agentSubmissionGate.ConsumeDropped(), _targetSubmissionGate.ConsumeDropped(), _quickAssistSubmissionGate.ConsumeDropped(), _switchBackupSubmissionGate.ConsumeDropped(), _distanceSubmissionGate.ConsumeDropped(), _chainSubmissionGate.ConsumeDropped(), _battleEndSubmissionGate.ConsumeDropped());
 		}
 	}
 
