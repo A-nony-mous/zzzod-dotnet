@@ -59,26 +59,6 @@ public sealed class RandomPlaySettingsFlyoutTests
 	}
 
 	[Fact]
-	public void FlyoutUsesAxamlFluentControlsAndPythonTexts()
-	{
-		string path = FindDirectory();
-		string text = File.ReadAllText(Path.Combine(path, "ZzzRandomPlaySettingsFlyoutContent.axaml"));
-		string actualString = File.ReadAllText(Path.Combine(path, "ZzzRandomPlaySettingsFlyoutContent.axaml.cs"));
-		string actualString2 = File.ReadAllText(Path.Combine(path, "ZzzRandomPlaySettingsFlyoutViewModel.cs"));
-		Assert.True(text.IndexOf("传送地点", StringComparison.Ordinal) < text.IndexOf("影像店代理人-1", StringComparison.Ordinal));
-		Assert.True(text.IndexOf("影像店代理人-1", StringComparison.Ordinal) < text.IndexOf("影像店代理人-2", StringComparison.Ordinal));
-		Assert.Equal(3, Count(text, "fa:FASettingsExpanderItem Content="));
-		Assert.Equal(3, Count(text, "fa:FAComboBox"));
-		Assert.Equal(2, Count(text, "IsEditable=\"True\""));
-		Assert.Contains("RandomPlayTransportPoint.All", actualString2, StringComparison.Ordinal);
-		Assert.Contains("AgentEnum.Values.Select", actualString2, StringComparison.Ordinal);
-		Assert.Contains("RandomPlayConstants.RandomAgentName", actualString2, StringComparison.Ordinal);
-		Assert.DoesNotContain("new StackPanel", actualString, StringComparison.Ordinal);
-		Assert.DoesNotContain("PageModel", actualString, StringComparison.Ordinal);
-		Assert.DoesNotContain("Python", text, StringComparison.Ordinal);
-	}
-
-	[Fact]
 	public void ViewModelUsesRealTransportAndAgentCatalogsInPythonOrder()
 	{
 		IZzzAppBackend backend = DispatchProxy.Create<IZzzAppBackend, RecordingBackendProxy>();
@@ -89,53 +69,5 @@ public sealed class RandomPlaySettingsFlyoutTests
 		Assert.Equal("随机", zzzRandomPlaySettingsFlyoutViewModel.AgentOptions[0].Value);
 		Assert.Equal(AgentEnum.Values.Select((AgentEnum agent) => agent.Value.AgentName), from option in zzzRandomPlaySettingsFlyoutViewModel.AgentOptions.Skip(1)
 			select option.Value);
-	}
-
-	[Fact]
-	public void FlyoutReadsAndWritesRequestedInstanceAndGroup()
-	{
-		IZzzAppBackend backend = DispatchProxy.Create<IZzzAppBackend, RecordingBackendProxy>();
-		RecordingBackendProxy recordingBackendProxy = (RecordingBackendProxy)backend;
-		GuiParityAndFacadeTests.RunOnUiThread(delegate
-		{
-			ZzzRandomPlaySettingsFlyoutContent zzzRandomPlaySettingsFlyoutContent = new ZzzRandomPlaySettingsFlyoutContent(backend, 3, "daily");
-			Assert.Equal("柜台", zzzRandomPlaySettingsFlyoutContent.ViewModel.TransportPoint);
-			Assert.Equal("安比", zzzRandomPlaySettingsFlyoutContent.ViewModel.AgentName1);
-			Assert.Equal("随机", zzzRandomPlaySettingsFlyoutContent.ViewModel.AgentName2);
-			zzzRandomPlaySettingsFlyoutContent.SaveForTest("transport_point", "录像店营业点");
-			zzzRandomPlaySettingsFlyoutContent.SaveForTest("agent_name_1", "妮可");
-		});
-		Assert.All(recordingBackendProxy.Requests, delegate(ZzzSaveConfigScopeRequest request)
-		{
-			Assert.Equal("random-play", request.Scope);
-			Assert.Equal(3, request.InstanceIndex);
-			Assert.Equal("daily", request.GroupId);
-		});
-		Assert.Equal("录像店营业点", recordingBackendProxy.Values["transport_point"]);
-		Assert.Equal("妮可", recordingBackendProxy.Values["agent_name_1"]);
-	}
-
-	private static int Count(string text, string value)
-	{
-		return text.Split(value).Length - 1;
-	}
-
-	private static string FindDirectory()
-	{
-		for (DirectoryInfo directoryInfo = new DirectoryInfo(AppContext.BaseDirectory); directoryInfo != null; directoryInfo = directoryInfo.Parent)
-		{
-			string[] buffer = new string[5];
-			buffer[0] = directoryInfo.FullName;
-			buffer[1] = "src";
-			buffer[2] = "ZzzOd.Gui";
-			buffer[3] = "Pages";
-			buffer[4] = "ApplicationSettings";
-			string text = Path.Combine(buffer);
-			if (Directory.Exists(text))
-			{
-				return text;
-			}
-		}
-		throw new DirectoryNotFoundException("未找到应用设置目录。");
 	}
 }

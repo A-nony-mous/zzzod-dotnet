@@ -8,6 +8,7 @@ using ZzzOd.Gui.Pages.Settings;
 using ZzzOd.Gui.Services.LauncherMedia;
 using ZzzOd.Gui.Services.Windows;
 using ZzzOd.Gui.Shell;
+using ZzzOd.Gui.Views.FrontierPages.Settings;
 
 namespace ZzzOd.GameLogic.Tests.AppHost;
 
@@ -96,17 +97,13 @@ public sealed class SettingsViewModelTests
         RecordingBackendProxy proxy = (RecordingBackendProxy)backend;
         ZzzCustomSettingsViewModel viewModel = new(backend);
         int restartRequests = 0;
-        int shellRestartRequests = 0;
         viewModel.RestartRequested += (_, _) => restartRequests++;
-        viewModel.ShellRestartRequested += (_, _) => shellRestartRequests++;
 
         Assert.True(viewModel.Reload());
         Assert.Equal("zh", viewModel.SelectedLanguageValue);
         Assert.Equal("Dark", viewModel.SelectedThemeValue);
-        Assert.Equal("frontier", viewModel.SelectedShellPresetValue);
         Assert.Equal("static_background", viewModel.SelectedBackgroundTypeValue);
         Assert.Equal(0, restartRequests);
-        Assert.Equal(0, shellRestartRequests);
 
         viewModel.SelectedBackgroundTypeValue = "dynamic_background";
 
@@ -143,27 +140,6 @@ public sealed class SettingsViewModelTests
     }
 
     [Fact]
-    public void CustomSettingsNormalizesMixedAndOnlyWritesSupportedShellPresets()
-    {
-        IZzzAppBackend backend = DispatchProxy.Create<IZzzAppBackend, RecordingBackendProxy>();
-        RecordingBackendProxy proxy = (RecordingBackendProxy)backend;
-        ZzzCustomSettingsViewModel viewModel = new(backend);
-
-        Assert.True(viewModel.Reload());
-        Assert.Equal("frontier", viewModel.SelectedShellPresetValue);
-        Assert.Equal(["classic", "frontier"], viewModel.ShellPresetOptions.Select(option => option.Value));
-
-        proxy.SaveRequests.Clear();
-        viewModel.SelectedShellPresetValue = "classic";
-        viewModel.SelectedShellPresetValue = "frontier";
-
-        Assert.Equal(2, proxy.SaveRequests.Count);
-        Assert.Equal(
-            ["classic", "frontier"],
-            proxy.SaveRequests.Select(request => Assert.IsType<string>(request.Values[ZzzGuiShellPresetService.ConfigKey])));
-    }
-
-    [Fact]
     public void SettingsPagesLoadBoundStateOnTheirFirstLifecycleShow()
     {
         IZzzAppBackend backend = DispatchProxy.Create<IZzzAppBackend, RecordingBackendProxy>();
@@ -174,13 +150,13 @@ public sealed class SettingsViewModelTests
             GuiParityAndFacadeTests.RunOnUiThread(() =>
             {
                 using ZzzGlobalInputMonitor inputMonitor = new();
-                ZzzGameSettingsAxamlPage gamePage = new(backend, inputMonitor: inputMonitor);
+                FrontierGameSettingsPage gamePage = new(backend, inputMonitor: inputMonitor);
                 gamePage.OnPageShown();
                 Assert.Equal(ZzzGameSettingsViewModel.GameKeyActions.Length, gamePage.KeyboardRows.Count);
                 Assert.Equal("f", gamePage.KeyboardRows.Single(row => row.Key == "interact").Value);
                 gamePage.DisposePage();
 
-                ZzzCustomSettingsAxamlPage customPage = new(backend, new ZzzLauncherMediaService(new ZzzRunRoot(runRoot), backend));
+                FrontierCustomSettingsPage customPage = new(backend, new ZzzLauncherMediaService(new ZzzRunRoot(runRoot), backend));
                 customPage.OnPageShown();
                 ZzzCustomSettingsViewModel viewModel = Assert.IsType<ZzzCustomSettingsViewModel>(customPage.DataContext);
                 Assert.Equal("zh", viewModel.SelectedLanguageValue);
@@ -205,9 +181,7 @@ public sealed class SettingsViewModelTests
             GuiParityAndFacadeTests.RunOnUiThread(() =>
             {
                 AssertCustomPageOwnsDataContext(
-                    new ZzzCustomSettingsAxamlPage(backend, new ZzzLauncherMediaService(new ZzzRunRoot(runRoot), backend)));
-                AssertCustomPageOwnsDataContext(
-                    new ZzzOd.Gui.Views.FrontierPages.Settings.FrontierCustomSettingsPage(
+                    new FrontierCustomSettingsPage(
                         backend,
                         new ZzzLauncherMediaService(new ZzzRunRoot(runRoot), backend)));
             });
@@ -228,7 +202,7 @@ public sealed class SettingsViewModelTests
         {
             GuiParityAndFacadeTests.RunOnUiThread(() =>
             {
-                ZzzCustomSettingsAxamlPage page = new(backend, new ZzzLauncherMediaService(new ZzzRunRoot(runRoot), backend));
+                FrontierCustomSettingsPage page = new(backend, new ZzzLauncherMediaService(new ZzzRunRoot(runRoot), backend));
                 Window window = new() { Content = page };
                 try
                 {
@@ -237,7 +211,6 @@ public sealed class SettingsViewModelTests
 
                 AssertSelectedIndexAndLabel(page, "LanguageCombo", 1, "简体中文");
                 AssertSelectedIndexAndLabel(page, "ThemeCombo", 2, "深色");
-                AssertSelectedIndexAndLabel(page, "ShellPresetCombo", 1, "前卫");
                 AssertSelectedIndexAndLabel(page, "BackgroundTypeCombo", 1, "静态背景");
                 }
                 finally
@@ -253,11 +226,11 @@ public sealed class SettingsViewModelTests
         }
     }
 
-    private static void AssertSelectedIndexAndLabel(ZzzCustomSettingsAxamlPage page, string name, int expectedIndex, string expectedLabel)
+    private static void AssertSelectedIndexAndLabel(FrontierCustomSettingsPage page, string name, int expectedIndex, string expectedLabel)
     {
         ComboBox comboBox = page.FindControl<ComboBox>(name)!;
         Assert.Equal(expectedIndex, comboBox.SelectedIndex);
-        ZzzCustomOption option = Assert.IsType<ZzzCustomOption>(comboBox.SelectedItem);
+        ZzzOd.Gui.Pages.Settings.ZzzCustomOption option = Assert.IsType<ZzzOd.Gui.Pages.Settings.ZzzCustomOption>(comboBox.SelectedItem);
         Assert.Equal(expectedLabel, option.Label);
     }
 

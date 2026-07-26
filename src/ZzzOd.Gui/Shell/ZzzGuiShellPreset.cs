@@ -5,7 +5,6 @@ namespace ZzzOd.Gui.Shell;
 
 public enum ZzzGuiShellPreset
 {
-    Classic,
     Frontier,
 }
 
@@ -52,31 +51,42 @@ public sealed class ZzzGuiShellPresetService
                 custom.Error ?? "自定义设置读取失败。");
         }
 
-        return ZzzGuiShellPresetResolution.FromValues(custom.Value.Values);
+        ZzzGuiShellPresetResolution resolution = ZzzGuiShellPresetResolution.FromValues(custom.Value.Values);
+        NormalizeLegacyValue(custom.Value.Values, resolution);
+        return resolution;
+    }
+
+    private void NormalizeLegacyValue(IReadOnlyDictionary<string, object?> values, ZzzGuiShellPresetResolution resolution)
+    {
+        // classic/mixed 历史值解析成功后归一写回 frontier;写回失败不影响启动。
+        if (!resolution.Success
+            || !values.TryGetValue(ConfigKey, out object? raw)
+            || Convert.ToString(raw, CultureInfo.InvariantCulture)?.Trim().ToLowerInvariant() is null or "frontier")
+        {
+            return;
+        }
+
+        try
+        {
+            _backend.SaveConfigScope(new ZzzSaveConfigScopeRequest(
+                "custom",
+                new Dictionary<string, object?> { [ConfigKey] = ToConfigValue(ZzzGuiShellPreset.Frontier) }));
+        }
+        catch (Exception)
+        {
+            // 归一化是尽力而为:任何后端异常都不得阻断 Shell 创建。
+        }
     }
 
     public static bool TryParse(string? value, out ZzzGuiShellPreset preset)
     {
-        switch (value?.Trim().ToLowerInvariant())
-        {
-            case "classic":
-                preset = ZzzGuiShellPreset.Classic;
-                return true;
-            case "mixed":
-                preset = ZzzGuiShellPreset.Frontier;
-                return true;
-            case "frontier":
-                preset = ZzzGuiShellPreset.Frontier;
-                return true;
-            default:
-                preset = ZzzGuiShellPreset.Frontier;
-                return false;
-        }
+        // classic/mixed 是历史取值:一律落前卫且视为解析成功,保证旧配置文件不产生硬失败。
+        preset = ZzzGuiShellPreset.Frontier;
+        return value?.Trim().ToLowerInvariant() is "classic" or "mixed" or "frontier";
     }
 
     public static string ToConfigValue(ZzzGuiShellPreset preset) => preset switch
     {
-        ZzzGuiShellPreset.Classic => "classic",
         ZzzGuiShellPreset.Frontier => "frontier",
         _ => throw new ArgumentOutOfRangeException(nameof(preset), preset, "未知 GUI Shell 预设。"),
     };

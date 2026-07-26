@@ -57,14 +57,15 @@ public sealed class ImageAnalysisServiceTests
 	public void AxamlUsesRequiredFluentControlsAndNoDemoValues()
 	{
 		string text = FindWorkspaceRoot();
-		string[] buffer = new string[7];
+		string[] buffer = new string[8];
 		buffer[0] = text;
 		buffer[1] = "zzzod-dotnet";
 		buffer[2] = "src";
 		buffer[3] = "ZzzOd.Gui";
-		buffer[4] = "Pages";
-		buffer[5] = "Devtools";
-		buffer[6] = "ZzzImageAnalysisPage.axaml";
+		buffer[4] = "Views";
+		buffer[5] = "FrontierPages";
+		buffer[6] = "DevTools";
+		buffer[7] = "FrontierImageAnalysisPage.axaml";
 		string actualString = File.ReadAllText(Path.Combine(buffer));
 		Assert.Contains("<fa:FACommandBar", actualString, StringComparison.Ordinal);
 		Assert.Contains("<ListBox", actualString, StringComparison.Ordinal);

@@ -59,45 +59,6 @@ public sealed class OverlaySettingsParityTests
 	private static readonly string RepoRoot = FindRepoRoot();
 
 	/// <summary>
-	/// Overlay 页面应使用独立 AXAML 声明 BaselineParity 的五个分组和原文。
-	/// </summary>
-	[Fact]
-	public void OverlayPageDeclaresPythonGroupsControlsAndTextsInAxaml()
-	{
-		string[] buffer = new string[5];
-		buffer[0] = RepoRoot;
-		buffer[1] = "src";
-		buffer[2] = "ZzzOd.Gui";
-		buffer[3] = "Pages";
-		buffer[4] = "Settings";
-		string path = Path.Combine(buffer);
-		string text = File.ReadAllText(Path.Combine(path, "ZzzOverlaySettingsPage.axaml"));
-		string actualString = File.ReadAllText(Path.Combine(path, "ZzzOverlaySettingsPage.cs"));
-		AssertOrder(text, "Header=\"Overlay 基础\"", "Header=\"视觉绘制\"", "Header=\"面板与刷新\"", "Header=\"性能指标\"", "Header=\"截图\"");
-		Assert.Contains("fa:FASettingsExpanderItem", text, StringComparison.Ordinal);
-		Assert.Contains("fa:FANumberBox", text, StringComparison.Ordinal);
-		Assert.Contains("ToggleSwitch", text, StringComparison.Ordinal);
-		Assert.Contains("TextBox", text, StringComparison.Ordinal);
-		Assert.Contains("fa:FAInfoBar", text, StringComparison.Ordinal);
-		Assert.Contains("显示决策链路面板", text, StringComparison.Ordinal);
-		Assert.Contains("<ToggleSwitch x:Name=\"PanelLockToGameWindowToggle\" Tag=\"panel_lock_to_game_window\" Click=\"OnToggleChanged\" />", text, StringComparison.Ordinal);
-		Assert.Contains("<fa:FANumberBox x:Name=\"InputPollIntervalNumber\" Tag=\"input_poll_interval_ms\" Width=\"180\" Minimum=\"20\" SmallChange=\"10\" ValueChanged=\"OnNumberChanged\" />", text, StringComparison.Ordinal);
-		Assert.Contains("系统版本低于 Windows 10 2004，Overlay 已禁用", text, StringComparison.Ordinal);
-		Assert.Contains("OperatingSystem.IsWindowsVersionAtLeast(10, 0, 19041)", actualString, StringComparison.Ordinal);
-		Assert.Contains("GetConfigScope(ScopeName)", actualString, StringComparison.Ordinal);
-		Assert.Contains("SaveConfiguration", actualString, StringComparison.Ordinal);
-		Assert.Contains("ReloadConfiguration", actualString, StringComparison.Ordinal);
-		Assert.DoesNotContain("Overlay：", text, StringComparison.Ordinal);
-		Assert.DoesNotContain("Content=\"保存\"", text, StringComparison.Ordinal);
-		Assert.DoesNotContain("Content=\"显示\"", text, StringComparison.Ordinal);
-		Assert.DoesNotContain("Content=\"隐藏\"", text, StringComparison.Ordinal);
-		Assert.DoesNotContain("开启后可拖拽调整位置", text, StringComparison.Ordinal);
-		Assert.DoesNotContain("使用 WDA_EXCLUDEFROMCAPTURE", text, StringComparison.Ordinal);
-		Assert.DoesNotContain("new StackPanel", actualString, StringComparison.Ordinal);
-		Assert.DoesNotContain("ZzzSettingCard", actualString, StringComparison.Ordinal);
-	}
-
-	/// <summary>
 	/// 配置缺失时应返回 BaselineParity 底层默认值，同时保持真实文件未创建状态。
 	/// </summary>
 	[Fact]
@@ -343,11 +304,9 @@ public sealed class OverlaySettingsParityTests
 	{
 		string text = Path.Combine(RepoRoot, "src", "ZzzOd.Gui");
 		string actualString = File.ReadAllText(Path.Combine(text, "Program.cs"));
-		string actualString2 = File.ReadAllText(Path.Combine(text, "Pages", "ZzzPageFactory.cs"));
 		string actualString3 = File.ReadAllText(Path.Combine(text, "Overlay", "ZzzOverlayController.cs"));
 		Assert.DoesNotContain("ZzzOverlayLayoutStore", actualString, StringComparison.Ordinal);
 		Assert.DoesNotContain("ZzzOverlayLayoutStore", actualString3, StringComparison.Ordinal);
-		Assert.DoesNotContain("CreateOverlaySettingsPage", actualString2, StringComparison.Ordinal);
 		Assert.DoesNotContain("overlay_layout.json", Directory.GetFiles(text, "*.cs", SearchOption.AllDirectories).Select(File.ReadAllText).Aggregate(string.Empty, string.Concat), StringComparison.Ordinal);
 	}
 
@@ -532,17 +491,6 @@ public sealed class OverlaySettingsParityTests
 		finally
 		{
 			Directory.Delete(runRoot, recursive: true);
-		}
-	}
-
-	private static void AssertOrder(string text, params string[] markers)
-	{
-		int num = -1;
-		foreach (string text2 in markers)
-		{
-			int num2 = text.IndexOf(text2, StringComparison.Ordinal);
-			Assert.True(num2 > num, "未按顺序找到 " + text2 + "。");
-			num = num2;
 		}
 	}
 

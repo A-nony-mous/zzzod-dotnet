@@ -163,7 +163,7 @@ internal sealed class ZzzOneDragonRunSettings
             return false;
         }
 
-        Dictionary<string, NotifyApplicationSetting> applications = ZzzNotifySettingsPage.ReadApplications(result.Value.Values);
+        Dictionary<string, NotifyApplicationSetting> applications = ZzzNotifySettingsReader.ReadApplications(result.Value.Values);
         if (applications.TryGetValue(appId, out NotifyApplicationSetting? setting))
         {
             lifecycle = setting.Lifecycle;
@@ -187,7 +187,7 @@ internal sealed class ZzzOneDragonRunSettings
             return false;
         }
 
-        Dictionary<string, NotifyApplicationSetting> applications = ZzzNotifySettingsPage.ReadApplications(current.Value.Values);
+        Dictionary<string, NotifyApplicationSetting> applications = ZzzNotifySettingsReader.ReadApplications(current.Value.Values);
         applications[appId] = new NotifyApplicationSetting
         {
             Lifecycle = lifecycle,

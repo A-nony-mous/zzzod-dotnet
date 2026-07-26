@@ -37,25 +37,6 @@ public sealed class AgentTemplateGeneratorPageTests
 	}
 
 	[Fact]
-	public void AgentTemplatePageUsesAxamlFluentControlsWithoutDemoAgent()
-	{
-		string path = FindDevtoolsDirectory();
-		string actualString = File.ReadAllText(Path.Combine(path, "ZzzAgentTemplateGeneratorPage.axaml"));
-		string actualString2 = File.ReadAllText(Path.Combine(path, "ZzzAgentTemplateGeneratorPage.axaml.cs"));
-		Assert.Contains("fa:FASettingsExpanderItem", actualString, StringComparison.Ordinal);
-		Assert.Contains("fa:FACommandBar", actualString, StringComparison.Ordinal);
-		Assert.Contains("输入代理人英文名", actualString, StringComparison.Ordinal);
-		Assert.Contains("一键生成", actualString, StringComparison.Ordinal);
-		Assert.Contains("选择截图", actualString, StringComparison.Ordinal);
-		Assert.Contains("游戏截图", actualString, StringComparison.Ordinal);
-		Assert.Contains("保存", actualString, StringComparison.Ordinal);
-		Assert.DoesNotContain("anby", actualString, StringComparison.OrdinalIgnoreCase);
-		Assert.DoesNotContain("来源", actualString, StringComparison.Ordinal);
-		Assert.DoesNotContain("Python", actualString, StringComparison.Ordinal);
-		Assert.DoesNotContain("new StackPanel", actualString2, StringComparison.Ordinal);
-	}
-
-	[Fact]
 	public void SaveTemplateUsesReferenceGeometryAndProductionTemplateDirectory()
 	{
 		string text = Path.Combine(Path.GetTempPath(), "zzzod-agent-template-page-tests", Guid.NewGuid().ToString("N"));
@@ -109,34 +90,4 @@ public sealed class AgentTemplateGeneratorPageTests
 		}
 	}
 
-	private static string FindDevtoolsDirectory()
-	{
-		for (DirectoryInfo directoryInfo = new DirectoryInfo(AppContext.BaseDirectory); directoryInfo != null; directoryInfo = directoryInfo.Parent)
-		{
-			string[] buffer = new string[5];
-			buffer[0] = directoryInfo.FullName;
-			buffer[1] = "src";
-			buffer[2] = "ZzzOd.Gui";
-			buffer[3] = "Pages";
-			buffer[4] = "Devtools";
-			string text = Path.Combine(buffer);
-			if (Directory.Exists(text))
-			{
-				return text;
-			}
-			string[] buffer2 = new string[6];
-			buffer2[0] = directoryInfo.FullName;
-			buffer2[1] = "zzzod-dotnet";
-			buffer2[2] = "src";
-			buffer2[3] = "ZzzOd.Gui";
-			buffer2[4] = "Pages";
-			buffer2[5] = "Devtools";
-			text = Path.Combine(buffer2);
-			if (Directory.Exists(text))
-			{
-				return text;
-			}
-		}
-		throw new DirectoryNotFoundException("未找到 Devtools 页面目录。");
-	}
 }

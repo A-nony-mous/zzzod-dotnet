@@ -131,9 +131,14 @@ public sealed partial class FrontierShellWindow : FAAppWindow
         _mainView?.StartInitialNavigation();
     }
 
-    internal void InitializeMainViewForTesting()
+    internal void InitializeMainViewForTesting(Action<FrontierMainView>? configure = null)
     {
         CreateMainView();
+        if (_mainView is not null && configure is not null)
+        {
+            configure(_mainView);
+        }
+
         StartInitialNavigation();
     }
 

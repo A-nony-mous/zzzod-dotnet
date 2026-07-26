@@ -8,7 +8,6 @@ using ZzzOd.Api;
 using ZzzOd.AppHost;
 using ZzzOd.AppHost.Backend;
 using ZzzOd.Gui.Overlay;
-using ZzzOd.Gui.Pages;
 using ZzzOd.Gui.Services.Dialogs;
 using ZzzOd.Gui.Services.Home;
 using ZzzOd.Gui.Services.LauncherMedia;
@@ -76,7 +75,6 @@ internal static class Program
                     provider.GetRequiredService<ZzzEnvironmentRuntimeCoordinator>());
                 services.AddHostedService(provider =>
                     provider.GetRequiredService<ZzzEnvironmentRuntimeCoordinator>());
-                services.AddTransient<ZzzPageFactory>();
             })
             .Build();
 

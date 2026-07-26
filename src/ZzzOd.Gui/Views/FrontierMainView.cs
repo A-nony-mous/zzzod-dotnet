@@ -90,6 +90,8 @@ internal sealed partial class FrontierMainView : UserControl, IDisposable
 
     internal int CreatedPageCount => _pageFactory.CreatedPages.Count;
 
+    internal ZzzFrontierPageFactory PageFactoryForTest => _pageFactory;
+
     internal bool CanGoBack =>
         _backNavigationHost?.CanGoBack == true || _frame.CanGoBack || CanReturnToRoot;
 

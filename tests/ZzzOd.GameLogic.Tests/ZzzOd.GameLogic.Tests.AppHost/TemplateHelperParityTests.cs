@@ -120,34 +120,6 @@ public sealed class TemplateHelperParityTests : IDisposable
 		});
 	}
 
-	/// <summary>
-	/// 页面应使用 AXAML Fluent 控件并移除示例与来源说明。
-	/// </summary>
-	[Fact]
-	public void AxamlUsesFluentControlsAndContainsNoExampleOrSourceUi()
-	{
-		string path = FindGuiRoot();
-		string actualString = File.ReadAllText(Path.Combine(path, "Pages", "Devtools", "ZzzTemplateHelperPage.axaml"));
-		string actualString2 = File.ReadAllText(Path.Combine(path, "Pages", "Devtools", "ZzzTemplateHelperPage.cs"));
-		Assert.Contains("<fa:FACommandBar", actualString, StringComparison.Ordinal);
-		Assert.Contains("<fa:FAComboBox", actualString, StringComparison.Ordinal);
-		Assert.Contains("<fa:FASettingsExpanderItem", actualString, StringComparison.Ordinal);
-		Assert.Contains("<fa:FATeachingTip", actualString, StringComparison.Ordinal);
-		Assert.Contains("模板原图", actualString, StringComparison.Ordinal);
-		Assert.Contains("模板掩码", actualString, StringComparison.Ordinal);
-		Assert.Contains("模板抠图", actualString, StringComparison.Ordinal);
-		Assert.Contains("反向抠图", actualString, StringComparison.Ordinal);
-		Assert.Contains("Ctrl+Z 撤回，Ctrl+Shift+Z 恢复", actualString, StringComparison.Ordinal);
-		Assert.Contains("assets", actualString2, StringComparison.Ordinal);
-		Assert.Contains("template.SaveConfig()", actualString2, StringComparison.Ordinal);
-		Assert.Contains("template.SaveRaw()", actualString2, StringComparison.Ordinal);
-		Assert.Contains("template.SaveMask()", actualString2, StringComparison.Ordinal);
-		Assert.DoesNotContain("PageModel 摘要", actualString, StringComparison.Ordinal);
-		Assert.DoesNotContain("Python 来源", actualString, StringComparison.Ordinal);
-		Assert.DoesNotContain("battle/avatar", actualString, StringComparison.Ordinal);
-		Assert.DoesNotContain("avatar_1_anby", actualString, StringComparison.Ordinal);
-	}
-
 	/// <inheritdoc />
 	public void Dispose()
 	{
@@ -157,16 +129,4 @@ public sealed class TemplateHelperParityTests : IDisposable
 		}
 	}
 
-	private static string FindGuiRoot()
-	{
-		for (DirectoryInfo directoryInfo = new DirectoryInfo(AppContext.BaseDirectory); directoryInfo != null; directoryInfo = directoryInfo.Parent)
-		{
-			string text = Path.Combine(directoryInfo.FullName, "src", "ZzzOd.Gui");
-			if (Directory.Exists(text))
-			{
-				return text;
-			}
-		}
-		throw new DirectoryNotFoundException("找不到 ZzzOd.Gui 源码目录。");
-	}
 }

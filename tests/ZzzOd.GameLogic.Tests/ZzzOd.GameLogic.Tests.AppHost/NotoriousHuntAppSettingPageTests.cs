@@ -15,33 +15,6 @@ namespace ZzzOd.GameLogic.Tests.AppHost;
 public sealed class NotoriousHuntAppSettingPageTests
 {
 	/// <summary>
-	/// 页面应保持 BaselineParity 控件顺序、Fluent 组件和真实数据调用。
-	/// </summary>
-	[Fact]
-	public void PageUsesAxamlFluentControlsAndRealCatalogs()
-	{
-		string path = FindDirectory();
-		string text = File.ReadAllText(Path.Combine(path, "ZzzNotoriousHuntAppSettingPage.axaml"));
-		string actualString = File.ReadAllText(Path.Combine(path, "ZzzNotoriousHuntAppSettingPage.axaml.cs"));
-		AssertOrder(text, "恶名狩猎（周期挑战）开始日", "循环执行", "<ItemsControl x:Name=\"PlanList\"", "Content=\"新增\"");
-		AssertOrder(text, "MissionTypeOptions", "LevelOptions", "TeamOptions", "AutoBattleOptions", "BuffOptions", "已运行次数", "计划次数", "置顶", "删除");
-		Assert.Contains("fa:FASettingsExpanderItem", text, StringComparison.Ordinal);
-		Assert.Contains("fa:FAComboBox", text, StringComparison.Ordinal);
-		Assert.Contains("fa:FAContentDialog", text, StringComparison.Ordinal);
-		Assert.Contains("GetChargePlanCatalog()", actualString, StringComparison.Ordinal);
-		Assert.Contains("GetConfigScope(", actualString, StringComparison.Ordinal);
-		Assert.Contains("SaveConfigScope", actualString, StringComparison.Ordinal);
-		Assert.Contains("catalogResult.Value.Teams", actualString, StringComparison.Ordinal);
-		Assert.Contains("catalogResult.Value.AutoBattleConfigs", actualString, StringComparison.Ordinal);
-		Assert.Contains("DataFormat.CreateStringApplicationFormat", actualString, StringComparison.Ordinal);
-		Assert.Contains("Math.Abs(current.X - _dragStart.X) + Math.Abs(current.Y - _dragStart.Y) < 10", actualString, StringComparison.Ordinal);
-		Assert.DoesNotContain("new StackPanel", actualString, StringComparison.Ordinal);
-		Assert.DoesNotContain("DefaultPlan", actualString, StringComparison.Ordinal);
-		Assert.DoesNotContain("PageModel", actualString, StringComparison.Ordinal);
-		Assert.DoesNotContain("Python", text, StringComparison.Ordinal);
-	}
-
-	/// <summary>
 	/// 恶名狩猎计划应写入当前实例和应用组的 BaselineParity 路径，并能重新读取。
 	/// </summary>
 	[Fact]
@@ -105,33 +78,4 @@ public sealed class NotoriousHuntAppSettingPageTests
 		}
 	}
 
-	private static void AssertOrder(string text, params string[] markers)
-	{
-		int num = -1;
-		foreach (string text2 in markers)
-		{
-			int num2 = text.IndexOf(text2, StringComparison.Ordinal);
-			Assert.True(num2 > num, "未按顺序找到 " + text2 + "。");
-			num = num2;
-		}
-	}
-
-	private static string FindDirectory()
-	{
-		for (DirectoryInfo directoryInfo = new DirectoryInfo(AppContext.BaseDirectory); directoryInfo != null; directoryInfo = directoryInfo.Parent)
-		{
-			string[] buffer = new string[5];
-			buffer[0] = directoryInfo.FullName;
-			buffer[1] = "src";
-			buffer[2] = "ZzzOd.Gui";
-			buffer[3] = "Pages";
-			buffer[4] = "ApplicationSettings";
-			string text = Path.Combine(buffer);
-			if (Directory.Exists(text))
-			{
-				return text;
-			}
-		}
-		throw new DirectoryNotFoundException("未找到应用设置目录。");
-	}
 }

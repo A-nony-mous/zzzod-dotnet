@@ -24,9 +24,6 @@ internal sealed partial class ZzzCustomSettingsViewModel : ZzzPageViewModel
     private string _selectedThemeValue = "Auto";
 
     [ObservableProperty]
-    private string _selectedShellPresetValue = "frontier";
-
-    [ObservableProperty]
     private string _selectedBackgroundTypeValue = "version_poster";
 
     [ObservableProperty]
@@ -48,7 +45,6 @@ internal sealed partial class ZzzCustomSettingsViewModel : ZzzPageViewModel
 
         LanguageOptions = Options(("跟随系统", "auto"), ("简体中文", "zh"), ("English", "en"));
         ThemeOptions = Options(("跟随系统", "Auto"), ("浅色", "Light"), ("深色", "Dark"));
-        ShellPresetOptions = Options(("经典", "classic"), ("前卫", "frontier"));
         BackgroundTypeOptions = Options(
             ("版本海报", "version_poster"),
             ("静态背景", "static_background"),
@@ -60,8 +56,6 @@ internal sealed partial class ZzzCustomSettingsViewModel : ZzzPageViewModel
     public IReadOnlyList<ZzzCustomOption> LanguageOptions { get; }
 
     public IReadOnlyList<ZzzCustomOption> ThemeOptions { get; }
-
-    public IReadOnlyList<ZzzCustomOption> ShellPresetOptions { get; }
 
     public IReadOnlyList<ZzzCustomOption> BackgroundTypeOptions { get; }
 
@@ -105,24 +99,6 @@ internal sealed partial class ZzzCustomSettingsViewModel : ZzzPageViewModel
         set => SetOptionValue(ThemeOptions, value, selectedValue => SelectedThemeValue = selectedValue);
     }
 
-    public ZzzCustomOption SelectedShellPreset
-    {
-        get => SelectedOption(ShellPresetOptions, SelectedShellPresetValue);
-        set
-        {
-            if (value is not null)
-            {
-                SelectedShellPresetValue = value.Value;
-            }
-        }
-    }
-
-    public int SelectedShellPresetIndex
-    {
-        get => OptionIndex(ShellPresetOptions, SelectedShellPresetValue);
-        set => SetOptionValue(ShellPresetOptions, value, selectedValue => SelectedShellPresetValue = selectedValue);
-    }
-
     public ZzzCustomOption SelectedBackgroundType
     {
         get => SelectedOption(BackgroundTypeOptions, SelectedBackgroundTypeValue);
@@ -161,8 +137,6 @@ internal sealed partial class ZzzCustomSettingsViewModel : ZzzPageViewModel
 
     public event EventHandler<string>? RestartRequested;
 
-    public event EventHandler? ShellRestartRequested;
-
     public event EventHandler? ThemeColorEditorRequested;
 
     public event EventHandler? CustomBannerSelectionRequested;
@@ -198,10 +172,6 @@ internal sealed partial class ZzzCustomSettingsViewModel : ZzzPageViewModel
             IReadOnlyDictionary<string, object?> values = result.Value.Values;
             SelectedLanguageValue = OptionValue(LanguageOptions, ReadString(values, "ui_language", "auto"));
             SelectedThemeValue = OptionValue(ThemeOptions, ReadString(values, "theme", "Auto"));
-            string shellPreset = ReadString(values, ZzzGuiShellPresetService.ConfigKey, "frontier");
-            SelectedShellPresetValue = ZzzGuiShellPresetService.TryParse(shellPreset, out ZzzGuiShellPreset preset)
-                ? ZzzGuiShellPresetService.ToConfigValue(preset)
-                : "frontier";
             SelectedBackgroundTypeValue = OptionValue(BackgroundTypeOptions, ReadString(values, "background_type", "version_poster"));
             string closeWindowAction = ReadString(values, ZzzCloseWindowActionService.ConfigKey, "tray");
             SelectedCloseWindowActionValue = ZzzCloseWindowActionService.TryParse(closeWindowAction, out ZzzCloseWindowAction action)
@@ -264,18 +234,6 @@ internal sealed partial class ZzzCustomSettingsViewModel : ZzzPageViewModel
         };
     }
 
-    partial void OnSelectedShellPresetValueChanged(string value)
-    {
-        OnPropertyChanged(nameof(SelectedShellPreset));
-        OnPropertyChanged(nameof(SelectedShellPresetIndex));
-        if (!IsLoading
-            && ZzzGuiShellPresetService.TryParse(value, out ZzzGuiShellPreset preset)
-            && Save(ZzzGuiShellPresetService.ConfigKey, ZzzGuiShellPresetService.ToConfigValue(preset)))
-        {
-            ShellRestartRequested?.Invoke(this, EventArgs.Empty);
-        }
-    }
-
     partial void OnSelectedBackgroundTypeValueChanged(string value)
     {
         OnPropertyChanged(nameof(SelectedBackgroundType));
@@ -316,7 +274,6 @@ internal sealed partial class ZzzCustomSettingsViewModel : ZzzPageViewModel
     {
         OnPropertyChanged(nameof(SelectedLanguageValue));
         OnPropertyChanged(nameof(SelectedThemeValue));
-        OnPropertyChanged(nameof(SelectedShellPresetValue));
         OnPropertyChanged(nameof(SelectedBackgroundTypeValue));
         OnPropertyChanged(nameof(SelectedCloseWindowActionValue));
     }

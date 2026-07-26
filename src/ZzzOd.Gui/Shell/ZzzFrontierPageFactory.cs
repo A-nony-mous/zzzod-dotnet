@@ -23,12 +23,10 @@ using FrontierSettingsVisual = ZzzOd.Gui.Views.FrontierPages.Settings.FrontierSe
 using FrontierStandaloneVisual = ZzzOd.Gui.Views.FrontierPages.Standalone.FrontierStandalonePage;
 using FrontierDevtoolsVisual = ZzzOd.Gui.Views.FrontierPages.DevTools.FrontierDevtoolsPage;
 using FrontierOneDragonVisual = ZzzOd.Gui.Views.FrontierPages.OneDragon.FrontierOneDragonPage;
-using FrontierDevtoolsHost = ZzzOd.Gui.Views.FrontierDevtoolsPage;
-using FrontierOneDragonHost = ZzzOd.Gui.Views.FrontierOneDragonPage;
 
 namespace ZzzOd.Gui.Shell;
 
-internal sealed record ZzzFrontierRoute(ZzzNavigationEntry Entry, ZzzFrontierPageLayout Layout)
+internal sealed record ZzzFrontierRoute(ZzzNavigationEntry Entry)
 {
     public string Key => Entry.Key;
 }
@@ -43,12 +41,15 @@ internal sealed class ZzzFrontierPageFactory : IFANavigationPageFactory
     {
         _services = services;
         Routes = navigationRegistry.Entries
-            .Select(entry => new ZzzFrontierRoute(entry, ResolveLayout(entry.Key)))
+            .Select(entry => new ZzzFrontierRoute(entry))
             .ToArray();
         _routes = Routes.ToDictionary(route => route.Key, StringComparer.Ordinal);
     }
 
     public IReadOnlyList<ZzzFrontierRoute> Routes { get; }
+
+    // 测试缝:允许 shell 测试为合成路由注入哑页面;生产路径不设置。
+    internal Func<ZzzFrontierRoute, Control>? CreateRoutePageOverrideForTest { get; set; }
 
     public IReadOnlyCollection<Control> CreatedPages => _pages.Values;
 
@@ -120,21 +121,13 @@ internal sealed class ZzzFrontierPageFactory : IFANavigationPageFactory
         CurrentPage = null;
     }
 
-    private static ZzzFrontierPageLayout ResolveLayout(string routeKey) => routeKey switch
-    {
-        // 首页保留真实壁纸和快捷入口的全尺寸表面。
-        "home" => ZzzFrontierPageLayout.Surface,
-        // 这些页面自身维护 Tab、固定操作区或二级 Frame，避免再套一层滚动。
-        "game-assistant" or "one-dragon" or "standalone" or "devtools" => ZzzFrontierPageLayout.Surface,
-        // Accounts and settings already own their sample scroll/tab boundary.
-        // Keeping them as surface pages avoids wrapping a second ScrollViewer around
-        // the page's real SettingsExpander/TabView tree.
-        "accounts" or "settings" => ZzzFrontierPageLayout.Surface,
-        _ => ZzzFrontierPageLayout.Standard,
-    };
-
     private Control CreateRoutePage(ZzzFrontierRoute route)
     {
+        if (CreateRoutePageOverrideForTest is not null)
+        {
+            return CreateRoutePageOverrideForTest(route);
+        }
+
         Control? dedicated = route.Key switch
         {
             "home" => new FrontierHomeVisual(
@@ -177,25 +170,7 @@ internal sealed class ZzzFrontierPageFactory : IFANavigationPageFactory
             _ => null,
         };
 
-        if (dedicated is not null)
-        {
-            return dedicated;
-        }
-
-        Control content = route.Entry.CreatePage(_services);
-        return CreateFrontierPage(route, content);
+        return dedicated
+            ?? throw new InvalidOperationException($"导航路由 {route.Key} 没有对应的前卫页面实现。");
     }
-
-    private static FrontierPageHost CreateFrontierPage(ZzzFrontierRoute route, Control content) => route.Key switch
-    {
-        "home" => new FrontierHomePage(route.Entry.Text, content),
-        "game-assistant" => new FrontierGameAssistantPage(route.Entry.Text, content),
-        "one-dragon" => new FrontierOneDragonHost(route.Entry.Text, content),
-        "standalone" => new FrontierStandalonePage(route.Entry.Text, content),
-        "devtools" => new FrontierDevtoolsHost(route.Entry.Text, content),
-        "accounts" => new FrontierAccountsPage(route.Entry.Text, content),
-        "settings" => new FrontierSettingsPage(route.Entry.Text, content),
-        "diagnostics" => new FrontierDiagnosticsPage(route.Entry.Text, content),
-        _ => new FrontierPageHost(route.Key, route.Entry.Text, content, route.Layout),
-    };
 }

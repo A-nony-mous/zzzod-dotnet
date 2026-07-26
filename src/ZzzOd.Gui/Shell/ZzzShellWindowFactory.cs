@@ -20,27 +20,18 @@ public sealed class ZzzShellWindowFactory
 
     public Window Create()
     {
+        // Shell 只有前卫一种;仍读取配置是为了把未注册的 gui_shell_preset 值以真实配置错误上报。
         ZzzGuiShellPresetResolution resolution = _presetService.Read();
-        ZzzGuiShellPreset preset = resolution.Preset;
         if (!resolution.Success)
         {
             string error = resolution.Error ?? "GUI Shell 配置读取失败。";
             _logger.LogError("{ShellPresetError} 使用前卫 Shell 启动", error);
             _services.GetRequiredService<ZzzShellViewModel>().ReportStartupError(error);
-            preset = ZzzGuiShellPreset.Frontier;
         }
 
-        Type windowType = GetWindowType(preset);
-        _logger.LogInformation("创建 {ShellPreset} Shell 窗口 {WindowType}", preset, windowType.Name);
-        Window window = (Window)ActivatorUtilities.CreateInstance(_services, windowType);
-        _logger.LogInformation("已创建 {ShellPreset} Shell 窗口 {WindowType}", preset, windowType.Name);
+        _logger.LogInformation("创建前卫 Shell 窗口 {WindowType}", nameof(FrontierShellWindow));
+        Window window = (Window)ActivatorUtilities.CreateInstance(_services, typeof(FrontierShellWindow));
+        _logger.LogInformation("已创建前卫 Shell 窗口 {WindowType}", nameof(FrontierShellWindow));
         return window;
     }
-
-    internal static Type GetWindowType(ZzzGuiShellPreset preset) => preset switch
-    {
-        ZzzGuiShellPreset.Classic => typeof(MainWindow),
-        ZzzGuiShellPreset.Frontier => typeof(FrontierShellWindow),
-        _ => throw new ArgumentOutOfRangeException(nameof(preset), preset, "未知 GUI Shell 预设。"),
-    };
 }

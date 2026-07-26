@@ -8,7 +8,6 @@ using Xunit;
 using ZzzOd.AppHost;
 using ZzzOd.AppHost.Backend;
 using ZzzOd.AppHost.Notifications;
-using ZzzOd.Gui.Pages.Settings;
 
 namespace ZzzOd.GameLogic.Tests.AppHost;
 
@@ -75,36 +74,6 @@ public sealed class PushSettingsAxamlPageTests
 	}
 
 	[Fact]
-	public void AxamlUsesFluentControlsAndBindsRealDynamicServices()
-	{
-		string path = FindSettingsDirectory();
-		string text = File.ReadAllText(Path.Combine(path, "ZzzPushSettingsPage.axaml"));
-		string actualString = File.ReadAllText(Path.Combine(path, "ZzzPushSettingsPage.cs"));
-		AssertOrder(text, "设置说明", "自定义通知标题", "通知中附带图片", "代理设置", "测试通知方式", "通知方式");
-		Assert.Contains("fa:FASettingsExpander", text, StringComparison.Ordinal);
-		Assert.Contains("fa:FASettingsExpanderItem", text, StringComparison.Ordinal);
-		Assert.Contains("fa:FAComboBox", text, StringComparison.Ordinal);
-		Assert.Contains("fa:FAInfoBar", text, StringComparison.Ordinal);
-		Assert.Contains("Content=\"测试当前方式\"", text, StringComparison.Ordinal);
-		Assert.Contains("Content=\"测试全部\"", text, StringComparison.Ordinal);
-		Assert.Contains("x:Name=\"TestCurrentButton\"", text, StringComparison.Ordinal);
-		Assert.Contains("x:Name=\"TestAllButton\"", text, StringComparison.Ordinal);
-		Assert.Contains("x:Name=\"EmailServiceCombo\"", text, StringComparison.Ordinal);
-		Assert.Contains("Click=\"OnTestCurrentClicked\"", text, StringComparison.Ordinal);
-		Assert.Contains("Click=\"OnTestAllClicked\"", text, StringComparison.Ordinal);
-		Assert.Contains("x:Name=\"ChannelFieldList\"", text, StringComparison.Ordinal);
-		Assert.Contains("ItemsSource=\"{Binding Options}\"", text, StringComparison.Ordinal);
-		Assert.DoesNotContain("IsEnabled=\"False\"", text, StringComparison.Ordinal);
-		Assert.Contains("IZzzPushNotificationService", actualString, StringComparison.Ordinal);
-		Assert.Contains("SaveConfigScope", actualString, StringComparison.Ordinal);
-		Assert.DoesNotContain("ZzzSettingCard", actualString, StringComparison.Ordinal);
-		Assert.DoesNotContain("new StackPanel", actualString, StringComparison.Ordinal);
-		Assert.DoesNotContain("PageModel", actualString, StringComparison.Ordinal);
-		Assert.DoesNotContain("Python", text, StringComparison.Ordinal);
-		Assert.DoesNotContain("来源", text, StringComparison.Ordinal);
-	}
-
-	[Fact]
 	public void PageReadsRealScopesWritesThroughAndGeneratesCurlLocally()
 	{
 		IZzzAppBackend backend = DispatchProxy.Create<IZzzAppBackend, RecordingBackendProxy>();
@@ -112,7 +81,7 @@ public sealed class PushSettingsAxamlPageTests
 		GuiParityAndFacadeTests.RunOnUiThread(delegate
 		{
 			ZzzPushNotificationService pushService = new ZzzPushNotificationService(new ZzzRunRoot(Path.GetTempPath()));
-			ZzzPushSettingsAxamlPage zzzPushSettingsAxamlPage = new ZzzPushSettingsAxamlPage(backend, pushService);
+			ZzzOd.Gui.Views.FrontierPages.Settings.FrontierPushSettingsPage zzzPushSettingsAxamlPage = new ZzzOd.Gui.Views.FrontierPages.Settings.FrontierPushSettingsPage(backend, pushService);
 			zzzPushSettingsAxamlPage.OnPageShown();
 			Assert.Equal(24, zzzPushSettingsAxamlPage.ChannelsForTest.Count);
 			Assert.Contains((IEnumerable<ZzzPushChannelDescriptor>)zzzPushSettingsAxamlPage.ChannelsForTest, (Predicate<ZzzPushChannelDescriptor>)((ZzzPushChannelDescriptor channel) => channel.ChannelId == "FS" && channel.Fields.Count == 5));
@@ -134,33 +103,4 @@ public sealed class PushSettingsAxamlPageTests
 		Assert.Contains((IEnumerable<ZzzSaveConfigScopeRequest>)recordingBackendProxy.Requests, (Predicate<ZzzSaveConfigScopeRequest>)((ZzzSaveConfigScopeRequest request) => request.Scope == "env"));
 	}
 
-	private static void AssertOrder(string text, params string[] markers)
-	{
-		int num = -1;
-		foreach (string text2 in markers)
-		{
-			int num2 = text.IndexOf(text2, StringComparison.Ordinal);
-			Assert.True(num2 > num, "未按顺序找到 " + text2 + "。");
-			num = num2;
-		}
-	}
-
-	private static string FindSettingsDirectory()
-	{
-		for (DirectoryInfo directoryInfo = new DirectoryInfo(AppContext.BaseDirectory); directoryInfo != null; directoryInfo = directoryInfo.Parent)
-		{
-			string[] buffer = new string[5];
-			buffer[0] = directoryInfo.FullName;
-			buffer[1] = "src";
-			buffer[2] = "ZzzOd.Gui";
-			buffer[3] = "Pages";
-			buffer[4] = "Settings";
-			string text = Path.Combine(buffer);
-			if (Directory.Exists(text))
-			{
-				return text;
-			}
-		}
-		throw new DirectoryNotFoundException("未找到设置页目录。");
-	}
 }

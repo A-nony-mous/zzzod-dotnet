@@ -64,17 +64,6 @@
                       SelectedItem="{Binding SelectedTheme, Mode=TwoWay}" />
           </fa:FASettingsExpanderItem.Footer>
         </fa:FASettingsExpanderItem>
-        <fa:FASettingsExpanderItem Content="界面样式">
-          <fa:FASettingsExpanderItem.IconSource>
-            <fa:FAFontIconSource Glyph="&#xE790;" />
-          </fa:FASettingsExpanderItem.IconSource>
-          <fa:FASettingsExpanderItem.Footer>
-            <ComboBox x:Name="ShellPresetCombo"
-                      Width="180"
-                      ItemsSource="{Binding ShellPresetOptions}"
-                      SelectedItem="{Binding SelectedShellPreset, Mode=TwoWay}" />
-          </fa:FASettingsExpanderItem.Footer>
-        </fa:FASettingsExpanderItem>
         <fa:FASettingsExpanderItem Content="自定义主题色"
                                  Description="开启后可自定义主题色">
           <fa:FASettingsExpanderItem.IconSource>
