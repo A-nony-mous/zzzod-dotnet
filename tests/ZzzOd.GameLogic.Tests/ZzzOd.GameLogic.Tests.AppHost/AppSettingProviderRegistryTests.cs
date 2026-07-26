@@ -19,8 +19,8 @@ public sealed class AppSettingProviderRegistryTests
 	[Fact]
 	public void RegistryMatchesCurrentPythonProvidersAndOnlyExposesMigratedTarget()
 	{
-		Assert.Equal(13, ZzzAppSettingProviderRegistry.All.Count);
-		string[] buffer = new string[13];
+		Assert.Equal(14, ZzzAppSettingProviderRegistry.All.Count);
+		string[] buffer = new string[14];
 		buffer[0] = "world_patrol";
 		buffer[1] = "withered_domain";
 		buffer[2] = "charge_plan";
@@ -34,16 +34,18 @@ public sealed class AppSettingProviderRegistryTests
 		buffer[10] = "life_on_line";
 		buffer[11] = "intel_board";
 		buffer[12] = "shiyu_defense";
+		buffer[13] = "daily_signin";
 		Assert.Equal(buffer, ZzzAppSettingProviderRegistry.All.Select((ZzzAppSettingProviderDescriptor zzzAppSettingProviderDescriptor) => zzzAppSettingProviderDescriptor.AppId).ToArray());
-		string[] buffer2 = new string[4];
+		string[] buffer2 = new string[5];
 		buffer2[0] = "drive_disc_dismantle";
 		buffer2[1] = "random_play";
 		buffer2[2] = "life_on_line";
 		buffer2[3] = "intel_board";
+		buffer2[4] = "daily_signin";
 		Assert.Equal(buffer2, (from zzzAppSettingProviderDescriptor in ZzzAppSettingProviderRegistry.All
 			where zzzAppSettingProviderDescriptor.SettingType == ZzzAppSettingType.Flyout
 			select zzzAppSettingProviderDescriptor.AppId).ToArray());
-		string[] buffer3 = new string[13];
+		string[] buffer3 = new string[14];
 		buffer3[0] = "world_patrol";
 		buffer3[1] = "withered_domain";
 		buffer3[2] = "charge_plan";
@@ -57,6 +59,7 @@ public sealed class AppSettingProviderRegistryTests
 		buffer3[10] = "life_on_line";
 		buffer3[11] = "intel_board";
 		buffer3[12] = "shiyu_defense";
+		buffer3[13] = "daily_signin";
 		Assert.Equal(buffer3, (from zzzAppSettingProviderDescriptor in ZzzAppSettingProviderRegistry.All
 			where zzzAppSettingProviderDescriptor.IsImplemented
 			select zzzAppSettingProviderDescriptor.AppId).ToArray());
@@ -73,6 +76,7 @@ public sealed class AppSettingProviderRegistryTests
 		Assert.True(ZzzAppSettingProviderRegistry.TryGetImplemented("life_on_line", out provider));
 		Assert.True(ZzzAppSettingProviderRegistry.TryGetImplemented("intel_board", out provider));
 		Assert.True(ZzzAppSettingProviderRegistry.TryGetImplemented("shiyu_defense", out provider));
+		Assert.True(ZzzAppSettingProviderRegistry.TryGetImplemented("daily_signin", out provider));
 	}
 
 	/// <summary>
@@ -123,13 +127,14 @@ public sealed class AppSettingProviderRegistryTests
 		try
 		{
 			ZzzConfigScopeService zzzConfigScopeService = new ZzzConfigScopeService(text);
-			(string, string, string, object)[] array = new(string, string, string, object)[5]
+			(string, string, string, object)[] array = new(string, string, string, object)[6]
 			{
 				("drive-disc-dismantle", "drive_disc_dismantle", "dismantle_abandon", true),
 				("random-play", "random_play", "agent_name_1", "随机"),
 				("life-on-line", "life_on_line", "daily_plan_times", 12),
 				("intel-board", "intel_board", "exp_grind_mode", true),
-				("suibian-temple", "suibian_temple", "auto_manage_enabled", false)
+				("suibian-temple", "suibian_temple", "auto_manage_enabled", false),
+				("daily-signin", "daily_signin", "selected_sign", "trigrams_collection")
 			};
 			(string, string, string, object)[] array2 = array;
 			for (int i = 0; i < array2.Length; i++)

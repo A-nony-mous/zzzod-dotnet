@@ -12,7 +12,7 @@ public static class ZzzAppSettingProviderRegistry
 	/// <summary>
 	/// 与 BaselineParity 当前全部 *_app_setting.py 一致的 provider 清单。
 	/// </summary>
-	public static IReadOnlyList<ZzzAppSettingProviderDescriptor> All { get; } = new ZzzAppSettingProviderDescriptor[13]
+	public static IReadOnlyList<ZzzAppSettingProviderDescriptor> All { get; } = new ZzzAppSettingProviderDescriptor[14]
 	{
 		new ZzzAppSettingProviderDescriptor("world_patrol", ZzzAppSettingType.Interface, "world-patrol-settings"),
 		new ZzzAppSettingProviderDescriptor("withered_domain", ZzzAppSettingType.Interface, "withered-domain-settings"),
@@ -26,7 +26,8 @@ public static class ZzzAppSettingProviderRegistry
 		new ZzzAppSettingProviderDescriptor("random_play", ZzzAppSettingType.Flyout, "random-play-flyout"),
 		new ZzzAppSettingProviderDescriptor("life_on_line", ZzzAppSettingType.Flyout, "life-on-line-flyout"),
 		new ZzzAppSettingProviderDescriptor("intel_board", ZzzAppSettingType.Flyout, "intel-board-flyout"),
-		new ZzzAppSettingProviderDescriptor("shiyu_defense", ZzzAppSettingType.Interface, "shiyu-defense-settings")
+		new ZzzAppSettingProviderDescriptor("shiyu_defense", ZzzAppSettingType.Interface, "shiyu-defense-settings"),
+		new ZzzAppSettingProviderDescriptor("daily_signin", ZzzAppSettingType.Flyout, "daily-signin-flyout")
 	};
 
 	private static readonly IReadOnlyDictionary<string, ZzzAppSettingProviderDescriptor> ByAppId = All.ToDictionary<ZzzAppSettingProviderDescriptor, string>((ZzzAppSettingProviderDescriptor provider) => provider.AppId, StringComparer.Ordinal);

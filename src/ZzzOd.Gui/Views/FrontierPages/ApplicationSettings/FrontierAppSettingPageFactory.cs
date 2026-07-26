@@ -33,6 +33,7 @@ internal sealed class FrontierAppSettingPageFactory
         "intel-board-flyout" when _backend is IZzzIntelBoardProgressBackend progressBackend =>
             new FrontierIntelBoardSettingsFlyoutContent(_backend, progressBackend, instanceIndex, groupId),
         "shiyu-defense-settings" => new FrontierShiyuDefenseAppSettingPage(_backend, instanceIndex, groupId),
+        "daily-signin-flyout" => new FrontierDailySignInSettingsFlyoutContent(_backend, instanceIndex, groupId),
         _ => null,
     };
 }

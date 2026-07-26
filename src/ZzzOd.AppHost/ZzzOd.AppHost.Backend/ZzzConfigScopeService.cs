@@ -14,6 +14,7 @@ using ZzzOd.AppHost.Overlay;
 using ZzzOd.GameLogic.Application.ChargePlan;
 using ZzzOd.GameLogic.Application.Coffee;
 using ZzzOd.GameLogic.Application.CommissionAssistant;
+using ZzzOd.GameLogic.Application.DailySignIn;
 using ZzzOd.GameLogic.Application.Devtools.OperationDebug;
 using ZzzOd.GameLogic.Application.Devtools.ScreenshotHelper;
 using ZzzOd.GameLogic.Application.DriveDiscDismantle;
@@ -1756,7 +1757,7 @@ internal sealed class ZzzConfigScopeService
 
 	private static IReadOnlyDictionary<string, IConfigScopeDefinition> BuildScopes()
 	{
-		IConfigScopeDefinition[] source = new IConfigScopeDefinition[30]
+		IConfigScopeDefinition[] source = new IConfigScopeDefinition[31]
 		{
 			ConfigScope<GameConfig>.Instance("game", "游戏设置", "game"),
 			ConfigScope<GameAccountConfig>.Instance("instance", "当前账号", "game_account"),
@@ -1781,6 +1782,7 @@ internal sealed class ZzzConfigScopeService
 			ConfigScope<WorldPatrolConfig>.Application("world-patrol", "锄大地", "world_patrol", new string[] { "app_config" }),
 			ConfigScope<DriveDiscDismantleConfig>.Application("drive-disc-dismantle", "驱动盘拆解", "drive_disc_dismantle", new string[] { "app_config" }),
 			ConfigScope<RandomPlayConfig>.Application("random-play", "录像店营业", "random_play", new string[] { "app_config" }),
+			ConfigScope<DailySignInConfig>.Application("daily-signin", "每日签到", "daily_signin", new string[] { "app_config" }),
 			ConfigScope<LifeOnLineConfig>.Application("life-on-line", "生命热线", "life_on_line", new string[] { "app_config" }),
 			ConfigScope<IntelBoardConfig>.Application("intel-board", "情报板", "intel_board", new string[] { "app_config" }),
 			ConfigScope<ScreenshotHelperConfig>.Application("screenshot-helper", "截图助手", "screenshot_helper", new string[] { "app_config" }),
