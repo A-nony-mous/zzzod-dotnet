@@ -54,7 +54,7 @@ internal static class WitheredDomainEventOperations
 				return Failed(normalEvent.EventName, "区域未配置 事件文本");
 			}
 			IReadOnlyList<OcrMatchResult> results = ReadEventTextResults(context, screen, textArea);
-			(HollowZeroNormalEventOption Option, OcrMatchResult Result)? selection = FindPythonEquivalentOption(results, normalEvent.Options);
+			(HollowZeroNormalEventOption Option, OcrMatchResult Result)? selection = FindReferenceEquivalentOption(results, normalEvent.Options);
 			bool pcAlt;
 			string gamepadKey;
 			if (selection.HasValue)
@@ -454,7 +454,7 @@ internal static class WitheredDomainEventOperations
 				}
 				if (choices.Count > 0)
 				{
-					IReadOnlyList<int> order = OrderResoniumByPythonPriority(choices.Select<(WitheredDomainResonium, OneDragon.Core.Screen.ScreenArea), WitheredDomainResonium>(((WitheredDomainResonium Resonium, OneDragon.Core.Screen.ScreenArea Button) item) => item.Resonium).ToArray(), context.WitheredDomain.ChallengeConfig?.ResoniumPriority ?? new List<string>(), onlyPriority: false);
+					IReadOnlyList<int> order = OrderResoniumByBaselinePriority(choices.Select<(WitheredDomainResonium, OneDragon.Core.Screen.ScreenArea), WitheredDomainResonium>(((WitheredDomainResonium Resonium, OneDragon.Core.Screen.ScreenArea Button) item) => item.Resonium).ToArray(), context.WitheredDomain.ChallengeConfig?.ResoniumPriority ?? new List<string>(), onlyPriority: false);
 					if (order.Count > 0)
 					{
 						text = action;
@@ -631,7 +631,7 @@ internal static class WitheredDomainEventOperations
 			};
 			candidates.AddRange(eventData.NormalEvents.Where((HollowZeroEvent item) => string.Equals(item.EntryName, "门扉禁闭-侵蚀", StringComparison.Ordinal)).SelectMany((HollowZeroEvent item) => item.Options));
 			IReadOnlyList<OcrMatchResult> results = ReadEventTextResults(context, screen, textArea);
-			(HollowZeroNormalEventOption Option, OcrMatchResult Result)? selected = FindPythonEquivalentOption(results, candidates);
+			(HollowZeroNormalEventOption Option, OcrMatchResult Result)? selected = FindReferenceEquivalentOption(results, candidates);
 			if (!selected.HasValue)
 			{
 				return Failed(entryName, "未识别开门或兼容事件选项");
@@ -724,7 +724,7 @@ internal static class WitheredDomainEventOperations
 			select new OcrMatchResult(result.Confidence, result.X + area.Rect.X1, result.Y + area.Rect.Y1, result.Width, result.Height, result.Text)).ToArray();
 	}
 
-	private static (HollowZeroNormalEventOption Option, OcrMatchResult Result)? FindPythonEquivalentOption(IReadOnlyList<OcrMatchResult> ocrResults, IReadOnlyList<HollowZeroNormalEventOption> options)
+	private static (HollowZeroNormalEventOption Option, OcrMatchResult Result)? FindReferenceEquivalentOption(IReadOnlyList<OcrMatchResult> ocrResults, IReadOnlyList<HollowZeroNormalEventOption> options)
 	{
 		string[] array = (from item in ocrResults
 			where item.Text.Trim().Length > 1
@@ -986,7 +986,7 @@ internal static class WitheredDomainEventOperations
 		OcrMatchResult target;
 		if (candidates.Count > 0)
 		{
-			IReadOnlyList<int> order = OrderResoniumByPythonPriority(candidates.Select<(WitheredDomainResonium, OcrMatchResult), WitheredDomainResonium>(((WitheredDomainResonium Resonium, OcrMatchResult Position) item) => item.Resonium).ToArray(), context.WitheredDomain.ChallengeConfig?.ResoniumPriority ?? new List<string>(), context.WitheredDomain.ChallengeConfig?.BuyOnlyPriority ?? true);
+			IReadOnlyList<int> order = OrderResoniumByBaselinePriority(candidates.Select<(WitheredDomainResonium, OcrMatchResult), WitheredDomainResonium>(((WitheredDomainResonium Resonium, OcrMatchResult Position) item) => item.Resonium).ToArray(), context.WitheredDomain.ChallengeConfig?.ResoniumPriority ?? new List<string>(), context.WitheredDomain.ChallengeConfig?.BuyOnlyPriority ?? true);
 			if (order.Count == 0)
 			{
 				return await BackFromMerchantAsync(context, "邦布商人", cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
@@ -1004,15 +1004,15 @@ internal static class WitheredDomainEventOperations
 		}
 		context.Controller.Click(target.Center);
 		await Task.Delay(TimeSpan.FromSeconds(1L), cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
-		if (!(await ClickAreaWithPythonRetryAsync(context, "零号空洞-商店", "商品购买区域", cancellationToken).ConfigureAwait(continueOnCapturedContext: false)))
+		if (!(await ClickAreaWithBaselineRetryAsync(context, "零号空洞-商店", "商品购买区域", cancellationToken).ConfigureAwait(continueOnCapturedContext: false)))
 		{
 			return Failed("邦布商人", "点击购买区域失败");
 		}
 		await Task.Delay(TimeSpan.FromSeconds(1L), cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
-		return (await ClickAreaWithPythonRetryAsync(context, "零号空洞-商店", "购买后确定", cancellationToken).ConfigureAwait(continueOnCapturedContext: false)) ? null : Failed("邦布商人", "点击购买确认失败");
+		return (await ClickAreaWithBaselineRetryAsync(context, "零号空洞-商店", "购买后确定", cancellationToken).ConfigureAwait(continueOnCapturedContext: false)) ? null : Failed("邦布商人", "点击购买确认失败");
 	}
 
-	internal static IReadOnlyList<int> OrderResoniumByPythonPriority(IReadOnlyList<WitheredDomainResonium> items, IReadOnlyList<string> priority, bool onlyPriority)
+	internal static IReadOnlyList<int> OrderResoniumByBaselinePriority(IReadOnlyList<WitheredDomainResonium> items, IReadOnlyList<string> priority, bool onlyPriority)
 	{
 		List<int> list = new List<int>();
 		string[] array = new string[4]
@@ -1125,12 +1125,12 @@ internal static class WitheredDomainEventOperations
 
 	private static async Task<HollowEventHandleResult> BackFromMerchantAsync(ZContext context, string eventName, CancellationToken cancellationToken)
 	{
-		if (!(await ClickAreaWithPythonRetryAsync(context, "零号空洞-商店", "右上角-返回", cancellationToken).ConfigureAwait(continueOnCapturedContext: false)))
+		if (!(await ClickAreaWithBaselineRetryAsync(context, "零号空洞-商店", "右上角-返回", cancellationToken).ConfigureAwait(continueOnCapturedContext: false)))
 		{
 			return Failed(eventName, "点击商店返回失败");
 		}
 		await Task.Delay(TimeSpan.FromMilliseconds(1500L), cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
-		if (!(await ClickAreaWithPythonRetryAsync(context, "零号空洞-商店", "右上角-返回", cancellationToken).ConfigureAwait(continueOnCapturedContext: false)))
+		if (!(await ClickAreaWithBaselineRetryAsync(context, "零号空洞-商店", "右上角-返回", cancellationToken).ConfigureAwait(continueOnCapturedContext: false)))
 		{
 			return Failed(eventName, "点击商店返回失败");
 		}
@@ -1138,7 +1138,7 @@ internal static class WitheredDomainEventOperations
 		return new HollowEventHandleResult(eventName, HollowEventOutcomeKind.Interacted, Success: true, "商店返回");
 	}
 
-	private static async Task<bool> ClickAreaWithPythonRetryAsync(ZContext context, string screenName, string areaName, CancellationToken cancellationToken)
+	private static async Task<bool> ClickAreaWithBaselineRetryAsync(ZContext context, string screenName, string areaName, CancellationToken cancellationToken)
 	{
 		for (int retry = 0; retry <= 3; retry++)
 		{

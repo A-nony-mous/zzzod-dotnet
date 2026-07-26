@@ -114,14 +114,14 @@ public class WitheredDomainContext
 		}
 		InvalidMapTimes = 0;
 		HollowPathfinding.SearchMap(currentMap, new HashSet<string>(GetAvoid(), StringComparer.Ordinal), _visitedNodes);
-		HollowZeroMapNode hollowZeroMapNode2 = TryTargetNode(HollowPathfinding.GetRouteIn1Step(currentMap, _visitedNodes, GetGoInOneStep().ToList()));
+		HollowZeroMapNode hollowZeroMapNode2 = TryTargetNode(currentMap, HollowPathfinding.GetRouteIn1Step(currentMap, _visitedNodes, GetGoInOneStep().ToList()));
 		if (hollowZeroMapNode2 != null)
 		{
 			return hollowZeroMapNode2;
 		}
 		foreach (string item in GetWaypoint())
 		{
-			hollowZeroMapNode2 = TryTargetNode(HollowPathfinding.GetRouteByEntry(currentMap, item, _visitedNodes));
+			hollowZeroMapNode2 = TryTargetNode(currentMap, HollowPathfinding.GetRouteByEntry(currentMap, item, _visitedNodes));
 			if (hollowZeroMapNode2 != null)
 			{
 				return hollowZeroMapNode2;
@@ -130,41 +130,93 @@ public class WitheredDomainContext
 		string[] array = new string[3] { "守门人", "传送点", "不宜久留" };
 		foreach (string entryName in array)
 		{
-			hollowZeroMapNode2 = TryTargetNode(HollowPathfinding.GetRouteByEntry(currentMap, entryName, _visitedNodes));
+			hollowZeroMapNode2 = TryTargetNode(currentMap, HollowPathfinding.GetRouteByEntry(currentMap, entryName, _visitedNodes));
 			if (hollowZeroMapNode2 != null)
 			{
 				return hollowZeroMapNode2;
 			}
-			hollowZeroMapNode2 = TryTargetNode(HollowPathfinding.GetRouteByEntry(currentMap, entryName, new List<HollowZeroMapNode>()));
+			hollowZeroMapNode2 = TryTargetNode(currentMap, HollowPathfinding.GetRouteByEntry(currentMap, entryName, new List<HollowZeroMapNode>()));
 			if (hollowZeroMapNode2 != null)
 			{
 				hollowZeroMapNode2.PathGoWay = 0;
 				return hollowZeroMapNode2;
 			}
 		}
-		hollowZeroMapNode2 = TryTargetNode(HollowPathfinding.GetRouteIn1Step(currentMap, _visitedNodes, _challengeConfigStore.GetNoBattle().ToList()));
+		hollowZeroMapNode2 = TryTargetNode(currentMap, HollowPathfinding.GetRouteIn1Step(currentMap, _visitedNodes, _challengeConfigStore.GetNoBattle().ToList()));
 		if (hollowZeroMapNode2 != null)
 		{
 			return hollowZeroMapNode2;
 		}
-		hollowZeroMapNode2 = TryTargetNode(HollowPathfinding.GetRouteByDirection(currentMap, ResolveFallbackDirection()));
+		string fallbackDirection = ResolveFallbackDirection();
+		hollowZeroMapNode2 = TryTargetNode(currentMap, HollowPathfinding.GetRouteByDirection(currentMap, fallbackDirection));
 		if (hollowZeroMapNode2 != null)
 		{
 			return hollowZeroMapNode2;
 		}
-		return TryTargetNode(HollowPathfinding.GetRouteIn1Step(currentMap, _visitedNodes));
+		hollowZeroMapNode2 = TryTargetNode(currentMap, HollowPathfinding.GetRouteIn1Step(currentMap, _visitedNodes));
+		if (hollowZeroMapNode2 != null)
+		{
+			return hollowZeroMapNode2;
+		}
+
+		// 最终兜底：以上所有策略都没有目标时，在 [当前] 节点四周强行挪动一格，制造一次点击
+		if (!currentMap.CurrentIdx.HasValue)
+		{
+			return null;
+		}
+		HollowZeroMapNode currentNode = currentMap.Nodes[currentMap.CurrentIdx.Value];
+		if (HollowMapUtils.IsSameNode(LastCurrentNode, currentNode))
+		{
+			// 连续兜底都停在同一个节点，说明按原方向走不通，换一个方向再试
+			List<string> remainingDirections = new List<string> { "w", "s", "a", "d" };
+			remainingDirections.Remove(fallbackDirection);
+			fallbackDirection = remainingDirections[Random.Shared.Next(remainingDirections.Count)];
+		}
+		LastCurrentNode = currentNode;
+
+		var toGo = fallbackDirection switch
+		{
+			"w" => currentNode.Pos.Center - new OneDragon.Core.Abstractions.Geometry.Point(0, currentNode.Pos.Height),
+			"s" => currentNode.Pos.Center + new OneDragon.Core.Abstractions.Geometry.Point(0, currentNode.Pos.Height),
+			"a" => currentNode.Pos.Center - new OneDragon.Core.Abstractions.Geometry.Point(currentNode.Pos.Width, 0),
+			_ => currentNode.Pos.Center + new OneDragon.Core.Abstractions.Geometry.Point(currentNode.Pos.Width, 0),
+		};
+		HollowZeroMapNode fakeNode = new HollowZeroMapNode(new OneDragon.Core.Abstractions.Geometry.Rect(toGo.X, toGo.Y, toGo.X, toGo.Y), new HollowZeroEntry("0000-fake"))
+		{
+			PathStepCnt = 999,
+			PathNodeCnt = 1
+		};
+		fakeNode.PathFirstNode = fakeNode;
+		fakeNode.PathFirstNeedStepNode = fakeNode;
+		return fakeNode;
 	}
 
-	public HollowZeroMapNode? TryTargetNode(HollowZeroMapNode? target)
+	public HollowZeroMapNode? TryTargetNode(HollowZeroMap currentMap, HollowZeroMapNode? target)
 	{
 		if (target == null)
 		{
 			return null;
 		}
-		if (HollowMapUtils.IsSameNode(LastTargetNode?.NextNodeToMove, target.NextNodeToMove))
+		// 两次都想前往同一个节点
+		if (LastTargetNode != null && HollowMapUtils.IsSameNode(LastTargetNode, target))
 		{
-			target.PathGoWay = 0;
+			// 第一步需要点击的节点都一样，可能是被卡着过不去了
+			HollowZeroMapNode? lastNodeToMove = LastTargetNode.NextNodeToMove;
+			HollowZeroMapNode? currNodeToMove = target.NextNodeToMove;
+			if (HollowMapUtils.IsSameNode(lastNodeToMove, currNodeToMove))
+			{
+				// 可能识别错了导致点击的第一个位置不对，这里改为强行点击相邻节点
+				target.PathGoWay = 0;
+				if ((target.Entry.EntryName == "零号银行" || target.Entry.EntryName == "业绩考察点")
+					&& (currNodeToMove!.Entry.EntryName == "门扉禁闭-财富" || currNodeToMove.Entry.EntryName == "门扉禁闭-善战" || currNodeToMove.Entry.EntryName == "门扉禁闭-侵蚀"))
+				{
+					// 上一次点了之后这次依然要点同样的位置，即无法通行，标记为已经去过并放弃本轮目标
+					UpdateContextAfterMove(currentMap, target, updateCurrent: false);
+					return null;
+				}
+			}
 		}
+
 		LastTargetNode = target;
 		return target;
 	}
@@ -201,7 +253,23 @@ public class WitheredDomainContext
 
 	public void UpdateMapCurrentNode(HollowZeroMap currentMap, HollowZeroMapNode node)
 	{
-		int num = currentMap.Nodes.FindIndex((HollowZeroMapNode item) => HollowMapUtils.IsSameNode(item, node));
+		HollowZeroMapNode? nextCurrentNode = node;
+		if (node.Entry.EntryName == "门扉禁闭-善战")
+		{
+			// 这个节点不能直接前往，实际会停在寻路记录的上一个节点
+			nextCurrentNode = node.PathLastNode;
+		}
+		else if (node.Entry.EntryName == "轨道-上" || node.Entry.EntryName == "轨道-下" || node.Entry.EntryName == "轨道-左" || node.Entry.EntryName == "轨道-右")
+		{
+			// 轨道格子的移动会顺着地图有向边落到下一个节点
+			int trackIdx = HollowMapUtils.GetNodeIndex(currentMap, node);
+			if (trackIdx >= 0 && currentMap.Edges.TryGetValue(trackIdx, out List<int>? trackEdges) && trackEdges.Count > 0)
+			{
+				nextCurrentNode = currentMap.Nodes[trackEdges[0]];
+			}
+		}
+
+		int num = currentMap.Nodes.FindIndex((HollowZeroMapNode item) => HollowMapUtils.IsSameNode(item, nextCurrentNode));
 		if (num < 0)
 		{
 			return;
@@ -220,7 +288,6 @@ public class WitheredDomainContext
 		hollowZeroMapNode.Entry = new HollowZeroEntry("0000-当前");
 		hollowZeroMapNode.Confidence = 0.6f;
 		currentMap.CurrentIdx = num;
-		LastCurrentNode = hollowZeroMapNode;
 	}
 
 	public void UpdateToNextLevel()

@@ -25,6 +25,6 @@ internal sealed class WitheredDomainChooseMissionOperation : ZOperation
 		string missionName = _missionName;
 		TimeSpan? successDelay = TimeSpan.FromSeconds(1L);
 		TimeSpan? retryDelay = TimeSpan.FromSeconds(1L);
-		return RoundByOcrAndClick(lastScreenshot, missionName, area, 0.6, null, successDelay, retryDelay);
+		return RoundByOcrAndClick(lastScreenshot, missionName, area, 0.5, null, successDelay, retryDelay);
 	}
 }

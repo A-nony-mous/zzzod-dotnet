@@ -62,7 +62,7 @@ public sealed class WitheredDomainHollowBattle : ZOperation
 	[OperationNode("等待战斗画面加载", NodeMaxRetryTimes = 60)]
 	public OperationRoundResult WaitBattleScreen()
 	{
-		// 对应 Python hollow_zero/hollow_battle.py:65 的 retry_wait_round=1（补足制，非固定延时）。
+		// 对应参考实现 hollow_zero/hollow_battle.py:65 的 retry_wait_round=1（补足制，非固定延时）。
 		return RoundByFindArea(base.LastScreenshot, "战斗画面", "按键-普通攻击", null, null, cropFirst: true, null, TimeSpan.FromSeconds(1L));
 	}
 

@@ -267,7 +267,7 @@ public sealed class WitheredDomainChallengeConfigStore
 	}
 
 	/// <summary>
-	/// 读取当前选中的真实挑战配置。用户文件优先于同名 sample 文件；两者都不存在时保留真实配置错误。
+	/// 读取当前选中的真实挑战配置。用户文件优先于同名 sample 文件；两者都不存在时静默返回一份全默认配置。
 	/// </summary>
 	public WitheredDomainChallengeConfig LoadSelected(string moduleName)
 	{
@@ -279,7 +279,9 @@ public sealed class WitheredDomainChallengeConfigStore
 		{
 			if (!File.Exists(path2))
 			{
-				throw new FileNotFoundException("未找到枯萎之都挑战配置 " + moduleName + "。", path);
+				// 用户文件和 sample 都不存在时不视为错误，与配置文件读取的静默兜底语义保持一致，
+				// 直接给出一份全默认配置（该名字仍由调用方自行记录）。
+				return new WitheredDomainChallengeConfig();
 			}
 			text = path2;
 		}

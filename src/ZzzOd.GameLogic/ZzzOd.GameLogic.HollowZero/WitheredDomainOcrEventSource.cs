@@ -19,18 +19,23 @@ namespace ZzzOd.GameLogic.HollowZero;
 /// </summary>
 public sealed class WitheredDomainOcrEventSource : IHollowEventSource
 {
-	private static readonly string[] BottomEvents = new string[10]
+	private static readonly HollowZeroEvent[] BottomChooseEvents = new HollowZeroEvent[10]
 	{
-		HollowZeroSpecialEvent.ResoniumChoose.EventName,
-		HollowZeroSpecialEvent.ResoniumConfirm1.EventName,
-		HollowZeroSpecialEvent.ResoniumConfirm2.EventName,
-		HollowZeroSpecialEvent.ResoniumUpgrade.EventName,
-		HollowZeroSpecialEvent.ResoniumDrop.EventName,
-		HollowZeroSpecialEvent.ResoniumDrop2.EventName,
-		HollowZeroSpecialEvent.ResoniumSwitch.EventName,
-		HollowZeroSpecialEvent.SwiftSupplyLife.EventName,
-		HollowZeroSpecialEvent.SwiftSupplyCoin.EventName,
-		HollowZeroSpecialEvent.SwiftSupplyPress.EventName
+		HollowZeroSpecialEvent.ResoniumChoose,
+		HollowZeroSpecialEvent.ResoniumConfirm1,
+		HollowZeroSpecialEvent.ResoniumConfirm2,
+		HollowZeroSpecialEvent.ResoniumUpgrade,
+		HollowZeroSpecialEvent.ResoniumDrop,
+		HollowZeroSpecialEvent.ResoniumDrop2,
+		HollowZeroSpecialEvent.ResoniumSwitch,
+		HollowZeroSpecialEvent.SwiftSupplyLife,
+		HollowZeroSpecialEvent.SwiftSupplyCoin,
+		HollowZeroSpecialEvent.SwiftSupplyPress
+	};
+
+	private static readonly HollowZeroEvent[] BottomRemoveEvents = new HollowZeroEvent[1]
+	{
+		HollowZeroSpecialEvent.CorruptionRemove
 	};
 
 	private static readonly string[] RightEvents = new string[6]
@@ -97,7 +102,7 @@ public sealed class WitheredDomainOcrEventSource : IHollowEventSource
 
 	private static string? DetectEventName(ZContext context, Mat screen, WitheredDomainEventDataService eventData)
 	{
-		string text = FindOcrEvent(context, screen, "零号空洞-事件", "底部-选择列表", BottomEvents, restrictToTopLine: false);
+		string text = FindOcrEventByLcs(context, screen, "零号空洞-事件", "底部-选择列表", BottomChooseEvents);
 		if (text != null)
 		{
 			return text;
@@ -114,7 +119,7 @@ public sealed class WitheredDomainOcrEventSource : IHollowEventSource
 		{
 			return text3;
 		}
-		string text4 = FindOcrEvent(context, screen, "零号空洞-事件", "底部-清除列表", new string[] { HollowZeroSpecialEvent.CorruptionRemove.EventName }, restrictToTopLine: false);
+		string text4 = FindOcrEventByLcs(context, screen, "零号空洞-事件", "底部-清除列表", BottomRemoveEvents);
 		if (text4 != null)
 		{
 			return text4;
@@ -141,6 +146,35 @@ public sealed class WitheredDomainOcrEventSource : IHollowEventSource
 	private static bool FindArea(ZContext context, Mat screen, string screenName, string areaName)
 	{
 		return ScreenUtils.FindArea(context, screen, screenName, areaName) == FindAreaResultEnum.True;
+	}
+
+	/// <summary>
+	/// 按候选事件列表逐个用最长公共子序列匹配 OCR 文本：候选在外层、OCR 结果在内层，
+	/// 命中阈值取候选自身的 LcsPercent，命中即返回，不做行位置限制。
+	/// </summary>
+	private static string? FindOcrEventByLcs(ZContext context, Mat screen, string screenName, string areaName, IReadOnlyList<HollowZeroEvent> candidates)
+	{
+		OneDragon.Core.Screen.ScreenArea area = context.ScreenContext.GetArea(screenName, areaName);
+		if (area == null)
+		{
+			return null;
+		}
+		IReadOnlyList<OcrMatchResult> ocrResultList = context.OcrService.GetOcrResultList(screen, null, area.Rect);
+		if (ocrResultList.Count == 0)
+		{
+			return null;
+		}
+		foreach (HollowZeroEvent candidate in candidates)
+		{
+			foreach (OcrMatchResult item in ocrResultList)
+			{
+				if (StringUtils.FindByLcs(candidate.EventName, item.Text, candidate.LcsPercent))
+				{
+					return candidate.EventName;
+				}
+			}
+		}
+		return null;
 	}
 
 	private static string? FindOcrEvent(ZContext context, Mat screen, string screenName, string areaName, IReadOnlyList<string> candidates, bool restrictToTopLine)

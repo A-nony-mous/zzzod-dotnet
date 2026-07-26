@@ -15,16 +15,13 @@ public sealed class OperationWitheredDomainAppFlow : IWitheredDomainAppFlow
 
 	private readonly IWitheredDomainAppActions _actions;
 
-	private readonly int _maxClickNextRounds;
-
 	/// <summary>
 	/// 初始化流程。
 	/// </summary>
-	public OperationWitheredDomainAppFlow(IWitheredDomainRunner? runner = null, IWitheredDomainAppActions? actions = null, int maxClickNextRounds = 20)
+	public OperationWitheredDomainAppFlow(IWitheredDomainRunner? runner = null, IWitheredDomainAppActions? actions = null)
 	{
 		_runner = runner ?? new HollowRunnerWitheredDomainRunner();
 		_actions = actions ?? new DefaultWitheredDomainAppActions();
-		_maxClickNextRounds = maxClickNextRounds;
 	}
 
 	/// <inheritdoc />
@@ -89,40 +86,29 @@ public sealed class OperationWitheredDomainAppFlow : IWitheredDomainAppFlow
 					return chooseMission;
 				}
 			}
-			bool startHollow = false;
-			for (int i = 0; i < _maxClickNextRounds; i++)
+			// "下一步" Operation 内部已按 WAIT/RETRY 自环，直到出现"出战"/"继续-确认"成功态
+			// 或重试耗尽失败，这里只需单次调用，不再由调用方套外层重试循环。
+			cancellationToken.ThrowIfCancellationRequested();
+			OperationResult next = await _actions.ClickNextAsync(context, cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
+			if (!next.IsSuccess)
 			{
-				cancellationToken.ThrowIfCancellationRequested();
-				OperationResult next = await _actions.ClickNextAsync(context, cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
-				if (!next.IsSuccess)
+				return next;
+			}
+			if (string.Equals(next.Status, "出战", StringComparison.Ordinal))
+			{
+				OperationResult deploy = await _actions.DeployAsync(context, cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
+				if (!deploy.IsSuccess)
 				{
-					return next;
-				}
-				if (string.Equals(next.Status, "出战", StringComparison.Ordinal))
-				{
-					OperationResult deploy = await _actions.DeployAsync(context, cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
-					if (!deploy.IsSuccess)
-					{
-						return deploy;
-					}
-					startHollow = true;
-					break;
-				}
-				if (string.Equals(next.Status, "继续-确认", StringComparison.Ordinal))
-				{
-					level = -1;
-					phase = -1;
-					startHollow = true;
-					break;
+					return deploy;
 				}
 			}
-			if (!startHollow)
+			else if (string.Equals(next.Status, "继续-确认", StringComparison.Ordinal))
 			{
-				break;
+				level = -1;
+				phase = -1;
 			}
 			isInHollow = true;
 		}
-		return new OperationResult(IsSuccess: false, "下一步重试超限");
 	}
 
 	private async Task<OperationResult> AutoRunAsync(ZContext context, WitheredDomainConfig config, WitheredDomainRunRecord runRecord, string missionTypeName, string missionName, int level, int phase, CancellationToken cancellationToken)

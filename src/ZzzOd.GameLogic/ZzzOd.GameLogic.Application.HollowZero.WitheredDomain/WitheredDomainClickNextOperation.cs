@@ -22,12 +22,14 @@ internal sealed class WitheredDomainClickNextOperation : ZOperation
 		{
 			Thread.Sleep(TimeSpan.FromMilliseconds(500L));
 			base.ZContext.Controller?.MouseMove(ScreenNormalWorldEnum.Uid.Center);
-			return RoundSuccess(operationRoundResult.Status, null, TimeSpan.FromMilliseconds(500L));
+			// 点击后画面可能仍需多轮才能出现"出战"，用 WAIT 在同一节点自环，不消耗重试次数
+			return RoundWait(operationRoundResult.Status, null, TimeSpan.FromMilliseconds(500L));
 		}
 		OperationRoundResult operationRoundResult2 = RoundByFindAndClickArea(base.LastScreenshot, "零号空洞-入口", "行动中-确认");
 		if (operationRoundResult2.IsSuccess)
 		{
-			return RoundSuccess(operationRoundResult2.Status, null, TimeSpan.FromSeconds(1L));
+			// 同上，确认后仍需继续等待下一画面，不应提前结束该 Operation
+			return RoundWait(operationRoundResult2.Status, null, TimeSpan.FromSeconds(1L));
 		}
 		OperationRoundResult operationRoundResult3 = RoundByFindArea(base.LastScreenshot, "零号空洞-入口", "出战");
 		if (operationRoundResult3.IsSuccess)
