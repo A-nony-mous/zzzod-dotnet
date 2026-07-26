@@ -109,6 +109,7 @@ internal sealed class ZzzConfigScopeService
 			["vision_scale_y"] = 1.0,
 			["patched_capture_enabled"] = false,
 			["patched_capture_suffix"] = "_patched",
+			["font_family"] = "Segoe UI",
 			["font_size"] = 12,
 			["panel_opacity"] = 70,
 			["panel_text_color"] = "#f2f2f2",
@@ -266,6 +267,9 @@ internal sealed class ZzzConfigScopeService
 				case "panel_text_color":
 					result = NormalizeColor(Convert.ToString(value, CultureInfo.InvariantCulture));
 					break;
+				case "font_family":
+					result = NormalizeFontFamily(Convert.ToString(value, CultureInfo.InvariantCulture));
+					break;
 				case "vision_offset_x":
 				case "vision_offset_y":
 					result = Convert.ToInt32(value, CultureInfo.InvariantCulture);
@@ -394,6 +398,16 @@ internal sealed class ZzzConfigScopeService
 			}
 			text = text.ToLowerInvariant();
 			return Regex.IsMatch(text, "^#[0-9a-f]{6}$", RegexOptions.CultureInvariant) ? text : "#f2f2f2";
+		}
+
+		private static string NormalizeFontFamily(string? value)
+		{
+			string text = (value ?? string.Empty).Trim();
+			if (text.Length == 0)
+			{
+				return "Segoe UI";
+			}
+			return text.Substring(0, Math.Min(64, text.Length));
 		}
 
 		private static string NormalizeSuffix(string? value)

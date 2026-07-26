@@ -146,6 +146,15 @@
             <ToggleSwitch x:Name="PanelLockToGameWindowToggle" Tag="panel_lock_to_game_window" Click="OnToggleChanged" />
           </fa:FASettingsExpanderItem.Footer>
         </fa:FASettingsExpanderItem>
+        <fa:FASettingsExpanderItem Content="面板字体">
+          <fa:FASettingsExpanderItem.Footer>
+            <ComboBox x:Name="FontFamilyCombo"
+                      Tag="font_family"
+                      Width="180"
+                      MaxDropDownHeight="320"
+                      SelectionChanged="OnFontFamilyChanged" />
+          </fa:FASettingsExpanderItem.Footer>
+        </fa:FASettingsExpanderItem>
         <fa:FASettingsExpanderItem Content="面板字体大小">
           <fa:FASettingsExpanderItem.Footer>
             <fa:FANumberBox x:Name="FontSizeNumber" Tag="font_size" Width="180" Minimum="10" Maximum="28" SmallChange="1" ValueChanged="OnNumberChanged" />
@@ -153,7 +162,16 @@
         </fa:FASettingsExpanderItem>
         <fa:FASettingsExpanderItem Content="文字颜色">
           <fa:FASettingsExpanderItem.Footer>
-            <TextBox x:Name="PanelTextColorTextBox" Tag="panel_text_color" Width="180" PlaceholderText="#f2f2f2" MaxLength="7" LostFocus="OnTextChanged" />
+            <StackPanel Orientation="Horizontal" Spacing="8">
+              <Border x:Name="PanelTextColorPreview"
+                      Width="24"
+                      Height="24"
+                      VerticalAlignment="Center"
+                      CornerRadius="{DynamicResource ControlCornerRadius}"
+                      BorderThickness="1"
+                      BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}" />
+              <TextBox x:Name="PanelTextColorTextBox" Tag="panel_text_color" Width="148" PlaceholderText="#f2f2f2" MaxLength="7" LostFocus="OnTextChanged" />
+            </StackPanel>
           </fa:FASettingsExpanderItem.Footer>
         </fa:FASettingsExpanderItem>
         <fa:FASettingsExpanderItem Content="日志最大行数">

@@ -3,6 +3,7 @@ using System.Text.Json;
 using Avalonia.Controls;
 using Avalonia.Interactivity;
 using Avalonia.Markup.Xaml;
+using Avalonia.Media;
 using FluentAvalonia.UI.Controls;
 using ZzzOd.AppHost.Backend;
 using ZzzOd.Gui.Overlay;
@@ -15,6 +16,7 @@ namespace ZzzOd.Gui.Views.FrontierPages.Settings;
 internal sealed partial class FrontierOverlaySettingsPage : UserControl, IZzzPageLifecycle
 {
     private const string ScopeName = "overlay";
+    private const string DefaultFontFamily = "Segoe UI";
     private readonly IZzzAppBackend _backend;
     private readonly ZzzOverlayController _overlayController;
     private readonly ZzzGuiOperationTracker _operations;
@@ -23,6 +25,8 @@ internal sealed partial class FrontierOverlaySettingsPage : UserControl, IZzzPag
     private readonly FAInfoBar _errorBar;
     private readonly FAInfoBar _resultBar;
     private readonly Button _resetGeometryButton;
+    private readonly ComboBox _fontFamilyCombo;
+    private readonly Border _panelTextColorPreview;
     private readonly IReadOnlyDictionary<string, ToggleSwitch> _toggles;
     private readonly IReadOnlyDictionary<string, FANumberBox> _numbers;
     private readonly IReadOnlyDictionary<string, TextBox> _texts;
@@ -41,6 +45,9 @@ internal sealed partial class FrontierOverlaySettingsPage : UserControl, IZzzPag
         _errorBar = Required<FAInfoBar>("ErrorBar");
         _resultBar = Required<FAInfoBar>("ResultBar");
         _resetGeometryButton = Required<Button>("ResetGeometryButton");
+        _fontFamilyCombo = Required<ComboBox>("FontFamilyCombo");
+        _panelTextColorPreview = Required<Border>("PanelTextColorPreview");
+        _fontFamilyCombo.ItemsSource = LoadSystemFontFamilies();
         _toggles = new Dictionary<string, ToggleSwitch>(StringComparer.Ordinal)
         {
             ["enabled"] = Required<ToggleSwitch>("EnabledToggle"),
@@ -175,7 +182,82 @@ internal sealed partial class FrontierOverlaySettingsPage : UserControl, IZzzPag
             return;
         }
 
-        Save(new Dictionary<string, object?> { [key] = textBox.Text ?? string.Empty });
+        string text = textBox.Text ?? string.Empty;
+        if (key is "panel_text_color" && !TryParseHexColor(text, out Color _))
+        {
+            // 非法颜色不写入配置，输入框回滚到当前生效值。
+            textBox.Text = _overlayController.Settings.PanelTextColor;
+            ShowError("文字颜色需要 #RRGGBB 格式。");
+            return;
+        }
+
+        Save(new Dictionary<string, object?> { [key] = text });
+    }
+
+    private void OnFontFamilyChanged(object? sender, SelectionChangedEventArgs args)
+    {
+        if (_loading || sender is not ComboBox { Tag: string key, SelectedItem: string fontFamily })
+        {
+            return;
+        }
+
+        Save(new Dictionary<string, object?> { [key] = fontFamily });
+    }
+
+    /// <summary>
+    /// 读取系统已安装字体族名，确保当前配置值即使未安装也留在候选里。
+    /// </summary>
+    /// <returns>去重排序后的字体族名。</returns>
+    private static List<string> LoadSystemFontFamilies()
+    {
+        SortedSet<string> families = new(StringComparer.OrdinalIgnoreCase) { DefaultFontFamily };
+        foreach (FontFamily family in FontManager.Current.SystemFonts)
+        {
+            if (!string.IsNullOrWhiteSpace(family.Name))
+            {
+                families.Add(family.Name);
+            }
+        }
+
+        return [.. families];
+    }
+
+    private void ApplyFontFamily(string fontFamily)
+    {
+        string value = string.IsNullOrWhiteSpace(fontFamily) ? DefaultFontFamily : fontFamily;
+        if (_fontFamilyCombo.ItemsSource is List<string> families && !families.Contains(value, StringComparer.OrdinalIgnoreCase))
+        {
+            families.Add(value);
+            _fontFamilyCombo.ItemsSource = null;
+            _fontFamilyCombo.ItemsSource = families;
+        }
+
+        _fontFamilyCombo.SelectedItem = value;
+    }
+
+    private void ApplyPanelTextColorPreview(string color) =>
+        _panelTextColorPreview.Background = TryParseHexColor(color, out Color parsed)
+            ? new SolidColorBrush(parsed)
+            : Brushes.Transparent;
+
+    private static bool TryParseHexColor(string? value, out Color color)
+    {
+        color = default;
+        string text = (value ?? string.Empty).Trim();
+        if (text.Length != 7 || text[0] != '#')
+        {
+            return false;
+        }
+
+        for (int index = 1; index < text.Length; index++)
+        {
+            if (!Uri.IsHexDigit(text[index]))
+            {
+                return false;
+            }
+        }
+
+        return Color.TryParse(text, out color);
     }
 
     private void OnResetGeometryClicked(object? sender, RoutedEventArgs args)
@@ -247,6 +329,9 @@ internal sealed partial class FrontierOverlaySettingsPage : UserControl, IZzzPag
                 text.Text = ReadString(values, key);
             }
 
+            ApplyFontFamily(ReadString(values, "font_family"));
+            ApplyPanelTextColorPreview(ReadString(values, "panel_text_color"));
+
             _performanceMetrics = ReadBoolMap(values, "performance_metric_enabled_map");
             foreach ((string metric, ToggleSwitch toggle) in _metricToggles)
             {
@@ -293,6 +378,7 @@ internal sealed partial class FrontierOverlaySettingsPage : UserControl, IZzzPag
         }
 
         _resetGeometryButton.IsEnabled = enabled;
+        _fontFamilyCombo.IsEnabled = enabled;
 
         _toggles["enabled"].IsEnabled = enabled && _systemSupported;
         _toggles["anti_capture"].IsEnabled = enabled && _systemSupported;

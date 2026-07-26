@@ -535,6 +535,75 @@ public sealed class OverlaySettingsParityTests
 		}
 	}
 
+	/// <summary>
+	/// 全局外观四项（字体、字号、文字颜色、透明度）保存后应写入 overlay scope 并回读一致。
+	/// </summary>
+	[Fact]
+	public void OverlayAppearanceSettingsRoundTripThroughOverlayScope()
+	{
+		string root = CreateTempRoot();
+		try
+		{
+			ZzzConfigScopeService scopes = new ZzzConfigScopeService(root);
+			ZzzOverlayController controller = new ZzzOverlayController(new ZzzOverlayService(), CreateBackend(scopes));
+
+			Assert.Equal("Segoe UI", controller.Settings.FontFamily);
+
+			ZzzBackendResult<ZzzConfigScopeValuesDto> saved = controller.SaveConfiguration(new Dictionary<string, object?>
+			{
+				["font_family"] = "Microsoft YaHei UI",
+				["font_size"] = 20,
+				["panel_text_color"] = "#12AB34",
+				["panel_opacity"] = 42,
+			});
+
+			Assert.True(saved.Success, saved.Error);
+			Assert.Equal("Microsoft YaHei UI", controller.Settings.FontFamily);
+			Assert.Equal(20.0, controller.Settings.FontSize);
+			Assert.Equal("#12ab34", controller.Settings.PanelTextColor);
+			Assert.Equal(0.42, controller.Settings.Opacity, 4);
+
+			ZzzBackendResult<ZzzConfigScopeValuesDto> reread = scopes.Read("overlay", null, null);
+			Assert.True(reread.Success, reread.Error);
+			Assert.Equal("Microsoft YaHei UI", reread.Value.Values["font_family"]);
+			Assert.Equal(20, Convert.ToInt32(reread.Value.Values["font_size"]));
+			Assert.Equal("#12ab34", reread.Value.Values["panel_text_color"]);
+			Assert.Equal(42, Convert.ToInt32(reread.Value.Values["panel_opacity"]));
+		}
+		finally
+		{
+			Directory.Delete(root, recursive: true);
+		}
+	}
+
+	/// <summary>
+	/// 空字体名与非法颜色都要退化为默认值，不得写进配置。
+	/// </summary>
+	[Fact]
+	public void OverlayAppearanceSettingsFallBackOnInvalidInput()
+	{
+		string root = CreateTempRoot();
+		try
+		{
+			ZzzConfigScopeService scopes = new ZzzConfigScopeService(root);
+			ZzzOverlayController controller = new ZzzOverlayController(new ZzzOverlayService(), CreateBackend(scopes));
+
+			ZzzBackendResult<ZzzConfigScopeValuesDto> saved = controller.SaveConfiguration(new Dictionary<string, object?>
+			{
+				["font_family"] = "   ",
+				["panel_text_color"] = "不是颜色",
+			});
+
+			Assert.True(saved.Success, saved.Error);
+			Assert.Equal("Segoe UI", controller.Settings.FontFamily);
+			Assert.Equal("#f2f2f2", controller.Settings.PanelTextColor);
+		}
+		finally
+		{
+			Directory.Delete(root, recursive: true);
+		}
+	}
+
 	private static void AssertOrder(string text, params string[] markers)
 	{
 		int num = -1;

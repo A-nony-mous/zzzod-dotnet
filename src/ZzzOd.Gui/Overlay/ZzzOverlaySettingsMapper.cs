@@ -34,6 +34,7 @@ internal static class ZzzOverlaySettingsMapper
             PreventCapture = ReadBool(values, "anti_capture"),
             VisionLayerEnabled = ReadBool(values, "vision_layer_enabled"),
             LayoutEditMode = ReadBool(values, "panel_edit_mode"),
+            FontFamily = ReadString(values, "font_family"),
             FontSize = fontSize,
             Opacity = panelOpacity / 100d,
             PanelTextColor = ReadString(values, "panel_text_color"),
