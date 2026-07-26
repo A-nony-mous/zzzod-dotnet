@@ -6,6 +6,53 @@
     <Style Selector="fa|FASettingsExpander">
       <Setter Property="MinHeight" Value="48" />
     </Style>
+    <!-- 内层 TabViewListView 的滚动区自带一份底部分隔线，/template/ 只能穿一层，需要单独关掉。 -->
+    <Style Selector="ScrollViewer /template/ Rectangle#LeftBottomBorderLine">
+      <Setter Property="IsVisible" Value="False" />
+    </Style>
+    <Style Selector="ScrollViewer /template/ Rectangle#RightBottomBorderLine">
+      <Setter Property="IsVisible" Value="False" />
+    </Style>
+    <Style Selector="fa|FATabView#ModeTabs /template/ Rectangle#LeftBottomBorderLine">
+      <Setter Property="IsVisible" Value="False" />
+    </Style>
+    <Style Selector="fa|FATabView#ModeTabs /template/ Rectangle#RightBottomBorderLine">
+      <Setter Property="IsVisible" Value="False" />
+    </Style>
+    <Style Selector="fa|FATabViewItem.battle-mode-tab">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="Padding" Value="0" />
+      <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+      <Setter Property="VerticalContentAlignment" Value="Top" />
+    </Style>
+    <Style Selector="fa|FATabViewItem.battle-mode-tab /template/ Border#BottomBorderLine">
+      <Setter Property="IsVisible" Value="False" />
+    </Style>
+    <Style Selector="fa|FATabViewItem.battle-mode-tab /template/ Path#LeftRadiusRenderArc">
+      <Setter Property="IsVisible" Value="False" />
+    </Style>
+    <Style Selector="fa|FATabViewItem.battle-mode-tab /template/ Path#RightRadiusRenderArc">
+      <Setter Property="IsVisible" Value="False" />
+    </Style>
+    <Style Selector="fa|FATabViewItem.battle-mode-tab /template/ Path#SelectedBackgroundPath">
+      <Setter Property="IsVisible" Value="False" />
+    </Style>
+    <Style Selector="fa|FATabViewItem.battle-mode-tab /template/ Border#TabSeparator">
+      <Setter Property="IsVisible" Value="False" />
+    </Style>
+    <Style Selector="fa|FATabViewItem.battle-mode-tab /template/ Border#TabContainerBorder">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="Margin" Value="0" />
+      <Setter Property="Padding" Value="0" />
+    </Style>
+    <Style Selector="fa|FATabViewItem.battle-mode-tab Border.battle-mode-indicator">
+      <Setter Property="Opacity" Value="0" />
+    </Style>
+    <Style Selector="fa|FATabViewItem.battle-mode-tab:selected Border.battle-mode-indicator">
+      <Setter Property="Opacity" Value="1" />
+    </Style>
   </UserControl.Styles>
 
   <Grid>
@@ -17,15 +64,31 @@
                     IsClosable="False"
                     Severity="Error" />
         <fa:FATabView x:Name="ModeTabs"
-                    Height="254"
                     TabWidthMode="Equal"
                     IsAddTabButtonVisible="False"
                     CanDragTabs="False"
                     CanReorderTabs="False">
           <fa:FATabViewItem Header="自动战斗"
                           IsClosable="False"
+                          Classes="battle-mode-tab"
                           HorizontalContentAlignment="Stretch"
                           VerticalContentAlignment="Top">
+            <fa:FATabViewItem.HeaderTemplate>
+              <DataTemplate>
+                <Grid Height="36" RowDefinitions="*,3">
+                  <TextBlock HorizontalAlignment="Center"
+                             VerticalAlignment="Center"
+                             Text="{Binding}" />
+                  <Border Grid.Row="1"
+                          Classes="battle-mode-indicator"
+                          Width="16"
+                          Height="3"
+                          CornerRadius="2"
+                          HorizontalAlignment="Center"
+                          Background="{DynamicResource SystemAccentColor}" />
+                </Grid>
+              </DataTemplate>
+            </fa:FATabViewItem.HeaderTemplate>
             <StackPanel Spacing="8">
               <fa:FACommandBar x:Name="HelpCommandBar"
                              Height="48"
@@ -102,8 +165,25 @@
           </fa:FATabViewItem>
           <fa:FATabViewItem Header="闪避助手"
                           IsClosable="False"
+                          Classes="battle-mode-tab"
                           HorizontalContentAlignment="Stretch"
                           VerticalContentAlignment="Top">
+            <fa:FATabViewItem.HeaderTemplate>
+              <DataTemplate>
+                <Grid Height="36" RowDefinitions="*,3">
+                  <TextBlock HorizontalAlignment="Center"
+                             VerticalAlignment="Center"
+                             Text="{Binding}" />
+                  <Border Grid.Row="1"
+                          Classes="battle-mode-indicator"
+                          Width="16"
+                          Height="3"
+                          CornerRadius="2"
+                          HorizontalAlignment="Center"
+                          Background="{DynamicResource SystemAccentColor}" />
+                </Grid>
+              </DataTemplate>
+            </fa:FATabViewItem.HeaderTemplate>
             <fa:FASettingsExpander Header="闪避方式"
                                      HorizontalAlignment="Stretch"
                                      VerticalAlignment="Top">

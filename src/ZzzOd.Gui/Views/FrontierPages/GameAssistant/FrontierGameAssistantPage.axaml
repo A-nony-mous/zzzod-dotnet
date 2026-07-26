@@ -3,6 +3,13 @@
              xmlns:fa="using:FluentAvalonia.UI.Controls"
              x:Class="ZzzOd.Gui.Views.FrontierPages.GameAssistant.FrontierGameAssistantPage">
   <UserControl.Styles>
+    <!-- 内层 TabViewListView 的滚动区自带一份底部分隔线，/template/ 只能穿一层，需要单独关掉。 -->
+    <Style Selector="ScrollViewer /template/ Rectangle#LeftBottomBorderLine">
+      <Setter Property="IsVisible" Value="False" />
+    </Style>
+    <Style Selector="ScrollViewer /template/ Rectangle#RightBottomBorderLine">
+      <Setter Property="IsVisible" Value="False" />
+    </Style>
     <Style Selector="fa|FATabView#AssistantPivot /template/ Rectangle#LeftBottomBorderLine">
       <Setter Property="IsVisible" Value="False" />
     </Style>

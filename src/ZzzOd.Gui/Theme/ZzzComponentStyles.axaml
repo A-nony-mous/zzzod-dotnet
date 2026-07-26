@@ -40,7 +40,7 @@
   <Style Selector="Border.zzz-media-overlay">
     <Setter Property="Background" Value="{DynamicResource ZzzMediaOverlayBrush}" />
   </Style>
-  <Style Selector="TextBlock.zzz-log-line">
+  <Style Selector="TextBox.zzz-log-line">
     <Setter Property="FontSize" Value="{DynamicResource ZzzFontSizeCaption}" />
   </Style>
   <Style Selector="ui|FANavigationViewItem.zzz-navigation-item">

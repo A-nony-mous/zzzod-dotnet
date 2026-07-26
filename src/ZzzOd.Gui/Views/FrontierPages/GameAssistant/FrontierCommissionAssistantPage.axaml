@@ -11,10 +11,6 @@
     <Style Selector="ContentControl#LogHost">
       <Setter Property="Height" Value="300" />
     </Style>
-    <Style Selector="ContentControl#LogHost ScrollViewer">
-      <Setter Property="MinHeight" Value="300" />
-      <Setter Property="MaxHeight" Value="300" />
-    </Style>
   </UserControl.Styles>
 
   <Grid Margin="{DynamicResource SampleAppPageMargin}"

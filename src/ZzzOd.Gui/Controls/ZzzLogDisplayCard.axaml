@@ -2,20 +2,31 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              x:Class="ZzzOd.Gui.Controls.ZzzLogDisplayCard"
              ClipToBounds="True">
-  <ScrollViewer x:Name="LogScrollViewer"
-                HorizontalScrollBarVisibility="Disabled"
-                VerticalScrollBarVisibility="Auto"
-                HorizontalContentAlignment="Stretch"
-                ClipToBounds="True"
-                Classes="zzz-log-scroll">
-    <TextBox x:Name="OutputText"
-             Text=""
-             IsReadOnly="True"
-             AcceptsReturn="True"
-             TextWrapping="Wrap"
-             VerticalAlignment="Top"
-             ScrollViewer.HorizontalScrollBarVisibility="Disabled"
-             ScrollViewer.VerticalScrollBarVisibility="Disabled"
-             Classes="zzz-log-line" />
-  </ScrollViewer>
+  <Border Background="{DynamicResource ControlFillColorDefaultBrush}"
+          BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}"
+          BorderThickness="1"
+          CornerRadius="4"
+          ClipToBounds="True">
+    <ScrollViewer x:Name="LogScrollViewer"
+                  HorizontalScrollBarVisibility="Disabled"
+                  VerticalScrollBarVisibility="Auto"
+                  HorizontalContentAlignment="Stretch"
+                  Padding="8,6"
+                  ClipToBounds="True"
+                  Classes="zzz-log-scroll">
+      <TextBox x:Name="OutputText"
+               Text=""
+               IsReadOnly="True"
+               AcceptsReturn="True"
+               TextWrapping="Wrap"
+               VerticalAlignment="Top"
+               Background="Transparent"
+               BorderThickness="0"
+               Padding="0"
+               MinHeight="0"
+               ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+               ScrollViewer.VerticalScrollBarVisibility="Disabled"
+               Classes="zzz-log-line" />
+    </ScrollViewer>
+  </Border>
 </UserControl>

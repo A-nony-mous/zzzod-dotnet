@@ -13,16 +13,12 @@
     <Style Selector="ContentControl#LogHost">
       <Setter Property="Height" Value="160" />
     </Style>
-    <Style Selector="ContentControl#LogHost ScrollViewer">
-      <Setter Property="MinHeight" Value="160" />
-      <Setter Property="MaxHeight" Value="160" />
-    </Style>
   </UserControl.Styles>
 
   <Grid Margin="{DynamicResource SampleAppPageMargin}"
         ColumnDefinitions="*,12,Auto">
     <Grid Grid.Column="0"
-          Margin="0,-10,0,-7"
+          Margin="0,-10,0,0"
           RowDefinitions="*,Auto"
           RowSpacing="12">
       <ContentControl x:Name="SettingsHost"
@@ -36,7 +32,7 @@
 
     <Grid x:Name="StatusColumn"
           Grid.Column="2"
-          Margin="0,-10,0,-7"
+          Margin="0,-10,0,0"
           Width="350"
           MinWidth="350"
           MaxWidth="400"

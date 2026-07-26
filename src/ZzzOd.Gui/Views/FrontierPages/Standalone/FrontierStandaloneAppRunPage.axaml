@@ -4,9 +4,16 @@
              xmlns:local="using:ZzzOd.Gui.Views.FrontierPages.Standalone"
              x:Class="ZzzOd.Gui.Views.FrontierPages.Standalone.FrontierStandaloneAppRunPage">
   <UserControl.Styles>
+    <Style Selector="ItemsControl#AppList">
+      <Setter Property="Cursor" Value="Hand" />
+    </Style>
     <Style Selector="ItemsControl#AppList fa|FASettingsExpanderItem">
       <Setter Property="CornerRadius" Value="0" />
       <Setter Property="Margin" Value="0,0,0,1" />
+      <Setter Property="FocusAdorner" Value="{x:Null}" />
+    </Style>
+    <Style Selector="ItemsControl#AppList Button.zzz-tool-button">
+      <Setter Property="Cursor" Value="Arrow" />
     </Style>
     <Style Selector="ItemsControl#AppList ContentPresenter:nth-child(1) fa|FASettingsExpanderItem">
       <Setter Property="CornerRadius" Value="4,4,0,0" />
