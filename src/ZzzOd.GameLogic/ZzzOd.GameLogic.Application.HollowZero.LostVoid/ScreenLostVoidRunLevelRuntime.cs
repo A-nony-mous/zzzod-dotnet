@@ -344,11 +344,13 @@ public sealed class ScreenLostVoidRunLevelRuntime : ILostVoidRunLevelRuntime
 
 	public void StartAutoBattle(LostVoidRunLevel operation)
 	{
+		operation.GameContext.Logger.Information("迷失之地运行时动作: Action=StartAutoBattle, Region={Region}", operation.RegionType);
 		operation.GameContext.AutoBattleContext.StartAutoBattle();
 	}
 
 	public void StopAutoBattle(LostVoidRunLevel operation)
 	{
+		operation.GameContext.Logger.Information("迷失之地运行时动作: Action=StopAutoBattle, Region={Region}", operation.RegionType);
 		operation.GameContext.AutoBattleContext.StopAutoBattle();
 	}
 

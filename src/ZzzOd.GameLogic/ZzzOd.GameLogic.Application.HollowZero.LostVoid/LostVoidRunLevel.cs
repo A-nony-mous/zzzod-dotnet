@@ -16,7 +16,9 @@ namespace ZzzOd.GameLogic.Application.HollowZero.LostVoid;
 /// </summary>
 public sealed class LostVoidRunLevel : ZOperation
 {
-	private const int NoInBattleThreshold = 3;
+	private const int InBattleDetectionExitThreshold = 10;
+
+	private const int NonBattleScreenExitThreshold = 3;
 
 	public const string StatusNextLevel = "进入下层";
 
@@ -180,6 +182,7 @@ public sealed class LostVoidRunLevel : ZOperation
 		DateTimeOffset value = screenshotTimeUtc ?? base.LastScreenshotTimeUtc ?? DateTimeOffset.UtcNow;
 		_lastDetectTimeUtc = value;
 		_lastCheckFinishTimeUtc = value;
+		base.ZContext.Logger.Information("迷失之地状态动作: Action=EnterBattle, Region={Region}, FrameTimeUtc={FrameTimeUtc}", RegionType, value);
 		return RoundSuccess("进入战斗");
 	}
 
@@ -495,6 +498,7 @@ public sealed class LostVoidRunLevel : ZOperation
 	[OperationNode("准备自动战斗")]
 	private OperationRoundResult InitAutoOp()
 	{
+		base.ZContext.Logger.Information("迷失之地状态动作: Action=StartAutoBattle, Region={Region}", RegionType);
 		_runtime.StartAutoBattle(this);
 		return RoundSuccess();
 	}
@@ -517,7 +521,7 @@ public sealed class LostVoidRunLevel : ZOperation
 		}
 		if (logRoundDiagnostic)
 		{
-			base.ZContext.Logger.Information("[.NET诊断] 迷失之地战斗轮次: Phase=GetBattleState.End, ElapsedMilliseconds={ElapsedMilliseconds:F2}, CurrentFrameInBattle={CurrentFrameInBattle}, TransitionCheckPerformed={TransitionCheckPerformed}, DetectorChecked={DetectorChecked}, NoLongerInBattleByDetection={NoLongerInBattleByDetection}, FinishScreenChecked={FinishScreenChecked}, NoInBattleTimes={NoInBattleTimes}, NoInBattleThreshold={NoInBattleThreshold}, LastDetectTimeUtc={LastDetectTimeUtc}, LastCheckFinishTimeUtc={LastCheckFinishTimeUtc}", Stopwatch.GetElapsedTime(battleStateStartedAt).TotalMilliseconds, state.CurrentFrameInBattle, state.TransitionCheckPerformed, state.DetectorChecked, state.NoLongerInBattleByDetection, state.FinishScreenChecked, _noInBattleTimes, NoInBattleThreshold, _lastDetectTimeUtc, _lastCheckFinishTimeUtc);
+			base.ZContext.Logger.Information("[.NET诊断] 迷失之地战斗轮次: Phase=GetBattleState.End, ElapsedMilliseconds={ElapsedMilliseconds:F2}, CurrentFrameInBattle={CurrentFrameInBattle}, TransitionCheckPerformed={TransitionCheckPerformed}, DetectorChecked={DetectorChecked}, NoLongerInBattleByDetection={NoLongerInBattleByDetection}, FinishScreenChecked={FinishScreenChecked}, NoInBattleTimes={NoInBattleTimes}, InBattleDetectionExitThreshold={InBattleDetectionExitThreshold}, NonBattleScreenExitThreshold={NonBattleScreenExitThreshold}, LastDetectTimeUtc={LastDetectTimeUtc}, LastCheckFinishTimeUtc={LastCheckFinishTimeUtc}", Stopwatch.GetElapsedTime(battleStateStartedAt).TotalMilliseconds, state.CurrentFrameInBattle, state.TransitionCheckPerformed, state.DetectorChecked, state.NoLongerInBattleByDetection, state.FinishScreenChecked, _noInBattleTimes, InBattleDetectionExitThreshold, NonBattleScreenExitThreshold, _lastDetectTimeUtc, _lastCheckFinishTimeUtc);
 		}
 		_currentFrameInBattle = state.CurrentFrameInBattle;
 		DateTimeOffset frameTime = base.LastScreenshotTimeUtc ?? DateTimeOffset.UtcNow;
@@ -537,12 +541,17 @@ public sealed class LostVoidRunLevel : ZOperation
 		{
 			if (state.NextRegionHint)
 			{
+				LogBattleTransition("NextRegionHint", 1, 1, "StopAutoBattleAndMove");
 				_runtime.StopAutoBattle(this);
 				_noInBattleTimes = 0;
 				return RoundSuccess("识别需移动交互");
 			}
 			_noInBattleTimes = (state.NoLongerInBattleByDetection ? (_noInBattleTimes + 1) : 0);
-			if (_noInBattleTimes >= NoInBattleThreshold)
+			if (state.NoLongerInBattleByDetection)
+			{
+				LogBattleTransition("InBattleYolo", _noInBattleTimes, InBattleDetectionExitThreshold, _noInBattleTimes >= InBattleDetectionExitThreshold ? "StopAutoBattleAndMove" : "KeepAutoBattle");
+			}
+			if (_noInBattleTimes >= InBattleDetectionExitThreshold)
 			{
 				_runtime.StopAutoBattle(this);
 				_noInBattleTimes = 0;
@@ -552,7 +561,8 @@ public sealed class LostVoidRunLevel : ZOperation
 		else if (state.InInteractScreen)
 		{
 			_noInBattleTimes++;
-			if (_noInBattleTimes >= NoInBattleThreshold)
+			LogBattleTransition("NonBattleInteractScreen", _noInBattleTimes, NonBattleScreenExitThreshold, _noInBattleTimes >= NonBattleScreenExitThreshold ? "StopAutoBattleAndInteract" : "WaitForConfirmation");
+			if (_noInBattleTimes >= NonBattleScreenExitThreshold)
 			{
 				_runtime.StopAutoBattle(this);
 				_noInBattleTimes = 0;
@@ -566,9 +576,18 @@ public sealed class LostVoidRunLevel : ZOperation
 		}
 		else
 		{
+			if (_noInBattleTimes > 0)
+			{
+				LogBattleTransition(_currentFrameInBattle ? "InBattleYolo" : "NonBattleInteractScreen", 0, _currentFrameInBattle ? InBattleDetectionExitThreshold : NonBattleScreenExitThreshold, "ResetCount");
+			}
 			_noInBattleTimes = 0;
 		}
 		return RoundWaitForScreenshotRound(TimeSpan.FromSeconds(base.ZContext.BattleAssistantConfig.ScreenshotInterval));
+	}
+
+	private void LogBattleTransition(string signal, int count, int threshold, string action)
+	{
+		base.ZContext.Logger.Information("迷失之地战斗状态转移: Region={Region}, CurrentFrameInBattle={CurrentFrameInBattle}, Signal={Signal}, Count={Count}, Threshold={Threshold}, Action={Action}", RegionType, _currentFrameInBattle, signal, count, threshold, action);
 	}
 
 	private static bool ShouldLogDiagnostic(ref long lastDiagnosticAtMilliseconds)
@@ -686,7 +705,9 @@ public sealed class LostVoidRunLevel : ZOperation
 	private async Task<OperationRoundResult> MoveByDetectionAsync(string targetType, bool stopWhenInteract = true, bool stopWhenDisappear = true, bool allowArrivalByInteractButton = false, IReadOnlyList<string>? ignoreEntries = null)
 	{
 		_nothingTimes = 0;
+		base.ZContext.Logger.Information("迷失之地状态动作: Action=StartPathfinding, Region={Region}, Target={Target}", RegionType, targetType);
 		OperationResult moveResult = await _runtime.MoveByDetectionAsync(this, RegionType, targetType, stopWhenInteract, stopWhenDisappear, allowArrivalByInteractButton, ignoreEntries ?? Array.Empty<string>(), _cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
+		base.ZContext.Logger.Information("迷失之地状态动作: Action=PathfindingResult, Region={Region}, Target={Target}, Status={Status}, Success={Success}", RegionType, targetType, moveResult.Status, moveResult.IsSuccess);
 		if (!moveResult.IsSuccess)
 		{
 			return (string.Equals(moveResult.Status, "执行超时", StringComparison.Ordinal) || string.Equals(moveResult.Status, "节点超时", StringComparison.Ordinal)) ? RoundFail("执行超时") : RoundRetry(moveResult.Status ?? "移动失败");

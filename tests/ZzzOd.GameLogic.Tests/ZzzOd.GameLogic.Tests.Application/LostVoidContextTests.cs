@@ -64,6 +64,8 @@ public sealed class LostVoidContextTests
 
 		public LostVoidBattleState BattleState { get; init; } = new LostVoidBattleState(CurrentFrameInBattle: false);
 
+		public Queue<LostVoidBattleState>? BattleStates { get; init; }
+
 		public OperationResult MoveResult { get; init; } = new OperationResult(IsSuccess: true, "移动完成");
 
 		public OperationResult UpdatePriorityResult { get; init; } = new OperationResult(IsSuccess: true, "需要追加代理人类型优先级");
@@ -85,6 +87,10 @@ public sealed class LostVoidContextTests
 		public List<bool> MoveAllowArrivalByInteractButton { get; } = new List<bool>();
 
 		public int StopAutoBattleCount { get; private set; }
+
+		public int StartAutoBattleCount { get; private set; }
+
+		public List<string> BattleLifecycleCalls { get; } = new List<string>();
 
 		public int NonBattleWorldStateCallCount { get; private set; }
 
@@ -149,6 +155,7 @@ public sealed class LostVoidContextTests
 
 		public Task<OperationResult> MoveByDetectionAsync(LostVoidRunLevel operation, string regionType, string targetType, bool stopWhenInteract, bool stopWhenDisappear, bool allowArrivalByInteractButton, IReadOnlyList<string> ignoreEntries, CancellationToken cancellationToken)
 		{
+			BattleLifecycleCalls.Add("StartPathfinding:" + targetType);
 			RegionTypesForMove.Add(regionType);
 			MoveTargetTypes.Add(targetType);
 			MoveStopWhenInteract.Add(stopWhenInteract);
@@ -189,17 +196,24 @@ public sealed class LostVoidContextTests
 
 		public void StartAutoBattle(LostVoidRunLevel operation)
 		{
+			StartAutoBattleCount++;
+			BattleLifecycleCalls.Add("StartAutoBattle");
 		}
 
 		public void StopAutoBattle(LostVoidRunLevel operation)
 		{
 			StopAutoBattleCount++;
+			BattleLifecycleCalls.Add("StopAutoBattle");
 		}
 
 		public Task<LostVoidBattleState> GetBattleStateAsync(LostVoidRunLevel operation, Mat? screen, DateTimeOffset? screenshotTimeUtc, CancellationToken cancellationToken)
 		{
 			LastBattleScreen = screen;
 			LastBattleScreenshotTimeUtc = screenshotTimeUtc;
+			if (BattleStates != null && BattleStates.Count > 0)
+			{
+				return Task.FromResult(BattleStates.Count > 1 ? BattleStates.Dequeue() : BattleStates.Peek());
+			}
 			return Task.FromResult(BattleState);
 		}
 
@@ -967,6 +981,26 @@ public sealed class LostVoidContextTests
 	}
 
 	[Fact]
+	public void MoveByDetection_BriefTargetLossStopsAndWaitsForAnotherFrame()
+	{
+		string rootDirectory = CreateTempRoot();
+		using ZContext context = new ZContext(new OneDragonEnvironment(rootDirectory));
+		RecordingButtonController buttonController = new RecordingButtonController();
+		context.AttachController(new ZPcController(new GameConfig(), null, 1920, 1080, null, new RecordingInputController(buttonController), null, buttonController, null, null, skipForegroundActivation: true));
+		LostVoidMoveByDetectionOperation operation = new LostVoidMoveByDetectionOperation(context, "入口", "xxxx-入口", stopWhenInteract: false)
+		{
+			DetectFrameOverride = () => new YoloDetectFrameResult(Array.Empty<YoloDetectObjectResult>(), 0.0)
+		};
+		using Mat screen = new Mat(new Size(320, 240), MatType.CV_8UC3, Scalar.Black);
+		SetOperationScreenshot(operation, screen);
+
+		OperationRoundResult result = InvokeMoveTowards(operation);
+
+		Assert.Equal(OperationRoundResultKind.Wait, result.Kind);
+		Assert.Equal("短暂丢失目标", result.Status);
+	}
+
+	[Fact]
 	public void MoveByDetection_MoveTowardsLogsPythonNodeLabel()
 	{
 		string text = CreateTempRoot();
@@ -1343,6 +1377,39 @@ public sealed class LostVoidContextTests
 		Assert.Equal(new List<bool>(1) { expectedStopWhenInteract }, runtime.MoveStopWhenInteract);
 		Assert.Equal(new List<bool>(1) { expectedStopWhenDisappear }, runtime.MoveStopWhenDisappear);
 		Assert.Equal(new List<bool>(1) { expectedAllowArrivalByInteractButton }, runtime.MoveAllowArrivalByInteractButton);
+	}
+
+	[Theory]
+	[InlineData(true, true, true, "0000-感叹号")]
+	[InlineData(false, true, true, "0001-距离")]
+	[InlineData(false, false, true, "xxxx-入口")]
+	public async Task RunLevel_NonBattleConsumesTargetsInPythonPriorityOrder(bool withInteract, bool withDistance, bool withEntry, string expectedTarget)
+	{
+		using ZContext context = new ZContext(new OneDragonEnvironment(CreateTempRoot()));
+		context.LostVoid.PriorityUpdated = true;
+		List<YoloDetectObjectResult> results = new List<YoloDetectObjectResult>();
+		if (withEntry)
+		{
+			results.Add(Object("xxxx-入口", 300));
+		}
+		if (withDistance)
+		{
+			results.Add(Object("0001-距离", 200));
+		}
+		if (withInteract)
+		{
+			results.Add(Object("0000-感叹号", 100));
+		}
+		ScriptedLostVoidRunLevelRuntime runtime = new ScriptedLostVoidRunLevelRuntime
+		{
+			NonBattleFrames = new Queue<LostVoidRunLevelFrame>(new[] { new LostVoidRunLevelFrame(InNormalWorld: true, DetectResult: new YoloDetectFrameResult(results, 0.0)) }),
+			MoveResult = new OperationResult(IsSuccess: true, "到达目标")
+		};
+		LostVoidRunLevel operation = new LostVoidRunLevel(context, new LostVoidRunRecord(new LostVoidConfig()), "入口", runtime);
+
+		await InvokeNonBattleCheckAsync(operation);
+
+		Assert.Equal(new[] { expectedTarget }, runtime.MoveTargetTypes);
 	}
 
 	[Fact]
@@ -2070,10 +2137,8 @@ public sealed class LostVoidContextTests
 		}
 	}
 
-	[Theory]
-	[InlineData(true, false, "识别需移动交互")]
-	[InlineData(false, true, "识别正在交互")]
-	public async Task RunLevel_InBattleRequiresThreeNonBattleFramesBeforeStoppingAutoBattle(bool currentFrameInBattle, bool inInteractScreen, string expectedStatus)
+	[Fact]
+	public async Task RunLevel_InBattleRequiresTenYoloExitFramesBeforeStoppingAutoBattle()
 	{
 		string rootDirectory = CreateTempRoot();
 		try
@@ -2081,23 +2146,164 @@ public sealed class LostVoidContextTests
 			using ZContext context = new ZContext(new OneDragonEnvironment(rootDirectory));
 			ScriptedLostVoidRunLevelRuntime runtime = new ScriptedLostVoidRunLevelRuntime
 			{
-				BattleState = new LostVoidBattleState(CurrentFrameInBattle: currentFrameInBattle, NextRegionHint: false, NoLongerInBattleByDetection: currentFrameInBattle, InInteractScreen: inInteractScreen)
+				BattleState = new LostVoidBattleState(CurrentFrameInBattle: true, NextRegionHint: false, NoLongerInBattleByDetection: true)
 			};
 			LostVoidRunLevel operation = new LostVoidRunLevel(context, new LostVoidRunRecord(new LostVoidConfig()), "挚交会谈", runtime);
-			for (int i = 0; i < 2; i++)
+			for (int i = 0; i < 9; i++)
 			{
 				Assert.Equal(OperationRoundResultKind.Wait, (await InvokeInBattleAsync(operation)).Kind);
 				Assert.Equal(0, runtime.StopAutoBattleCount);
 			}
 			OperationRoundResult completed = await InvokeInBattleAsync(operation);
 			Assert.True(completed.IsSuccess);
-			Assert.Equal(expectedStatus, completed.Status);
+			Assert.Equal("识别需移动交互", completed.Status);
 			Assert.Equal(1, runtime.StopAutoBattleCount);
 		}
 		finally
 		{
 			Directory.Delete(rootDirectory, recursive: true);
 		}
+	}
+
+	[Fact]
+	public async Task RunLevel_InBattleRequiresThreeInteractScreenFramesBeforeStoppingAutoBattle()
+	{
+		using ZContext context = new ZContext(new OneDragonEnvironment(CreateTempRoot()));
+		ScriptedLostVoidRunLevelRuntime runtime = new ScriptedLostVoidRunLevelRuntime
+		{
+			BattleState = new LostVoidBattleState(CurrentFrameInBattle: false, InInteractScreen: true)
+		};
+		LostVoidRunLevel operation = new LostVoidRunLevel(context, new LostVoidRunRecord(new LostVoidConfig()), "挚交会谈", runtime);
+
+		Assert.Equal(OperationRoundResultKind.Wait, (await InvokeInBattleAsync(operation)).Kind);
+		Assert.Equal(OperationRoundResultKind.Wait, (await InvokeInBattleAsync(operation)).Kind);
+		OperationRoundResult completed = await InvokeInBattleAsync(operation);
+
+		Assert.True(completed.IsSuccess);
+		Assert.Equal("识别正在交互", completed.Status);
+		Assert.Equal(1, runtime.StopAutoBattleCount);
+	}
+
+	[Fact]
+	public async Task RunLevel_InBattleYoloExitCountResetsOnCleanDetectionFrame()
+	{
+		using ZContext context = new ZContext(new OneDragonEnvironment(CreateTempRoot()));
+		LostVoidBattleState yoloExit = new LostVoidBattleState(CurrentFrameInBattle: true, NoLongerInBattleByDetection: true);
+		LostVoidBattleState clean = new LostVoidBattleState(CurrentFrameInBattle: true, NoLongerInBattleByDetection: false);
+		ScriptedLostVoidRunLevelRuntime runtime = new ScriptedLostVoidRunLevelRuntime
+		{
+			BattleStates = new Queue<LostVoidBattleState>(Enumerable.Repeat(yoloExit, 9).Append(clean).Concat(Enumerable.Repeat(yoloExit, 9)))
+		};
+		LostVoidRunLevel operation = new LostVoidRunLevel(context, new LostVoidRunRecord(new LostVoidConfig()), "挚交会谈", runtime);
+
+		for (int i = 0; i < 19; i++)
+		{
+			Assert.Equal(OperationRoundResultKind.Wait, (await InvokeInBattleAsync(operation)).Kind);
+		}
+
+		Assert.Equal(0, runtime.StopAutoBattleCount);
+	}
+
+	[Fact]
+	public async Task RunLevel_NonBattleInteractCountResetsWhenScreenNoLongerMatches()
+	{
+		using ZContext context = new ZContext(new OneDragonEnvironment(CreateTempRoot()));
+		ScriptedLostVoidRunLevelRuntime runtime = new ScriptedLostVoidRunLevelRuntime
+		{
+			BattleStates = new Queue<LostVoidBattleState>(new[]
+			{
+				new LostVoidBattleState(CurrentFrameInBattle: false, InInteractScreen: true),
+				new LostVoidBattleState(CurrentFrameInBattle: false, InInteractScreen: true),
+				new LostVoidBattleState(CurrentFrameInBattle: false, InInteractScreen: false),
+				new LostVoidBattleState(CurrentFrameInBattle: false, InInteractScreen: true),
+				new LostVoidBattleState(CurrentFrameInBattle: false, InInteractScreen: true)
+			})
+		};
+		LostVoidRunLevel operation = new LostVoidRunLevel(context, new LostVoidRunRecord(new LostVoidConfig()), "挚交会谈", runtime);
+
+		for (int i = 0; i < 5; i++)
+		{
+			Assert.Equal(OperationRoundResultKind.Wait, (await InvokeInBattleAsync(operation)).Kind);
+		}
+
+		Assert.Equal(0, runtime.StopAutoBattleCount);
+	}
+
+	[Fact]
+	public async Task RunLevel_NextRegionHintStopsAutoBattleImmediately()
+	{
+		using ZContext context = new ZContext(new OneDragonEnvironment(CreateTempRoot()));
+		ScriptedLostVoidRunLevelRuntime runtime = new ScriptedLostVoidRunLevelRuntime
+		{
+			BattleState = new LostVoidBattleState(CurrentFrameInBattle: true, NextRegionHint: true, NoLongerInBattleByDetection: true)
+		};
+		LostVoidRunLevel operation = new LostVoidRunLevel(context, new LostVoidRunRecord(new LostVoidConfig()), "挚交会谈", runtime);
+
+		OperationRoundResult result = await InvokeInBattleAsync(operation);
+
+		Assert.True(result.IsSuccess);
+		Assert.Equal("识别需移动交互", result.Status);
+		Assert.Equal(1, runtime.StopAutoBattleCount);
+	}
+
+	[Fact]
+	public async Task RunLevel_InBattleIgnoresInteractScreenSignalUntilBattleFrameEnds()
+	{
+		using ZContext context = new ZContext(new OneDragonEnvironment(CreateTempRoot()));
+		ScriptedLostVoidRunLevelRuntime runtime = new ScriptedLostVoidRunLevelRuntime
+		{
+			BattleState = new LostVoidBattleState(CurrentFrameInBattle: true, NoLongerInBattleByDetection: false, InInteractScreen: true)
+		};
+		LostVoidRunLevel operation = new LostVoidRunLevel(context, new LostVoidRunRecord(new LostVoidConfig()), "挚交会谈", runtime);
+
+		for (int i = 0; i < 3; i++)
+		{
+			Assert.Equal(OperationRoundResultKind.Wait, (await InvokeInBattleAsync(operation)).Kind);
+		}
+
+		Assert.Equal(0, runtime.StopAutoBattleCount);
+	}
+
+	[Fact]
+	public async Task RunLevel_FalseExitSequenceLogsStopPathfindingEnterBattleAndRestartInOrder()
+	{
+		RecordingLogSink sink = new RecordingLogSink();
+		using Logger logger = new LoggerConfiguration().MinimumLevel.Verbose().WriteTo.Sink(sink).CreateLogger();
+		using ZContext context = new ZContext(new OneDragonEnvironment(CreateTempRoot()), logger);
+		context.LostVoid.PriorityUpdated = true;
+		LostVoidBattleState yoloExit = new LostVoidBattleState(CurrentFrameInBattle: true, NoLongerInBattleByDetection: true);
+		ScriptedLostVoidRunLevelRuntime runtime = new ScriptedLostVoidRunLevelRuntime
+		{
+			BattleStates = new Queue<LostVoidBattleState>(Enumerable.Repeat(yoloExit, 10)),
+			NonBattleFrames = new Queue<LostVoidRunLevelFrame>(new[]
+			{
+				new LostVoidRunLevelFrame(InNormalWorld: true, DetectResult: new YoloDetectFrameResult(new[] { Object("0000-感叹号", 100) }, 0.0)),
+				new LostVoidRunLevelFrame(InNormalWorld: true)
+			}),
+			MoveResult = new OperationResult(IsSuccess: true, "到达目标"),
+			CurrentFrameBattleEncounter = true
+		};
+		LostVoidRunLevel operation = new LostVoidRunLevel(context, new LostVoidRunRecord(new LostVoidConfig()), "入口", runtime);
+
+		for (int i = 0; i < 9; i++)
+		{
+			Assert.Equal(OperationRoundResultKind.Wait, (await InvokeInBattleAsync(operation)).Kind);
+		}
+		Assert.Equal("识别需移动交互", (await InvokeInBattleAsync(operation)).Status);
+		Assert.Equal("0000-感叹号", (await InvokeNonBattleCheckAsync(operation)).Status);
+		Assert.Equal("进入战斗", (await InvokeNonBattleCheckAsync(operation)).Status);
+		Assert.True(InvokeInitAutoOp(operation).IsSuccess);
+
+		Assert.Equal(new[] { "StopAutoBattle", "StartPathfinding:0000-感叹号", "StartAutoBattle" }, runtime.BattleLifecycleCalls);
+		string[] messages = sink.Events.Select(entry => entry.RenderMessage()).ToArray();
+		int stop = Array.FindIndex(messages, message => message.Contains("StopAutoBattleAndMove", StringComparison.Ordinal));
+		int pathfinding = Array.FindIndex(messages, message => message.Contains("StartPathfinding", StringComparison.Ordinal));
+		int enterBattle = Array.FindIndex(messages, message => message.Contains("EnterBattle", StringComparison.Ordinal));
+		int start = Array.FindIndex(messages, enterBattle + 1, message => message.Contains("StartAutoBattle", StringComparison.Ordinal));
+		Assert.True(stop >= 0 && pathfinding > stop && enterBattle > pathfinding && start > enterBattle);
+		Assert.Contains(sink.Events, entry => entry.MessageTemplate.Text.StartsWith("迷失之地战斗状态转移:", StringComparison.Ordinal)
+			&& entry.Properties.TryGetValue("Signal", out LogEventPropertyValue? signal) && signal.ToString().Contains("InBattleYolo", StringComparison.Ordinal)
+			&& entry.Properties.TryGetValue("Threshold", out LogEventPropertyValue? threshold) && threshold.ToString() == "10");
 	}
 
 	[Fact]
@@ -2316,6 +2522,12 @@ public sealed class LostVoidContextTests
 		MethodInfo method = typeof(LostVoidRunLevel).GetMethod("InBattleAsync", BindingFlags.Instance | BindingFlags.NonPublic);
 		Task<OperationRoundResult> task = Assert.IsAssignableFrom<Task<OperationRoundResult>>(method.Invoke(operation, null));
 		return await task;
+	}
+
+	private static OperationRoundResult InvokeInitAutoOp(LostVoidRunLevel operation)
+	{
+		MethodInfo method = typeof(LostVoidRunLevel).GetMethod("InitAutoOp", BindingFlags.Instance | BindingFlags.NonPublic);
+		return Assert.IsType<OperationRoundResult>(method.Invoke(operation, null));
 	}
 
 	private static async Task<OperationRoundResult> InvokeNonBattleCheckAsync(LostVoidRunLevel operation, TimeSpan? elapsed = null)
