@@ -43,7 +43,7 @@ internal sealed partial class FrontierOneDragonRunPage : UserControl, IZzzPageLi
     private readonly IZzzAppBackend _backend;
     private readonly ZzzOneDragonRunSettings _settings;
     private readonly ZzzAppSettingNavigator _appSettingNavigator;
-    private readonly FASettingsExpander _appList;
+    private readonly ItemsControl _appList;
     private readonly FAInfoBar _actionInfoBar;
     private readonly DispatcherTimer _actionInfoTimer;
     private readonly ToggleSwitch _notifyToggle;
@@ -79,7 +79,7 @@ internal sealed partial class FrontierOneDragonRunPage : UserControl, IZzzPageLi
             fixedGroupId: ZOneDragonAppConstants.DefaultGroupId);
 
         AvaloniaXamlLoader.Load(this);
-        _appList = Required<FASettingsExpander>("AppList");
+        _appList = Required<ItemsControl>("AppList");
         _actionInfoBar = Required<FAInfoBar>("ActionInfoBar");
         _actionInfoTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(4) };
         _actionInfoTimer.Tick += OnActionInfoTimerTick;

@@ -29,7 +29,7 @@ internal sealed partial class FrontierStandaloneAppRunPage : UserControl, IZzzPa
     private readonly IZzzAppBackend _backend;
     private readonly ZzzGuiOperationTracker _operations;
     private readonly ZzzAppSettingNavigator _appSettingNavigator;
-    private readonly FASettingsExpander _appList;
+    private readonly ItemsControl _appList;
     private readonly FAInfoBar _actionInfoBar;
     private readonly Button _addAppButton;
     private readonly List<ZzzAppDto> _availableApps = [];
@@ -59,7 +59,7 @@ internal sealed partial class FrontierStandaloneAppRunPage : UserControl, IZzzPa
             fixedGroupId: ZOneDragonAppConstants.DefaultGroupId);
 
         AvaloniaXamlLoader.Load(this);
-        _appList = Required<FASettingsExpander>("AppList");
+        _appList = Required<ItemsControl>("AppList");
         _actionInfoBar = Required<FAInfoBar>("ActionInfoBar");
         _addAppButton = Required<Button>("AddAppButton");
         Required<ContentControl>("RunHost").Content = RunPanel;

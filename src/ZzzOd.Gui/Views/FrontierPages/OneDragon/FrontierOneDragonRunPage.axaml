@@ -3,6 +3,20 @@
              xmlns:fa="using:FluentAvalonia.UI.Controls"
              xmlns:local="using:ZzzOd.Gui.Pages.OneDragon"
              x:Class="ZzzOd.Gui.Views.FrontierPages.OneDragon.FrontierOneDragonRunPage">
+  <UserControl.Styles>
+    <Style Selector="ItemsControl#AppList fa|FASettingsExpanderItem">
+      <Setter Property="CornerRadius" Value="0" />
+      <Setter Property="Margin" Value="0,0,0,1" />
+    </Style>
+    <Style Selector="ItemsControl#AppList ContentPresenter:nth-child(1) fa|FASettingsExpanderItem">
+      <Setter Property="CornerRadius" Value="4,4,0,0" />
+    </Style>
+    <Style Selector="ItemsControl#AppList ContentPresenter:nth-last-child(1) fa|FASettingsExpanderItem">
+      <Setter Property="CornerRadius" Value="0,0,4,4" />
+      <Setter Property="Margin" Value="0" />
+    </Style>
+  </UserControl.Styles>
+
   <Grid Margin="{DynamicResource SampleAppPageMargin}"
         ColumnDefinitions="*,10,*">
     <Grid Grid.Column="0"
@@ -11,14 +25,12 @@
                     Grid.RowSpan="2"
                     HorizontalScrollBarVisibility="Disabled"
                     VerticalScrollBarVisibility="Auto">
-        <fa:FASettingsExpander x:Name="AppList"
-                               Header="应用安排"
-                               IsExpanded="True">
-            <fa:FASettingsExpander.ItemTemplate>
+        <ItemsControl x:Name="AppList">
+            <ItemsControl.ItemTemplate>
               <DataTemplate x:DataType="local:ZzzOneDragonAppRowModel">
                 <fa:FASettingsExpanderItem Content="{Binding Name}"
                                          Description="{Binding LastRunText}"
-                                         Margin="0,0,0,1"
+                                         Cursor="Hand"
                                          DragDrop.AllowDrop="True"
                                          PointerPressed="OnAppPointerPressed"
                                          PointerMoved="OnAppPointerMoved"
@@ -32,7 +44,7 @@
                                 Spacing="4">
                       <Button Width="36"
                               Height="32"
-                              Padding="0"
+                              Classes="zzz-tool-button"
                               ToolTip.Tip="应用设置"
                               IsVisible="{Binding SettingVisible}"
                               Tag="{Binding}"
@@ -41,7 +53,7 @@
                       </Button>
                       <Button Width="36"
                               Height="32"
-                              Padding="0"
+                              Classes="zzz-tool-button"
                               ToolTip.Tip="更多"
                               Tag="{Binding}"
                               Click="OnMoreClicked">
@@ -68,7 +80,7 @@
                       </Button>
                       <Button Width="36"
                               Height="32"
-                              Padding="0"
+                              Classes="zzz-tool-button"
                               ToolTip.Tip="运行"
                               IsEnabled="{Binding RunAvailable}"
                               Click="OnRunAppClicked">
@@ -82,8 +94,8 @@
                   </fa:FASettingsExpanderItem.Footer>
                 </fa:FASettingsExpanderItem>
               </DataTemplate>
-            </fa:FASettingsExpander.ItemTemplate>
-        </fa:FASettingsExpander>
+            </ItemsControl.ItemTemplate>
+        </ItemsControl>
       </ScrollViewer>
     </Grid>
 

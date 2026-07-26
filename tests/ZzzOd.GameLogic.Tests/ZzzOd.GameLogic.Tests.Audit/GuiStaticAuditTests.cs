@@ -456,8 +456,9 @@ public sealed class GuiStaticAuditTests
 			foreach (XElement item in document.Descendants().Where(element => element.Name.LocalName == "FASettingsExpanderItem"))
 			{
 				bool directItem = item.Parent?.Name.LocalName == "FASettingsExpander";
+				// 不带折叠外壳的设置行列表用 ItemsControl 承载，行本身仍是 SettingsExpanderItem。
 				bool itemTemplate = item.Parent?.Name.LocalName == "DataTemplate"
-					&& item.Parent.Parent?.Name.LocalName == "FASettingsExpander.ItemTemplate";
+					&& item.Parent.Parent?.Name.LocalName is "FASettingsExpander.ItemTemplate" or "ItemsControl.ItemTemplate";
 				string? resourceKey = item.Parent?.Attribute(x + "Key")?.Value;
 				bool resourceTemplate = !string.IsNullOrWhiteSpace(resourceKey)
 					&& document.Descendants()

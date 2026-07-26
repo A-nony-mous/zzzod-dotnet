@@ -3,6 +3,20 @@
              xmlns:fa="using:FluentAvalonia.UI.Controls"
              xmlns:local="using:ZzzOd.Gui.Views.FrontierPages.Standalone"
              x:Class="ZzzOd.Gui.Views.FrontierPages.Standalone.FrontierStandaloneAppRunPage">
+  <UserControl.Styles>
+    <Style Selector="ItemsControl#AppList fa|FASettingsExpanderItem">
+      <Setter Property="CornerRadius" Value="0" />
+      <Setter Property="Margin" Value="0,0,0,1" />
+    </Style>
+    <Style Selector="ItemsControl#AppList ContentPresenter:nth-child(1) fa|FASettingsExpanderItem">
+      <Setter Property="CornerRadius" Value="4,4,0,0" />
+    </Style>
+    <Style Selector="ItemsControl#AppList ContentPresenter:nth-last-child(1) fa|FASettingsExpanderItem">
+      <Setter Property="CornerRadius" Value="0,0,4,4" />
+      <Setter Property="Margin" Value="0" />
+    </Style>
+  </UserControl.Styles>
+
   <Grid Margin="{DynamicResource SampleAppPageMargin}"
         ColumnDefinitions="*,10,*">
     <Grid Grid.Column="0"
@@ -15,13 +29,11 @@
       <ScrollViewer Grid.Row="1"
                     HorizontalScrollBarVisibility="Disabled"
                     VerticalScrollBarVisibility="Auto">
-        <fa:FASettingsExpander x:Name="AppList"
-                               Header="应用安排"
-                               IsExpanded="True">
-          <fa:FASettingsExpander.ItemTemplate>
+        <ItemsControl x:Name="AppList">
+          <ItemsControl.ItemTemplate>
             <DataTemplate x:DataType="local:ZzzStandaloneAppRowModel">
               <fa:FASettingsExpanderItem Content="{Binding Name}"
-                                         Margin="0,0,0,1"
+                                         Cursor="Hand"
                                          Opacity="{Binding Opacity}"
                                          Tag="{Binding}"
                                          DragDrop.AllowDrop="True"
@@ -37,7 +49,7 @@
                               Spacing="4">
                     <Button Width="36"
                             Height="32"
-                            Padding="0"
+                            Classes="zzz-tool-button"
                             ToolTip.Tip="应用设置"
                             IsVisible="{Binding SettingVisible}"
                             Tag="{Binding}"
@@ -46,7 +58,7 @@
                     </Button>
                     <Button Width="36"
                             Height="32"
-                            Padding="0"
+                            Classes="zzz-tool-button"
                             ToolTip.Tip="移除"
                             Tag="{Binding}"
                             Click="OnRemoveClicked">
@@ -56,8 +68,8 @@
                 </fa:FASettingsExpanderItem.Footer>
               </fa:FASettingsExpanderItem>
             </DataTemplate>
-          </fa:FASettingsExpander.ItemTemplate>
-        </fa:FASettingsExpander>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
       </ScrollViewer>
 
       <Button x:Name="AddAppButton"
