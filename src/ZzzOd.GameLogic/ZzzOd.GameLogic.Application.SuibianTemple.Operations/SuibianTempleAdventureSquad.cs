@@ -53,28 +53,28 @@ public sealed class SuibianTempleAdventureSquad : SuibianTempleSubOperation
 	[OperationNode("点击游历小队")]
 	public OperationRoundResult ClickSquadTeam()
 	{
-		return _claim ? ClickText("游历小队") : RoundSuccess("跳过收获");
+		return _claim ? ClickText(SuibianTempleSubOperation.OneSecond, "游历小队") : RoundSuccess("跳过收获");
 	}
 
 	[NodeFrom("点击游历小队", Status = "游历小队")]
 	[OperationNode("点击游历完成")]
 	public OperationRoundResult ClickFinish()
 	{
-		return ClickText("游历完成", "游历小队");
+		return ClickText(SuibianTempleSubOperation.OneSecond, "游历完成", "游历小队");
 	}
 
 	[NodeFrom("点击游历完成", Status = "游历完成")]
 	[OperationNode("点击可收获")]
 	public OperationRoundResult ClickClaim()
 	{
-		return ClickText("可收获");
+		return ClickText(SuibianTempleSubOperation.OneSecond, "可收获");
 	}
 
 	[NodeFrom("点击可收获", Status = "可收获")]
 	[OperationNode("点击确认")]
 	public OperationRoundResult ClickConfirm()
 	{
-		return ClickText("确认");
+		return ClickText(SuibianTempleSubOperation.OneSecond, "确认");
 	}
 
 	[NodeFrom("点击确认", Status = "确认")]
@@ -141,7 +141,8 @@ public sealed class SuibianTempleAdventureSquad : SuibianTempleSubOperation
 				list3.Add(text6);
 			}
 		}
-		OperationRoundResult operationRoundResult = RoundByOcrAndClickByPriority(base.LastScreenshot, list2, null, 0.5, new OneDragon.Core.Abstractions.Geometry.Point(0, -100), SuibianTempleSubOperation.OneSecond, SuibianTempleSubOperation.OneSecond, null, cropFirst: true, list3);
+		// lcsPercent 使用框架默认值 0.6（按优先级列表匹配的场景不应沿用单目标匹配的 0.5 阈值）。
+		OperationRoundResult operationRoundResult = RoundByOcrAndClickByPriority(base.LastScreenshot, list2, null, offset: new OneDragon.Core.Abstractions.Geometry.Point(0, -100), successDelay: SuibianTempleSubOperation.OneSecond, retryDelay: SuibianTempleSubOperation.OneSecond, colorRange: null, cropFirst: true, ignoreTextList: list3);
 		if (operationRoundResult.IsSuccess)
 		{
 			return RoundSuccess(operationRoundResult.Status, null, SuibianTempleSubOperation.OneSecond);
@@ -170,7 +171,7 @@ public sealed class SuibianTempleAdventureSquad : SuibianTempleSubOperation
 			obj = text[text.Length - 1].ToString();
 		}
 		string text2 = (string)obj;
-		return ClickArea("随便观-游历", "标题-子副本-" + text2);
+		return ClickArea("随便观-游历", "标题-子副本-" + text2, SuibianTempleSubOperation.OneSecond);
 	}
 
 	[NodeFrom("选择子副本")]

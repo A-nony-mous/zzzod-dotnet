@@ -17,11 +17,22 @@ namespace ZzzOd.GameLogic.Application.WorldPatrol.Operations;
 /// </summary>
 public sealed class DefaultWorldPatrolRunRouteServices : IWorldPatrolRunRouteServices
 {
+	private readonly ZContext _context;
+
+	/// <summary>
+	/// 初始化默认路线执行服务。
+	/// </summary>
+	public DefaultWorldPatrolRunRouteServices(ZContext context)
+	{
+		ArgumentNullException.ThrowIfNull(context);
+		_context = context;
+	}
+
 	/// <inheritdoc />
 	public DateTimeOffset Now => DateTimeOffset.UtcNow;
 
 	/// <inheritdoc />
-	public TimeSpan BattleWaitDelay => TimeSpan.FromMilliseconds(200L);
+	public TimeSpan BattleWaitDelay => TimeSpan.FromSeconds(_context.BattleAssistantConfig.ScreenshotInterval);
 
 	/// <inheritdoc />
 	public Task<OperationResult> BackToNormalWorldAsync(ZContext context, CancellationToken cancellationToken)

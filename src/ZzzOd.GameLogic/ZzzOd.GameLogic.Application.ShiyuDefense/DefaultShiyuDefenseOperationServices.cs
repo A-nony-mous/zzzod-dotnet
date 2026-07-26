@@ -242,7 +242,13 @@ public sealed class DefaultShiyuDefenseOperationServices : IShiyuDefenseOperatio
 			return Task.FromResult(operationResult);
 		}
 		FindAndClickArea(context, screen, "式舆防卫战", "战斗结束-退出");
-		return Task.FromResult(FindAndClickArea(context, screen, "式舆防卫战", "节点-05"));
+		OperationResult nodeFiveResult = FindAndClickArea(context, screen, "式舆防卫战", "节点-05");
+		if (nodeFiveResult.IsSuccess)
+		{
+			// 前四关已打完、进入第五关，节点下标需要显式跳到 5，通过 Data 交给调用方回写状态
+			return Task.FromResult(new OperationResult(IsSuccess: true, "节点-05", 5));
+		}
+		return Task.FromResult(nodeFiveResult);
 	}
 
 	/// <inheritdoc />

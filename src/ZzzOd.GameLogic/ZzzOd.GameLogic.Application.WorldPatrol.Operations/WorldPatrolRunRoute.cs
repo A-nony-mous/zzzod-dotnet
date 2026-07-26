@@ -116,7 +116,7 @@ public sealed class WorldPatrolRunRoute : ZOperation
 		_config = config ?? WorldPatrolConfig.Load(context.Environment, context.RunContext.CurrentInstanceIndex.GetValueOrDefault(), "default");
 		_currentIdx = startIdx;
 		_isRestarted = isRestarted;
-		_services = services ?? new DefaultWorldPatrolRunRouteServices();
+		_services = services ?? new DefaultWorldPatrolRunRouteServices(context);
 		_turnCompensator = new AngleTurnCompensator(delegate(double angleDiff)
 		{
 			_services.TurnByAngleDiff(base.ZContext, angleDiff);

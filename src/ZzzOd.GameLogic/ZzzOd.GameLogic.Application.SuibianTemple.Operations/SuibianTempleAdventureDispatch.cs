@@ -83,7 +83,8 @@ public sealed class SuibianTempleAdventureDispatch : SuibianTempleSubOperation
 	[OperationNode("点击自动选择邦布")]
 	public OperationRoundResult ClickAutoChoose()
 	{
-		return ClickArea("随便观-游历", "按钮-自动选择邦布");
+		// 邦布电量不足时不会显示该按钮，重试等待沿用原逻辑的 1 秒。
+		return ClickArea("随便观-游历", "按钮-自动选择邦布", SuibianTempleSubOperation.OneSecond);
 	}
 
 	[NodeFrom("点击自动选择邦布")]

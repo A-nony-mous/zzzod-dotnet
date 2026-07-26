@@ -11,10 +11,10 @@ namespace ZzzOd.GameLogic.Application.RandomPlay;
 public sealed record RandomPlayTransportPoint(string Value, string AreaName, string TransportPointName)
 {
 	/// <summary>录像店柜台。</summary>
-	public static RandomPlayTransportPoint VideoStoreCounter { get; } = new RandomPlayTransportPoint("柜台", "录像店", "柜台");
+	public static RandomPlayTransportPoint VideoStoreCounter { get; } = new RandomPlayTransportPoint("录像店 - 柜台", "录像店", "柜台");
 
 	/// <summary>澄辉坪录像店营业点。</summary>
-	public static RandomPlayTransportPoint FailumeHeightsBusinessPoint { get; } = new RandomPlayTransportPoint("录像店营业点", "澄辉坪", "录像店营业点");
+	public static RandomPlayTransportPoint FailumeHeightsBusinessPoint { get; } = new RandomPlayTransportPoint("澄辉坪 - 录像店营业点", "澄辉坪", "录像店营业点");
 
 	/// <summary>所有可选传送点。</summary>
 	public static IReadOnlyList<RandomPlayTransportPoint> All { get; } = new RandomPlayTransportPoint[2] { VideoStoreCounter, FailumeHeightsBusinessPoint };
@@ -22,16 +22,23 @@ public sealed record RandomPlayTransportPoint(string Value, string AreaName, str
 	/// <summary>设置选项。</summary>
 	public static IReadOnlyList<ConfigItem> Options { get; } = new ConfigItem[2]
 	{
-		new ConfigItem("录像店-柜台", VideoStoreCounter.Value),
-		new ConfigItem("澄辉坪-录像店营业点", FailumeHeightsBusinessPoint.Value)
+		new ConfigItem(VideoStoreCounter.Value),
+		new ConfigItem(FailumeHeightsBusinessPoint.Value)
 	};
 
 	/// <summary>
-	/// 按配置值尝试解析传送点。
+	/// 按配置值尝试解析传送点。旧版本曾用仅传送点名的短形式作为值，这里继续兼容解析，
+	/// 保证历史配置文件中残留的旧值仍能被识别。
 	/// </summary>
 	public static bool TryFromValue(string? value, out RandomPlayTransportPoint? point)
 	{
-		point = All.FirstOrDefault((RandomPlayTransportPoint item) => string.Equals(item.Value, value, StringComparison.Ordinal));
+		RandomPlayTransportPoint? legacy = value switch
+		{
+			"柜台" => VideoStoreCounter,
+			"录像店营业点" => FailumeHeightsBusinessPoint,
+			_ => null,
+		};
+		point = legacy ?? All.FirstOrDefault((RandomPlayTransportPoint item) => string.Equals(item.Value, value, StringComparison.Ordinal));
 		return (object)point != null;
 	}
 

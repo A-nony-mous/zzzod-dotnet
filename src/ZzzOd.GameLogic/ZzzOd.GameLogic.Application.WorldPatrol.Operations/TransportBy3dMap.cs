@@ -2,7 +2,6 @@ using System;
 using System.Threading;
 using System.Threading.Tasks;
 using OneDragon.Core.Abstractions.Operations;
-using OneDragon.Core.Screen;
 using ZzzOd.GameLogic.Context;
 using ZzzOd.GameLogic.Operations;
 
@@ -193,17 +192,9 @@ public sealed class TransportBy3dMap : ZOperation
 	[OperationNode("点击前往")]
 	public OperationRoundResult ClickGo()
 	{
-		if (base.NodeClicked)
-		{
-			if (base.LastScreenshot == null)
-			{
-				return RoundRetry("未获取截图", null, TimeSpan.FromSeconds(1L));
-			}
-			FindAreaResultEnum findAreaResultEnum = ScreenUtils.FindArea(base.ZContext, base.LastScreenshot, "3D地图", "按钮-前往");
-			return (findAreaResultEnum == FindAreaResultEnum.True) ? RoundWait("按钮-前往", null, TimeSpan.FromSeconds(1L)) : RoundSuccess("按钮-前往", null, TimeSpan.FromSeconds(1L));
-		}
-		OperationResult operationResult = _services.ClickGo(base.ZContext, base.LastScreenshot);
-		return operationResult.IsSuccess ? OnAreaClicked("3D地图", "按钮-前往", TimeSpan.FromSeconds(1L), waitForConfirmation: true) : RoundRetry(operationResult.Status, null, TimeSpan.FromSeconds(1L));
+		// 对齐框架 round_by_find_and_click_area 的 until_not_find_all 语义：
+		// 点击后每轮持续补点击，直到"按钮-前往"消失为止，而不是点一次后被动轮询。
+		return RoundByFindAndClickArea(base.LastScreenshot, "3D地图", "按钮-前往", retryDelay: TimeSpan.FromSeconds(1L), untilNotFindAll: new (string, string)[] { ("3D地图", "按钮-前往") });
 	}
 
 	/// <summary>

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Threading;
 using OneDragon.Core.Abstractions.Operations;
 using ZzzOd.GameLogic.Context;
 
@@ -22,9 +23,14 @@ public sealed class SuibianTempleSalesStall : SuibianTempleSubOperation
 	[OperationNode("更换邦布")]
 	public OperationRoundResult ChooseAnotherBangboo()
 	{
+		// 三次点击的返回结果均被丢弃，仅依赖显式同步等待还原点击节奏；
+		// 三个操作对象在游戏内需要依次生效，点击过快会导致后续点击落空。
 		ClickArea("随便观-售卖铺", "区域-选择邦布");
+		Thread.Sleep(TimeSpan.FromSeconds(1L));
 		ClickArea("随便观-售卖铺", "区域-第二只邦布");
+		Thread.Sleep(TimeSpan.FromSeconds(1L));
 		ClickArea("随便观-售卖铺", "按钮-确认派驻");
+		Thread.Sleep(TimeSpan.FromSeconds(1L));
 		return RoundSuccess();
 	}
 

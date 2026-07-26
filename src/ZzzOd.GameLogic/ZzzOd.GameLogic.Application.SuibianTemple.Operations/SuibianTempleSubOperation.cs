@@ -45,15 +45,24 @@ public abstract class SuibianTempleSubOperation : ZOperation
 
 	protected OperationRoundResult ClickText(params string[] texts)
 	{
+		return ClickText(ShortDelay, texts);
+	}
+
+	/// <summary>
+	/// 按优先级 OCR 匹配并点击文本，可显式指定失败重试的等待时间；不传时保持原有的 300ms（<see cref="ShortDelay"/>）。
+	/// </summary>
+	protected OperationRoundResult ClickText(TimeSpan retryDelay, params string[] texts)
+	{
 		Mat? lastScreenshot = base.LastScreenshot;
 		TimeSpan? successDelay = OneSecond;
-		TimeSpan? retryDelay = ShortDelay;
-		return RoundByOcrAndClickByPriority(lastScreenshot, texts, null, 0.5, null, successDelay, retryDelay);
+		// lcsPercent 使用框架默认值 0.6（按优先级列表匹配的场景不应沿用单目标匹配的 0.5 阈值）。
+		return RoundByOcrAndClickByPriority(lastScreenshot, texts, null, offset: null, successDelay: successDelay, retryDelay: retryDelay);
 	}
 
 	protected OperationRoundResult ClickTextByPriority(IReadOnlyList<string> texts, OneDragon.Core.Screen.ScreenArea? area = null, OneDragon.Core.Abstractions.Geometry.Point? offset = null, IReadOnlyList<string>? ignoreTexts = null, TimeSpan? successDelay = null, TimeSpan? retryDelay = null)
 	{
-		return RoundByOcrAndClickByPriority(base.LastScreenshot, texts, area, 0.5, offset, successDelay ?? OneSecond, retryDelay ?? ShortDelay, null, cropFirst: true, ignoreTexts);
+		// lcsPercent 使用框架默认值 0.6（按优先级列表匹配的场景不应沿用单目标匹配的 0.5 阈值）。
+		return RoundByOcrAndClickByPriority(base.LastScreenshot, texts, area, offset: offset, successDelay: successDelay ?? OneSecond, retryDelay: retryDelay ?? ShortDelay, colorRange: null, cropFirst: true, ignoreTextList: ignoreTexts);
 	}
 
 	protected IReadOnlyList<OcrMatchResult> GetAreaOcrResults(string screenName, string areaName, IReadOnlyList<IReadOnlyList<int>>? colorRange = null)
@@ -86,8 +95,15 @@ public abstract class SuibianTempleSubOperation : ZOperation
 
 	protected OperationRoundResult ClickArea(string screenName, string areaName)
 	{
+		return ClickArea(screenName, areaName, ShortDelay);
+	}
+
+	/// <summary>
+	/// 点击指定区域，可显式指定失败重试的等待时间；不传时保持原有的 300ms（<see cref="ShortDelay"/>）。
+	/// </summary>
+	protected OperationRoundResult ClickArea(string screenName, string areaName, TimeSpan retryDelay)
+	{
 		TimeSpan? successDelay = OneSecond;
-		TimeSpan? retryDelay = ShortDelay;
 		return RoundByClickArea(screenName, areaName, clickLeftTop: false, null, successDelay, retryDelay);
 	}
 

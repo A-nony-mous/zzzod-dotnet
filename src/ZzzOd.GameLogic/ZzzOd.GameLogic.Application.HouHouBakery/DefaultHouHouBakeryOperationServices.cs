@@ -48,7 +48,7 @@ public sealed class DefaultHouHouBakeryOperationServices : IHouHouBakeryOperatio
 		}
 		string gameTargetText = context.GameTextResolver(targetText);
 		IReadOnlyList<OcrMatchResult> ocrResultList = context.OcrService.GetOcrResultList(screen);
-		return Task.FromResult(ocrResultList.Any((OcrMatchResult item) => StringUtils.FindByLcs(gameTargetText, item.Text, 0.5)));
+		return Task.FromResult(FindBestOcrMatch(gameTargetText, ocrResultList) != null);
 	}
 
 	/// <inheritdoc />
@@ -64,7 +64,7 @@ public sealed class DefaultHouHouBakeryOperationServices : IHouHouBakeryOperatio
 		}
 		string gameTargetText = context.GameTextResolver(targetText);
 		IReadOnlyList<OcrMatchResult> ocrResultList = context.OcrService.GetOcrResultList(screen);
-		OcrMatchResult ocrMatchResult = ocrResultList.FirstOrDefault((OcrMatchResult item) => StringUtils.FindByLcs(gameTargetText, item.Text, 0.5));
+		OcrMatchResult ocrMatchResult = FindBestOcrMatch(gameTargetText, ocrResultList);
 		if (ocrMatchResult == null)
 		{
 			return Task.FromResult(new OperationResult(IsSuccess: false, "找不到 " + targetText));
@@ -72,6 +72,25 @@ public sealed class DefaultHouHouBakeryOperationServices : IHouHouBakeryOperatio
 		Thread.Sleep(TimeSpan.FromMilliseconds(300L));
 		bool flag = context.Controller.Click(ocrMatchResult.Center);
 		return Task.FromResult(new OperationResult(flag, flag ? targetText : ("点击失败 " + targetText)));
+	}
+
+	/// <summary>
+	/// 两段式 OCR 文本匹配：先用 difflib 固定阈值 0.6 从全部候选中挑出唯一全局最优，
+	/// 再用 LCS 阈值 0.5 校验该候选，避免单纯用宽松 LCS 阈值扫描时把不相关文本误判为目标。
+	/// </summary>
+	private static OcrMatchResult? FindBestOcrMatch(string gameTargetText, IReadOnlyList<OcrMatchResult> ocrResultList)
+	{
+		if (ocrResultList.Count == 0)
+		{
+			return null;
+		}
+		int? bestIndex = StringUtils.FindBestMatchByDifflib(gameTargetText, ocrResultList.Select((OcrMatchResult item) => item.Text).ToArray(), 0.6);
+		if (!bestIndex.HasValue)
+		{
+			return null;
+		}
+		OcrMatchResult candidate = ocrResultList[bestIndex.Value];
+		return StringUtils.FindByLcs(gameTargetText, candidate.Text, 0.5) ? candidate : null;
 	}
 
 	/// <inheritdoc />

@@ -106,7 +106,7 @@ public sealed class LifeOnLineOperation : ZOperation
 	public OperationRoundResult WaitBattleScreen()
 	{
 		_chosenTeam = true;
-		return _services.IsBattleScreenReady(base.ZContext, base.LastScreenshot) ? RoundSuccess() : RoundRetry("未进入战斗画面", null, TimeSpan.FromMilliseconds(500L));
+		return RoundByFindArea(base.LastScreenshot, "战斗画面", "按键-普通攻击", null, TimeSpan.FromMilliseconds(500L));
 	}
 
 	/// <summary>
@@ -179,8 +179,8 @@ public sealed class LifeOnLineOperation : ZOperation
 			_runRecord.AddTimes();
 			return RoundSuccess(waitWorld.Status);
 		}
-		OperationResult clickBlank = _services.ClickHddBlank(base.ZContext);
-		return RoundRetry(clickBlank.Status ?? waitWorld.Status, null, TimeSpan.FromSeconds(1L));
+		_services.ClickHddBlank(base.ZContext);
+		return RoundRetry(waitWorld.Status, null, TimeSpan.FromSeconds(1L));
 	}
 
 	/// <summary>

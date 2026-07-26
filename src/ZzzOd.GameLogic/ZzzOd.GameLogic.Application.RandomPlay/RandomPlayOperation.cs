@@ -191,7 +191,7 @@ public sealed class RandomPlayOperation : ZOperation
 	{
 		if (!_services.IsAreaVisible(base.ZContext, base.LastScreenshot, "影像店营业", "选择宣传员"))
 		{
-			// 对应 Python random_play_app.py:152 的 wait_round_time=1（补足制，非固定延时）。
+			// 对应参考实现 random_play_app.py:152 的 wait_round_time=1（补足制，非固定延时）。
 			return RoundRetry("未找到 选择宣传员", null, null, TimeSpan.FromSeconds(1L));
 		}
 		if (_services.IsAreaVisible(base.ZContext, base.LastScreenshot, "影像店营业", "换下"))

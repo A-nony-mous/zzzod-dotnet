@@ -21,7 +21,7 @@ public sealed class SuibianTempleCraft(ZContext context, SuibianTempleConfig con
 	{
 		IReadOnlyList<string> texts = new string[3] { "开工", "制造暂停", "开物" };
 		IReadOnlyList<string> ignoreTexts = new string[] { "开物" };
-		return ClickTextByPriority(texts, null, null, ignoreTexts);
+		return ClickTextByPriority(texts, null, null, ignoreTexts, retryDelay: TimeSpan.FromMilliseconds(500L));
 	}
 
 	[NodeFrom("点击开工")]

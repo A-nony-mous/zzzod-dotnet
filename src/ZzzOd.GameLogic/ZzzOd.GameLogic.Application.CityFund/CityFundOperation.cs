@@ -19,7 +19,7 @@ public sealed class CityFundOperation : ZOperation
 	/// 初始化丽都城募领取流程。
 	/// </summary>
 	public CityFundOperation(ZContext context)
-		: base(context, "丽都城募", 1)
+		: base(context, "丽都城募")
 	{
 	}
 

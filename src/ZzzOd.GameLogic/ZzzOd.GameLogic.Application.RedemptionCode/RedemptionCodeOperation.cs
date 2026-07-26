@@ -64,7 +64,7 @@ public sealed class RedemptionCodeOperation : ZOperation
 	[OperationNode("检测新兑换码", IsStartNode = true)]
 	public OperationRoundResult CheckNewCode()
 	{
-		_unusedCodeList = _runRecord.GetUnusedCodeList(_runRecord.Dt);
+		_unusedCodeList = _runRecord.GetUnusedCodeList(_runRecord.GetCurrentDt());
 		return (_unusedCodeList.Count == 0) ? RoundSuccess("无新的兑换码") : RoundSuccess("有新的兑换码");
 	}
 
@@ -91,7 +91,7 @@ public sealed class RedemptionCodeOperation : ZOperation
 		Mat? lastScreenshot = base.LastScreenshot;
 		TimeSpan? successDelay = WaitDelay;
 		TimeSpan? retryDelay = WaitDelay;
-		return RoundByOcrAndClick(lastScreenshot, "更多", area, 0.6, null, successDelay, retryDelay);
+		return RoundByOcrAndClick(lastScreenshot, "更多", area, 0.5, null, successDelay, retryDelay);
 	}
 
 	/// <summary>
@@ -106,7 +106,7 @@ public sealed class RedemptionCodeOperation : ZOperation
 		Mat? lastScreenshot = base.LastScreenshot;
 		TimeSpan? successDelay = WaitDelay;
 		TimeSpan? retryDelay = WaitDelay;
-		return RoundByOcrAndClick(lastScreenshot, "兑换码", area, 0.6, null, successDelay, retryDelay);
+		return RoundByOcrAndClick(lastScreenshot, "兑换码", area, 0.5, null, successDelay, retryDelay);
 	}
 
 	/// <summary>

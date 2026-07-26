@@ -125,7 +125,7 @@ public sealed class SuibianTempleYumChaSin : SuibianTempleSubOperation
 				{
 					_doneMaterialPositions.Add(area);
 					base.ZContext.Controller?.Click(area.Center);
-					return RoundSuccess(result.Text, null, SuibianTempleSubOperation.OneSecond);
+					return RoundSuccess(null, null, SuibianTempleSubOperation.OneSecond);
 				}
 			}
 		}

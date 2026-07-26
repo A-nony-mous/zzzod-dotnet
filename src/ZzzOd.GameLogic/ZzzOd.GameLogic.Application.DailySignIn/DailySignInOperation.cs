@@ -17,6 +17,8 @@ public sealed class DailySignInOperation : ZOperation
 
 	private readonly string _groupId;
 
+	private CancellationToken _cancellationToken;
+
 	/// <summary>
 	/// 初始化每日签到代理执行流程。
 	/// </summary>
@@ -28,8 +30,16 @@ public sealed class DailySignInOperation : ZOperation
 		_groupId = groupId;
 	}
 
+	/// <inheritdoc />
+	protected override Task OnInitializeAsync(CancellationToken cancellationToken)
+	{
+		_cancellationToken = cancellationToken;
+		return Task.CompletedTask;
+	}
+
 	/// <summary>
-	/// 运行子应用：读取配置选中的签到子应用并代理执行，转发其成功或失败状态。
+	/// 运行子应用：读取配置选中的签到子应用并代理执行。成功时不透传子应用状态，
+	/// 失败时透传子应用的失败状态。
 	/// </summary>
 	[OperationNode("运行子应用", IsStartNode = true)]
 	public async Task<OperationRoundResult> RunSubApp()
@@ -44,7 +54,7 @@ public sealed class DailySignInOperation : ZOperation
 			return RoundFail("未找到应用 " + subAppId);
 		}
 		IApplication application = ZContext.RunContext.GetApplication(subAppId, _instanceIndex, _groupId);
-		OperationResult result = await application.ExecuteAsync(CancellationToken.None).ConfigureAwait(continueOnCapturedContext: false);
-		return RoundByOperationResult(result);
+		OperationResult result = await application.ExecuteAsync(_cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
+		return result.IsSuccess ? RoundSuccess() : RoundFail(result.Status);
 	}
 }

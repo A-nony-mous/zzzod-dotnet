@@ -55,7 +55,7 @@ public static class ShiyuDefenseDamageType
 	/// <summary>
 	/// 转为 BaselineParity 枚举名称。
 	/// </summary>
-	public static string ToPythonName(DmgTypeEnum value)
+	public static string ToBaselineName(DmgTypeEnum value)
 	{
 		if (1 == 0)
 		{

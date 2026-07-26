@@ -75,6 +75,8 @@ public sealed class CoffeeOperation : ZOperation
 
 	private ChargePlanItem? _chargePlan;
 
+	private CancellationToken _cancellationToken;
+
 	/// <summary>
 	/// 初始化咖啡店流程。
 	/// </summary>
@@ -101,6 +103,7 @@ public sealed class CoffeeOperation : ZOperation
 	{
 		_turnCompensator?.Reset();
 		_retriedTransport = false;
+		_cancellationToken = cancellationToken;
 		return Task.CompletedTask;
 	}
 
@@ -592,10 +595,10 @@ public sealed class CoffeeOperation : ZOperation
 		return new BackToNormalWorld(context).ExecuteAsync();
 	}
 
-	private static Task<OperationResult> DefaultChargePlanAfterwardsAsync(ZContext context, CoffeeConfig config)
+	private Task<OperationResult> DefaultChargePlanAfterwardsAsync(ZContext context, CoffeeConfig config)
 	{
 		IApplication application = context.RunContext.GetApplication("charge_plan", config.InstanceIndex, "one_dragon");
-		return application.ExecuteAsync(CancellationToken.None);
+		return application.ExecuteAsync(_cancellationToken);
 	}
 
 	private OperationRoundResult DefaultMoveAndInteract(ZContext context, CoffeeConfig config, Mat? screen)

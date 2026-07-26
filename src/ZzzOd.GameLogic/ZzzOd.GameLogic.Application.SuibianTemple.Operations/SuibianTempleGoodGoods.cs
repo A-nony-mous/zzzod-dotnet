@@ -62,7 +62,7 @@ public sealed class SuibianTempleGoodGoods : SuibianTempleSubOperation
 				return RoundRetry("点击获得确认失败");
 			}
 			_purchasedCount++;
-			return RoundSuccess("购买成功", _purchasedCount);
+			return RoundSuccess("购买成功");
 		}
 		Mat? lastScreenshot2 = base.LastScreenshot;
 		retryDelay = SuibianTempleSubOperation.ShortDelay;

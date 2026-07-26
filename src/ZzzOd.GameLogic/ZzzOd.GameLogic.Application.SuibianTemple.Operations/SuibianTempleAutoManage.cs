@@ -36,7 +36,8 @@ public sealed class SuibianTempleAutoManage : SuibianTempleSubOperation
 		TimeSpan? successDelay = SuibianTempleSubOperation.OneSecond;
 		TimeSpan? retryDelay = SuibianTempleSubOperation.ShortDelay;
 		IReadOnlyList<string> autoManageIgnoreTexts = AutoManageIgnoreTexts;
-		OperationRoundResult operationRoundResult = RoundByOcrAndClickByPriority(lastScreenshot, autoManageTargetTexts, area, 0.5, null, successDelay, retryDelay, null, cropFirst: true, autoManageIgnoreTexts);
+		// lcsPercent 使用框架默认值 0.6（按优先级列表匹配的场景不应沿用单目标匹配的 0.5 阈值）。
+		OperationRoundResult operationRoundResult = RoundByOcrAndClickByPriority(lastScreenshot, autoManageTargetTexts, area, offset: null, successDelay: successDelay, retryDelay: retryDelay, colorRange: null, cropFirst: true, ignoreTextList: autoManageIgnoreTexts);
 		SuibianTempleAutoManageRecognitionSummary afterSummary = null;
 		string afterScreenshotPath = null;
 		bool flag = false;

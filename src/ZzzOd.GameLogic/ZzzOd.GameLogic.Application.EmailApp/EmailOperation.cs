@@ -18,7 +18,7 @@ public sealed class EmailOperation : ZOperation
 	/// 初始化邮件领取流程。
 	/// </summary>
 	public EmailOperation(ZContext context)
-		: base(context, "邮件", 1)
+		: base(context, "邮件")
 	{
 	}
 

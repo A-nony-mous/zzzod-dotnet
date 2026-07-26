@@ -28,7 +28,7 @@ public sealed class ShiyuDefenseTeamConfig
 		}
 		set
 		{
-			WeaknessListRaw = value.Select(ShiyuDefenseDamageType.ToPythonName).ToList();
+			WeaknessListRaw = value.Select(ShiyuDefenseDamageType.ToBaselineName).ToList();
 		}
 	}
 }

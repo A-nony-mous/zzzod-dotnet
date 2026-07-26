@@ -171,7 +171,7 @@ public sealed class SuibianTempleCraftDispatch : SuibianTempleSubOperation
 
 	private bool IsWorkingBangbooStatus(string text)
 	{
-		return new string[3] { "制造中", "游历中", "售卖中" }.Select(base.ZContext.GameTextResolver).Any((string target) => StringUtils.FindByLcs(target, text, 0.5));
+		return new string[3] { "制造中", "游历中", "售卖中" }.Select(base.ZContext.GameTextResolver).Any((string target) => string.Equals(target, text, StringComparison.Ordinal));
 	}
 
 	private static string RemoveDigits(string text)

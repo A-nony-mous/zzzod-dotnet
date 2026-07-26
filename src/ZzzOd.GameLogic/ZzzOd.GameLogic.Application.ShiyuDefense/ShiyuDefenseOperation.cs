@@ -326,21 +326,11 @@ public sealed class ShiyuDefenseOperation : ZOperation
 		OperationResult result = await _services.AdvanceAfterBattleAsync(base.ZContext, _currentNodeIndex, _config, base.LastScreenshot).ConfigureAwait(continueOnCapturedContext: false);
 		if (!result.IsSuccess)
 		{
-			return RoundRetry(result.Status, null, TimeSpan.FromSeconds(3L));
+			// "节点-05"找不到按 3 秒重试；其余失败（例如最后一层的"战斗结束-退出"）按 1 秒重试
+			bool isNodeFiveFailure = result.Status != null && result.Status.Contains("节点-05", StringComparison.Ordinal);
+			return RoundRetry(result.Status, null, TimeSpan.FromSeconds(isNodeFiveFailure ? 3L : 1L));
 		}
-		object data = result.Data;
-		int nodeIndex = default(int);
-		int num;
-		if (data is int)
-		{
-			nodeIndex = (int)data;
-			num = 1;
-		}
-		else
-		{
-			num = 0;
-		}
-		if (num != 0)
+		if (result.Data is int nodeIndex)
 		{
 			_currentNodeIndex = nodeIndex;
 			return RoundSuccess(result.Status, result.Data, TimeSpan.FromSeconds(1L));

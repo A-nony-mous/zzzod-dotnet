@@ -531,8 +531,8 @@ public sealed class WorldPatrolService
 	/// 按大地图边界钳制裁剪区并返回裁剪结果。
 	/// </summary>
 	/// <remarks>
-	/// 钳制后小于小地图模板时抛出，与 Python 可观测行为一致：
-	/// Python <c>cv2_utils.crop_image</c>（cv2_utils.py:600-624）只钳制、不保证最小尺寸，
+	/// 钳制后小于小地图模板时抛出，与参考实现 可观测行为一致：
+	/// 参考实现 <c>cv2_utils.crop_image</c>（cv2_utils.py:600-624）只钳制、不保证最小尺寸，
 	/// 随后 <c>cal_pos_by_road</c>（world_patrol_service.py:596-609）直接 <c>matchTemplate</c>，
 	/// 源图小于模板时 cv2 抛错；<c>cal_pos_by_icon</c>（:566-577）用原生切片，越界后 <c>bitwise_and</c> 尺寸不匹配同样抛错。
 	/// 两边都走"轮内异常 → 状态 <c>异常</c> 重试 → 额度耗尽节点失败"，

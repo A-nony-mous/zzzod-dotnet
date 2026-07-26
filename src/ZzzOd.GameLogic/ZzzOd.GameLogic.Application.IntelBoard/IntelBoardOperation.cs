@@ -131,7 +131,7 @@ public sealed class IntelBoardOperation : ZOperation
 		{
 			return RoundSuccess("本周期已完成");
 		}
-		return RoundByPythonClickResult(await _services.OpenBoardAsync(base.ZContext, base.LastScreenshot).ConfigureAwait(continueOnCapturedContext: false), TimeSpan.FromSeconds(1L));
+		return RoundByBaselineClickResult(await _services.OpenBoardAsync(base.ZContext, base.LastScreenshot).ConfigureAwait(continueOnCapturedContext: false), TimeSpan.FromSeconds(1L));
 	}
 
 	/// <summary>
@@ -157,7 +157,7 @@ public sealed class IntelBoardOperation : ZOperation
 		{
 			return RoundSuccess("未筛选");
 		}
-		return RoundByPythonClickResult(await _services.RefreshCommissionAsync(base.ZContext, base.LastScreenshot).ConfigureAwait(continueOnCapturedContext: false), TimeSpan.FromSeconds(1L));
+		return RoundByBaselineClickResult(await _services.RefreshCommissionAsync(base.ZContext, base.LastScreenshot).ConfigureAwait(continueOnCapturedContext: false), TimeSpan.FromSeconds(1L));
 	}
 
 	/// <summary>
@@ -496,7 +496,7 @@ public sealed class IntelBoardOperation : ZOperation
 		return RoundSuccess(status);
 	}
 
-	private OperationRoundResult RoundByPythonClickResult(OperationResult result, TimeSpan delay)
+	private OperationRoundResult RoundByBaselineClickResult(OperationResult result, TimeSpan delay)
 	{
 		return (!result.IsSuccess && IsMissingArea(result.Status)) ? RoundFail(result.Status, result.Data) : RoundByOperationResult(result, null, retryOnFail: true, delay);
 	}
