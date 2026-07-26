@@ -3,6 +3,7 @@ using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 using NAudio.Wave;
+using OneDragon.Core.Runtime;
 using OneDragon.Core.Windows.Audio;
 
 namespace ZzzOd.GameLogic.AutoBattle;
@@ -10,6 +11,8 @@ namespace ZzzOd.GameLogic.AutoBattle;
 public sealed class AutoBattleDodgeAudioDetector : IAutoBattleDodgeAudioDetector
 {
 	private readonly AudioRecorder _audioRecorder;
+
+	private readonly OneDragonEnvironment? _environment;
 
 	private readonly object _checkAudioLock = new object();
 
@@ -19,9 +22,10 @@ public sealed class AutoBattleDodgeAudioDetector : IAutoBattleDodgeAudioDetector
 
 	private readonly float _checkAudioInterval = 0.02f;
 
-	public AutoBattleDodgeAudioDetector(AudioRecorder? audioRecorder = null)
+	public AutoBattleDodgeAudioDetector(AudioRecorder? audioRecorder = null, OneDragonEnvironment? environment = null)
 	{
 		_audioRecorder = audioRecorder ?? new AudioRecorder();
+		_environment = environment;
 	}
 
 	public bool CheckAudio(double screenshotTime)
@@ -86,7 +90,9 @@ public sealed class AutoBattleDodgeAudioDetector : IAutoBattleDodgeAudioDetector
 		{
 			return;
 		}
-		string text = Path.Combine("assets", "template", "dodge_audio", "template_1.wav");
+		string text = (_environment != null)
+			? _environment.GetPathUnderWorkDir("assets", "template", "dodge_audio", "template_1.wav")
+			: Path.Combine("assets", "template", "dodge_audio", "template_1.wav");
 		if (!File.Exists(text))
 		{
 			return;

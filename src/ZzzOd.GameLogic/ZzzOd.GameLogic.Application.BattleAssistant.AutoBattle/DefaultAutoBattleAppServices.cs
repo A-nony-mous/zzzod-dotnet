@@ -81,7 +81,7 @@ public sealed class DefaultAutoBattleAppServices : IAutoBattleAppServices
 	/// <inheritdoc />
 	public void DispatchOpLoaded(ZContext context, AutoBattleOperator autoOp)
 	{
-		context.EventBus.Publish("指令已加载", autoOp);
+		context.EventBus.Publish(AutoBattleAppConstants.EventOpLoaded, autoOp);
 	}
 
 	/// <inheritdoc />

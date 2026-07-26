@@ -12,7 +12,7 @@ public sealed class AutoBattleAppFactory : ZApplicationFactory
 	/// 初始化自动战斗 factory。
 	/// </summary>
 	public AutoBattleAppFactory(ZContext context)
-		: base(context, new ZApplicationFactoryMetadata("auto_battle", "自动战斗", "one_dragon"))
+		: base(context, new ZApplicationFactoryMetadata(AutoBattleAppConstants.AppId, AutoBattleAppConstants.AppName, AutoBattleAppConstants.DefaultGroupId))
 	{
 	}
 

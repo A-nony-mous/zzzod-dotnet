@@ -34,6 +34,25 @@ public class AutoBattleAgentContext
 
 	private long _lastTeamStateLogAtMilliseconds;
 
+	// 角色头像识别区域：先读取出来缓存，不要每次识别时都重新查表。
+	private OneDragon.Core.Screen.ScreenArea? _areaAgent31;
+
+	private OneDragon.Core.Screen.ScreenArea? _areaAgent32;
+
+	private OneDragon.Core.Screen.ScreenArea? _areaAgent33;
+
+	private OneDragon.Core.Screen.ScreenArea? _areaAgent22;
+
+	// 与 AutoBattleContext 里其余识别区域属性同样的"未预热则惰性查表并缓存"写法，
+	// 保证即使调用方忘记调用 InitScreenArea 也不会一直查不到区域。
+	private OneDragon.Core.Screen.ScreenArea? AreaAgent31 => _areaAgent31 ??= _ctx.ScreenContext.GetArea("战斗画面", "头像-3-1");
+
+	private OneDragon.Core.Screen.ScreenArea? AreaAgent32 => _areaAgent32 ??= _ctx.ScreenContext.GetArea("战斗画面", "头像-3-2");
+
+	private OneDragon.Core.Screen.ScreenArea? AreaAgent33 => _areaAgent33 ??= _ctx.ScreenContext.GetArea("战斗画面", "头像-3-3");
+
+	private OneDragon.Core.Screen.ScreenArea? AreaAgent22 => _areaAgent22 ??= _ctx.ScreenContext.GetArea("战斗画面", "头像-2-2");
+
 	public TeamInfo Team { get; private set; }
 
 	public AutoBattleInterval CheckAgentInterval { get; private set; } = new AutoBattleInterval(0.5f, 0.5f);
@@ -44,6 +63,17 @@ public class AutoBattleAgentContext
 	{
 		_ctx = ctx;
 		Team = new TeamInfo();
+	}
+
+	/// <summary>
+	/// 预读取角色头像识别区域并缓存，避免 CheckAgentInScreen 每次识别时都重新查表。
+	/// </summary>
+	public void InitScreenArea()
+	{
+		_areaAgent31 = _ctx.ScreenContext.GetArea("战斗画面", "头像-3-1");
+		_areaAgent32 = _ctx.ScreenContext.GetArea("战斗画面", "头像-3-2");
+		_areaAgent33 = _ctx.ScreenContext.GetArea("战斗画面", "头像-3-3");
+		_areaAgent22 = _ctx.ScreenContext.GetArea("战斗画面", "头像-2-2");
 	}
 
 	public void InitAutoOp(AutoBattleOperator autoOp)
@@ -72,11 +102,13 @@ public class AutoBattleAgentContext
 
 	public IReadOnlyList<(Agent Agent, string? MatchedTemplateId)> GetPossibleAgentList()
 	{
-		if (Team.ShouldCheckAllAgents || Team.Agents.Count == 0 || Team.Agents.Any((AgentInfo info) => info.Agent == null))
+		// 统一走带锁防御拷贝，避免与并发的队伍更新（UpdateAgentList 等）在 Agents 上出现竞态读取。
+		IReadOnlyList<AgentInfo> snapshot = Team.Snapshot();
+		if (Team.ShouldCheckAllAgents || snapshot.Count == 0 || snapshot.Any((AgentInfo info) => info.Agent == null))
 		{
 			return AgentEnum.Values.Select((AgentEnum agentEnum) => ((Agent Value, string))(Value: agentEnum.Value, null)).ToList();
 		}
-		return (from info in Team.Snapshot()
+		return (from info in snapshot
 			where info.Agent != null
 			select (info.Agent, MatchedTemplateId: info.MatchedTemplateId)).ToList();
 	}
@@ -112,7 +144,9 @@ public class AutoBattleAgentContext
 				list.AddRange(item4);
 				LogTeamState(screenshotTime);
 			}
-			if (updateState && list.Count > 0)
+			// 无条件心跳：即使本次没有产生任何状态变化，也要让引擎有机会评估基于时间的复合中断条件，
+			// 因此不按 list 是否为空来决定要不要调用（可以传空列表）。
+			if (updateState)
 			{
 				_ctx.AutoBattleContext.StateRecordService.BatchUpdateStates(list);
 			}
@@ -214,7 +248,8 @@ public class AutoBattleAgentContext
 		string text = ((chainName.Count < 1 || chainName[0] != "邦布") ? chainName.ElementAtOrDefault(0) : chainName.ElementAtOrDefault(1));
 		if (string.IsNullOrEmpty(text))
 		{
-			return new List<StateRecord>();
+			// 未识别到连携角色名称时也要走一次心跳，而不是提前 return 跳过
+			return HeartbeatEmptyStates(updateState);
 		}
 		return ForceReconstructAgentStates(text, updateTime, updateState);
 	}
@@ -225,9 +260,24 @@ public class AutoBattleAgentContext
 		string text = ((chainName.Count < 2 || chainName[1] == "邦布") ? chainName.ElementAtOrDefault(0) : chainName.ElementAtOrDefault(1));
 		if (string.IsNullOrEmpty(text))
 		{
-			return new List<StateRecord>();
+			// 未识别到连携角色名称时也要走一次心跳，而不是提前 return 跳过
+			return HeartbeatEmptyStates(updateState);
 		}
 		return ForceReconstructAgentStates(text, updateTime, updateState);
+	}
+
+	/// <summary>
+	/// 在无法产出实际状态更新的分支上，仍以空列表触发一次心跳，
+	/// 让引擎有机会评估基于时间的复合中断条件，而不是直接 return 跳过。
+	/// </summary>
+	private List<StateRecord> HeartbeatEmptyStates(bool updateState)
+	{
+		List<StateRecord> empty = new List<StateRecord>();
+		if (updateState)
+		{
+			_ctx.AutoBattleContext.StateRecordService.BatchUpdateStates(empty);
+		}
+		return empty;
 	}
 
 	public List<string?> GetChainName()
@@ -366,7 +416,8 @@ public class AutoBattleAgentContext
 	{
 		if (!Team.ForceFrontAgent(agentName, updateTime))
 		{
-			return new List<StateRecord>();
+			// 目标已在前台或不在当前队伍时（Team.ForceFrontAgent 内部已合并这些情况）也要走一次心跳
+			return HeartbeatEmptyStates(updateState);
 		}
 		List<StateRecord> agentStateRecords = GetAgentStateRecords(updateTime, @switch: true);
 		if (updateState)
@@ -379,17 +430,20 @@ public class AutoBattleAgentContext
 	private IReadOnlyList<(Agent? Agent, string? MatchedTemplateId)> CheckAgentInScreen(Mat screen)
 	{
 		string[] array = new string[4] { "头像-3-1", "头像-3-2", "头像-3-3", "头像-2-2" };
+		OneDragon.Core.Screen.ScreenArea?[] cachedAreas = new OneDragon.Core.Screen.ScreenArea?[4] { AreaAgent31, AreaAgent32, AreaAgent33, AreaAgent22 };
 		(Agent, string)[] array2 = new(Agent, string)[array.Length];
 		IReadOnlyList<(Agent Agent, string? MatchedTemplateId)> possibleAgents = GetPossibleAgentList();
 		bool[] array3 = new bool[4] { true, false, false, false };
 		if (!Team.ShouldCheckAllAgents)
 		{
-			if (Team.Agents.Count == 3)
+			// 统一走带锁防御拷贝，避免与并发的队伍更新在 Agents 上出现竞态读取。
+			int teamSize = Team.Snapshot().Count;
+			if (teamSize == 3)
 			{
 				array3[1] = true;
 				array3[2] = true;
 			}
-			else if (Team.Agents.Count == 2)
+			else if (teamSize == 2)
 			{
 				array3[3] = true;
 			}
@@ -406,10 +460,9 @@ public class AutoBattleAgentContext
 				continue;
 			}
 			int index = i;
-			string areaName = array[index];
+			OneDragon.Core.Screen.ScreenArea? area = cachedAreas[index];
 			array4[index] = AgentCheckExecutor.StartNew(delegate
 			{
-				OneDragon.Core.Screen.ScreenArea area = _ctx.ScreenContext.GetArea("战斗画面", areaName);
 				if (area != null)
 				{
 					using Mat image = CvImageUtils.Crop(screen, area.Rect);

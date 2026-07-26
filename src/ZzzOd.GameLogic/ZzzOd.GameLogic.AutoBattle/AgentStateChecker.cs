@@ -191,7 +191,7 @@ public static class AgentStateChecker
 	public static int CountByColorChannelEqualRange(Mat image, AgentStateDef stateDef, Mat? mask = null)
 	{
 		using Mat mat = ApplyMask(image, mask);
-		// 对齐 Python 的三通道相等判定：用通道比较代替逐像素访问
+		// 对齐 参考实现的三通道相等判定：用通道比较代替逐像素访问
 		Mat[] channels = Cv2.Split(mat);
 		int num;
 		try
@@ -234,8 +234,8 @@ public static class AgentStateChecker
 		{
 			Cv2.MatchTemplate(source, template, mat, TemplateMatchModes.CCoeffNormed);
 		}
-		// 对齐 Python cv2_utils.match_template(TM_CCOEFF_NORMED)：带 mask 匹配可能产生 NaN，
-		// Python 侧 result >= threshold 对 NaN 为假、对 +inf 为真，先替换 NaN 再取最大值。
+		// 对齐 参考实现 cv2_utils.match_template(TM_CCOEFF_NORMED)：带 mask 匹配可能产生 NaN，
+		// 参考实现侧 result >= threshold 对 NaN 为假、对 +inf 为真，先替换 NaN 再取最大值。
 		Cv2.PatchNaNs(mat, -1.0);
 		Cv2.MinMaxLoc((InputArray)mat, out double _, out double maxVal);
 		return (maxVal >= threshold) ? 1 : 0;
@@ -248,7 +248,7 @@ public static class AgentStateChecker
 
 	private static Mat FilterByRgb(Mat image, IReadOnlyList<int> lower, IReadOnlyList<int> upper)
 	{
-		// 对齐 Python cv2.inRange 的向量化实现；单元素上下界表示三通道共用同一区间
+		// 对齐 参考实现 cv2.inRange 的向量化实现；单元素上下界表示三通道共用同一区间
 		bool perChannel = lower.Count != 1 && upper.Count != 1;
 		Scalar lowerBound = perChannel
 			? new Scalar(ClampLow(lower[0]), ClampLow(lower[1]), ClampLow(lower[2]))
@@ -353,7 +353,7 @@ public static class AgentStateChecker
 		}
 		using Mat mat = new Mat();
 		Cv2.CvtColor(image, mat, ColorConversionCodes.RGB2GRAY);
-		// 对齐 Python numpy 的按列求均值：用 Reduce 一次算完，避免逐像素访问
+		// 对齐 参考实现 numpy 的按列求均值：用 Reduce 一次算完，避免逐像素访问
 		using Mat columnSums = new Mat();
 		Cv2.Reduce(mat, columnSums, ReduceDimension.Row, ReduceTypes.Avg, MatType.CV_64F);
 		double[] array = new double[mat.Cols];
@@ -387,7 +387,7 @@ public static class AgentStateChecker
 	{
 		int num = lower?[0] ?? 0;
 		int num2 = upper?[0] ?? 255;
-		// 对齐 Python np.max(axis=0) + cv2.inRange：先取三通道逐像素最大值，再做区间判定
+		// 对齐 参考实现 np.max(axis=0) + cv2.inRange：先取三通道逐像素最大值，再做区间判定
 		Mat[] channels = Cv2.Split(image);
 		try
 		{

@@ -157,6 +157,9 @@ public class AutoBattleOperator : IStateRecordUpdateListener
 	{
 		try
 		{
+			// 与销毁流程保持一致的"先停后建"顺序：重新初始化前先停掉旧的运行状态，
+			// 避免旧场景循环、周期动作在新配置构建完成前继续基于旧数据运行。
+			StopRunning();
 			_ctx.StateRecordService.UnregisterOperator(this);
 			Load();
 			Build();
@@ -583,31 +586,46 @@ public class AutoBattleOperator : IStateRecordUpdateListener
 				await DelayNoThrow(TimeSpan.FromMilliseconds(20L), token);
 				continue;
 			}
-			double triggerTime = Now();
-			int sceneId = scene.GetHashCode();
-			double lastTriggerTime = _lastTriggerTime.GetValueOrDefault(sceneId);
-			double pastTime = triggerTime - lastTriggerTime;
-			if (pastTime < scene.IntervalSeconds)
+			double? toSleepSeconds = null;
+			// 读取/判断冷却时间、匹配执行、写回触发时间、提交执行整段作为一个原子操作上锁，
+			// 避免与状态触发路径（TriggerScene）在 _lastTriggerTime 上出现竞态。
+			// SubmitExecution 内部同样会对 _taskLock 加锁，但同一线程重入不会死锁。
+			lock (_taskLock)
 			{
-				await DelayNoThrow(TimeSpan.FromSeconds(scene.IntervalSeconds - pastTime), token);
+				double triggerTime = Now();
+				int sceneId = scene.GetHashCode();
+				double lastTriggerTime = _lastTriggerTime.GetValueOrDefault(sceneId);
+				double pastTime = triggerTime - lastTriggerTime;
+				if (pastTime < scene.IntervalSeconds)
+				{
+					toSleepSeconds = scene.IntervalSeconds - pastTime;
+				}
+				else
+				{
+					ExecutionInfo executionInfo = scene.MatchExecution(triggerTime);
+					if (executionInfo != null)
+					{
+						executionInfo.Priority = scene.Priority;
+						PublishExecutionDecision(
+							executionInfo,
+							executionInfo.TriggerDisplay,
+							"matched",
+							CreateSceneDecisionMetadata(scene, triggerTime));
+						_lastTriggerTime[sceneId] = triggerTime;
+						SubmitExecution(executionInfo, null, triggerTime);
+						Interlocked.Exchange(ref _lastNormalLoopProgressAtMs, DateTimeOffset.UtcNow.ToUnixTimeMilliseconds());
+					}
+					else
+					{
+						LogNormalLoopIdle("NoMatch", scene);
+					}
+				}
+			}
+			// 等待时间不能写在锁里，需尽快释放锁。
+			if (toSleepSeconds.HasValue)
+			{
+				await DelayNoThrow(TimeSpan.FromSeconds(toSleepSeconds.Value), token);
 				continue;
-			}
-			ExecutionInfo executionInfo = scene.MatchExecution(triggerTime);
-			if (executionInfo != null)
-			{
-				executionInfo.Priority = scene.Priority;
-				PublishExecutionDecision(
-					executionInfo,
-					executionInfo.TriggerDisplay,
-					"matched",
-					CreateSceneDecisionMetadata(scene, triggerTime));
-				_lastTriggerTime[sceneId] = triggerTime;
-				SubmitExecution(executionInfo, null, triggerTime);
-				Interlocked.Exchange(ref _lastNormalLoopProgressAtMs, DateTimeOffset.UtcNow.ToUnixTimeMilliseconds());
-			}
-			else
-			{
-				LogNormalLoopIdle("NoMatch", scene);
 			}
 			await DelayNoThrow(TimeSpan.FromMilliseconds(20L), token);
 		}
@@ -735,7 +753,9 @@ public class AutoBattleOperator : IStateRecordUpdateListener
 		{
 			return _templateName;
 		}
-		return "全配队通用";
+		// 找不到对应配队的自定义配置时会回退到全配队通用配置，记录一次告警方便定位是否为预期行为
+		_ctx.ZContext.Logger.Warning("自动战斗配置回退: OriginalTemplate={OriginalTemplate}, FallbackTemplate={FallbackTemplate}, SubDir={SubDir}", _templateName, FallbackTemplateName, _subDir);
+		return FallbackTemplateName;
 	}
 
 	private Dictionary<string, object?> LoadYamlConfig(string subDir, string templateName)

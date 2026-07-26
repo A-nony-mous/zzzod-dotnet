@@ -8,7 +8,7 @@ public sealed class TargetStateCheckFrame
 {
 	public bool IsSuccess { get; init; } = true;
 
-	public bool IsTimedOut { get; init; }
+	public bool IsTimedOut { get; set; }
 
 	public IReadOnlyList<Point[]> Contours { get; init; } = Array.Empty<Point[]>();
 

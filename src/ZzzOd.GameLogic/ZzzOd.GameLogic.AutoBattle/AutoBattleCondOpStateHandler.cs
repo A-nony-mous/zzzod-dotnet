@@ -7,6 +7,16 @@ namespace ZzzOd.GameLogic.AutoBattle;
 
 public sealed class AutoBattleCondOpStateHandler
 {
+	private static readonly HashSet<string> KnownKeys = new HashSet<string>(StringComparer.Ordinal)
+	{
+		"state_template",
+		"debug_name",
+		"states",
+		"interrupt_states",
+		"operations",
+		"sub_handlers",
+	};
+
 	public Dictionary<string, object?> OriginalData { get; }
 
 	public string? StateTemplate { get; }
@@ -50,6 +60,7 @@ public sealed class AutoBattleCondOpStateHandler
 
 	public AutoBattleCondOpStateHandler(IReadOnlyDictionary<string, object?> data)
 	{
+		AutoBattleCondOpScene.ValidateKnownKeys(data, KnownKeys);
 		OriginalData = new Dictionary<string, object>(data, StringComparer.Ordinal);
 		StateTemplate = AutoBattleCondOpScene.GetString(data, "state_template");
 		DisplayName = AutoBattleCondOpScene.GetString(data, "debug_name");

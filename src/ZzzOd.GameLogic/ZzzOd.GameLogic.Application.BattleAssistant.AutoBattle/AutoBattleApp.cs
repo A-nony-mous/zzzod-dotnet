@@ -16,7 +16,7 @@ public sealed class AutoBattleApp : ZApplication
 	/// 初始化自动战斗应用。
 	/// </summary>
 	public AutoBattleApp(ZContext context, IAutoBattleAppFlow? flow = null)
-		: base(context, "auto_battle", null, "自动战斗")
+		: base(context, AutoBattleAppConstants.AppId, null, AutoBattleAppConstants.AppName)
 	{
 		_flow = flow ?? new OperationAutoBattleAppFlow();
 	}
@@ -37,8 +37,9 @@ public sealed class AutoBattleApp : ZApplication
 	/// <inheritdoc />
 	public override Task OnResumeAsync(CancellationToken cancellationToken)
 	{
+		// 与 OnPauseAsync 对称：恢复自动战斗不应触发基类的窗口激活等副作用，因此不调用基类实现。
 		_flow.Resume(base.Context);
-		return base.OnResumeAsync(cancellationToken);
+		return Task.CompletedTask;
 	}
 
 	/// <inheritdoc />

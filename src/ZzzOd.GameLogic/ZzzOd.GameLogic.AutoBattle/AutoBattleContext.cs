@@ -318,6 +318,7 @@ public class AutoBattleContext : IRunParticipant
 		_chainLeftArea = RequireScreenArea("连携技-1");
 		_chainRightArea = RequireScreenArea("连携技-2");
 		_chainBarArea = RequireScreenArea("连携条");
+		AgentContext.InitScreenArea();
 	}
 
 	public void StartContextAsync(bool startOperator = true)

@@ -37,6 +37,9 @@ public sealed class TargetStateChecker : IAutoBattleTargetStateChecker
 				TargetStateCheckFrame targetStateCheckFrame = BuildFrameFromMat(screen2, task);
 				try
 				{
+					// 自动战斗要求 1 秒软超时：构建 frame 累计耗时超过该阈值时标记为超时，
+					// 交由 InterpretResult 按各状态定义的语义降级为清除/未命中，而不是继续使用过期画面得出的结果。
+					targetStateCheckFrame.IsTimedOut = Stopwatch.GetElapsedTime(timestamp).TotalMilliseconds > 1000.0;
 					return RunTask(targetStateCheckFrame, task);
 				}
 				finally

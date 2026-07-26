@@ -9,6 +9,14 @@ namespace ZzzOd.GameLogic.AutoBattle;
 
 public sealed class AutoBattleCondOpScene
 {
+	private static readonly HashSet<string> KnownKeys = new HashSet<string>(StringComparer.Ordinal)
+	{
+		"priority",
+		"triggers",
+		"interval",
+		"handlers",
+	};
+
 	public Dictionary<string, object?> OriginalData { get; }
 
 	public int? Priority { get; }
@@ -34,6 +42,7 @@ public sealed class AutoBattleCondOpScene
 
 	public AutoBattleCondOpScene(IReadOnlyDictionary<string, object?> data)
 	{
+		ValidateKnownKeys(data, KnownKeys);
 		OriginalData = new Dictionary<string, object>(data, StringComparer.Ordinal);
 		Priority = GetNullableInt(data, "priority");
 		Triggers = GetStringList(data, "triggers") ?? Array.Empty<string>();
@@ -66,6 +75,20 @@ public sealed class AutoBattleCondOpScene
 			}
 		}
 		return null;
+	}
+
+	/// <summary>
+	/// 校验配置字典的键是否都在白名单内，命中未知字段时抛出异常并在消息中带上键名，便于快速定位配置错误。
+	/// </summary>
+	internal static void ValidateKnownKeys(IReadOnlyDictionary<string, object?> data, IReadOnlyCollection<string> knownKeys)
+	{
+		foreach (string key in data.Keys)
+		{
+			if (!knownKeys.Contains(key))
+			{
+				throw new ArgumentException("未知字段 " + key, nameof(data));
+			}
+		}
 	}
 
 	internal static List<Dictionary<string, object?>> GetDictionaryList(IReadOnlyDictionary<string, object?> data, string key)

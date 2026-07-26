@@ -85,7 +85,7 @@ public class AutoBattleDodgeContext
 	{
 		_ctx = ctx;
 		_flashClassifier = flashClassifier ?? new ZzzFlashClassifierAdapter(ctx);
-		_audioDetector = audioDetector ?? new AutoBattleDodgeAudioDetector();
+		_audioDetector = audioDetector ?? new AutoBattleDodgeAudioDetector(environment: ctx.Environment);
 	}
 
 	public bool TryScheduleDodgeFlashCheck(out long runGeneration)
