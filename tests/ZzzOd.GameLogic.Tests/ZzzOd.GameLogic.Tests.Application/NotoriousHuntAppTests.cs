@@ -418,9 +418,11 @@ public sealed class NotoriousHuntAppTests
 			} into item
 			where item.Node != null
 			select item).ToDictionary(item => item.Node.Name, item => item.Method);
-		Assert.Equal(new string[9] { "开始恶名狩猎", "查找下一条计划", "传送", "跳过或结束计划", "恶名狩猎", "判断剩余次数", "点击奖励入口", "全部领取", "返回大世界" }, readOnlyDictionary.Keys);
+		Assert.Equal(new string[10] { "开始恶名狩猎", "查找下一条计划", "前往大世界", "传送", "跳过或结束计划", "恶名狩猎", "判断剩余次数", "点击奖励入口", "全部领取", "返回大世界" }, readOnlyDictionary.Keys);
 		Assert.True(readOnlyDictionary["开始恶名狩猎"].GetCustomAttribute<OperationNodeAttribute>().IsStartNode);
 		Assert.Contains(readOnlyDictionary["查找下一条计划"].GetCustomAttributes<NodeFromAttribute>(), (NodeFromAttribute edge) => edge.FromName == "判断剩余次数");
+		Assert.Contains(readOnlyDictionary["前往大世界"].GetCustomAttributes<NodeFromAttribute>(), (NodeFromAttribute edge) => edge.FromName == "查找下一条计划");
+		Assert.Contains(readOnlyDictionary["传送"].GetCustomAttributes<NodeFromAttribute>(), (NodeFromAttribute edge) => edge.FromName == "前往大世界");
 		Assert.Contains(readOnlyDictionary["跳过或结束计划"].GetCustomAttributes<NodeFromAttribute>(), (NodeFromAttribute edge) => edge.FromName == "传送" && !edge.Success && edge.Status == "找不到 代理人方案培养");
 		Assert.Contains(readOnlyDictionary["点击奖励入口"].GetCustomAttributes<NodeFromAttribute>(), (NodeFromAttribute edge) => edge.FromName == "判断剩余次数" && edge.Status == "周期挑战无剩余次数");
 		Assert.Contains(readOnlyDictionary["返回大世界"].GetCustomAttributes<NodeFromAttribute>(), (NodeFromAttribute edge) => edge.FromName == "全部领取" && !edge.Success);
