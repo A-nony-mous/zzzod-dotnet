@@ -91,11 +91,11 @@ public sealed class WitheredDomainEventDispatcher : IHollowEventDispatcher
 		}
 		if (eventName == HollowZeroSpecialEvent.ResoniumConfirm1.EventName || eventName == HollowZeroSpecialEvent.ResoniumConfirm2.EventName)
 		{
-			return await WitheredDomainEventOperations.HandleConfirmOrCorruptionAsync(_context, eventName, "底部-选择列表", new string[2] { "确认", "确定" }, cropFirst: true, cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
+			return await WitheredDomainEventOperations.HandleConfirmOrCorruptionAsync(_context, eventName, "底部-选择列表", new string[2] { "确认", "确定" }, cropFirst: true, colorRange: null, cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
 		}
 		if (eventName == HollowZeroSpecialEvent.CorruptionRemove.EventName)
 		{
-			return await WitheredDomainEventOperations.HandleConfirmOrCorruptionAsync(_context, eventName, "底部-清除列表", new string[] { "清除" }, cropFirst: false, cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
+			return await WitheredDomainEventOperations.HandleConfirmOrCorruptionAsync(_context, eventName, "底部-清除列表", new string[] { "清除" }, cropFirst: false, colorRange: WitheredDomainEventOperations.WhiteColorRange, cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
 		}
 		if (eventName == HollowZeroSpecialEvent.SwiftSupplyLife.EventName || eventName == HollowZeroSpecialEvent.SwiftSupplyCoin.EventName || eventName == HollowZeroSpecialEvent.SwiftSupplyPress.EventName)
 		{

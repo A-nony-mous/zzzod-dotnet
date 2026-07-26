@@ -26,6 +26,15 @@ internal static class WitheredDomainEventOperations
 
 	private const string EventTextArea = "事件文本";
 
+	/// <summary>
+	/// 清除侵蚀症状（remove_corruption.py）使用的白色 OCR 过滤范围。
+	/// </summary>
+	internal static readonly IReadOnlyList<IReadOnlyList<int>> WhiteColorRange = new IReadOnlyList<int>[2]
+	{
+		new int[3] { 240, 240, 240 },
+		new int[3] { 255, 255, 255 }
+	};
+
 	internal static async Task<HollowEventHandleResult> HandleNormalEventAsync(ZContext context, HollowZeroEvent normalEvent, CancellationToken cancellationToken)
 	{
 		Mat screen = (context.Controller?.Screenshot() ?? (DateTimeOffset.UtcNow, null)).Screen;
@@ -512,8 +521,9 @@ internal static class WitheredDomainEventOperations
 	/// <param name="areaName">识别区域名称。</param>
 	/// <param name="targets">按优先级排列的目标文本列表。</param>
 	/// <param name="cropFirst">是否先裁剪区域再识别；为 false 时先全图识别再筛选落在区域内的文本，清除侵蚀症状使用该模式以兼容当前识别模型。</param>
+	/// <param name="colorRange">OCR 颜色过滤范围；鸣徽确认（confirm_resonium.py）不传颜色范围，清除侵蚀症状（remove_corruption.py）传 <see cref="WhiteColorRange"/>。</param>
 	/// <param name="cancellationToken">取消令牌。</param>
-	internal static async Task<HollowEventHandleResult> HandleConfirmOrCorruptionAsync(ZContext context, string eventName, string areaName, IReadOnlyList<string> targets, bool cropFirst, CancellationToken cancellationToken)
+	internal static async Task<HollowEventHandleResult> HandleConfirmOrCorruptionAsync(ZContext context, string eventName, string areaName, IReadOnlyList<string> targets, bool cropFirst, IReadOnlyList<IReadOnlyList<int>>? colorRange, CancellationToken cancellationToken)
 	{
 		Mat screen = (context.Controller?.Screenshot() ?? (DateTimeOffset.UtcNow, null)).Screen;
 		if (screen == null || context.Controller == null)
@@ -528,12 +538,7 @@ internal static class WitheredDomainEventOperations
 			{
 				return Failed(eventName, "区域未配置 " + areaName);
 			}
-			IReadOnlyList<IReadOnlyList<int>> whiteRange = new IReadOnlyList<int>[2]
-			{
-				new int[3] { 240, 240, 240 },
-				new int[3] { 255, 255, 255 }
-			};
-			IReadOnlyList<OcrMatchResult> results = context.OcrService.GetOcrResultList(screen, whiteRange, area.Rect, cropFirst);
+			IReadOnlyList<OcrMatchResult> results = context.OcrService.GetOcrResultList(screen, colorRange, area.Rect, cropFirst);
 			OcrMatchResult target = targets.Select((string text) => FindText(results, text, 0.6)).FirstOrDefault((OcrMatchResult result) => result != null);
 			if (target == null)
 			{
