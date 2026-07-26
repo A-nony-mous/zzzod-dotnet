@@ -128,17 +128,18 @@ public sealed class LostVoidAppTests
 	[Theory]
 	[InlineData(new object[] { "迷失之地-大世界", false, false, "迷失之地-大世界" })]
 	[InlineData(new object[] { "菜单", true, true, "可前往副本画面" })]
-	[InlineData(new object[] { "迷失之地-入口", false, true, "迷失之地-入口" })]
+	[InlineData(new object[] { "迷失之地-入口-周期", false, true, "可前往快捷手册" })]
+	[InlineData(new object[] { "迷失之地-入口-常规", false, false, "未识别初始画面" })]
 	[InlineData(new object[] { "大世界-普通", false, true, "可前往快捷手册" })]
 	[InlineData(new object[] { null, false, false, "未识别初始画面" })]
-	public void InitialScreenStatus_UsesPythonRoutePriority(string? currentScreen, bool canGoMission, bool canGoCompendium, string expected)
+	public void InitialScreenStatus_UsesBaselineRoutePriority(string? currentScreen, bool canGoMission, bool canGoCompendium, string expected)
 	{
 		string actual = LostVoidAppOperation.ResolveInitialScreenStatus(currentScreen, "迷失之地-特遣调查", canGoMission, canGoCompendium);
 		Assert.Equal(expected, actual);
 	}
 
 	[Fact]
-	public void OuterOperation_DeclaresCompletePythonNodesAndEdges()
+	public void OuterOperation_DeclaresCompleteBaselineNodesAndEdges()
 	{
 		IReadOnlyDictionary<string, MethodInfo> readOnlyDictionary = (from method in typeof(LostVoidAppOperation).GetMethods(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)
 			select new
@@ -148,30 +149,26 @@ public sealed class LostVoidAppTests
 			} into item
 			where item.Node != null
 			select item).ToDictionary(item => item.Node.Name, item => item.Method);
-		string[] source = new string[33]
+		string[] source = new string[28]
 		{
-			"初始化加载", "识别初始画面", "前往迷失之地-入口", "开始前等待入口加载", "识别悬赏委托完成进度", "矩阵行动-前往入口", "入口OCR-点击周期", "矩阵行动-前往挑战", "矩阵行动-点击下一步", "矩阵行动-点击预备编队",
-			"矩阵行动-选择预备编队", "矩阵行动-选择代理人", "矩阵行动-点击协战代理人", "矩阵行动-等待代理人列表", "矩阵行动-选择协战代理人", "矩阵行动-开始挑战", "前往副本画面", "入口OCR-点击常规", "入口OCR-点击目标副本", "副本画面识别",
+			"初始化加载", "识别初始画面", "前往迷失之地-入口", "开始前等待入口加载", "识别悬赏委托完成进度", "矩阵行动-前往入口", "矩阵行动-点击预备编队",
+			"矩阵行动-选择预备编队", "矩阵行动-选择代理人", "矩阵行动-点击协战代理人", "矩阵行动-等待代理人列表", "矩阵行动-选择协战代理人", "矩阵行动-开始挑战", "前往副本画面", "副本画面识别",
 			"打开调查战略列表", "选择调查战略", "选择周期增益", "下一步", "检查预备编队", "选择预备编队", "出战", "加载自动战斗配置", "层间移动", "通关后处理",
 			"打开悬赏委托", "全部领取", "完成后返回"
 		};
 		Assert.Equal(source.Order<string>(StringComparer.Ordinal), readOnlyDictionary.Keys.Order<string>(StringComparer.Ordinal));
-		string[] source2 = new string[44]
+		string[] source2 = new string[37]
 		{
 			Edge("初始化加载", "识别初始画面", success: true, "继续挑战"),
 			Edge("识别初始画面", "前往迷失之地-入口", success: true, "可前往快捷手册"),
 			Edge("识别初始画面", "前往迷失之地-入口", success: true, "未能识别当前画面"),
 			Edge("识别初始画面", "前往迷失之地-入口", success: true, "未识别初始画面"),
 			Edge("识别初始画面", "开始前等待入口加载", success: true, "可前往副本画面"),
-			Edge("识别初始画面", "开始前等待入口加载", success: true, "迷失之地-入口"),
 			Edge("前往迷失之地-入口", "开始前等待入口加载"),
 			Edge("开始前等待入口加载", "识别悬赏委托完成进度"),
 			Edge("通关后处理", "识别悬赏委托完成进度"),
 			Edge("识别悬赏委托完成进度", "矩阵行动-前往入口", success: true, "继续挑战-矩阵行动"),
-			Edge("矩阵行动-前往入口", "入口OCR-点击周期"),
-			Edge("入口OCR-点击周期", "矩阵行动-前往挑战", success: true, "已开放前往挑战"),
-			Edge("矩阵行动-前往挑战", "矩阵行动-点击下一步"),
-			Edge("矩阵行动-点击下一步", "矩阵行动-点击预备编队"),
+			Edge("矩阵行动-前往入口", "矩阵行动-点击预备编队"),
 			Edge("矩阵行动-点击预备编队", "矩阵行动-选择预备编队"),
 			Edge("矩阵行动-点击预备编队", "矩阵行动-选择代理人", success: true, "手动选取角色"),
 			Edge("矩阵行动-选择预备编队", "矩阵行动-点击协战代理人"),
@@ -180,10 +177,7 @@ public sealed class LostVoidAppTests
 			Edge("矩阵行动-等待代理人列表", "矩阵行动-选择协战代理人"),
 			Edge("矩阵行动-选择协战代理人", "矩阵行动-开始挑战"),
 			Edge("识别悬赏委托完成进度", "前往副本画面", success: true, "继续挑战"),
-			Edge("前往副本画面", "入口OCR-点击常规", success: true, "需OCR入口导航"),
-			Edge("入口OCR-点击常规", "入口OCR-点击目标副本", success: true, "已显示目标副本入口"),
 			Edge("前往副本画面", "副本画面识别"),
-			Edge("入口OCR-点击目标副本", "副本画面识别"),
 			Edge("副本画面识别", "打开调查战略列表"),
 			Edge("打开调查战略列表", "选择调查战略"),
 			Edge("选择调查战略", "选择周期增益"),
@@ -282,18 +276,14 @@ public sealed class LostVoidAppTests
 	}
 
 	[Fact]
-	public void EntryNavigation_UsesTargetConfirmationWithoutCooldownOrExtendedRetries()
+	public void EntryNavigation_RemovedManualOcrClickNodesInFavorOfScreenRoute()
 	{
-		string[] nodeNames = ["入口OCR-点击周期", "入口OCR-点击常规", "入口OCR-点击目标副本"];
-		foreach (string nodeName in nodeNames)
+		string[] removedMethodNames = ["ClickPeriodInEntry", "MatrixGotoChallenge", "MatrixClickNextStep", "ClickRegularInMatrixExplore", "ClickTargetMissionInMatrixExplore", "IsMatrixExploreMission", "ClickEntryNavigation"];
+		foreach (string methodName in removedMethodNames)
 		{
-			MethodInfo method = typeof(LostVoidAppOperation).GetMethods(BindingFlags.Instance | BindingFlags.NonPublic)
-				.Single(candidate => candidate.GetCustomAttributes(typeof(OperationNodeAttribute), inherit: false).OfType<OperationNodeAttribute>().SingleOrDefault()?.Name == nodeName);
-			OperationNodeAttribute node = method.GetCustomAttributes(typeof(OperationNodeAttribute), inherit: false).OfType<OperationNodeAttribute>().Single();
-			Assert.Equal(3, node.NodeMaxRetryTimes);
+			Assert.Null(typeof(LostVoidAppOperation).GetMethod(methodName, BindingFlags.Instance | BindingFlags.NonPublic));
 		}
 
-		Assert.Null(typeof(LostVoidAppOperation).GetMethod("ClickEntryNavigation", BindingFlags.Instance | BindingFlags.NonPublic));
 		Assert.DoesNotContain(typeof(LostVoidAppOperation).GetFields(BindingFlags.Instance | BindingFlags.NonPublic), field => field.Name.Contains("entryNavigation", StringComparison.OrdinalIgnoreCase));
 	}
 
@@ -561,7 +551,7 @@ public sealed class LostVoidAppTests
 	{
 		string text = Path.Combine(rootDirectory, "assets", "game_data", "screen_info");
 		Directory.CreateDirectory(text);
-		File.WriteAllText(Path.Combine(text, "lost_void_matrix.yml"), "screen_id: lost_void_matrix\nscreen_name: 迷失之地-矩阵行动\narea_list:\n- area_name: 编队列表\n  pc_rect: [100, 100, 800, 800]\n- area_name: 主战编队槽\n  pc_rect: [900, 100, 1400, 500]");
+		File.WriteAllText(Path.Combine(text, "lost_void_matrix.yml"), "screen_id: lost_void_matrix\nscreen_name: 迷失之地-矩阵行动-编队选择\narea_list:\n- area_name: 编队列表\n  pc_rect: [100, 100, 800, 800]\n- area_name: 主战编队槽\n  pc_rect: [900, 100, 1400, 500]");
 	}
 
 	private static string CreateTempRoot()

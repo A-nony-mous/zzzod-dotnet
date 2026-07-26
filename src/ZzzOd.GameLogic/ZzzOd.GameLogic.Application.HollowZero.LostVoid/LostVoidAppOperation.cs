@@ -100,10 +100,6 @@ internal sealed class LostVoidAppOperation : ZOperation
 		{
 			return "可前往副本画面";
 		}
-		if (string.Equals(currentScreen, "迷失之地-入口", StringComparison.Ordinal))
-		{
-			return "迷失之地-入口";
-		}
 		return canGoCompendium ? "可前往快捷手册" : "未识别初始画面";
 	}
 
@@ -117,7 +113,6 @@ internal sealed class LostVoidAppOperation : ZOperation
 	}
 
 	[NodeFrom("识别初始画面", Status = "可前往副本画面")]
-	[NodeFrom("识别初始画面", Status = "迷失之地-入口")]
 	[NodeFrom("前往迷失之地-入口")]
 	[OperationNode("开始前等待入口加载")]
 	private OperationRoundResult WaitLostVoidEntry()
@@ -134,7 +129,9 @@ internal sealed class LostVoidAppOperation : ZOperation
 		{
 			return RoundRetry(operationRoundResult.Status, null, TimeSpan.FromMilliseconds(500L));
 		}
-		return string.Equals(CheckAndUpdateCurrentScreen(base.LastScreenshot, new string[] { "迷失之地-入口" }), "迷失之地-入口", StringComparison.Ordinal) ? RoundSuccess("迷失之地-入口") : RoundWait("等待画面加载", null, OneSecond);
+		string[] entryScreenNames = new string[] { "迷失之地-入口-周期", "迷失之地-入口-常规" };
+		string? currentScreen = CheckAndUpdateCurrentScreen(base.LastScreenshot, entryScreenNames);
+		return entryScreenNames.Contains(currentScreen, StringComparer.Ordinal) ? RoundSuccess(currentScreen) : RoundWait("等待画面加载", null, OneSecond);
 	}
 
 	[NodeFrom("开始前等待入口加载")]
@@ -155,9 +152,9 @@ internal sealed class LostVoidAppOperation : ZOperation
 		{
 			return RoundRetry("未获取截图", null, TimeSpan.FromMilliseconds(500L));
 		}
-		if (!RoundByFindArea(base.LastScreenshot, "迷失之地-入口", "按钮-常规").IsSuccess)
+		if (!RoundByFindArea(base.LastScreenshot, "迷失之地-入口", "按钮-悬赏委托").IsSuccess)
 		{
-			return RoundRetry("未识别到常规按钮", null, TimeSpan.FromMilliseconds(500L));
+			return RoundRetry("未识别到悬赏委托", null, TimeSpan.FromMilliseconds(500L));
 		}
 		OneDragon.Core.Screen.ScreenArea area = base.ZContext.ScreenContext.GetArea("迷失之地-入口", "区域-悬赏委托-进度");
 		if (area == null)
@@ -186,43 +183,10 @@ internal sealed class LostVoidAppOperation : ZOperation
 	private OperationRoundResult MatrixGotoEntry()
 	{
 		TimeSpan? retryDelay = OneSecond;
-		return RoundByGotoScreen(null, "迷失之地-入口", null, null, retryDelay);
+		return RoundByGotoScreen(null, "迷失之地-矩阵行动-编队选择", null, null, retryDelay);
 	}
 
 	[NodeFrom("矩阵行动-前往入口")]
-	[OperationNode("入口OCR-点击周期")]
-	private OperationRoundResult ClickPeriodInEntry()
-	{
-		if (RoundByFindArea(base.LastScreenshot, "迷失之地-入口", "按钮-前往挑战").IsSuccess)
-		{
-			return RoundSuccess("已开放前往挑战");
-		}
-		IReadOnlyList<(string ScreenName, string AreaName)> untilFindAll = new (string, string)[] { ("迷失之地-入口", "按钮-前往挑战") };
-		OperationRoundResult result = RoundByFindAndClickArea(base.LastScreenshot, "迷失之地-入口", "按钮-周期", null, TimeSpan.FromMilliseconds(300L), TimeSpan.FromMilliseconds(100L), untilFindAll: untilFindAll);
-		return result.IsSuccess ? RoundSuccess("已开放前往挑战", null, result.Delay) : result;
-	}
-
-	[NodeFrom("入口OCR-点击周期", Status = "已开放前往挑战")]
-	[OperationNode("矩阵行动-前往挑战")]
-	private OperationRoundResult MatrixGotoChallenge()
-	{
-		Mat? lastScreenshot = base.LastScreenshot;
-		TimeSpan? successDelay = OneSecond;
-		TimeSpan? retryDelay = OneSecond;
-		return RoundByFindAndClickArea(lastScreenshot, "迷失之地-入口", "按钮-前往挑战", null, successDelay, retryDelay);
-	}
-
-	[NodeFrom("矩阵行动-前往挑战")]
-	[OperationNode("矩阵行动-点击下一步")]
-	private OperationRoundResult MatrixClickNextStep()
-	{
-		Mat? lastScreenshot = base.LastScreenshot;
-		TimeSpan? successDelay = OneSecond;
-		TimeSpan? retryDelay = OneSecond;
-		return RoundByFindAndClickArea(lastScreenshot, "迷失之地-入口", "按钮-下一步", null, successDelay, retryDelay);
-	}
-
-	[NodeFrom("矩阵行动-点击下一步")]
 	[OperationNode("矩阵行动-点击预备编队")]
 	private OperationRoundResult MatrixClickPresetTeam()
 	{
@@ -235,7 +199,7 @@ internal sealed class LostVoidAppOperation : ZOperation
 		{
 			return RoundRetry("未获取截图", null, TimeSpan.FromMilliseconds(500L));
 		}
-		OneDragon.Core.Screen.ScreenArea area = base.ZContext.ScreenContext.GetArea("迷失之地-矩阵行动", "预备编队");
+		OneDragon.Core.Screen.ScreenArea area = base.ZContext.ScreenContext.GetArea("迷失之地-矩阵行动-编队选择", "预备编队");
 		if (area == null)
 		{
 			return RoundFail("矩阵行动预备编队区域未配置");
@@ -249,7 +213,7 @@ internal sealed class LostVoidAppOperation : ZOperation
 		Mat? lastScreenshot = base.LastScreenshot;
 		TimeSpan? successDelay = OneSecond;
 		TimeSpan? retryDelay = TimeSpan.FromMilliseconds(500L);
-		OperationRoundResult operationRoundResult = RoundByFindAndClickArea(lastScreenshot, "迷失之地-矩阵行动", "预备编队", null, successDelay, retryDelay);
+		OperationRoundResult operationRoundResult = RoundByFindAndClickArea(lastScreenshot, "迷失之地-矩阵行动-编队选择", "预备编队", null, successDelay, retryDelay);
 		return operationRoundResult.IsSuccess ? RoundWait("预备编队加载中", null, TimeSpan.FromMilliseconds(500L)) : RoundRetry("点击预备编队失败", null, TimeSpan.FromMilliseconds(500L));
 	}
 
@@ -271,8 +235,8 @@ internal sealed class LostVoidAppOperation : ZOperation
 		{
 			return RoundRetry("预备编队界面未就绪", null, TimeSpan.FromMilliseconds(500L));
 		}
-		OneDragon.Core.Screen.ScreenArea area = base.ZContext.ScreenContext.GetArea("迷失之地-矩阵行动", "编队列表");
-		OneDragon.Core.Screen.ScreenArea area2 = base.ZContext.ScreenContext.GetArea("迷失之地-矩阵行动", "主战编队槽");
+		OneDragon.Core.Screen.ScreenArea area = base.ZContext.ScreenContext.GetArea("迷失之地-矩阵行动-编队选择", "编队列表");
+		OneDragon.Core.Screen.ScreenArea area2 = base.ZContext.ScreenContext.GetArea("迷失之地-矩阵行动-编队选择", "主战编队槽");
 		if (area == null || area2 == null)
 		{
 			return RoundFail("矩阵行动编队区域未配置");
@@ -317,8 +281,8 @@ internal sealed class LostVoidAppOperation : ZOperation
 			LostVoidChallengeConfig challengeConfig = base.ZContext.LostVoid.ChallengeConfig;
 			if (challengeConfig != null)
 			{
-				OneDragon.Core.Screen.ScreenArea area = base.ZContext.ScreenContext.GetArea("迷失之地-矩阵行动", "代理人列表");
-				OneDragon.Core.Screen.ScreenArea area2 = base.ZContext.ScreenContext.GetArea("迷失之地-矩阵行动", "主战编队槽");
+				OneDragon.Core.Screen.ScreenArea area = base.ZContext.ScreenContext.GetArea("迷失之地-矩阵行动-编队选择", "代理人列表");
+				OneDragon.Core.Screen.ScreenArea area2 = base.ZContext.ScreenContext.GetArea("迷失之地-矩阵行动-编队选择", "主战编队槽");
 				if (area == null || area2 == null)
 				{
 					return RoundFail("手动选人区域未配置");
@@ -415,7 +379,7 @@ internal sealed class LostVoidAppOperation : ZOperation
 		Mat? lastScreenshot = base.LastScreenshot;
 		TimeSpan? successDelay = OneSecond;
 		TimeSpan? retryDelay = OneSecond;
-		return RoundByFindAndClickArea(lastScreenshot, "迷失之地-矩阵行动", "协战代理人", null, successDelay, retryDelay);
+		return RoundByFindAndClickArea(lastScreenshot, "迷失之地-矩阵行动-编队选择", "协战代理人", null, successDelay, retryDelay);
 	}
 
 	[NodeFrom("矩阵行动-点击协战代理人")]
@@ -433,9 +397,9 @@ internal sealed class LostVoidAppOperation : ZOperation
 		{
 			return RoundRetry("未获取截图", null, TimeSpan.FromMilliseconds(500L));
 		}
-		OneDragon.Core.Screen.ScreenArea area = base.ZContext.ScreenContext.GetArea("迷失之地-矩阵行动", "代理人列表");
-		OneDragon.Core.Screen.ScreenArea area2 = base.ZContext.ScreenContext.GetArea("迷失之地-矩阵行动", "协战编队槽");
-		OneDragon.Core.Screen.ScreenArea area3 = base.ZContext.ScreenContext.GetArea("迷失之地-矩阵行动", "协战代理人属性");
+		OneDragon.Core.Screen.ScreenArea area = base.ZContext.ScreenContext.GetArea("迷失之地-矩阵行动-编队选择", "代理人列表");
+		OneDragon.Core.Screen.ScreenArea area2 = base.ZContext.ScreenContext.GetArea("迷失之地-矩阵行动-编队选择", "协战编队槽");
+		OneDragon.Core.Screen.ScreenArea area3 = base.ZContext.ScreenContext.GetArea("迷失之地-矩阵行动-编队选择", "协战代理人属性");
 		if (area == null || area2 == null || area3 == null)
 		{
 			return RoundFail("协战代理人区域未配置");
@@ -481,50 +445,19 @@ internal sealed class LostVoidAppOperation : ZOperation
 		Mat? lastScreenshot = base.LastScreenshot;
 		TimeSpan? successDelay = OneSecond;
 		TimeSpan? retryDelay = OneSecond;
-		return RoundByFindAndClickArea(lastScreenshot, "迷失之地-矩阵行动", "按钮-开始挑战", null, successDelay, retryDelay);
+		return RoundByFindAndClickArea(lastScreenshot, "迷失之地-矩阵行动-编队选择", "按钮-开始挑战", null, successDelay, retryDelay);
 	}
 
 	[NodeFrom("识别悬赏委托完成进度", Status = "继续挑战")]
 	[OperationNode("前往副本画面")]
 	private OperationRoundResult GotoMissionScreen()
 	{
-		OperationRoundResult result;
-		if (!IsMatrixExploreMission())
-		{
-			string screenName = "迷失之地-" + _config.MissionName;
-			TimeSpan? retryDelay = OneSecond;
-			result = RoundByGotoScreen(null, screenName, null, null, retryDelay);
-		}
-		else
-		{
-			result = RoundSuccess("需OCR入口导航");
-		}
-		return result;
-	}
-
-	[NodeFrom("前往副本画面", Status = "需OCR入口导航")]
-	[OperationNode("入口OCR-点击常规")]
-	private OperationRoundResult ClickRegularInMatrixExplore()
-	{
-		string areaName = "按钮-" + _config.MissionName;
-		if (RoundByFindArea(base.LastScreenshot, "迷失之地-入口", areaName).IsSuccess)
-		{
-			return RoundSuccess("已显示目标副本入口");
-		}
-		IReadOnlyList<(string ScreenName, string AreaName)> untilFindAll = new (string, string)[] { ("迷失之地-入口", areaName) };
-		OperationRoundResult result = RoundByFindAndClickArea(base.LastScreenshot, "迷失之地-入口", "按钮-常规", null, TimeSpan.FromMilliseconds(300L), TimeSpan.FromMilliseconds(100L), untilFindAll: untilFindAll);
-		return result.IsSuccess ? RoundSuccess("已显示目标副本入口", null, result.Delay) : result;
-	}
-
-	[NodeFrom("入口OCR-点击常规", Status = "已显示目标副本入口")]
-	[OperationNode("入口OCR-点击目标副本")]
-	private OperationRoundResult ClickTargetMissionInMatrixExplore()
-	{
-		return RoundByGotoScreen(screenName: "迷失之地-" + _config.MissionName, retryDelay: TimeSpan.FromMilliseconds(500L));
+		string screenName = "迷失之地-" + _config.MissionName;
+		TimeSpan? retryDelay = OneSecond;
+		return RoundByGotoScreen(null, screenName, null, null, retryDelay);
 	}
 
 	[NodeFrom("前往副本画面")]
-	[NodeFrom("入口OCR-点击目标副本")]
 	[OperationNode("副本画面识别")]
 	private OperationRoundResult CheckForMission()
 	{
@@ -801,16 +734,6 @@ internal sealed class LostVoidAppOperation : ZOperation
 	{
 		_runRecord.BountyCommissionComplete = true;
 		return RoundSuccess("完成通关次数");
-	}
-
-	private bool IsMatrixExploreMission()
-	{
-		string missionName = _config.MissionName;
-		if (missionName == "战线肃清" || missionName == "特遣调查")
-		{
-			return true;
-		}
-		return false;
 	}
 
 	private OperationRoundResult ClickStrategyAndConfirm(OneDragon.Core.Abstractions.Geometry.Point target)
