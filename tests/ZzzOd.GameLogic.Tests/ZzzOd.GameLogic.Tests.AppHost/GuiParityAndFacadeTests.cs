@@ -3325,28 +3325,86 @@ public sealed class GuiParityAndFacadeTests
 	}
 
 	/// <summary>
-	/// 一条龙应用列表合并应按 BaselineParity manager 语义保留未注册项原位，并把新注册应用追加为禁用。
+	/// 一条龙应用列表合并应保留未注册项原位，新注册应用以未持久化临时项置顶且不触发写盘。
 	/// </summary>
 	[Fact]
-	public void OneDragonAppListMergerPreservesHiddenItemsAndAppendsRegisteredAppsDisabled()
+	public void OneDragonAppListMergerKeepsHiddenItemsAndShowsNewAppsTransientAtTop()
 	{
 		OneDragonApplicationConfigItem[] savedApps = new OneDragonApplicationConfigItem[2]
 		{
 			new OneDragonApplicationConfigItem("removed-app", enabled: true),
 			new OneDragonApplicationConfigItem("coffee", enabled: true)
 		};
-		string[] array = new string[2] { "coffee", "charge_plan" };
-		ZzzOneDragonAppMergeResult zzzOneDragonAppMergeResult = ZzzOneDragonAppListMerger.Merge(savedApps, array);
-		Assert.True(zzzOneDragonAppMergeResult.Changed);
-		Assert.Equal(new string[2] { "coffee", "charge_plan" }, zzzOneDragonAppMergeResult.VisibleApps.Select((OneDragonApplicationConfigItem app) => app.AppId));
-		Assert.True(zzzOneDragonAppMergeResult.VisibleApps[0].Enabled);
-		Assert.False(zzzOneDragonAppMergeResult.VisibleApps[1].Enabled);
-		ZzzOneDragonAppUpdateDto[] array2 = (from app in zzzOneDragonAppMergeResult.VisibleApps.Reverse()
-			select new ZzzOneDragonAppUpdateDto(app.AppId, app.Enabled)).ToArray();
-		IReadOnlyList<OneDragonApplicationConfigItem> readOnlyList = ZzzOneDragonAppListMerger.ApplyVisibleOrder(zzzOneDragonAppMergeResult.AllApps, array.ToHashSet<string>(StringComparer.Ordinal), array2);
-		Assert.Equal("removed-app", readOnlyList[0].AppId);
-		Assert.Equal(array2.Select((ZzzOneDragonAppUpdateDto app) => app.AppId), from app in readOnlyList.Skip(1)
-			select app.AppId);
+		string[] defaultGroupAppIds = new string[2] { "coffee", "charge_plan" };
+		HashSet<string> registered = defaultGroupAppIds.ToHashSet<string>(StringComparer.Ordinal);
+		ZzzOneDragonAppMergeResult mergeResult = ZzzOneDragonAppListMerger.Merge(savedApps, defaultGroupAppIds, registered.Contains);
+		Assert.False(mergeResult.Changed);
+		Assert.Equal(new string[2] { "charge_plan", "coffee" }, mergeResult.VisibleApps.Select((OneDragonApplicationConfigItem app) => app.AppId));
+		Assert.False(mergeResult.VisibleApps[0].Enabled);
+		Assert.False(mergeResult.VisibleApps[0].IsPersisted);
+		Assert.True(mergeResult.VisibleApps[1].Enabled);
+		Assert.Equal(new string[1] { "charge_plan" }, mergeResult.TransientAppIds);
+		Assert.Equal(new string[2] { "removed-app", "coffee" }, mergeResult.AllApps.Select((OneDragonApplicationConfigItem app) => app.AppId));
+		Assert.Empty(mergeResult.MigratedAppIds);
+	}
+
+	/// <summary>
+	/// 已注册但退出默认组的应用：启用的保留显示并标记迁移，禁用的从配置清除，关闭已迁移项即永久移除。
+	/// </summary>
+	[Fact]
+	public void OneDragonAppListMergerMigratesEnabledNonDefaultAppsAndRemovesOnDisable()
+	{
+		OneDragonApplicationConfigItem[] savedApps = new OneDragonApplicationConfigItem[3]
+		{
+			new OneDragonApplicationConfigItem("hou_hou_bakery", enabled: true),
+			new OneDragonApplicationConfigItem("scratch_card", enabled: false),
+			new OneDragonApplicationConfigItem("coffee", enabled: true)
+		};
+		string[] defaultGroupAppIds = new string[1] { "coffee" };
+		HashSet<string> registered = new HashSet<string>(StringComparer.Ordinal) { "hou_hou_bakery", "scratch_card", "coffee" };
+		ZzzOneDragonAppMergeResult mergeResult = ZzzOneDragonAppListMerger.Merge(savedApps, defaultGroupAppIds, registered.Contains);
+		Assert.True(mergeResult.Changed);
+		Assert.Equal(new string[1] { "hou_hou_bakery" }, mergeResult.MigratedAppIds);
+		Assert.Equal(new string[2] { "hou_hou_bakery", "coffee" }, mergeResult.VisibleApps.Select((OneDragonApplicationConfigItem app) => app.AppId));
+		Assert.Equal(new string[2] { "hou_hou_bakery", "coffee" }, mergeResult.AllApps.Select((OneDragonApplicationConfigItem app) => app.AppId));
+		ZzzOneDragonAppUpdateDto[] disableMigrated = new ZzzOneDragonAppUpdateDto[2]
+		{
+			new ZzzOneDragonAppUpdateDto("hou_hou_bakery", Enabled: false),
+			new ZzzOneDragonAppUpdateDto("coffee", Enabled: true)
+		};
+		IReadOnlyList<OneDragonApplicationConfigItem> saved = ZzzOneDragonAppListMerger.ApplyVisibleOrder(mergeResult, disableMigrated);
+		Assert.Equal(new string[1] { "coffee" }, saved.Select((OneDragonApplicationConfigItem app) => app.AppId));
+	}
+
+	/// <summary>
+	/// 未触碰的临时项不写入保存顺序；用户启用或挪动后按可见顺序转正，未注册项保持原位。
+	/// </summary>
+	[Fact]
+	public void OneDragonAppListMergerPersistsTransientAppsOnlyAfterUserInteraction()
+	{
+		OneDragonApplicationConfigItem[] savedApps = new OneDragonApplicationConfigItem[2]
+		{
+			new OneDragonApplicationConfigItem("removed-app", enabled: true),
+			new OneDragonApplicationConfigItem("coffee", enabled: true)
+		};
+		string[] defaultGroupAppIds = new string[2] { "coffee", "charge_plan" };
+		HashSet<string> registered = defaultGroupAppIds.ToHashSet<string>(StringComparer.Ordinal);
+		ZzzOneDragonAppMergeResult mergeResult = ZzzOneDragonAppListMerger.Merge(savedApps, defaultGroupAppIds, registered.Contains);
+		ZzzOneDragonAppUpdateDto[] untouched = new ZzzOneDragonAppUpdateDto[2]
+		{
+			new ZzzOneDragonAppUpdateDto("charge_plan", Enabled: false),
+			new ZzzOneDragonAppUpdateDto("coffee", Enabled: true)
+		};
+		IReadOnlyList<OneDragonApplicationConfigItem> savedUntouched = ZzzOneDragonAppListMerger.ApplyVisibleOrder(mergeResult, untouched);
+		Assert.Equal(new string[2] { "removed-app", "coffee" }, savedUntouched.Select((OneDragonApplicationConfigItem app) => app.AppId));
+		ZzzOneDragonAppUpdateDto[] enabledTransient = new ZzzOneDragonAppUpdateDto[2]
+		{
+			new ZzzOneDragonAppUpdateDto("charge_plan", Enabled: true),
+			new ZzzOneDragonAppUpdateDto("coffee", Enabled: true)
+		};
+		IReadOnlyList<OneDragonApplicationConfigItem> savedPersisted = ZzzOneDragonAppListMerger.ApplyVisibleOrder(mergeResult, enabledTransient);
+		Assert.Equal(new string[3] { "removed-app", "charge_plan", "coffee" }, savedPersisted.Select((OneDragonApplicationConfigItem app) => app.AppId));
+		Assert.True(savedPersisted[1].Enabled);
 	}
 
 	/// <summary>

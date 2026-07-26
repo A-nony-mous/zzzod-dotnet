@@ -24,7 +24,8 @@ internal sealed record ZzzOneDragonAppRowModel(
     bool SettingVisible,
     bool RunAvailable,
     string? LastRunTime,
-    int? RunStatus)
+    int? RunStatus,
+    bool IsMigrated = false)
 {
     public string LastRunText => string.IsNullOrWhiteSpace(LastRunTime) ? string.Empty : $"上次运行 {LastRunTime}";
 
@@ -299,7 +300,8 @@ internal sealed class ZzzOneDragonRunSettings
             app.SettingVisible,
             app.RunAvailable,
             app.LastRunTime,
-            app.RunStatus)).ToArray();
+            app.RunStatus,
+            app.IsMigrated)).ToArray();
     }
 
     private void SaveAppRows()
@@ -325,7 +327,8 @@ internal sealed class ZzzOneDragonRunSettings
             app.SettingVisible,
             app.RunAvailable,
             app.LastRunTime,
-            app.RunStatus)).ToArray();
+            app.RunStatus,
+            app.IsMigrated)).ToArray();
     }
 
     private bool SaveSettings(string key, object? value)

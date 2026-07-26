@@ -55,6 +55,16 @@
                   <fa:FASettingsExpanderItem.Footer>
                     <StackPanel Orientation="Horizontal"
                                 Spacing="4">
+                      <Border VerticalAlignment="Center"
+                              Padding="8,2"
+                              CornerRadius="10"
+                              Background="{DynamicResource SubtleFillColorSecondaryBrush}"
+                              IsVisible="{Binding IsMigrated}"
+                              ToolTip.Tip="该应用已不在默认组，关闭后将从一条龙列表中永久移除">
+                        <TextBlock Text="已迁移"
+                                   FontSize="12"
+                                   Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                      </Border>
                       <Button Width="36"
                               Height="32"
                               Theme="{DynamicResource TransparentButton}"

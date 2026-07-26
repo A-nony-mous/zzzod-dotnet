@@ -328,7 +328,7 @@ public sealed class ZzzAppBackend : IZzzAppBackend, IZzzIntelBoardProgressBacken
 			}
 			object value2;
 			List<OneDragonApplicationConfigItem> savedApps = ((zzzBackendResult.Value.Values.TryGetValue("app_list", out value2) && value2 is List<OneDragonApplicationConfigItem> source) ? source.Select((OneDragonApplicationConfigItem item) => new OneDragonApplicationConfigItem(item.AppId, item.Enabled)).ToList() : new List<OneDragonApplicationConfigItem>());
-			ZzzOneDragonAppMergeResult zzzOneDragonAppMergeResult = ZzzOneDragonAppListMerger.Merge(savedApps, registeredAppIds);
+			ZzzOneDragonAppMergeResult zzzOneDragonAppMergeResult = ZzzOneDragonAppListMerger.Merge(savedApps, registeredAppIds, zContext.RunContext.IsAppRegistered);
 			if (zzzOneDragonAppMergeResult.Changed)
 			{
 				ZzzBackendResult<ZzzConfigScopeValuesDto> zzzBackendResult2 = _configScopes.Save(new ZzzSaveConfigScopeRequest("one-dragon-group", new Dictionary<string, object> { ["app_list"] = zzzOneDragonAppMergeResult.AllApps }, value, ZOneDragonAppConstants.DefaultGroupId));
@@ -337,12 +337,13 @@ public sealed class ZzzAppBackend : IZzzAppBackend, IZzzIntelBoardProgressBacken
 					return ZzzBackendResult<IReadOnlyList<ZzzOneDragonAppDto>>.Fail(zzzBackendResult2.ErrorCode ?? ZzzBackendErrorCode.NotReady, zzzBackendResult2.Error ?? "一条龙应用组保存失败。");
 				}
 			}
+			HashSet<string> migratedAppIds = zzzOneDragonAppMergeResult.MigratedAppIds.ToHashSet<string>(StringComparer.Ordinal);
 			List<ZzzOneDragonAppDto> list = new List<ZzzOneDragonAppDto>();
 			foreach (OneDragonApplicationConfigItem visibleApp in zzzOneDragonAppMergeResult.VisibleApps)
 			{
 				IApplicationFactory applicationFactory = zContext.ApplicationFactoryRegistry.CreateFactory(visibleApp.AppId);
 				ZApplicationRunRecord zApplicationRunRecord = zContext.RunContext.GetRunRecord(visibleApp.AppId, value) as ZApplicationRunRecord;
-				list.Add(new ZzzOneDragonAppDto(visibleApp.AppId, applicationFactory.AppName, visibleApp.Enabled, applicationFactory.NeedNotify, zContext.RunContext.NotifyAppMap.ContainsKey(visibleApp.AppId), ZzzAppSettingProviderRegistry.TryGetImplemented(visibleApp.AppId, out ZzzAppSettingProviderDescriptor _), RunAvailable: true, zApplicationRunRecord?.RunTime, zApplicationRunRecord?.RunStatusUnderNow));
+				list.Add(new ZzzOneDragonAppDto(visibleApp.AppId, applicationFactory.AppName, visibleApp.Enabled, applicationFactory.NeedNotify, zContext.RunContext.NotifyAppMap.ContainsKey(visibleApp.AppId), ZzzAppSettingProviderRegistry.TryGetImplemented(visibleApp.AppId, out ZzzAppSettingProviderDescriptor _), RunAvailable: true, zApplicationRunRecord?.RunTime, zApplicationRunRecord?.RunStatusUnderNow, migratedAppIds.Contains(visibleApp.AppId)));
 			}
 			return ZzzBackendResult<IReadOnlyList<ZzzOneDragonAppDto>>.Ok(list);
 		}
@@ -361,7 +362,6 @@ public sealed class ZzzAppBackend : IZzzAppBackend, IZzzIntelBoardProgressBacken
 			ZContext zContext = _runtime.EnsureContext();
 			int value = request.InstanceIndex ?? _runtime.ActiveInstanceIndex;
 			IReadOnlyList<string> readOnlyList = zContext.RunContext.DefaultGroupApps.Where((string appId) => !string.Equals(appId, "one_dragon", StringComparison.Ordinal)).ToArray();
-			HashSet<string> registeredAppIds = readOnlyList.ToHashSet<string>(StringComparer.Ordinal);
 			ZzzBackendResult<ZzzConfigScopeValuesDto> zzzBackendResult = _configScopes.Read("one-dragon-group", value, ZOneDragonAppConstants.DefaultGroupId);
 			if (!zzzBackendResult.Success || (object)zzzBackendResult.Value == null)
 			{
@@ -372,8 +372,8 @@ public sealed class ZzzAppBackend : IZzzAppBackend, IZzzIntelBoardProgressBacken
 			IReadOnlyList<OneDragonApplicationConfigItem> value3;
 			try
 			{
-				ZzzOneDragonAppMergeResult zzzOneDragonAppMergeResult = ZzzOneDragonAppListMerger.Merge(savedApps, readOnlyList);
-				value3 = ZzzOneDragonAppListMerger.ApplyVisibleOrder(zzzOneDragonAppMergeResult.AllApps, registeredAppIds, request.Apps);
+				ZzzOneDragonAppMergeResult zzzOneDragonAppMergeResult = ZzzOneDragonAppListMerger.Merge(savedApps, readOnlyList, zContext.RunContext.IsAppRegistered);
+				value3 = ZzzOneDragonAppListMerger.ApplyVisibleOrder(zzzOneDragonAppMergeResult, request.Apps);
 			}
 			catch (ArgumentException ex)
 			{
