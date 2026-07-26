@@ -8,7 +8,7 @@ using ZzzOd.GameLogic.Config;
 using ZzzOd.GameLogic.GameData;
 using ZzzOd.Gui.Shell;
 
-using ZzzOd.Gui.Pages.ApplicationSettings;
+using ZzzOd.Gui.PageModels.ApplicationSettings;
 
 namespace ZzzOd.Gui.Views.FrontierPages.ApplicationSettings;
 

@@ -13,7 +13,7 @@ using ZzzOd.Gui.Controls;
 using ZzzOd.Gui.Services.RunIntent;
 using ZzzOd.Gui.Shell;
 
-namespace ZzzOd.Gui.Pages.OneDragon;
+namespace ZzzOd.Gui.PageModels.OneDragon;
 
 internal sealed record ZzzPredefinedTeamOption(string Label, string Value)
 {

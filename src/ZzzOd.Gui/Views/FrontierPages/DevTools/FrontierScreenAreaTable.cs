@@ -2,7 +2,7 @@ using Avalonia.Controls;
 using Avalonia.Interactivity;
 using Avalonia.Markup.Xaml;
 
-using ZzzOd.Gui.Pages.Devtools;
+using ZzzOd.Gui.PageModels.Devtools;
 
 namespace ZzzOd.Gui.Views.FrontierPages.DevTools;
 

@@ -7,7 +7,7 @@ using System.Runtime.InteropServices;
 using Xunit;
 using ZzzOd.GameLogic.Config;
 using ZzzOd.GameLogic.GameData;
-using ZzzOd.Gui.Pages.OneDragon;
+using ZzzOd.Gui.PageModels.OneDragon;
 using ZzzOd.Gui.Views.FrontierPages.OneDragon;
 
 namespace ZzzOd.GameLogic.Tests.AppHost;

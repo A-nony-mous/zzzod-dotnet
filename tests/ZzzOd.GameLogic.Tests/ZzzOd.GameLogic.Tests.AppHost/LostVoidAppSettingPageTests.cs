@@ -9,7 +9,7 @@ using Xunit;
 using ZzzOd.AppHost;
 using ZzzOd.AppHost.Backend;
 using ZzzOd.GameLogic.Application.HollowZero.LostVoid;
-using ZzzOd.Gui.Pages.ApplicationSettings;
+using ZzzOd.Gui.PageModels.ApplicationSettings;
 
 namespace ZzzOd.GameLogic.Tests.AppHost;
 

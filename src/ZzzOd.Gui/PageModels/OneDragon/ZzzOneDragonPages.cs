@@ -4,7 +4,7 @@ using ZzzOd.GameLogic.Application.OneDragonApp;
 using ZzzOd.GameLogic.Config;
 using ZzzOd.GameLogic.Const;
 
-namespace ZzzOd.Gui.Pages.OneDragon;
+namespace ZzzOd.Gui.PageModels.OneDragon;
 
 internal sealed record ZzzOneDragonPageModel(
     string Key,

@@ -14,7 +14,7 @@ using ZzzOd.AppHost.Backend;
 using ZzzOd.GameLogic.Config;
 using ZzzOd.Gui.Shell;
 
-namespace ZzzOd.Gui.Pages.Accounts;
+namespace ZzzOd.Gui.PageModels.Accounts;
 
 internal sealed record ZzzAccountOption(string Label, string Value)
 {

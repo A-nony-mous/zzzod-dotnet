@@ -8,7 +8,7 @@ using OneDragon.Core.Template;
 using OpenCvSharp;
 using Xunit;
 using ZzzOd.AppHost.Backend;
-using ZzzOd.Gui.Pages.Devtools;
+using ZzzOd.Gui.PageModels.Devtools;
 
 namespace ZzzOd.GameLogic.Tests.AppHost;
 

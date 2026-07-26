@@ -4,7 +4,7 @@ using FluentAvalonia.UI.Controls;
 using ZzzOd.AppHost.Backend;
 using ZzzOd.Gui.Shell;
 
-using ZzzOd.Gui.Pages.ApplicationSettings;
+using ZzzOd.Gui.PageModels.ApplicationSettings;
 
 namespace ZzzOd.Gui.Views.FrontierPages.ApplicationSettings;
 

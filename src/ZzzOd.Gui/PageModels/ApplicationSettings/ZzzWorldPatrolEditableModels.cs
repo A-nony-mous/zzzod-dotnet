@@ -1,6 +1,6 @@
 using ZzzOd.AppHost.Backend;
 
-namespace ZzzOd.Gui.Pages.ApplicationSettings;
+namespace ZzzOd.Gui.PageModels.ApplicationSettings;
 
 internal sealed record ZzzWorldPatrolOption(string Label, object Value)
 {

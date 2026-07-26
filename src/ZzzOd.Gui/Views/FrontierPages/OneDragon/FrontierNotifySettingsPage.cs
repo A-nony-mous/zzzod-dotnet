@@ -6,7 +6,7 @@ using ZzzOd.AppHost.Backend;
 using ZzzOd.GameLogic.Config;
 using ZzzOd.Gui.Shell;
 
-using ZzzOd.Gui.Pages.OneDragon;
+using ZzzOd.Gui.PageModels.OneDragon;
 
 namespace ZzzOd.Gui.Views.FrontierPages.OneDragon;
 

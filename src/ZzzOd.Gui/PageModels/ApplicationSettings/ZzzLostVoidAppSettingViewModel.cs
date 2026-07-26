@@ -2,7 +2,7 @@ using System.Globalization;
 using ZzzOd.AppHost.Backend;
 using ZzzOd.GameLogic.Application.HollowZero.LostVoid;
 
-namespace ZzzOd.Gui.Pages.ApplicationSettings;
+namespace ZzzOd.Gui.PageModels.ApplicationSettings;
 
 internal sealed record ZzzLostVoidUiOption(string Label, object Value, string Description = "")
 {

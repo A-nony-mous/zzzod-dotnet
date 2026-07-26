@@ -15,7 +15,7 @@ using ZzzOd.Gui.Shell;
 using AvaloniaPoint = Avalonia.Point;
 using GeometryPoint = OneDragon.Core.Abstractions.Geometry.Point;
 
-using ZzzOd.Gui.Pages.Devtools;
+using ZzzOd.Gui.PageModels.Devtools;
 
 namespace ZzzOd.Gui.Views.FrontierPages.DevTools;
 

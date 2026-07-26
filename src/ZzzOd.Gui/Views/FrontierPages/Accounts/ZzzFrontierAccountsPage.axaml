@@ -1,7 +1,7 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:fa="using:FluentAvalonia.UI.Controls"
-             xmlns:accounts="using:ZzzOd.Gui.Pages.Accounts"
+             xmlns:accounts="using:ZzzOd.Gui.PageModels.Accounts"
              x:Class="ZzzOd.Gui.Views.FrontierPages.Accounts.ZzzFrontierAccountsPage">
   <Grid>
     <ScrollViewer Padding="{DynamicResource SampleAppPageMargin}"

@@ -1,7 +1,7 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:fa="using:FluentAvalonia.UI.Controls"
-             xmlns:local="using:ZzzOd.Gui.Pages.Settings"
+             xmlns:local="using:ZzzOd.Gui.PageModels.Settings"
              x:Class="ZzzOd.Gui.Views.FrontierPages.Settings.FrontierCustomSettingsPage">
   <UserControl.Resources>
     <fa:FAContentDialog x:Key="ThemeColorDialog"

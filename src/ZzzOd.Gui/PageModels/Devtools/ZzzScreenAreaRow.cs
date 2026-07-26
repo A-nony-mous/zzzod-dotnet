@@ -1,4 +1,4 @@
-namespace ZzzOd.Gui.Pages.Devtools;
+namespace ZzzOd.Gui.PageModels.Devtools;
 
 internal sealed class ZzzScreenAreaRow
 {

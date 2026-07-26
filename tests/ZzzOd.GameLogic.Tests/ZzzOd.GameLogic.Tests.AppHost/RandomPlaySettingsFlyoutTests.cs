@@ -8,7 +8,7 @@ using Xunit;
 using ZzzOd.AppHost.Backend;
 using ZzzOd.GameLogic.Application.RandomPlay;
 using ZzzOd.GameLogic.GameData;
-using ZzzOd.Gui.Pages.ApplicationSettings;
+using ZzzOd.Gui.PageModels.ApplicationSettings;
 
 namespace ZzzOd.GameLogic.Tests.AppHost;
 

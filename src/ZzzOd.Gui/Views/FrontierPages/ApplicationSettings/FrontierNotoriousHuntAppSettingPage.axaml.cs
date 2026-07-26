@@ -11,7 +11,7 @@ using ZzzOd.GameLogic.Application.ChargePlan;
 using ZzzOd.GameLogic.Application.NotoriousHunt;
 using ZzzOd.Gui.Shell;
 
-using ZzzOd.Gui.Pages.ApplicationSettings;
+using ZzzOd.Gui.PageModels.ApplicationSettings;
 
 namespace ZzzOd.Gui.Views.FrontierPages.ApplicationSettings;
 

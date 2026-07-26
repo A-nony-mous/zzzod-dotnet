@@ -8,9 +8,9 @@ using Avalonia.Media.Imaging;
 using Avalonia.Controls.Shapes;
 using Avalonia.Threading;
 using FluentAvalonia.UI.Controls;
-using ZzzOd.Gui.Pages.Devtools;
+using ZzzOd.Gui.PageModels.Devtools;
 
-using ZzzOd.Gui.Pages.ApplicationSettings;
+using ZzzOd.Gui.PageModels.ApplicationSettings;
 
 namespace ZzzOd.Gui.Views.FrontierPages.WorldPatrol;
 

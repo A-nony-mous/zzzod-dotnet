@@ -12,7 +12,7 @@ using ZzzOd.AppHost.Backend;
 using ZzzOd.Gui.Services.LauncherMedia;
 using ZzzOd.Gui.Shell;
 
-using ZzzOd.Gui.Pages.Settings;
+using ZzzOd.Gui.PageModels.Settings;
 
 namespace ZzzOd.Gui.Views.FrontierPages.Settings;
 

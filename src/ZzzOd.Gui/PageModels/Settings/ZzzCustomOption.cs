@@ -1,4 +1,4 @@
-namespace ZzzOd.Gui.Pages.Settings;
+namespace ZzzOd.Gui.PageModels.Settings;
 
 internal sealed record ZzzCustomOption(string Label, string Value)
 {

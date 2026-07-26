@@ -12,7 +12,7 @@ using ZzzOd.GameLogic.Application.ChargePlan;
 using ZzzOd.GameLogic.Application.NotoriousHunt;
 using ZzzOd.Gui.Shell;
 
-namespace ZzzOd.Gui.Pages.OneDragon;
+namespace ZzzOd.Gui.PageModels.OneDragon;
 
 internal sealed record ZzzChargePlanOption(string Label, string Value)
 {

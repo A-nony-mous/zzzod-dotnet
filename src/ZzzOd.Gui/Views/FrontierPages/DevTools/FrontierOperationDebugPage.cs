@@ -14,7 +14,7 @@ using ZzzOd.Gui.Controls;
 using ZzzOd.Gui.Services.RunIntent;
 using ZzzOd.Gui.Shell;
 
-using ZzzOd.Gui.Pages.Devtools;
+using ZzzOd.Gui.PageModels.Devtools;
 
 namespace ZzzOd.Gui.Views.FrontierPages.DevTools;
 

@@ -12,10 +12,10 @@ using ZzzOd.GameLogic.Application.OneDragonApp;
 using ZzzOd.GameLogic.Config;
 using ZzzOd.GameLogic.Const;
 using ZzzOd.Gui.Controls;
-using ZzzOd.Gui.Pages.ApplicationSettings;
+using ZzzOd.Gui.PageModels.ApplicationSettings;
 using ZzzOd.Gui.Services.RunIntent;
 using ZzzOd.Gui.Shell;
-using ZzzOd.Gui.Pages.OneDragon;
+using ZzzOd.Gui.PageModels.OneDragon;
 using ZzzOd.Gui.Views.FrontierPages.ApplicationSettings;
 
 namespace ZzzOd.Gui.Views.FrontierPages.OneDragon;

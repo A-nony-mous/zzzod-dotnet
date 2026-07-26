@@ -3,7 +3,7 @@ using ZzzOd.AppHost.Backend;
 using ZzzOd.GameLogic.Application.RandomPlay;
 using ZzzOd.GameLogic.GameData;
 
-namespace ZzzOd.Gui.Pages.ApplicationSettings;
+namespace ZzzOd.Gui.PageModels.ApplicationSettings;
 
 internal sealed record ZzzRandomPlaySettingOption(string Label, string Value)
 {

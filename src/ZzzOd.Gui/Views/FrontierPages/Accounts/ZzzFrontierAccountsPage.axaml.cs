@@ -7,7 +7,7 @@ using Avalonia.Platform.Storage;
 using Avalonia.Threading;
 using FluentAvalonia.UI.Controls;
 using ZzzOd.AppHost.Backend;
-using ZzzOd.Gui.Pages.Accounts;
+using ZzzOd.Gui.PageModels.Accounts;
 using ZzzOd.Gui.Shell;
 
 namespace ZzzOd.Gui.Views.FrontierPages.Accounts;

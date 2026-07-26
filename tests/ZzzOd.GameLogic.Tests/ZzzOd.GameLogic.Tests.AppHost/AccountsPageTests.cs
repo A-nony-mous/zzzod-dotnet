@@ -5,7 +5,7 @@ using FluentAvalonia.UI.Controls;
 using Xunit;
 using ZzzOd.AppHost.Backend;
 using ZzzOd.GameLogic.Config;
-using ZzzOd.Gui.Pages.Accounts;
+using ZzzOd.Gui.PageModels.Accounts;
 using ZzzOd.Gui.Views.FrontierPages.Accounts;
 
 namespace ZzzOd.GameLogic.Tests.AppHost;

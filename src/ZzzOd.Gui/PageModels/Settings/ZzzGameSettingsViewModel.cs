@@ -4,7 +4,7 @@ using ZzzOd.GameLogic.Application.BattleAssistant.AutoBattle;
 using ZzzOd.Gui.Architecture;
 using ZzzOd.Gui.Shell;
 
-namespace ZzzOd.Gui.Pages.Settings;
+namespace ZzzOd.Gui.PageModels.Settings;
 
 internal sealed record ZzzGameSettingOption(string Label, string Value, string? Description = null)
 {

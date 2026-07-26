@@ -266,9 +266,9 @@ public sealed class GuiStaticAuditTests
 
 		foreach (string content in new[] { standalone, resourceDownload, environment, push, notoriousHunt, redemptionCode, shiyuDefense })
 		{
-			Assert.DoesNotContain("using:ZzzOd.Gui.Pages.Standalone", content, StringComparison.Ordinal);
-			Assert.DoesNotContain("using:ZzzOd.Gui.Pages.Settings", content, StringComparison.Ordinal);
-			Assert.DoesNotContain("using:ZzzOd.Gui.Pages.ApplicationSettings", content, StringComparison.Ordinal);
+			Assert.DoesNotContain("using:ZzzOd.Gui.PageModels.Standalone", content, StringComparison.Ordinal);
+			Assert.DoesNotContain("using:ZzzOd.Gui.PageModels.Settings", content, StringComparison.Ordinal);
+			Assert.DoesNotContain("using:ZzzOd.Gui.PageModels.ApplicationSettings", content, StringComparison.Ordinal);
 		}
 	}
 

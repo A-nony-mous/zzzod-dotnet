@@ -1,6 +1,6 @@
 using ZzzOd.GameLogic.Config;
 
-namespace ZzzOd.Gui.Pages.OneDragon;
+namespace ZzzOd.Gui.PageModels.OneDragon;
 
 internal sealed record ZzzNotifyModeOption(string Label, string Value);
 

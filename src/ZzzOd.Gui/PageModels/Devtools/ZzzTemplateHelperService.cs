@@ -15,7 +15,7 @@ using ZzzOd.Gui.Shell;
 using AvaloniaPoint = Avalonia.Point;
 using GeometryPoint = OneDragon.Core.Abstractions.Geometry.Point;
 
-namespace ZzzOd.Gui.Pages.Devtools;
+namespace ZzzOd.Gui.PageModels.Devtools;
 internal sealed record TemplatePointRow(string Text);
 
 internal sealed class ZzzTemplateHelperService

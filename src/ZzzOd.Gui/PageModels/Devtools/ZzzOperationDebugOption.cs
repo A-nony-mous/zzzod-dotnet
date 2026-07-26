@@ -1,3 +1,3 @@
-namespace ZzzOd.Gui.Pages.Devtools;
+namespace ZzzOd.Gui.PageModels.Devtools;
 
 internal sealed record ZzzOperationDebugOption(string Label, string Value);

@@ -8,7 +8,7 @@ using OpenCvSharp;
 using ZzzOd.AppHost.Backend;
 using GeometryPoint = OneDragon.Core.Abstractions.Geometry.Point;
 
-namespace ZzzOd.Gui.Pages.Devtools;
+namespace ZzzOd.Gui.PageModels.Devtools;
 
 internal static class ZzzDevtoolsImageLoader
 {

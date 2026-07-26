@@ -12,7 +12,7 @@ using ZzzOd.GameLogic.Application.OneDragonApp;
 using ZzzOd.GameLogic.Config;
 using ZzzOd.GameLogic.Const;
 using ZzzOd.Gui.Controls;
-using ZzzOd.Gui.Pages.ApplicationSettings;
+using ZzzOd.Gui.PageModels.ApplicationSettings;
 using ZzzOd.Gui.Services.RunIntent;
 using ZzzOd.Gui.Shell;
 

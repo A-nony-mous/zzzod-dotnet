@@ -2,7 +2,7 @@ using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
 using ZzzOd.AppHost.Backend;
 
-namespace ZzzOd.Gui.Pages.ApplicationSettings;
+namespace ZzzOd.Gui.PageModels.ApplicationSettings;
 
 internal sealed class ZzzAppSettingNavigator
 {

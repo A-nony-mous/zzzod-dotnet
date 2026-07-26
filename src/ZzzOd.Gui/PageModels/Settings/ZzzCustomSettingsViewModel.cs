@@ -4,7 +4,7 @@ using ZzzOd.AppHost.Backend;
 using ZzzOd.Gui.Architecture;
 using ZzzOd.Gui.Shell;
 
-namespace ZzzOd.Gui.Pages.Settings;
+namespace ZzzOd.Gui.PageModels.Settings;
 
 internal sealed partial class ZzzCustomSettingsViewModel : ZzzPageViewModel
 {

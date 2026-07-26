@@ -2,7 +2,7 @@ using System.Globalization;
 using ZzzOd.AppHost.Backend;
 using ZzzOd.GameLogic.Config;
 
-namespace ZzzOd.Gui.Pages.ApplicationSettings;
+namespace ZzzOd.Gui.PageModels.ApplicationSettings;
 
 internal sealed record ZzzLifeOnLineTeamOption(string Label, int Value)
 {

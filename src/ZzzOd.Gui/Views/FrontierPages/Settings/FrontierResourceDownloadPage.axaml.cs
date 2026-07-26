@@ -11,7 +11,7 @@ using ZzzOd.AppHost.Resources;
 using ZzzOd.Gui.Controls;
 using ZzzOd.Gui.Shell;
 
-using ZzzOd.Gui.Pages.Settings;
+using ZzzOd.Gui.PageModels.Settings;
 
 namespace ZzzOd.Gui.Views.FrontierPages.Settings;
 

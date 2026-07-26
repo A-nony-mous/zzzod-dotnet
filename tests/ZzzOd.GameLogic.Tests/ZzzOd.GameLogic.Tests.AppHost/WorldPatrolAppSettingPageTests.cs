@@ -12,7 +12,7 @@ using ZzzOd.AppHost;
 using ZzzOd.AppHost.Backend;
 using ZzzOd.GameLogic.Application.WorldPatrol;
 using ZzzOd.GameLogic.Context;
-using ZzzOd.Gui.Pages.ApplicationSettings;
+using ZzzOd.Gui.PageModels.ApplicationSettings;
 using ZzzOd.Gui.Views.FrontierPages.ApplicationSettings;
 using ZzzOd.Gui.Views.FrontierPages.WorldPatrol;
 

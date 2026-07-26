@@ -4,7 +4,7 @@ using Xunit;
 using ZzzOd.AppHost;
 using ZzzOd.AppHost.Backend;
 using ZzzOd.GameLogic.Application.BattleAssistant.AutoBattle;
-using ZzzOd.Gui.Pages.Settings;
+using ZzzOd.Gui.PageModels.Settings;
 using ZzzOd.Gui.Services.LauncherMedia;
 using ZzzOd.Gui.Services.Windows;
 using ZzzOd.Gui.Shell;
@@ -230,7 +230,7 @@ public sealed class SettingsViewModelTests
     {
         ComboBox comboBox = page.FindControl<ComboBox>(name)!;
         Assert.Equal(expectedIndex, comboBox.SelectedIndex);
-        ZzzOd.Gui.Pages.Settings.ZzzCustomOption option = Assert.IsType<ZzzOd.Gui.Pages.Settings.ZzzCustomOption>(comboBox.SelectedItem);
+        ZzzOd.Gui.PageModels.Settings.ZzzCustomOption option = Assert.IsType<ZzzOd.Gui.PageModels.Settings.ZzzCustomOption>(comboBox.SelectedItem);
         Assert.Equal(expectedLabel, option.Label);
     }
 

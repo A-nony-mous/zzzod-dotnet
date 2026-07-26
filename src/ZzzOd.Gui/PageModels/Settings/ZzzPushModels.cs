@@ -13,7 +13,7 @@ using ZzzOd.AppHost.Backend;
 using ZzzOd.AppHost.Notifications;
 using ZzzOd.Gui.Shell;
 
-namespace ZzzOd.Gui.Pages.Settings;
+namespace ZzzOd.Gui.PageModels.Settings;
 
 internal sealed record ZzzPushOption(string Label, string Value)
 {

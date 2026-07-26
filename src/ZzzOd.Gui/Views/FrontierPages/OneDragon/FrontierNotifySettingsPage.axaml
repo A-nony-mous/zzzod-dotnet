@@ -1,7 +1,7 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:fa="using:FluentAvalonia.UI.Controls"
-             xmlns:local="using:ZzzOd.Gui.Pages.OneDragon"
+             xmlns:local="using:ZzzOd.Gui.PageModels.OneDragon"
              x:Class="ZzzOd.Gui.Views.FrontierPages.OneDragon.FrontierNotifySettingsPage">
   <ScrollViewer Padding="{DynamicResource SampleAppPageMargin}"
                 HorizontalScrollBarVisibility="Disabled"
