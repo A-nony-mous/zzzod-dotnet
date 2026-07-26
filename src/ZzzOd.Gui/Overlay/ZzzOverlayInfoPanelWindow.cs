@@ -1,5 +1,6 @@
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Controls.Primitives;
 using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Layout;
@@ -19,6 +20,7 @@ internal sealed class ZzzOverlayInfoPanelWindow : Window
     private readonly Grid _header;
     private readonly TextBlock _title;
     private readonly TextBlock _content;
+    private readonly ScrollViewer _contentScrollViewer;
     private readonly Button _fontDecreaseButton;
     private readonly Button _fontIncreaseButton;
     private readonly Button _opacityDecreaseButton;
@@ -32,6 +34,7 @@ internal sealed class ZzzOverlayInfoPanelWindow : Window
     private bool _userManipulating;
     private bool _geometryApplied;
     private bool _scalingRefreshQueued;
+    private bool _contentScrollQueued;
     private bool _closed;
     private readonly DispatcherTimer _geometryCommitTimer;
 
@@ -88,12 +91,23 @@ internal sealed class ZzzOverlayInfoPanelWindow : Window
             VerticalAlignment = VerticalAlignment.Top,
             IsHitTestVisible = false,
         };
+        _contentScrollViewer = new ScrollViewer
+        {
+            Content = _content,
+            HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled,
+            VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
+            HorizontalContentAlignment = HorizontalAlignment.Stretch,
+            VerticalContentAlignment = VerticalAlignment.Top,
+            ClipToBounds = true,
+            IsHitTestVisible = false,
+        };
         Grid panelContent = new()
         {
             RowDefinitions = new RowDefinitions("Auto,*"),
-            Children = { _header, _content },
+            ClipToBounds = true,
+            Children = { _header, _contentScrollViewer },
         };
-        Grid.SetRow(_content, 1);
+        Grid.SetRow(_contentScrollViewer, 1);
         _panelBorder = new Border
         {
             Padding = new Thickness(8),
@@ -131,6 +145,10 @@ internal sealed class ZzzOverlayInfoPanelWindow : Window
         _panel is null &&
         _settings is null &&
         _gameWindow is null;
+
+    internal ScrollViewer ContentScrollViewer => _contentScrollViewer;
+
+    internal string ContentText => _content.Text ?? string.Empty;
 
     internal bool TryGetCurrentPhysicalBounds(
         out ZzzOverlayPhysicalRect bounds,
@@ -206,6 +224,25 @@ internal sealed class ZzzOverlayInfoPanelWindow : Window
     public void UpdateContent(string content)
     {
         _content.Text = content ?? string.Empty;
+        if (_contentScrollQueued)
+        {
+            return;
+        }
+
+        _contentScrollQueued = true;
+        Dispatcher.UIThread.Post(ScrollContentToEnd, DispatcherPriority.Render);
+    }
+
+    private void ScrollContentToEnd()
+    {
+        _contentScrollQueued = false;
+        if (_closed)
+        {
+            return;
+        }
+
+        double maximum = Math.Max(0d, _contentScrollViewer.Extent.Height - _contentScrollViewer.Viewport.Height);
+        _contentScrollViewer.Offset = new Vector(_contentScrollViewer.Offset.X, maximum);
     }
 
     public void HidePanel()
@@ -338,6 +375,7 @@ internal sealed class ZzzOverlayInfoPanelWindow : Window
         _geometryCommitTimer.Stop();
         _userManipulating = false;
         _scalingRefreshQueued = false;
+        _contentScrollQueued = false;
 
         _geometryCommitTimer.Tick -= OnGeometryCommitTimerTick;
         PositionChanged -= OnWindowGeometryChanged;

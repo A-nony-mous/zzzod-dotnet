@@ -73,6 +73,11 @@
       </fa:FASettingsExpanderItem>
     </DataTemplate>
   </UserControl.Resources>
+  <UserControl.Styles>
+    <Style Selector="ContentControl#LogHost">
+      <Setter Property="Height" Value="220" />
+    </Style>
+  </UserControl.Styles>
 
   <Grid Margin="{DynamicResource SampleAppPageMargin}"
         ColumnDefinitions="500,10,*">

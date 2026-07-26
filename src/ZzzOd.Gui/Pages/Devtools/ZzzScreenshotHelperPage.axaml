@@ -2,6 +2,11 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:fa="using:FluentAvalonia.UI.Controls"
              x:Class="ZzzOd.Gui.Pages.Devtools.ZzzScreenshotHelperAxamlPage">
+  <UserControl.Styles>
+    <Style Selector="ContentControl#LogHost">
+      <Setter Property="Height" Value="220" />
+    </Style>
+  </UserControl.Styles>
   <ScrollViewer HorizontalScrollBarVisibility="Disabled"
                 VerticalScrollBarVisibility="Auto">
     <StackPanel Margin="{DynamicResource SampleAppPageMargin}"
