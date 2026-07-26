@@ -2,11 +2,18 @@ using System;
 
 namespace ZzzOd.GameLogic.Application.HollowZero.LostVoid;
 
-public sealed record LostVoidInteractResult(LostVoidInteractResultKind Kind, string? Status = null, object? Data = null, LostVoidInteractTarget? Target = null, string? HadBeenType = null, TimeSpan? Delay = null)
+/// <summary>
+/// 迷失之地交互处理结果。
+/// </summary>
+/// <remarks>
+/// <c>Delay</c> 是固定延时（对应 Python <c>wait</c>），<c>DelayUntilRoundTime</c> 是补足制目标（对应 <c>wait_round_time</c>）。
+/// </remarks>
+public sealed record LostVoidInteractResult(LostVoidInteractResultKind Kind, string? Status = null, object? Data = null, LostVoidInteractTarget? Target = null, string? HadBeenType = null, TimeSpan? Delay = null, TimeSpan? DelayUntilRoundTime = null)
 {
 	public static LostVoidInteractResult Retry(string status)
 	{
-		return new LostVoidInteractResult(LostVoidInteractResultKind.Retry, status, null, null, null, TimeSpan.FromSeconds(1L));
+		// 对应 lost_void_run_level.py:655 的 wait_round_time=1（补足制，非固定延时）。
+		return new LostVoidInteractResult(LostVoidInteractResultKind.Retry, status, null, null, null, null, TimeSpan.FromSeconds(1L));
 	}
 
 	public static LostVoidInteractResult Wait(string status, string? hadBeenType = null, LostVoidInteractTarget? target = null)

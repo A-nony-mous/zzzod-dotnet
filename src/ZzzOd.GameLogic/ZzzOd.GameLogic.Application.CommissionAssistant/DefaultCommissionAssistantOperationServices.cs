@@ -618,7 +618,8 @@ public sealed class DefaultCommissionAssistantOperationServices : ICommissionAss
 	{
 		if (ScreenUtils.FindArea(context, screen, "钓鱼", "按键-时机上鱼") != FindAreaResultEnum.True)
 		{
-			return new OperationResult(IsSuccess: true, status, TimeSpan.FromMilliseconds(100L));
+			// 对应 commission_assistant_app.py:534 的 wait_round_time=0.1（"这个要尽快按"）。
+			return new OperationResult(IsSuccess: true, status, new FishingRoundPacing(TimeSpan.FromMilliseconds(100L)));
 		}
 		return InteractForFishing(context, status);
 	}
@@ -641,7 +642,8 @@ public sealed class DefaultCommissionAssistantOperationServices : ICommissionAss
 			areaName = "按键-强力-右";
 		}
 		PressFishingPowerKeyIfVisible(context, screen, areaName);
-		return new OperationResult(IsSuccess: true, status);
+		// 对应 commission_assistant_app.py:547 的 wait_round_time=0.1（"这个要尽快按"）。
+		return new OperationResult(IsSuccess: true, status, new FishingRoundPacing(TimeSpan.FromMilliseconds(100L)));
 	}
 
 	private static OperationResult HandleFishingHold(ZContext context, Mat screen, CommissionAssistantRuntimeState state, string status)
@@ -652,7 +654,7 @@ public sealed class DefaultCommissionAssistantOperationServices : ICommissionAss
 		}
 		if (state.FishingButtonPressed != null)
 		{
-			return new OperationResult(IsSuccess: true, status);
+			return new OperationResult(IsSuccess: true, status, new FishingRoundPacing(TimeSpan.FromMilliseconds(100L)));
 		}
 		string text = null;
 		if (ScreenUtils.FindArea(context, screen, "钓鱼", "按键-左") == FindAreaResultEnum.True)
@@ -672,7 +674,8 @@ public sealed class DefaultCommissionAssistantOperationServices : ICommissionAss
 			Thread.Sleep(TimeSpan.FromMilliseconds(50L));
 			PressFishingPowerKey(context);
 		}
-		return new OperationResult(IsSuccess: true, status);
+		// 对应 commission_assistant_app.py:566 的 wait_round_time=0.1。
+		return new OperationResult(IsSuccess: true, status, new FishingRoundPacing(TimeSpan.FromMilliseconds(100L)));
 	}
 
 	private OperationResult HandleFishingIdle(ZContext context, Mat screen, CommissionAssistantRuntimeState state)

@@ -250,8 +250,9 @@ public sealed class DodgeAssistantAppTests
 			Assert.Equal(1, recordingAutoBattleAppServices.StopCount);
 			Assert.Equal(1, recordingAutoBattleAppServices.DispatchCount);
 			Assert.Equal(OperationRoundResultKind.Wait, operationRoundResult3.Kind);
-			Assert.NotNull(operationRoundResult3.Delay);
-			Assert.InRange(operationRoundResult3.Delay.Value, TimeSpan.Zero, TimeSpan.FromSeconds(0.04));
+			// screenshot_interval 节拍走补足制通道（对应 dodge_assistant_app.py:87 的 wait_round_time）。
+			Assert.Null(operationRoundResult3.Delay);
+			Assert.Equal(TimeSpan.FromSeconds(zContext.BattleAssistantConfig.ScreenshotInterval), operationRoundResult3.DelayUntilRoundTime);
 			Assert.Equal(1, recordingAutoBattleAppServices.CheckScreenCount);
 			Assert.False(recordingAutoBattleAppServices.LastBattleStateSync);
 			Assert.True(dodgeAssistantOperation.DodgeNodeActive);

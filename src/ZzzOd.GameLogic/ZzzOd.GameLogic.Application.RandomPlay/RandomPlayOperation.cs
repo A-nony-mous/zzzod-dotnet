@@ -191,7 +191,8 @@ public sealed class RandomPlayOperation : ZOperation
 	{
 		if (!_services.IsAreaVisible(base.ZContext, base.LastScreenshot, "影像店营业", "选择宣传员"))
 		{
-			return RoundRetry("未找到 选择宣传员", null, GetRemainingScreenshotRoundDelay(TimeSpan.FromSeconds(1L)));
+			// 对应 Python random_play_app.py:152 的 wait_round_time=1（补足制，非固定延时）。
+			return RoundRetry("未找到 选择宣传员", null, null, TimeSpan.FromSeconds(1L));
 		}
 		if (_services.IsAreaVisible(base.ZContext, base.LastScreenshot, "影像店营业", "换下"))
 		{
@@ -343,7 +344,8 @@ public sealed class RandomPlayOperation : ZOperation
 		}
 		OperationResult operationResult = _services.ClickArea(base.ZContext, "影像店营业", "上架");
 		OperationResult operationResult2 = _services.ClickArea(base.ZContext, "影像店营业", "上架", TimeSpan.FromMilliseconds(500L));
-		return (operationResult.IsSuccess && operationResult2.IsSuccess) ? RoundWait("上架", null, TimeSpan.FromSeconds(1L)) : RoundRetry(operationResult.Status, null, GetRemainingScreenshotRoundDelay(TimeSpan.FromSeconds(1L)));
+		// 成功分支对应 random_play_app.py:367 的 wait=1（固定，不动）；重试分支对应 :369 的 wait_round_time=1（补足制）。
+		return (operationResult.IsSuccess && operationResult2.IsSuccess) ? RoundWait("上架", null, TimeSpan.FromSeconds(1L)) : RoundRetry(operationResult.Status, null, null, TimeSpan.FromSeconds(1L));
 	}
 
 	/// <summary>

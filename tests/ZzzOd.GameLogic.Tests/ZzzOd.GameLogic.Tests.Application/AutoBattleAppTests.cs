@@ -440,8 +440,10 @@ public sealed class AutoBattleAppTests
 			Assert.Equal(1, recordingAutoBattleAppServices.ResumeCount);
 			Assert.Equal(1, recordingAutoBattleAppServices.StopCount);
 			Assert.Equal(OperationRoundResultKind.Wait, operationRoundResult3.Kind);
-			Assert.NotNull(operationRoundResult3.Delay);
-			Assert.InRange(operationRoundResult3.Delay.Value, TimeSpan.Zero, TimeSpan.FromSeconds(0.05));
+			// screenshot_interval 节拍走补足制通道（对应 auto_battle_app.py:98 的 wait_round_time），
+			// 补足量由框架轮循环按循环顶部锚点计算，业务层只声明目标时长。
+			Assert.Null(operationRoundResult3.Delay);
+			Assert.Equal(TimeSpan.FromSeconds(zContext.BattleAssistantConfig.ScreenshotInterval), operationRoundResult3.DelayUntilRoundTime);
 			Assert.Equal(1, recordingAutoBattleAppServices.CheckScreenCount);
 			Assert.False(recordingAutoBattleAppServices.LastBattleStateSync);
 			Assert.True(autoBattleAppOperation.ScreenNodeActive);

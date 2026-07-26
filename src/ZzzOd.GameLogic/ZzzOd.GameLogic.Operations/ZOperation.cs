@@ -35,6 +35,10 @@ public abstract class ZOperation : Operation
 	/// </summary>
 	protected Mat? LastScreenshot { get; private set; }
 
+	/// <inheritdoc />
+	/// <remarks>把业务侧截图缓存暴露给框架，用于轮内异常的现场留痕。</remarks>
+	protected override Mat? GetLastScreenshot() => LastScreenshot;
+
 	/// <summary>
 	/// 上一次节点轮次截图时间。
 	/// </summary>
@@ -101,21 +105,16 @@ public abstract class ZOperation : Operation
 	}
 
 	/// <summary>
-	/// 按 BaselineParity wait_round_time 语义补足从本轮截图开始计算的最小轮次时间。
+	/// 按 Python <c>wait_round_time</c> 语义把本轮总时长补足到 <paramref name="minimumRoundTime" />。
 	/// </summary>
+	/// <remarks>
+	/// 补足计算由框架轮循环完成（<see cref="OperationRoundResult.DelayUntilRoundTime" />），
+	/// 锚点是循环顶部、截图之前，对应 Python <c>operation.py:404</c> 的 <c>round_start_time</c>。
+	/// 原先按 <c>LastScreenshotTimeUtc</c>（截图完成时刻）自行计算的实现已下线：那个锚点每轮会多等一个截图耗时。
+	/// </remarks>
 	protected OperationRoundResult RoundWaitForScreenshotRound(TimeSpan minimumRoundTime, string? status = null, object? data = null)
 	{
-		return RoundWait(status, data, GetRemainingScreenshotRoundDelay(minimumRoundTime));
-	}
-
-	/// <summary>
-	/// 按本轮截图时间计算距 BaselineParity wait_round_time 还需等待的时长。
-	/// </summary>
-	protected TimeSpan GetRemainingScreenshotRoundDelay(TimeSpan minimumRoundTime)
-	{
-		TimeSpan timeSpan = (LastScreenshotTimeUtc.HasValue ? (DateTimeOffset.UtcNow - LastScreenshotTimeUtc.Value) : TimeSpan.Zero);
-		TimeSpan timeSpan2 = minimumRoundTime - timeSpan;
-		return (timeSpan2 > TimeSpan.Zero) ? timeSpan2 : TimeSpan.Zero;
+		return RoundWait(status, data, null, minimumRoundTime);
 	}
 
 	/// <summary>
@@ -135,29 +134,28 @@ public abstract class ZOperation : Operation
 	/// <summary>
 	/// 查找画面区域并转换为轮次结果。
 	/// </summary>
-	protected OperationRoundResult RoundByFindArea(Mat? screen, string screenName, string areaName, TimeSpan? successDelay = null, TimeSpan? retryDelay = null, bool cropFirst = true)
+	/// <remarks>
+	/// <c>successDelayUntilRoundTime</c> / <c>retryDelayUntilRoundTime</c> 是补足制通道，
+	/// 对应 Python <c>round_by_find_area</c> 的 <c>success_wait_round</c> / <c>retry_wait_round</c>；
+	/// <c>successDelay</c> / <c>retryDelay</c> 是固定延时，对应 <c>success_wait</c> / <c>retry_wait</c>。
+	/// </remarks>
+	protected OperationRoundResult RoundByFindArea(Mat? screen, string screenName, string areaName, TimeSpan? successDelay = null, TimeSpan? retryDelay = null, bool cropFirst = true, TimeSpan? successDelayUntilRoundTime = null, TimeSpan? retryDelayUntilRoundTime = null)
 	{
 		if (screen == null)
 		{
-			return RoundRetry("未获取截图", null, retryDelay);
+			return RoundRetry("未获取截图", null, retryDelay, retryDelayUntilRoundTime);
 		}
 		if (string.IsNullOrWhiteSpace(screenName) || string.IsNullOrWhiteSpace(areaName))
 		{
 			return RoundFail("未指定画面区域");
 		}
 		FindAreaResultEnum findAreaResultEnum = ScreenUtils.FindArea(ZContext, screen, screenName, areaName, cropFirst);
-		if (1 == 0)
-		{
-		}
 		OperationRoundResult result = findAreaResultEnum switch
 		{
-			FindAreaResultEnum.AreaNoConfig => RoundFail("区域未配置 " + areaName), 
-			FindAreaResultEnum.True => RoundSuccess(areaName, null, successDelay), 
-			_ => RoundRetry("未找到 " + areaName, null, retryDelay), 
+			FindAreaResultEnum.AreaNoConfig => RoundFail("区域未配置 " + areaName),
+			FindAreaResultEnum.True => RoundSuccess(areaName, null, successDelay, successDelayUntilRoundTime),
+			_ => RoundRetry("未找到 " + areaName, null, retryDelay, retryDelayUntilRoundTime),
 		};
-		if (1 == 0)
-		{
-		}
 		return result;
 	}
 
@@ -190,7 +188,14 @@ public abstract class ZOperation : Operation
 		return result;
 	}
 
-	protected OperationRoundResult RoundByFindAndClickArea(Mat? screen = null, string? screenName = null, string? areaName = null, TimeSpan? preDelay = null, TimeSpan? successDelay = null, TimeSpan? retryDelay = null, bool cropFirst = true, bool centerX = false, IReadOnlyList<(string ScreenName, string AreaName)>? untilFindAll = null, IReadOnlyList<(string ScreenName, string AreaName)>? untilNotFindAll = null)
+	/// <summary>
+	/// 查找画面区域并点击，转换为轮次结果。
+	/// </summary>
+	/// <remarks>
+	/// <c>successDelayUntilRoundTime</c> / <c>retryDelayUntilRoundTime</c> 是补足制通道，
+	/// 对应 Python <c>round_by_find_and_click_area</c> 的 <c>success_wait_round</c> / <c>retry_wait_round</c>。
+	/// </remarks>
+	protected OperationRoundResult RoundByFindAndClickArea(Mat? screen = null, string? screenName = null, string? areaName = null, TimeSpan? preDelay = null, TimeSpan? successDelay = null, TimeSpan? retryDelay = null, bool cropFirst = true, bool centerX = false, IReadOnlyList<(string ScreenName, string AreaName)>? untilFindAll = null, IReadOnlyList<(string ScreenName, string AreaName)>? untilNotFindAll = null, TimeSpan? successDelayUntilRoundTime = null, TimeSpan? retryDelayUntilRoundTime = null)
 	{
 		if (screen == null)
 		{
@@ -198,7 +203,7 @@ public abstract class ZOperation : Operation
 		}
 		if (screen == null)
 		{
-			return RoundRetry("未获取截图", null, retryDelay);
+			return RoundRetry("未获取截图", null, retryDelay, retryDelayUntilRoundTime);
 		}
 		if (string.IsNullOrWhiteSpace(screenName) || string.IsNullOrWhiteSpace(areaName))
 		{
@@ -206,28 +211,22 @@ public abstract class ZOperation : Operation
 		}
 		if (NodeClicked && AreAllAreasFound(screen, untilFindAll, cropFirst))
 		{
-			return RoundSuccess(areaName, null, successDelay);
+			return RoundSuccess(areaName, null, successDelay, successDelayUntilRoundTime);
 		}
 		if (NodeClicked && AreAllAreasNotFound(screen, untilNotFindAll, cropFirst))
 		{
-			return RoundSuccess(areaName, null, successDelay);
+			return RoundSuccess(areaName, null, successDelay, successDelayUntilRoundTime);
 		}
 		SleepIfNeeded(preDelay ?? DefaultFindAndClickPreDelay);
 		OcrClickResultEnum ocrClickResultEnum = ScreenUtils.FindAndClickArea(ZContext, screen, screenName, areaName, cropFirst, centerX);
-		if (1 == 0)
-		{
-		}
 		OperationRoundResult result = ocrClickResultEnum switch
 		{
-			OcrClickResultEnum.OcrClickSuccess => OnAreaClicked(screenName, areaName, successDelay, untilFindAll != null || untilNotFindAll != null), 
-			OcrClickResultEnum.OcrClickNotFound => RoundRetry("未找到 " + areaName, null, retryDelay), 
-			OcrClickResultEnum.OcrClickFail => RoundRetry("点击失败 " + areaName, null, retryDelay), 
-			OcrClickResultEnum.AreaNoConfig => RoundFail("区域未配置 " + areaName), 
-			_ => RoundRetry("未知状态", null, retryDelay), 
+			OcrClickResultEnum.OcrClickSuccess => OnAreaClicked(screenName, areaName, successDelay, untilFindAll != null || untilNotFindAll != null, successDelayUntilRoundTime),
+			OcrClickResultEnum.OcrClickNotFound => RoundRetry("未找到 " + areaName, null, retryDelay, retryDelayUntilRoundTime),
+			OcrClickResultEnum.OcrClickFail => RoundRetry("点击失败 " + areaName, null, retryDelay, retryDelayUntilRoundTime),
+			OcrClickResultEnum.AreaNoConfig => RoundFail("区域未配置 " + areaName),
+			_ => RoundRetry("未知状态", null, retryDelay, retryDelayUntilRoundTime),
 		};
-		if (1 == 0)
-		{
-		}
 		return result;
 	}
 
@@ -437,11 +436,11 @@ public abstract class ZOperation : Operation
 	/// <summary>
 	/// 点击区域后更新点击状态和画面状态。
 	/// </summary>
-	protected OperationRoundResult OnAreaClicked(string screenName, string areaName, TimeSpan? delay = null, bool waitForConfirmation = false)
+	protected OperationRoundResult OnAreaClicked(string screenName, string areaName, TimeSpan? delay = null, bool waitForConfirmation = false, TimeSpan? delayUntilRoundTime = null)
 	{
 		NodeClicked = true;
 		UpdateScreenAfterOperation(screenName, areaName);
-		return waitForConfirmation ? RoundWait(areaName, null, delay) : RoundSuccess(areaName, null, delay);
+		return waitForConfirmation ? RoundWait(areaName, null, delay, delayUntilRoundTime) : RoundSuccess(areaName, null, delay, delayUntilRoundTime);
 	}
 
 	/// <summary>

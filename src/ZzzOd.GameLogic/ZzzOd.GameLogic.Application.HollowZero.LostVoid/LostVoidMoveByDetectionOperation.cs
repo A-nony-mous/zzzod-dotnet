@@ -181,7 +181,8 @@ public sealed class LostVoidMoveByDetectionOperation : ZOperation
 			if (valueOrDefault - targetLostAtUtc < TimeSpan.FromSeconds(1L))
 			{
 				StopMovingForward();
-				return RoundWait("短暂丢失目标", null, TimeSpan.FromMilliseconds(100L));
+				// 对应 lost_void_move_by_det.py:283 的 wait_round_time=0.1（补足制，非固定延时）。
+				return RoundWait("短暂丢失目标", null, null, TimeSpan.FromMilliseconds(100L));
 			}
 			ResetStuckStatus();
 			if (_targetType == "xxxx-入口")
@@ -207,7 +208,8 @@ public sealed class LostVoidMoveByDetectionOperation : ZOperation
 		_lastTargetName = moveTarget.LeftestTargetName;
 		TurnToTarget(moveTarget.EntireRect.Center, isMoving: true);
 		base.ZContext.AutoBattleContext.MoveW(press: true);
-		return RoundWait("移动中", null, TimeSpan.FromMilliseconds(100L));
+		// 对应 lost_void_move_by_det.py:322 的 wait_round_time=0.1（补足制，非固定延时）。
+		return RoundWait("移动中", null, null, TimeSpan.FromMilliseconds(100L));
 	}
 
 	[NodeFrom("移动前转向", Status = "未识别到目标")]

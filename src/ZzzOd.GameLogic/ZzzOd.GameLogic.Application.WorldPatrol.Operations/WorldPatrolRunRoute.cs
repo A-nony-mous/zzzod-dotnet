@@ -362,7 +362,9 @@ public sealed class WorldPatrolRunRoute : ZOperation
 			_posStuckAttempts = 0;
 			return RoundWait($"已到达目标点 {worldPatrolPoint2}");
 		}
-		return RoundWait($"当前坐标 {_currentPos} 角度 {miniMap.ViewAngle} 目标点 {worldPatrolPoint2}", null, TimeSpan.FromMilliseconds(300L));
+		// 对应 world_patrol_run_route.py:205-207 的 wait_round_time=0.3：补足制，即"本轮总时长（含截图与识别）不低于 0.3s"，
+		// 而不是在识别耗时之外再固定加 300ms。原注释"这个时间设置太小的话，会出现转向之后方向判断不准"针对的正是轮间隔下限。
+		return RoundWait($"当前坐标 {_currentPos} 角度 {miniMap.ViewAngle} 目标点 {worldPatrolPoint2}", null, null, TimeSpan.FromMilliseconds(300L));
 	}
 
 	private OperationRoundResult? UpdateCurrentPosition(WorldPatrolMiniMapSnapshot miniMap)
@@ -538,8 +540,7 @@ public sealed class WorldPatrolRunRoute : ZOperation
 				ActionTarget = _route.FullId,
 				ExpectedNextState = "路线重试或按配置结束当前路线",
 				TransitionResult = reason,
-				FailureReason = reason,
-				RetryStoppedBecauseOfSuspectedLoop = true
+				FailureReason = reason
 			});
 		}
 	}
