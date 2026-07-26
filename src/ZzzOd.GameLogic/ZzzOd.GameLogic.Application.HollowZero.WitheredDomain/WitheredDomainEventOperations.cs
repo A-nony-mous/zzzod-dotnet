@@ -504,7 +504,16 @@ internal static class WitheredDomainEventOperations
 		}, context: context, eventName: eventName, areaName: "底部-选择列表", targetText: action, cancellationToken: cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
 	}
 
-	internal static async Task<HollowEventHandleResult> HandleConfirmOrCorruptionAsync(ZContext context, string eventName, string areaName, IReadOnlyList<string> targets, CancellationToken cancellationToken)
+	/// <summary>
+	/// 对齐 BaselineParity <c>confirm_resonium.py</c> 与 <c>remove_corruption.py</c>：在底部列表区域用 OCR 找到目标文本并点击。
+	/// </summary>
+	/// <param name="context">运行上下文。</param>
+	/// <param name="eventName">事件名称。</param>
+	/// <param name="areaName">识别区域名称。</param>
+	/// <param name="targets">按优先级排列的目标文本列表。</param>
+	/// <param name="cropFirst">是否先裁剪区域再识别；为 false 时先全图识别再筛选落在区域内的文本，清除侵蚀症状使用该模式以兼容当前识别模型。</param>
+	/// <param name="cancellationToken">取消令牌。</param>
+	internal static async Task<HollowEventHandleResult> HandleConfirmOrCorruptionAsync(ZContext context, string eventName, string areaName, IReadOnlyList<string> targets, bool cropFirst, CancellationToken cancellationToken)
 	{
 		Mat screen = (context.Controller?.Screenshot() ?? (DateTimeOffset.UtcNow, null)).Screen;
 		if (screen == null || context.Controller == null)
@@ -524,7 +533,7 @@ internal static class WitheredDomainEventOperations
 				new int[3] { 240, 240, 240 },
 				new int[3] { 255, 255, 255 }
 			};
-			IReadOnlyList<OcrMatchResult> results = context.OcrService.GetOcrResultList(screen, whiteRange, area.Rect);
+			IReadOnlyList<OcrMatchResult> results = context.OcrService.GetOcrResultList(screen, whiteRange, area.Rect, cropFirst);
 			OcrMatchResult target = targets.Select((string text) => FindText(results, text, 0.6)).FirstOrDefault((OcrMatchResult result) => result != null);
 			if (target == null)
 			{
