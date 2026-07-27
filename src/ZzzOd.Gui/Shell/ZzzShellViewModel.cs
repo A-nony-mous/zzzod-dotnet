@@ -1,12 +1,11 @@
-using System.ComponentModel;
 using System.Reflection;
-using System.Runtime.CompilerServices;
 using System.Threading.Channels;
+using CommunityToolkit.Mvvm.ComponentModel;
 using ZzzOd.AppHost.Backend;
 
 namespace ZzzOd.Gui.Shell;
 
-public sealed class ZzzShellViewModel : INotifyPropertyChanged, IDisposable
+public sealed class ZzzShellViewModel : ObservableObject, IDisposable
 {
     private readonly IZzzAppBackend _backend;
     private readonly IZzzUiDispatcher _dispatcher;
@@ -27,8 +26,6 @@ public sealed class ZzzShellViewModel : INotifyPropertyChanged, IDisposable
         _events = backend.SubscribeEvents();
         _ = ObserveEventsAsync();
     }
-
-    public event PropertyChangedEventHandler? PropertyChanged;
 
     public string ProjectName => _projectName;
 
@@ -174,6 +171,4 @@ public sealed class ZzzShellViewModel : INotifyPropertyChanged, IDisposable
         OnPropertyChanged(nameof(IssueUrl));
     }
 
-    private void OnPropertyChanged([CallerMemberName] string? propertyName = null) =>
-        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
 }
