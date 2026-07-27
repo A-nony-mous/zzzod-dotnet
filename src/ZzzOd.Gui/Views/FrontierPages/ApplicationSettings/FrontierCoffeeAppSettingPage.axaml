@@ -1,7 +1,9 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:fa="using:FluentAvalonia.UI.Controls"
-             x:Class="ZzzOd.Gui.Views.FrontierPages.ApplicationSettings.FrontierCoffeeAppSettingPage">
+             xmlns:model="using:ZzzOd.Gui.PageModels.ApplicationSettings"
+             x:Class="ZzzOd.Gui.Views.FrontierPages.ApplicationSettings.FrontierCoffeeAppSettingPage"
+             x:DataType="model:ZzzCoffeeAppSettingViewModel">
   <ScrollViewer HorizontalScrollBarVisibility="Disabled"
                 VerticalScrollBarVisibility="Auto">
     <StackPanel Margin="{DynamicResource SampleAppPageMargin}"
@@ -19,11 +21,14 @@
           <fa:FAComboBox x:Name="TransportPointCombo"
                          Tag="transport_point"
                          Width="220"
-                         SelectionChanged="OnComboChanged" />
+                         ItemsSource="{Binding TransportPointOptions}"
+                         SelectedItem="{Binding SelectedTransportPoint, Mode=TwoWay}" />
         </fa:FASettingsExpander.Footer>
       </fa:FASettingsExpander>
 
-      <fa:FASettingsExpander x:Name="ChooseWayItem" Header="咖啡选择">
+      <fa:FASettingsExpander x:Name="ChooseWayItem"
+                             Header="咖啡选择"
+                             Description="{Binding ChooseWayDescription}">
         <fa:FASettingsExpander.IconSource>
           <fa:FASymbolIconSource Symbol="Calendar" />
         </fa:FASettingsExpander.IconSource>
@@ -31,7 +36,8 @@
           <fa:FAComboBox x:Name="ChooseWayCombo"
                          Tag="choose_way"
                          Width="220"
-                         SelectionChanged="OnComboChanged" />
+                         ItemsSource="{Binding ChooseWayOptions}"
+                         SelectedItem="{Binding SelectedChooseWay, Mode=TwoWay}" />
         </fa:FASettingsExpander.Footer>
       </fa:FASettingsExpander>
 
@@ -43,11 +49,14 @@
           <fa:FAComboBox x:Name="ChallengeWayCombo"
                          Tag="challenge_way"
                          Width="220"
-                         SelectionChanged="OnComboChanged" />
+                         ItemsSource="{Binding ChallengeWayOptions}"
+                         SelectedItem="{Binding SelectedChallengeWay, Mode=TwoWay}" />
         </fa:FASettingsExpander.Footer>
       </fa:FASettingsExpander>
 
-      <fa:FASettingsExpander x:Name="CardNumItem" Header="体力计划外的数量">
+      <fa:FASettingsExpander x:Name="CardNumItem"
+                             Header="体力计划外的数量"
+                             Description="{Binding CardNumDescription}">
         <fa:FASettingsExpander.IconSource>
           <fa:FASymbolIconSource Symbol="Play" />
         </fa:FASettingsExpander.IconSource>
@@ -55,7 +64,8 @@
           <fa:FAComboBox x:Name="CardNumCombo"
                          Tag="card_num"
                          Width="220"
-                         SelectionChanged="OnComboChanged" />
+                         ItemsSource="{Binding CardNumOptions}"
+                         SelectedItem="{Binding SelectedCardNum, Mode=TwoWay}" />
         </fa:FASettingsExpander.Footer>
       </fa:FASettingsExpander>
 
@@ -67,11 +77,14 @@
           <fa:FAComboBox x:Name="PredefinedTeamCombo"
                          Tag="predefined_team_idx"
                          Width="220"
-                         SelectionChanged="OnPredefinedTeamChanged" />
+                         ItemsSource="{Binding PredefinedTeamOptions}"
+                         SelectedItem="{Binding SelectedPredefinedTeam, Mode=TwoWay}" />
         </fa:FASettingsExpander.Footer>
       </fa:FASettingsExpander>
 
-      <fa:FASettingsExpander x:Name="AutoBattleItem" Header="自动战斗">
+      <fa:FASettingsExpander x:Name="AutoBattleItem"
+                             Header="自动战斗"
+                             IsVisible="{Binding AutoBattleVisible}">
         <fa:FASettingsExpander.IconSource>
           <fa:FASymbolIconSource Symbol="Play" />
         </fa:FASettingsExpander.IconSource>
@@ -79,7 +92,8 @@
           <fa:FAComboBox x:Name="AutoBattleCombo"
                          Tag="auto_battle"
                          Width="220"
-                         SelectionChanged="OnComboChanged" />
+                         ItemsSource="{Binding AutoBattleOptions}"
+                         SelectedItem="{Binding SelectedAutoBattle, Mode=TwoWay}" />
         </fa:FASettingsExpander.Footer>
       </fa:FASettingsExpander>
 
@@ -90,7 +104,7 @@
         </fa:FASettingsExpander.IconSource>
         <fa:FASettingsExpander.Footer>
           <ToggleSwitch x:Name="RunChargePlanAfterwardsToggle"
-                        Click="OnRunChargePlanAfterwardsChanged" />
+                        IsChecked="{Binding RunChargePlanAfterwards, Mode=TwoWay}" />
         </fa:FASettingsExpander.Footer>
       </fa:FASettingsExpander>
     </StackPanel>

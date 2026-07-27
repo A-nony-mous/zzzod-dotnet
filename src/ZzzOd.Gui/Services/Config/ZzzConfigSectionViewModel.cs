@@ -74,6 +74,8 @@ internal abstract class ZzzConfigSectionViewModel : ZzzPageViewModel
         return true;
     }
 
+    protected void SaveValue(ZzzConfigField field, object? value) => SaveField(field, value);
+
     private void LoadScope()
     {
         _loading = true;
@@ -151,7 +153,7 @@ internal abstract class ZzzConfigSectionViewModel : ZzzPageViewModel
         }
     }
 
-    private void ReportError(string? error)
+    protected void ReportError(string? error)
     {
         LastError = error;
         try
