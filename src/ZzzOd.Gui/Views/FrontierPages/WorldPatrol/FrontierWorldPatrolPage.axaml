@@ -3,8 +3,10 @@
              xmlns:fa="using:FluentAvalonia.UI.Controls"
              xmlns:local="using:ZzzOd.Gui.Views.FrontierPages.WorldPatrol"
              xmlns:model="using:ZzzOd.Gui.PageModels.ApplicationSettings"
+             xmlns:settings="using:ZzzOd.Gui.PageModels.WorldPatrol"
              xmlns:controls="using:ZzzOd.Gui.Controls"
-             x:Class="ZzzOd.Gui.Views.FrontierPages.WorldPatrol.FrontierWorldPatrolPage">
+             x:Class="ZzzOd.Gui.Views.FrontierPages.WorldPatrol.FrontierWorldPatrolPage"
+             x:DataType="settings:ZzzWorldPatrolSettingsViewModel">
   <Grid>
     <TabControl Classes="zzz-pivot" x:Name="SettingsTabView"
                 SelectionChanged="OnSettingsTabSelectionChanged">
@@ -21,16 +23,16 @@
                   </fa:FASettingsExpander.Footer>
                 </fa:FASettingsExpander>
                 <fa:FASettingsExpander Header="自动战斗">
-                  <fa:FASettingsExpander.Footer><fa:FAComboBox x:Name="AutoBattleCombo" Tag="auto_battle" Width="210" SelectionChanged="OnConfigComboChanged" /></fa:FASettingsExpander.Footer>
+                  <fa:FASettingsExpander.Footer><fa:FAComboBox x:Name="AutoBattleCombo" Width="210" ItemsSource="{Binding AutoBattleOptions}" SelectedItem="{Binding SelectedAutoBattle, Mode=TwoWay}" /></fa:FASettingsExpander.Footer>
                 </fa:FASettingsExpander>
                 <fa:FASettingsExpander Header="界面消失预警时间" Description="UI完全消失持续到该秒数后判定为卡电梯">
-                  <fa:FASettingsExpander.Footer><fa:FANumberBox x:Name="UiDisappearSecondsBox" Tag="ui_disappear_seconds" Minimum="0" Maximum="999" SmallChange="1" ValueChanged="OnConfigNumberChanged" /></fa:FASettingsExpander.Footer>
+                  <fa:FASettingsExpander.Footer><fa:FANumberBox x:Name="UiDisappearSecondsBox" Minimum="0" Maximum="999" SmallChange="1" Value="{Binding UiDisappearSeconds, Mode=TwoWay}" /></fa:FASettingsExpander.Footer>
                 </fa:FASettingsExpander>
                 <fa:FASettingsExpander Header="单条路线重试上限" Description="单条路线累计重试次数，超限后跳过该路线">
-                  <fa:FASettingsExpander.Footer><fa:FANumberBox x:Name="RouteRetryTimesBox" Tag="route_retry_times" Minimum="0" Maximum="99" SmallChange="1" ValueChanged="OnConfigNumberChanged" /></fa:FASettingsExpander.Footer>
+                  <fa:FASettingsExpander.Footer><fa:FANumberBox x:Name="RouteRetryTimesBox" Minimum="0" Maximum="99" SmallChange="1" Value="{Binding RouteRetryTimes, Mode=TwoWay}" /></fa:FASettingsExpander.Footer>
                 </fa:FASettingsExpander>
                 <fa:FASettingsExpander Header="锄地每日循环次数" Description="一次任务执行内总共执行的轮数">
-                  <fa:FASettingsExpander.Footer><fa:FANumberBox x:Name="DailyLoopCountBox" Tag="daily_loop_count" Minimum="0" Maximum="99" SmallChange="1" ValueChanged="OnConfigNumberChanged" /></fa:FASettingsExpander.Footer>
+                  <fa:FASettingsExpander.Footer><fa:FANumberBox x:Name="DailyLoopCountBox" Minimum="0" Maximum="99" SmallChange="1" Value="{Binding DailyLoopCount, Mode=TwoWay}" /></fa:FASettingsExpander.Footer>
                 </fa:FASettingsExpander>
               </StackPanel>
               <StackPanel Grid.Column="1" Spacing="1">
@@ -38,16 +40,16 @@
                   <fa:FASettingsExpander.Footer><Button Content="重置记录" Click="OnResetRecordClicked" /></fa:FASettingsExpander.Footer>
                 </fa:FASettingsExpander>
                 <fa:FASettingsExpander Header="路线名单">
-                  <fa:FASettingsExpander.Footer><fa:FAComboBox x:Name="RouteListConfigCombo" Tag="route_list" Width="210" SelectionChanged="OnConfigComboChanged" /></fa:FASettingsExpander.Footer>
+                  <fa:FASettingsExpander.Footer><fa:FAComboBox x:Name="RouteListConfigCombo" Width="210" ItemsSource="{Binding RouteListOptions}" SelectedItem="{Binding SelectedRouteList, Mode=TwoWay}" /></fa:FASettingsExpander.Footer>
                 </fa:FASettingsExpander>
                 <fa:FASettingsExpander Header="界面消失处理方式" Description="判定为疑似卡电梯后的处理方式">
-                  <fa:FASettingsExpander.Footer><fa:FAComboBox x:Name="UiDisappearActionCombo" Tag="ui_disappear_action" Width="210" SelectionChanged="OnConfigComboChanged" /></fa:FASettingsExpander.Footer>
+                  <fa:FASettingsExpander.Footer><fa:FAComboBox x:Name="UiDisappearActionCombo" Width="210" ItemsSource="{Binding UiDisappearActionOptionsList}" SelectedItem="{Binding SelectedUiDisappearAction, Mode=TwoWay}" /></fa:FASettingsExpander.Footer>
                 </fa:FASettingsExpander>
                 <fa:FASettingsExpander Header="路线重试处理方式" Description="路线脱困失败，重试后再次卡住时的处理方式">
-                  <fa:FASettingsExpander.Footer><fa:FAComboBox x:Name="RouteRetryActionCombo" Tag="route_retry_action" Width="210" SelectionChanged="OnConfigComboChanged" /></fa:FASettingsExpander.Footer>
+                  <fa:FASettingsExpander.Footer><fa:FAComboBox x:Name="RouteRetryActionCombo" Width="210" ItemsSource="{Binding RouteRetryActionOptionsList}" SelectedItem="{Binding SelectedRouteRetryAction, Mode=TwoWay}" /></fa:FASettingsExpander.Footer>
                 </fa:FASettingsExpander>
                 <fa:FASettingsExpander Header="每轮最少占用时长（敌人刷新时间）" Description="每轮跑完：不足则补等到该秒数，超过则立即开始下一轮">
-                  <fa:FASettingsExpander.Footer><fa:FANumberBox x:Name="LoopIntervalSecondsBox" Tag="loop_interval_seconds" Minimum="0" Maximum="86400" SmallChange="1" ValueChanged="OnConfigNumberChanged" /></fa:FASettingsExpander.Footer>
+                  <fa:FASettingsExpander.Footer><fa:FANumberBox x:Name="LoopIntervalSecondsBox" Minimum="0" Maximum="86400" SmallChange="1" Value="{Binding LoopIntervalSeconds, Mode=TwoWay}" /></fa:FASettingsExpander.Footer>
                 </fa:FASettingsExpander>
               </StackPanel>
             </Grid>
