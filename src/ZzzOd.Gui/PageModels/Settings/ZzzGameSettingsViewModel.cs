@@ -235,6 +235,29 @@ internal sealed partial class ZzzGameSettingsViewModel : ZzzPageViewModel
 
     internal void SaveKeyboardKey(string key, string value) => Save($"key_{key}", value);
 
+    internal string GetGamePath()
+    {
+        if (_instanceIndex is null)
+        {
+            return string.Empty;
+        }
+
+        ZzzBackendResult<ZzzConfigScopeValuesDto> result = _backend.GetConfigScope("instance", _instanceIndex);
+        if (result.Success
+            && result.Value is not null
+            && result.Value.Values.TryGetValue("game_path", out object? value))
+        {
+            if (value is System.Text.Json.JsonElement json && json.ValueKind == System.Text.Json.JsonValueKind.String)
+            {
+                return json.GetString() ?? string.Empty;
+            }
+
+            return value?.ToString() ?? string.Empty;
+        }
+
+        return string.Empty;
+    }
+
     internal void ReportWarning(string title, string message) => WarningRequested?.Invoke(this, new ZzzSettingsWarning(title, message));
 
     partial void OnSelectedInputWayChanged(ZzzGameSettingOption? value)
