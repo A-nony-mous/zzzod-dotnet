@@ -2,7 +2,8 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:fa="using:FluentAvalonia.UI.Controls"
              xmlns:local="using:ZzzOd.Gui.PageModels.OneDragon"
-             x:Class="ZzzOd.Gui.Views.FrontierPages.OneDragon.FrontierPredefinedTeamPage">
+             x:Class="ZzzOd.Gui.Views.FrontierPages.OneDragon.FrontierPredefinedTeamPage"
+             x:DataType="local:ZzzPredefinedTeamSettingsViewModel">
   <UserControl.Resources>
     <DataTemplate x:Key="PredefinedTeamTemplate"
                   x:DataType="local:ZzzPredefinedTeamRowModel">
@@ -86,6 +87,7 @@
                   HorizontalScrollBarVisibility="Disabled"
                   VerticalScrollBarVisibility="Auto">
       <fa:FASettingsExpander x:Name="TeamList"
+                             ItemsSource="{Binding Rows}"
                              Header="预备编队"
                              IsExpanded="True"
                              ItemTemplate="{StaticResource PredefinedTeamTemplate}" />
