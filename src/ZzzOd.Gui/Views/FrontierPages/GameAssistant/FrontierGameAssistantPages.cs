@@ -517,75 +517,37 @@ internal sealed partial class FrontierBattleAssistantSettings : UserControl, IZz
 
 internal sealed partial class FrontierCommissionAssistantSettings : UserControl, IZzzPageLifecycle
 {
-    private static readonly string[] DialogOptions = ["第一个", "最后一个"];
-    private static readonly string[] StoryModes = ["自动点击", "等待剧情自动播放", "跳过剧情"];
-    private readonly IZzzAppBackend _backend;
     private readonly FAInfoBar _errorBar;
-    private readonly FANumberBox _dialogClickIntervalNumber;
-    private readonly FANumberBox _emptyScreenWaitNumber;
-    private readonly FAComboBox _dodgeCombo;
-    private readonly FAComboBox _autoBattleCombo;
-    private readonly ToggleSwitch _pauseInBackgroundToggle;
-    private readonly FAComboBox _dialogOptionCombo;
-    private readonly FAComboBox _storyModeCombo;
     private readonly TextBox _dodgeSwitchKeyBox;
     private readonly TextBox _autoBattleSwitchKeyBox;
-    private IReadOnlyList<string> _loadErrors = [];
-    private string? _operationError;
-    private string? _configuredDodge;
-    private string? _configuredAutoBattle;
-    private IReadOnlyList<string> _dodgeOptions = [];
-    private IReadOnlyList<string> _autoBattleOptions = [];
-    private bool _loading;
+    private readonly ZzzCommissionAssistantSettingsViewModel _viewModel;
 
     public FrontierCommissionAssistantSettings(IZzzAppBackend backend)
     {
-        _backend = backend;
+        _viewModel = new ZzzCommissionAssistantSettingsViewModel(backend, ShowError);
         AvaloniaXamlLoader.Load(this);
         _errorBar = this.FindControl<FAInfoBar>("CommissionErrorBar")
             ?? throw new InvalidOperationException("委托助手缺少错误 InfoBar?");
-        _dialogClickIntervalNumber = this.FindControl<FANumberBox>("DialogClickIntervalNumber")
-            ?? throw new InvalidOperationException("委托助手缺少对话间隔输入框。");
-        _emptyScreenWaitNumber = this.FindControl<FANumberBox>("EmptyScreenWaitNumber")
-            ?? throw new InvalidOperationException("委托助手缺少空画面等待输入框。");
-        _dodgeCombo = this.FindControl<FAComboBox>("CommissionDodgeCombo")
-            ?? throw new InvalidOperationException("委托助手缺少闪避配置下拉框。");
-        _autoBattleCombo = this.FindControl<FAComboBox>("CommissionAutoBattleCombo")
-            ?? throw new InvalidOperationException("委托助手缺少自动战斗下拉框。");
-        _pauseInBackgroundToggle = this.FindControl<ToggleSwitch>("PauseInBackgroundToggle")
-            ?? throw new InvalidOperationException("委托助手缺少后台暂停开关。");
-        _dialogOptionCombo = this.FindControl<FAComboBox>("DialogOptionCombo")
-            ?? throw new InvalidOperationException("委托助手缺少对话选项下拉框。");
-        _storyModeCombo = this.FindControl<FAComboBox>("StoryModeCombo")
-            ?? throw new InvalidOperationException("委托助手缺少剧情模式下拉框。");
         _dodgeSwitchKeyBox = this.FindControl<TextBox>("DodgeSwitchKeyBox")
             ?? throw new InvalidOperationException("委托助手缺少闪避按键输入框。");
         _autoBattleSwitchKeyBox = this.FindControl<TextBox>("AutoBattleSwitchKeyBox")
             ?? throw new InvalidOperationException("委托助手缺少自动战斗按键输入框。");
 
-        _dialogOptionCombo.ItemsSource = DialogOptions;
-        _storyModeCombo.ItemsSource = StoryModes;
-        _dialogClickIntervalNumber.ValueChanged += OnNumberChanged;
-        _emptyScreenWaitNumber.ValueChanged += OnNumberChanged;
-        _dodgeCombo.SelectionChanged += OnSelectionChanged;
-        _autoBattleCombo.SelectionChanged += OnSelectionChanged;
-        _dialogOptionCombo.SelectionChanged += OnSelectionChanged;
-        _storyModeCombo.SelectionChanged += OnSelectionChanged;
-        _pauseInBackgroundToggle.IsCheckedChanged += OnPauseChanged;
         _dodgeSwitchKeyBox.KeyDown += OnKeyBoxKeyDown;
         _autoBattleSwitchKeyBox.KeyDown += OnKeyBoxKeyDown;
+        DataContext = _viewModel;
         ReloadSettings();
     }
 
     public ZzzGameAssistantPageModel PageModel => ZzzGameAssistantPageModels.CreateCommission();
 
-    public IReadOnlyList<string> DodgeOptions => _dodgeOptions;
+    public IReadOnlyList<string> DodgeOptions => _viewModel.DodgeOptions;
 
-    public IReadOnlyList<string> AutoBattleOptions => _autoBattleOptions;
+    public IReadOnlyList<string> AutoBattleOptions => _viewModel.AutoBattleOptions;
 
-    public string? SelectedDodgeConfig => _dodgeCombo.SelectedItem as string;
+    public string? SelectedDodgeConfig => _viewModel.SelectedDodgeConfig;
 
-    public string? SelectedAutoBattleConfig => _autoBattleCombo.SelectedItem as string;
+    public string? SelectedAutoBattleConfig => _viewModel.SelectedAutoBattleConfig;
 
     public void OnPageShown() => ReloadSettings();
 
@@ -599,269 +561,16 @@ internal sealed partial class FrontierCommissionAssistantSettings : UserControl,
 
     public void DisposePage()
     {
-        _dialogClickIntervalNumber.ValueChanged -= OnNumberChanged;
-        _emptyScreenWaitNumber.ValueChanged -= OnNumberChanged;
-        _dodgeCombo.SelectionChanged -= OnSelectionChanged;
-        _autoBattleCombo.SelectionChanged -= OnSelectionChanged;
-        _dialogOptionCombo.SelectionChanged -= OnSelectionChanged;
-        _storyModeCombo.SelectionChanged -= OnSelectionChanged;
-        _pauseInBackgroundToggle.IsCheckedChanged -= OnPauseChanged;
         _dodgeSwitchKeyBox.KeyDown -= OnKeyBoxKeyDown;
         _autoBattleSwitchKeyBox.KeyDown -= OnKeyBoxKeyDown;
+        _viewModel.DisposePage();
     }
 
-    private void ReloadSettings()
-    {
-        _loading = true;
-        try
-        {
-            List<string> errors = [];
-            ZzzBackendResult<ZzzConfigScopeValuesDto> config = _backend.GetConfigScope(
-                "commission-assistant",
-                groupId: CommissionAssistantConstants.DefaultGroupId);
-            if (!config.Success || config.Value is null)
-            {
-                DisableConfigControls();
-                errors.Add(config.Error ?? "委托助手配置读取失败。");
-            }
-            else
-            {
-                ApplyConfigValues(config.Value.Values, errors);
-            }
-
-            ZzzBackendResult<ZzzBattleAssistantConfigCatalogDto> catalog = _backend.GetBattleAssistantConfigCatalog();
-            if (!catalog.Success || catalog.Value is null)
-            {
-                ApplyCatalog(new ZzzBattleAssistantConfigCatalogDto([], []));
-                errors.Add(catalog.Error ?? "战斗配置目录读取失败。");
-            }
-            else
-            {
-                ApplyCatalog(catalog.Value);
-            }
-
-            _loadErrors = errors;
-            _operationError = null;
-            RefreshErrorBar();
-        }
-        finally
-        {
-            _loading = false;
-        }
-    }
-
-    private void ApplyConfigValues(IReadOnlyDictionary<string, object?> values, List<string> errors)
-    {
-        ApplyBoolean(values, "pause_in_background", _pauseInBackgroundToggle, errors, "委托助手配置");
-        ApplyNumber(values, "dialog_click_interval", _dialogClickIntervalNumber, errors);
-        ApplyNumber(values, "sleep_after_empty_screen", _emptyScreenWaitNumber, errors);
-        ApplySelection(values, "dialog_option", _dialogOptionCombo, DialogOptions, errors);
-        ApplySelection(values, "story_mode", _storyModeCombo, StoryModes, errors);
-        _configuredDodge = ReadString(values, "dodge_config", errors);
-        _configuredAutoBattle = ReadString(values, "auto_battle", errors);
-        ApplyKey(values, "dodge_switch", _dodgeSwitchKeyBox, errors);
-        ApplyKey(values, "auto_battle_switch", _autoBattleSwitchKeyBox, errors);
-    }
-
-    private void ApplyCatalog(ZzzBattleAssistantConfigCatalogDto catalog)
-    {
-        bool wasLoading = _loading;
-        _loading = true;
-        _dodgeOptions = catalog.Dodge.ToArray();
-        _autoBattleOptions = catalog.AutoBattle.ToArray();
-        _dodgeCombo.ItemsSource = _dodgeOptions;
-        _autoBattleCombo.ItemsSource = _autoBattleOptions;
-        _dodgeCombo.SelectedItem = Contains(_dodgeOptions, _configuredDodge) ? _configuredDodge : null;
-        _autoBattleCombo.SelectedItem = Contains(_autoBattleOptions, _configuredAutoBattle) ? _configuredAutoBattle : null;
-        _dodgeCombo.IsEnabled = _dodgeOptions.Count > 0;
-        _autoBattleCombo.IsEnabled = _autoBattleOptions.Count > 0;
-        _loading = wasLoading;
-    }
-
-    private void DisableConfigControls()
-    {
-        _pauseInBackgroundToggle.IsEnabled = false;
-        _dialogClickIntervalNumber.Value = double.NaN;
-        _dialogClickIntervalNumber.IsEnabled = false;
-        _emptyScreenWaitNumber.Value = double.NaN;
-        _emptyScreenWaitNumber.IsEnabled = false;
-        _dialogOptionCombo.SelectedIndex = -1;
-        _dialogOptionCombo.IsEnabled = false;
-        _storyModeCombo.SelectedIndex = -1;
-        _storyModeCombo.IsEnabled = false;
-        _dodgeSwitchKeyBox.Text = string.Empty;
-        _dodgeSwitchKeyBox.IsEnabled = false;
-        _autoBattleSwitchKeyBox.Text = string.Empty;
-        _autoBattleSwitchKeyBox.IsEnabled = false;
-        _configuredDodge = null;
-        _configuredAutoBattle = null;
-    }
-
-    private static void ApplyNumber(
-        IReadOnlyDictionary<string, object?> values,
-        string key,
-        FANumberBox control,
-        List<string> errors)
-    {
-        if (TryReadDouble(values, key, out double value))
-        {
-            control.Value = value;
-            control.IsEnabled = true;
-            return;
-        }
-
-        control.Value = double.NaN;
-        control.IsEnabled = false;
-        errors.Add($"委托助手配置缺少 {key}。");
-    }
-
-    private static void ApplySelection(
-        IReadOnlyDictionary<string, object?> values,
-        string key,
-        FAComboBox control,
-        IReadOnlyList<string> options,
-        List<string> errors)
-    {
-        string? value = ReadString(values, key, errors);
-        control.SelectedItem = Contains(options, value) ? value : null;
-        control.IsEnabled = value is not null && Contains(options, value);
-        if (value is not null && !Contains(options, value))
-        {
-            errors.Add($"委托助手配置包含未知 {key}：{value}。");
-        }
-    }
-
-    private static void ApplyKey(
-        IReadOnlyDictionary<string, object?> values,
-        string key,
-        TextBox control,
-        List<string> errors)
-    {
-        string? value = ReadString(values, key, errors);
-        control.Text = value ?? string.Empty;
-        control.IsEnabled = value is not null;
-    }
-
-    private static string? ReadString(
-        IReadOnlyDictionary<string, object?> values,
-        string key,
-        List<string> errors)
-    {
-        if (TryReadString(values, key, out string? value))
-        {
-            return value;
-        }
-
-        errors.Add($"委托助手配置缺少 {key}。");
-        return null;
-    }
-
-    private static void ApplyBoolean(
-        IReadOnlyDictionary<string, object?> values,
-        string key,
-        ToggleSwitch control,
-        List<string> errors,
-        string scopeName)
-    {
-        if (values.TryGetValue(key, out object? raw) && raw is bool value)
-        {
-            control.IsChecked = value;
-            control.IsEnabled = true;
-            return;
-        }
-
-        control.IsEnabled = false;
-        errors.Add($"{scopeName}缺少 {key}。");
-    }
-
-    private static bool TryReadString(IReadOnlyDictionary<string, object?> values, string key, out string? value)
-    {
-        if (values.TryGetValue(key, out object? raw) && raw is string text)
-        {
-            value = text;
-            return true;
-        }
-
-        value = null;
-        return false;
-    }
-
-    private static bool TryReadDouble(IReadOnlyDictionary<string, object?> values, string key, out double value)
-    {
-        if (values.TryGetValue(key, out object? raw) && raw is not null)
-        {
-            try
-            {
-                value = Convert.ToDouble(raw, CultureInfo.InvariantCulture);
-                return true;
-            }
-            catch (Exception exception) when (exception is FormatException or InvalidCastException or OverflowException)
-            {
-            }
-        }
-
-        value = double.NaN;
-        return false;
-    }
-
-    private static bool Contains(IReadOnlyList<string> values, string? target) =>
-        target is not null && values.Contains(target, StringComparer.Ordinal);
-
-    private void OnSelectionChanged(object? sender, SelectionChangedEventArgs args)
-    {
-        if (_loading || sender is not FAComboBox combo || combo.SelectedItem is not string value)
-        {
-            return;
-        }
-
-        if (ReferenceEquals(combo, _dialogOptionCombo))
-        {
-            SaveSetting("dialog_option", value);
-        }
-        else if (ReferenceEquals(combo, _storyModeCombo))
-        {
-            SaveSetting("story_mode", value);
-        }
-        else if (ReferenceEquals(combo, _dodgeCombo))
-        {
-            _configuredDodge = value;
-            SaveSetting("dodge_config", value);
-        }
-        else if (ReferenceEquals(combo, _autoBattleCombo))
-        {
-            _configuredAutoBattle = value;
-            SaveSetting("auto_battle", value);
-        }
-    }
-
-    private void OnNumberChanged(object? sender, FANumberBoxValueChangedEventArgs args)
-    {
-        if (_loading || double.IsNaN(args.NewValue))
-        {
-            return;
-        }
-
-        if (ReferenceEquals(sender, _dialogClickIntervalNumber))
-        {
-            SaveSetting("dialog_click_interval", args.NewValue);
-        }
-        else if (ReferenceEquals(sender, _emptyScreenWaitNumber))
-        {
-            SaveSetting("sleep_after_empty_screen", args.NewValue);
-        }
-    }
-
-    private void OnPauseChanged(object? sender, Avalonia.Interactivity.RoutedEventArgs args)
-    {
-        if (!_loading && _pauseInBackgroundToggle.IsChecked is bool value)
-        {
-            SaveSetting("pause_in_background", value);
-        }
-    }
+    private void ReloadSettings() => _viewModel.OnPageShown();
 
     private void OnKeyBoxKeyDown(object? sender, KeyEventArgs args)
     {
-        if (_loading || sender is not TextBox textBox)
+        if (sender is not TextBox textBox)
         {
             return;
         }
@@ -872,30 +581,22 @@ internal sealed partial class FrontierCommissionAssistantSettings : UserControl,
             return;
         }
 
-        textBox.Text = value;
-        SaveSetting(ReferenceEquals(textBox, _dodgeSwitchKeyBox) ? "dodge_switch" : "auto_battle_switch", value);
+        if (ReferenceEquals(textBox, _dodgeSwitchKeyBox))
+        {
+            _viewModel.DodgeSwitch = value;
+        }
+        else
+        {
+            _viewModel.AutoBattleSwitch = value;
+        }
+
         args.Handled = true;
     }
 
-    private void SaveSetting(string key, object value)
+    private void ShowError(string? error)
     {
-        ZzzBackendResult<ZzzConfigScopeValuesDto> result = _backend.SaveConfigScope(new ZzzSaveConfigScopeRequest(
-            "commission-assistant",
-            new Dictionary<string, object?> { [key] = value },
-            GroupId: CommissionAssistantConstants.DefaultGroupId));
-        _operationError = result.Success ? null : result.Error ?? $"{key} 保存失败。";
-        RefreshErrorBar();
-    }
-
-    private void RefreshErrorBar()
-    {
-        string[] messages = _loadErrors
-            .Concat(string.IsNullOrWhiteSpace(_operationError) ? [] : [_operationError])
-            .Where(message => !string.IsNullOrWhiteSpace(message))
-            .Distinct(StringComparer.Ordinal)
-            .ToArray();
-        _errorBar.Message = string.Join(Environment.NewLine, messages);
-        _errorBar.IsOpen = messages.Length > 0;
+        _errorBar.Message = error ?? string.Empty;
+        _errorBar.IsOpen = !string.IsNullOrWhiteSpace(error);
     }
 
     private static string FormatKey(Key key)
@@ -925,8 +626,7 @@ internal sealed partial class FrontierCommissionAssistantSettings : UserControl,
         }
         catch (Exception exception)
         {
-            _operationError = exception.Message;
-            RefreshErrorBar();
+            ShowError(exception.Message);
         }
     }
 }

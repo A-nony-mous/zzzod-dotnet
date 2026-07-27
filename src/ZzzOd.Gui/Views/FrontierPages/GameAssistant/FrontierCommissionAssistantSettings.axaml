@@ -1,7 +1,9 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:fa="using:FluentAvalonia.UI.Controls"
-             x:Class="ZzzOd.Gui.Views.FrontierPages.GameAssistant.FrontierCommissionAssistantSettings">
+             xmlns:local="using:ZzzOd.Gui.PageModels.GameAssistant"
+             x:Class="ZzzOd.Gui.Views.FrontierPages.GameAssistant.FrontierCommissionAssistantSettings"
+             x:DataType="local:ZzzCommissionAssistantSettingsViewModel">
   <UserControl.Styles>
     <Style Selector="fa|FASettingsExpander">
       <Setter Property="Height" Value="48" />
@@ -41,7 +43,9 @@
                             SmallChange="0.05"
                             SimpleNumberFormat="F2"
                             SpinButtonPlacementMode="Inline"
-                            Width="140" />
+                            Width="140"
+                            Value="{Binding DialogClickInterval, Mode=TwoWay}"
+                            IsEnabled="{Binding ConfigValuesAvailable}" />
             </fa:FASettingsExpander.Footer>
           </fa:FASettingsExpander>
           <fa:FASettingsExpander Header="无内容时等待时间(秒)"
@@ -56,7 +60,9 @@
                             SmallChange="0.5"
                             SimpleNumberFormat="F2"
                             SpinButtonPlacementMode="Inline"
-                            Width="140" />
+                            Width="140"
+                            Value="{Binding SleepAfterEmptyScreen, Mode=TwoWay}"
+                            IsEnabled="{Binding ConfigValuesAvailable}" />
             </fa:FASettingsExpander.Footer>
           </fa:FASettingsExpander>
           <fa:FASettingsExpander Header="自动闪避">
@@ -65,7 +71,10 @@
             </fa:FASettingsExpander.IconSource>
             <fa:FASettingsExpander.Footer>
               <fa:FAComboBox x:Name="CommissionDodgeCombo"
-                             Width="72" />
+                             Width="72"
+                             ItemsSource="{Binding DodgeOptions}"
+                             SelectedItem="{Binding SelectedDodgeConfig, Mode=TwoWay}"
+                             IsEnabled="{Binding ConfigValuesAvailable}" />
             </fa:FASettingsExpander.Footer>
           </fa:FASettingsExpander>
           <fa:FASettingsExpander Header="自动战斗">
@@ -74,7 +83,10 @@
             </fa:FASettingsExpander.IconSource>
             <fa:FASettingsExpander.Footer>
               <fa:FAComboBox x:Name="CommissionAutoBattleCombo"
-                             Width="114" />
+                             Width="114"
+                             ItemsSource="{Binding AutoBattleOptions}"
+                             SelectedItem="{Binding SelectedAutoBattleConfig, Mode=TwoWay}"
+                             IsEnabled="{Binding ConfigValuesAvailable}" />
             </fa:FASettingsExpander.Footer>
           </fa:FASettingsExpander>
         </StackPanel>
@@ -89,7 +101,9 @@
             <fa:FASettingsExpander.Footer>
               <ToggleSwitch x:Name="PauseInBackgroundToggle"
                             OnContent="开"
-                            OffContent="关" />
+                            OffContent="关"
+                            IsChecked="{Binding PauseInBackground, Mode=TwoWay}"
+                            IsEnabled="{Binding ConfigValuesAvailable}" />
             </fa:FASettingsExpander.Footer>
           </fa:FASettingsExpander>
           <fa:FASettingsExpander Header="对话选项优先级">
@@ -98,7 +112,10 @@
             </fa:FASettingsExpander.IconSource>
             <fa:FASettingsExpander.Footer>
               <fa:FAComboBox x:Name="DialogOptionCombo"
-                             Width="100" />
+                             Width="100"
+                             ItemsSource="{Binding DialogOptions}"
+                             SelectedItem="{Binding DialogOption, Mode=TwoWay}"
+                             IsEnabled="{Binding ConfigValuesAvailable}" />
             </fa:FASettingsExpander.Footer>
           </fa:FASettingsExpander>
           <fa:FASettingsExpander Header="剧情模式">
@@ -107,7 +124,10 @@
             </fa:FASettingsExpander.IconSource>
             <fa:FASettingsExpander.Footer>
               <fa:FAComboBox x:Name="StoryModeCombo"
-                             Width="100" />
+                             Width="100"
+                             ItemsSource="{Binding StoryModes}"
+                             SelectedItem="{Binding StoryMode, Mode=TwoWay}"
+                             IsEnabled="{Binding ConfigValuesAvailable}" />
             </fa:FASettingsExpander.Footer>
           </fa:FASettingsExpander>
           <fa:FASettingsExpander Header="自动闪避开关"
@@ -119,7 +139,9 @@
               <TextBox x:Name="DodgeSwitchKeyBox"
                        IsReadOnly="True"
                        TextAlignment="Center"
-                       Width="34" />
+                       Width="34"
+                       Text="{Binding DodgeSwitch, Mode=OneWay}"
+                       IsEnabled="{Binding ConfigValuesAvailable}" />
             </fa:FASettingsExpander.Footer>
           </fa:FASettingsExpander>
           <fa:FASettingsExpander Header="自动战斗开关"
@@ -131,7 +153,9 @@
               <TextBox x:Name="AutoBattleSwitchKeyBox"
                        IsReadOnly="True"
                        TextAlignment="Center"
-                       Width="34" />
+                       Width="34"
+                       Text="{Binding AutoBattleSwitch, Mode=OneWay}"
+                       IsEnabled="{Binding ConfigValuesAvailable}" />
             </fa:FASettingsExpander.Footer>
           </fa:FASettingsExpander>
         </StackPanel>
