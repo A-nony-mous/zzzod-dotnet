@@ -9,9 +9,11 @@ using Avalonia.Interactivity;
 using Avalonia.Markup.Xaml;
 using Avalonia.Platform.Storage;
 using Avalonia.Threading;
+using CommunityToolkit.Mvvm.ComponentModel;
 using FluentAvalonia.UI.Controls;
 using ZzzOd.AppHost.Backend;
 using ZzzOd.GameLogic.Config;
+using ZzzOd.Gui.Services.Config;
 using ZzzOd.Gui.Shell;
 
 namespace ZzzOd.Gui.PageModels.Accounts;
@@ -113,21 +115,44 @@ internal sealed record ZzzAccountPageModel(
     bool CanSwitch,
     string? BlockedReason);
 
-internal sealed class ZzzInstanceManagementPage
+internal sealed class ZzzInstanceManagementPage : ObservableObject
 {
     private readonly IZzzAppBackend _backend;
+    private readonly Action<string?>? _errorReporter;
     private IReadOnlyList<ZzzInstanceDto> _instances = [];
+    private bool _canSwitch = true;
+    private string? _blockedReason;
+    private bool _forceLoginBeforeRun;
 
-    public ZzzInstanceManagementPage(IZzzAppBackend backend)
+    public ZzzInstanceManagementPage(IZzzAppBackend backend, Action<string?>? errorReporter = null)
     {
         _backend = backend;
+        _errorReporter = errorReporter;
     }
 
     public IReadOnlyList<ZzzInstanceDto> Instances => _instances;
 
-    public bool CanSwitch { get; private set; } = true;
+    public ObservableCollection<ZzzAccountInstanceRow> Rows { get; } = [];
 
-    public string? BlockedReason { get; private set; }
+    public bool CanSwitch
+    {
+        get => _canSwitch;
+        private set => SetProperty(ref _canSwitch, value);
+    }
+
+    public bool CanAdd => CanSwitch;
+
+    public string? BlockedReason
+    {
+        get => _blockedReason;
+        private set => SetProperty(ref _blockedReason, value);
+    }
+
+    public bool ForceLoginBeforeRun
+    {
+        get => _forceLoginBeforeRun;
+        private set => SetProperty(ref _forceLoginBeforeRun, value);
+    }
 
     public ZzzAccountPageModel PageModel => new(
         "accounts",
@@ -141,13 +166,26 @@ internal sealed class ZzzInstanceManagementPage
 
     public void OnPageShown() => Reload();
 
-    public void Reload()
+    public bool Reload()
     {
-        ZzzRunStatusDto run = _backend.GetCurrentRun().Value ?? new ZzzRunStatusDto(ZzzRunState.Idle);
+        ZzzBackendResult<ZzzRunStatusDto> runResult = _backend.GetCurrentRun();
+        if (!runResult.Success)
+        {
+            _errorReporter?.Invoke(runResult.Error ?? "运行状态读取失败。");
+            return false;
+        }
+
+        ZzzRunStatusDto run = runResult.Value ?? new ZzzRunStatusDto(ZzzRunState.Idle);
         CanSwitch = run.State is not (ZzzRunState.Starting or ZzzRunState.Running or ZzzRunState.Paused or ZzzRunState.Stopping);
         BlockedReason = CanSwitch ? null : $"当前状态为 {run.State}。停止运行后再切换账户。";
         ZzzBackendResult<IReadOnlyList<ZzzInstanceDto>> result = _backend.GetInstances();
-        IReadOnlyList<ZzzInstanceDto> backendInstances = result.Success && result.Value is not null ? result.Value : [];
+        if (!result.Success || result.Value is null)
+        {
+            _errorReporter?.Invoke(result.Error ?? "账户列表读取失败。");
+            return false;
+        }
+
+        IReadOnlyList<ZzzInstanceDto> backendInstances = result.Value;
         ZzzBackendResult<ZzzConfigScopeValuesDto> configured = _backend.GetConfigScope("one-dragon");
         if (configured.Success
             && configured.Value?.Values.TryGetValue("instance_list", out object? rawList) == true
@@ -160,7 +198,25 @@ internal sealed class ZzzInstanceManagementPage
         {
             _instances = backendInstances;
         }
+
+        Rows.Clear();
+        foreach (ZzzInstanceDto instance in _instances)
+        {
+            Rows.Add(new ZzzAccountInstanceRow(instance, CanSwitch, _instances.Count, AccountRunOptions));
+        }
+
+        ForceLoginBeforeRun = _instances.FirstOrDefault(instance => instance.Active)?.ForceLoginBeforeRun ?? false;
+        OnPropertyChanged(nameof(Instances));
+        OnPropertyChanged(nameof(CanAdd));
+        _errorReporter?.Invoke(null);
+        return true;
     }
+
+    private static readonly IReadOnlyList<ZzzAccountRunOption> AccountRunOptions =
+    [
+        new("一条龙中运行", true),
+        new("一条龙中不运行", false),
+    ];
 
     public ZzzBackendResult<IReadOnlyList<ZzzInstanceDto>> AddInstanceForTest() => AddInstance();
 
@@ -239,19 +295,119 @@ internal sealed class ZzzInstanceManagementPage
         ZzzBackendResult<T>.Fail(ZzzBackendErrorCode.Conflict, BlockedReason ?? "运行中不能切换实例。");
 }
 
-internal sealed class ZzzCurrentAccountSettingsPage
+internal sealed class ZzzCurrentAccountSettingsPage : ZzzConfigSectionViewModel
 {
-    private readonly IZzzAppBackend _backend;
-    private IReadOnlyDictionary<string, object?> _values = new Dictionary<string, object?>(StringComparer.Ordinal);
+    private static readonly ZzzConfigField GamePathField = new("game_path", typeof(string), string.Empty);
+    private static readonly ZzzConfigField UseCustomWindowTitleField = new("use_custom_win_title", typeof(bool), false);
+    private static readonly ZzzConfigField CustomWindowTitleField = new("custom_win_title", typeof(string), string.Empty);
+    private static readonly ZzzConfigField GameRegionField = new("game_region", typeof(string), string.Empty);
+    private static readonly ZzzConfigField AccountField = new("account", typeof(string), string.Empty);
+    private static readonly ZzzConfigField PasswordField = new("password", typeof(string), string.Empty);
+    private static readonly ZzzConfigField BilibiliAccountNameField = new("bilibili_account_name", typeof(string), string.Empty);
+    private static readonly IReadOnlyList<ZzzConfigField> FieldList =
+    [
+        GamePathField,
+        UseCustomWindowTitleField,
+        CustomWindowTitleField,
+        GameRegionField,
+        AccountField,
+        PasswordField,
+        BilibiliAccountNameField,
+    ];
 
-    public ZzzCurrentAccountSettingsPage(IZzzAppBackend backend)
+    private readonly IZzzAppBackend _backend;
+
+    public ZzzCurrentAccountSettingsPage(
+        IZzzAppBackend backend,
+        ZzzInstanceManagementPage? instanceManagement = null,
+        Action<string?>? errorReporter = null)
+        : base(backend, errorReporter)
     {
         _backend = backend;
+        InstanceManagement = instanceManagement ?? new ZzzInstanceManagementPage(backend, errorReporter);
     }
+
+    protected override string ScopeName => "instance";
+
+    protected override IReadOnlyList<ZzzConfigField> Fields => FieldList;
+
+    protected override int? InstanceIndex => ActiveInstanceIndex;
+
+    public ZzzInstanceManagementPage InstanceManagement { get; }
+
+    public IReadOnlyList<ZzzAccountOption> RegionOptions { get; } =
+    [
+        new("国服", "cn"),
+        new("B服", "cn_b"),
+        new("美服", "us"),
+        new("欧服", "eu"),
+        new("亚服", "asia"),
+        new("港澳台服", "twhkmo"),
+    ];
 
     public int ActiveInstanceIndex { get; private set; }
 
-    public string GameRegion { get; private set; } = string.Empty;
+    public string GamePath
+    {
+        get => GetValue<string>(GamePathField);
+        set => SetValue(GamePathField, value);
+    }
+
+    public bool UseCustomWindowTitle
+    {
+        get => GetValue<bool>(UseCustomWindowTitleField);
+        set => SetValue(UseCustomWindowTitleField, value);
+    }
+
+    public string CustomWindowTitle
+    {
+        get => GetValue<string>(CustomWindowTitleField);
+        set => SetValue(CustomWindowTitleField, value);
+    }
+
+    public string GameRegion
+    {
+        get => GetValue<string>(GameRegionField);
+        set
+        {
+            if (SetValue(GameRegionField, value))
+            {
+                OnPropertyChanged(nameof(SelectedGameRegion));
+                OnPropertyChanged(nameof(AccountPasswordVisible));
+                OnPropertyChanged(nameof(BilibiliVisible));
+            }
+        }
+    }
+
+    public ZzzAccountOption? SelectedGameRegion
+    {
+        get => RegionOptions.FirstOrDefault(option => string.Equals(option.Value, GameRegion, StringComparison.Ordinal));
+        set
+        {
+            if (value is not null)
+            {
+                GameRegion = value.Value;
+            }
+        }
+    }
+
+    public string Account
+    {
+        get => GetValue<string>(AccountField);
+        set => SetValue(AccountField, value);
+    }
+
+    public string Password
+    {
+        get => GetValue<string>(PasswordField);
+        set => SetValue(PasswordField, value);
+    }
+
+    public string BilibiliAccountName
+    {
+        get => GetValue<string>(BilibiliAccountNameField);
+        set => SetValue(BilibiliAccountNameField, value);
+    }
 
     public bool AccountPasswordVisible => !string.Equals(GameRegion, "cn_b", StringComparison.Ordinal);
 
@@ -267,65 +423,62 @@ internal sealed class ZzzCurrentAccountSettingsPage
         true,
         null);
 
-    public void OnPageShown() => Reload();
+    public override void OnPageShown() => Reload();
 
     public void Reload()
     {
-        ActiveInstanceIndex = _backend.GetCurrentInstance().Value?.Index
-            ?? _backend.GetInstances().Value?.FirstOrDefault(instance => instance.Active)?.Index
-            ?? 0;
-        ZzzBackendResult<ZzzConfigScopeValuesDto> result = _backend.GetConfigScope("instance", ActiveInstanceIndex);
-        _values = result.Success && result.Value is not null
-            ? new Dictionary<string, object?>(result.Value.Values, StringComparer.Ordinal)
-            : new Dictionary<string, object?>(StringComparer.Ordinal);
-        GameRegion = ReadString("game_region");
+        ZzzBackendResult<ZzzInstanceDto> current = _backend.GetCurrentInstance();
+        ActiveInstanceIndex = current.Success
+            ? current.Value?.Index ?? InstanceManagement.Instances.FirstOrDefault(instance => instance.Active)?.Index ?? 0
+            : InstanceManagement.Instances.FirstOrDefault(instance => instance.Active)?.Index ?? 0;
+        OnPropertyChanged(nameof(ActiveInstanceIndex));
+        base.OnPageShown();
     }
 
     public void SaveStringForTest(string key, string value) => Save(key, value);
 
     public void SaveBoolForTest(string key, bool value) => Save(key, value);
 
-    public void SetGameRegionForTest(string value)
-    {
-        Save("game_region", value);
-        GameRegion = value;
-    }
+    public void SetGameRegionForTest(string value) => GameRegion = value;
 
     public string ReadStringForTest(string key) => ReadString(key);
 
     public bool ReadBoolForTest(string key) => ReadBool(key);
 
-    public string ReadString(string key)
+    public string ReadString(string key) => key switch
     {
-        return _values.TryGetValue(key, out object? value)
-            ? value?.ToString() ?? string.Empty
-            : string.Empty;
-    }
+        "game_path" => GamePath,
+        "custom_win_title" => CustomWindowTitle,
+        "game_region" => GameRegion,
+        "account" => Account,
+        "password" => Password,
+        "bilibili_account_name" => BilibiliAccountName,
+        _ => string.Empty,
+    };
 
-    public bool ReadBool(string key)
-    {
-        return _values.TryGetValue(key, out object? value)
-            && value is bool boolean
-            && boolean;
-    }
+    public bool ReadBool(string key) => key == "use_custom_win_title" && UseCustomWindowTitle;
 
-    public ZzzBackendResult<ZzzConfigScopeValuesDto> Save(string key, object? value)
+    public bool Save(string key, object? value)
     {
-        ZzzBackendResult<ZzzConfigScopeValuesDto> result = _backend.SaveConfigScope(new ZzzSaveConfigScopeRequest(
-            "instance",
-            new Dictionary<string, object?> { [key] = value },
-            ActiveInstanceIndex));
-        if (result.Success)
+        switch (key)
         {
-            _values = result.Value is not null
-                ? new Dictionary<string, object?>(result.Value.Values, StringComparer.Ordinal)
-                : new Dictionary<string, object?>(_values, StringComparer.Ordinal) { [key] = value };
-            if (key == "game_region")
-            {
-                GameRegion = value?.ToString() ?? string.Empty;
-            }
+            case "game_path": GamePath = value?.ToString() ?? string.Empty; break;
+            case "use_custom_win_title": UseCustomWindowTitle = value is true; break;
+            case "custom_win_title": CustomWindowTitle = value?.ToString() ?? string.Empty; break;
+            case "game_region": GameRegion = value?.ToString() ?? string.Empty; break;
+            case "account": Account = value?.ToString() ?? string.Empty; break;
+            case "password": Password = value?.ToString() ?? string.Empty; break;
+            case "bilibili_account_name": BilibiliAccountName = value?.ToString() ?? string.Empty; break;
+            default: throw new ArgumentOutOfRangeException(nameof(key), key, "未知账户配置项。");
         }
 
-        return result;
+        return LastError is null;
+    }
+
+    protected override void OnScopeLoaded(ZzzConfigScopeValuesDto values)
+    {
+        OnPropertyChanged(nameof(SelectedGameRegion));
+        OnPropertyChanged(nameof(AccountPasswordVisible));
+        OnPropertyChanged(nameof(BilibiliVisible));
     }
 }

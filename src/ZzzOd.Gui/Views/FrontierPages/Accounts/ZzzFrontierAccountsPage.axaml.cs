@@ -1,4 +1,3 @@
-using System.Collections.ObjectModel;
 using System.Threading.Channels;
 using Avalonia.Controls;
 using Avalonia.Interactivity;
@@ -14,40 +13,10 @@ namespace ZzzOd.Gui.Views.FrontierPages.Accounts;
 
 internal sealed partial class ZzzFrontierAccountsPage : UserControl, IZzzPageLifecycle
 {
-    private static readonly IReadOnlyList<ZzzAccountOption> RegionOptions =
-    [
-        new("国服", "cn"),
-        new("B服", "cn_b"),
-        new("美服", "us"),
-        new("欧服", "eu"),
-        new("亚服", "asia"),
-        new("港澳台服", "twhkmo"),
-    ];
-
-    private static readonly IReadOnlyList<ZzzAccountRunOption> RunOptions =
-    [
-        new("一条龙中运行", true),
-        new("一条龙中不运行", false),
-    ];
-
     private readonly IZzzAppBackend _backend;
     private readonly ZzzGuiOperationTracker _operations;
-    private readonly ObservableCollection<ZzzAccountInstanceRow> _rows = [];
-    private readonly FASettingsExpander _instanceList;
     private readonly FAInfoBar _actionBar;
-    private readonly FASettingsExpanderItem _gamePathItem;
-    private readonly ToggleSwitch _useCustomWindowTitleToggle;
-    private readonly TextBox _customWindowTitleInput;
-    private readonly FAComboBox _gameRegionCombo;
-    private readonly FASettingsExpanderItem _accountItem;
-    private readonly TextBox _accountInput;
-    private readonly FASettingsExpanderItem _passwordItem;
-    private readonly TextBox _passwordInput;
-    private readonly FASettingsExpanderItem _bilibiliHelpItem;
-    private readonly FASettingsExpanderItem _bilibiliAccountItem;
-    private readonly TextBox _bilibiliAccountInput;
     private readonly ToggleSwitch _forceLoginBeforeRunToggle;
-    private readonly Button _addInstanceButton;
     private readonly FAContentDialog _protectionDialog;
     private readonly TextBox _protectionPasswordInput;
     private ChannelReader<ZzzBackendEvent>? _eventReader;
@@ -58,29 +27,15 @@ internal sealed partial class ZzzFrontierAccountsPage : UserControl, IZzzPageLif
     {
         _backend = backend;
         _operations = operations ?? new ZzzGuiOperationTracker();
-        InstanceManagement = new ZzzInstanceManagementPage(backend);
-        CurrentAccountSettings = new ZzzCurrentAccountSettingsPage(backend);
+        InstanceManagement = new ZzzInstanceManagementPage(backend, ReportLoadError);
+        CurrentAccountSettings = new ZzzCurrentAccountSettingsPage(backend, InstanceManagement, ReportLoadError);
 
         AvaloniaXamlLoader.Load(this);
-        _instanceList = Required<FASettingsExpander>("InstanceList");
         _actionBar = Required<FAInfoBar>("ActionBar");
-        _gamePathItem = Required<FASettingsExpanderItem>("GamePathItem");
-        _useCustomWindowTitleToggle = Required<ToggleSwitch>("UseCustomWindowTitleToggle");
-        _customWindowTitleInput = Required<TextBox>("CustomWindowTitleInput");
-        _gameRegionCombo = Required<FAComboBox>("GameRegionCombo");
-        _accountItem = Required<FASettingsExpanderItem>("AccountItem");
-        _accountInput = Required<TextBox>("AccountInput");
-        _passwordItem = Required<FASettingsExpanderItem>("PasswordItem");
-        _passwordInput = Required<TextBox>("PasswordInput");
-        _bilibiliHelpItem = Required<FASettingsExpanderItem>("BilibiliHelpItem");
-        _bilibiliAccountItem = Required<FASettingsExpanderItem>("BilibiliAccountItem");
-        _bilibiliAccountInput = Required<TextBox>("BilibiliAccountInput");
         _forceLoginBeforeRunToggle = Required<ToggleSwitch>("ForceLoginBeforeRunToggle");
-        _addInstanceButton = Required<Button>("AddInstanceButton");
         _protectionDialog = Required<FAContentDialog>("ProtectionDialog");
         _protectionPasswordInput = Required<TextBox>("ProtectionPasswordInput");
-        _instanceList.ItemsSource = _rows;
-        _gameRegionCombo.ItemsSource = RegionOptions;
+        DataContext = CurrentAccountSettings;
     }
 
     public ZzzInstanceManagementPage InstanceManagement { get; }
@@ -110,26 +65,6 @@ internal sealed partial class ZzzFrontierAccountsPage : UserControl, IZzzPageLif
             _actionBar.IsOpen = false;
             InstanceManagement.Reload();
             CurrentAccountSettings.Reload();
-            _rows.Clear();
-            foreach (ZzzInstanceDto instance in InstanceManagement.Instances)
-            {
-                _rows.Add(new ZzzAccountInstanceRow(
-                    instance,
-                    InstanceManagement.CanSwitch,
-                    InstanceManagement.Instances.Count,
-                    RunOptions));
-            }
-
-            _addInstanceButton.IsEnabled = InstanceManagement.CanSwitch;
-            _gamePathItem.Description = CurrentAccountSettings.ReadString("game_path");
-            _useCustomWindowTitleToggle.IsChecked = CurrentAccountSettings.ReadBool("use_custom_win_title");
-            _customWindowTitleInput.Text = CurrentAccountSettings.ReadString("custom_win_title");
-            _gameRegionCombo.SelectedItem = RegionOptions.FirstOrDefault(option => option.Value == CurrentAccountSettings.GameRegion);
-            _accountInput.Text = CurrentAccountSettings.ReadString("account");
-            _passwordInput.Text = CurrentAccountSettings.ReadString("password");
-            _bilibiliAccountInput.Text = CurrentAccountSettings.ReadString("bilibili_account_name");
-            _forceLoginBeforeRunToggle.IsChecked = InstanceManagement.Instances.FirstOrDefault(instance => instance.Active)?.ForceLoginBeforeRun ?? false;
-            ApplyRegionVisibility();
 
             if (!InstanceManagement.CanSwitch)
             {
@@ -141,7 +76,7 @@ internal sealed partial class ZzzFrontierAccountsPage : UserControl, IZzzPageLif
         catch (Exception exception)
         {
             _operations.Complete(operationId, ZzzGuiOperationState.Failed, exception: exception);
-            throw;
+            ShowAction(exception.Message, FAInfoBarSeverity.Error);
         }
         finally
         {
@@ -174,45 +109,9 @@ internal sealed partial class ZzzFrontierAccountsPage : UserControl, IZzzPageLif
         if (!string.IsNullOrWhiteSpace(path))
         {
             string fullPath = Path.GetFullPath(path);
-            if (SaveAccountValue("game_path", fullPath))
-            {
-                _gamePathItem.Description = fullPath;
-            }
+            CurrentAccountSettings.GamePath = fullPath;
         }
     }
-
-    private void OnUseCustomWindowTitleChanged(object? sender, RoutedEventArgs args)
-    {
-        if (!_loading)
-        {
-            SaveAccountValue("use_custom_win_title", _useCustomWindowTitleToggle.IsChecked == true);
-        }
-    }
-
-    private void OnCustomWindowTitleLostFocus(object? sender, RoutedEventArgs args) =>
-        SaveAccountValue("custom_win_title", _customWindowTitleInput.Text ?? string.Empty);
-
-    private void OnGameRegionChanged(object? sender, SelectionChangedEventArgs args)
-    {
-        if (_loading || _gameRegionCombo.SelectedItem is not ZzzAccountOption option)
-        {
-            return;
-        }
-
-        if (SaveAccountValue("game_region", option.Value))
-        {
-            ApplyRegionVisibility();
-        }
-    }
-
-    private void OnAccountLostFocus(object? sender, RoutedEventArgs args) =>
-        SaveAccountValue("account", _accountInput.Text ?? string.Empty);
-
-    private void OnPasswordLostFocus(object? sender, RoutedEventArgs args) =>
-        SaveAccountValue("password", _passwordInput.Text ?? string.Empty);
-
-    private void OnBilibiliAccountLostFocus(object? sender, RoutedEventArgs args) =>
-        SaveAccountValue("bilibili_account_name", _bilibiliAccountInput.Text ?? string.Empty);
 
     private void OnForceLoginBeforeRunChanged(object? sender, RoutedEventArgs args)
     {
@@ -364,31 +263,6 @@ internal sealed partial class ZzzFrontierAccountsPage : UserControl, IZzzPageLif
         }
     }
 
-    private bool SaveAccountValue(string key, object? value)
-    {
-        if (_loading)
-        {
-            return false;
-        }
-
-        ZzzBackendResult<ZzzConfigScopeValuesDto> result = CurrentAccountSettings.Save(key, value);
-        if (!result.Success)
-        {
-            ShowAction(result.Error ?? "账户设置保存失败。", FAInfoBarSeverity.Error);
-        }
-
-        return result.Success;
-    }
-
-    private void ApplyRegionVisibility()
-    {
-        bool bilibili = CurrentAccountSettings.BilibiliVisible;
-        _accountItem.IsVisible = !bilibili;
-        _passwordItem.IsVisible = !bilibili;
-        _bilibiliHelpItem.IsVisible = bilibili;
-        _bilibiliAccountItem.IsVisible = bilibili;
-    }
-
     private void ShowResult<T>(ZzzBackendResult<T> result)
     {
         if (!result.Success)
@@ -402,6 +276,14 @@ internal sealed partial class ZzzFrontierAccountsPage : UserControl, IZzzPageLif
         _actionBar.Message = message;
         _actionBar.Severity = severity;
         _actionBar.IsOpen = true;
+    }
+
+    private void ReportLoadError(string? error)
+    {
+        if (!string.IsNullOrWhiteSpace(error) && _actionBar is not null)
+        {
+            ShowAction(error, FAInfoBarSeverity.Error);
+        }
     }
 
     private static void OpenUrl(string url)
