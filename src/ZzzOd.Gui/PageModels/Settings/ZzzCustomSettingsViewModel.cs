@@ -1,46 +1,40 @@
-using CommunityToolkit.Mvvm.ComponentModel;
+using System.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using ZzzOd.AppHost.Backend;
 using ZzzOd.Gui.Architecture;
+using ZzzOd.Gui.Services.Config;
 using ZzzOd.Gui.Shell;
 
 namespace ZzzOd.Gui.PageModels.Settings;
 
-internal sealed partial class ZzzCustomSettingsViewModel : ZzzPageViewModel
+internal sealed partial class ZzzCustomSettingsViewModel : ZzzConfigSectionViewModel
 {
-    private readonly IZzzAppBackend _backend;
+    private static readonly ZzzConfigField UiLanguageField = new("ui_language", typeof(string), "auto");
+    private static readonly ZzzConfigField ThemeField = new("theme", typeof(string), "Auto");
+    private static readonly ZzzConfigField BackgroundTypeField = new("background_type", typeof(string), "version_poster");
+    private static readonly ZzzConfigField CloseWindowActionField = new(
+        ZzzCloseWindowActionService.ConfigKey,
+        typeof(string),
+        "tray");
+    private static readonly ZzzConfigField CustomThemeColorField = new("custom_theme_color", typeof(bool), false);
+    private static readonly ZzzConfigField CustomBannerField = new("custom_banner", typeof(bool), false);
+    private static readonly ZzzConfigField GlobalThemeColorField = new("global_theme_color", typeof(string), "0,120,215");
+    private static readonly IReadOnlyList<ZzzConfigField> FieldList =
+    [
+        UiLanguageField,
+        ThemeField,
+        BackgroundTypeField,
+        CloseWindowActionField,
+        CustomThemeColorField,
+        CustomBannerField,
+        GlobalThemeColorField,
+    ];
+
     private readonly ZzzGuiOperationTracker _operations;
 
-    [ObservableProperty]
-    private bool _isLoading;
-
-    [ObservableProperty]
-    private string? _errorMessage;
-
-    [ObservableProperty]
-    private string _selectedLanguageValue = "auto";
-
-    [ObservableProperty]
-    private string _selectedThemeValue = "Auto";
-
-    [ObservableProperty]
-    private string _selectedBackgroundTypeValue = "version_poster";
-
-    [ObservableProperty]
-    private string _selectedCloseWindowActionValue = "tray";
-
-    [ObservableProperty]
-    private bool _customThemeColor;
-
-    [ObservableProperty]
-    private bool _customBanner;
-
-    [ObservableProperty]
-    private string _globalThemeColor = "0,120,215";
-
     public ZzzCustomSettingsViewModel(IZzzAppBackend backend, ZzzGuiOperationTracker? operations = null)
+        : base(backend)
     {
-        _backend = backend;
         _operations = operations ?? new ZzzGuiOperationTracker();
 
         LanguageOptions = Options(("跟随系统", "auto"), ("简体中文", "zh"), ("English", "en"));
@@ -51,7 +45,18 @@ internal sealed partial class ZzzCustomSettingsViewModel : ZzzPageViewModel
             ("动态背景", "dynamic_background"),
             ("无", "none"));
         CloseWindowActionOptions = Options(("最小化到托盘", "tray"), ("直接退出", "exit"));
+        PropertyChanged += OnViewModelPropertyChanged;
     }
+
+    protected override string ScopeName => "custom";
+
+    protected override IReadOnlyList<ZzzConfigField> Fields => FieldList;
+
+    public new bool IsLoading => base.IsLoading;
+
+    public string? ErrorMessage => LastError;
+
+    public bool HasError => !string.IsNullOrWhiteSpace(ErrorMessage);
 
     public IReadOnlyList<ZzzCustomOption> LanguageOptions { get; }
 
@@ -61,7 +66,20 @@ internal sealed partial class ZzzCustomSettingsViewModel : ZzzPageViewModel
 
     public IReadOnlyList<ZzzCustomOption> CloseWindowActionOptions { get; }
 
-    public bool HasError => !string.IsNullOrWhiteSpace(ErrorMessage);
+    public string SelectedLanguageValue
+    {
+        get => OptionValue(LanguageOptions, GetValue<string>(UiLanguageField));
+        set
+        {
+            string normalized = OptionValue(LanguageOptions, value);
+            if (SetValue(UiLanguageField, normalized) && !IsLoading && LastError is null)
+            {
+                OnPropertyChanged(nameof(SelectedLanguage));
+                OnPropertyChanged(nameof(SelectedLanguageIndex));
+                RestartRequested?.Invoke(this, normalized);
+            }
+        }
+    }
 
     public ZzzCustomOption SelectedLanguage
     {
@@ -79,6 +97,33 @@ internal sealed partial class ZzzCustomSettingsViewModel : ZzzPageViewModel
     {
         get => OptionIndex(LanguageOptions, SelectedLanguageValue);
         set => SetOptionValue(LanguageOptions, value, selectedValue => SelectedLanguageValue = selectedValue);
+    }
+
+    public string SelectedThemeValue
+    {
+        get => OptionValue(ThemeOptions, GetValue<string>(ThemeField));
+        set
+        {
+            string normalized = OptionValue(ThemeOptions, value);
+            if (!SetValue(ThemeField, normalized))
+            {
+                return;
+            }
+
+            OnPropertyChanged(nameof(SelectedTheme));
+            OnPropertyChanged(nameof(SelectedThemeIndex));
+            if (IsLoading || LastError is not null || Avalonia.Application.Current is null)
+            {
+                return;
+            }
+
+            Avalonia.Application.Current.RequestedThemeVariant = normalized switch
+            {
+                "Light" => Avalonia.Styling.ThemeVariant.Light,
+                "Dark" => Avalonia.Styling.ThemeVariant.Dark,
+                _ => Avalonia.Styling.ThemeVariant.Default,
+            };
+        }
     }
 
     public ZzzCustomOption SelectedTheme
@@ -99,6 +144,19 @@ internal sealed partial class ZzzCustomSettingsViewModel : ZzzPageViewModel
         set => SetOptionValue(ThemeOptions, value, selectedValue => SelectedThemeValue = selectedValue);
     }
 
+    public string SelectedBackgroundTypeValue
+    {
+        get => OptionValue(BackgroundTypeOptions, GetValue<string>(BackgroundTypeField));
+        set
+        {
+            if (SetValue(BackgroundTypeField, OptionValue(BackgroundTypeOptions, value)))
+            {
+                OnPropertyChanged(nameof(SelectedBackgroundType));
+                OnPropertyChanged(nameof(SelectedBackgroundTypeIndex));
+            }
+        }
+    }
+
     public ZzzCustomOption SelectedBackgroundType
     {
         get => SelectedOption(BackgroundTypeOptions, SelectedBackgroundTypeValue);
@@ -115,6 +173,20 @@ internal sealed partial class ZzzCustomSettingsViewModel : ZzzPageViewModel
     {
         get => OptionIndex(BackgroundTypeOptions, SelectedBackgroundTypeValue);
         set => SetOptionValue(BackgroundTypeOptions, value, selectedValue => SelectedBackgroundTypeValue = selectedValue);
+    }
+
+    public string SelectedCloseWindowActionValue
+    {
+        get => NormalizeCloseWindowAction(GetValue<string>(CloseWindowActionField));
+        set
+        {
+            string normalized = NormalizeCloseWindowAction(value);
+            if (SetValue(CloseWindowActionField, normalized))
+            {
+                OnPropertyChanged(nameof(SelectedCloseWindowAction));
+                OnPropertyChanged(nameof(SelectedCloseWindowActionIndex));
+            }
+        }
     }
 
     public ZzzCustomOption SelectedCloseWindowAction
@@ -135,6 +207,24 @@ internal sealed partial class ZzzCustomSettingsViewModel : ZzzPageViewModel
         set => SetOptionValue(CloseWindowActionOptions, value, selectedValue => SelectedCloseWindowActionValue = selectedValue);
     }
 
+    public bool CustomThemeColor
+    {
+        get => GetValue<bool>(CustomThemeColorField);
+        set => SetValue(CustomThemeColorField, value);
+    }
+
+    public bool CustomBanner
+    {
+        get => GetValue<bool>(CustomBannerField);
+        set => SetValue(CustomBannerField, value);
+    }
+
+    public string GlobalThemeColor
+    {
+        get => GetValue<string>(GlobalThemeColorField);
+        set => SetValue(GlobalThemeColorField, value);
+    }
+
     public event EventHandler<string>? RestartRequested;
 
     public event EventHandler? ThemeColorEditorRequested;
@@ -143,7 +233,6 @@ internal sealed partial class ZzzCustomSettingsViewModel : ZzzPageViewModel
 
     public override void OnPageShown()
     {
-        base.OnPageShown();
         Guid operationId = _operations.Start("settings-custom", "reload-custom-settings");
         try
         {
@@ -152,52 +241,31 @@ internal sealed partial class ZzzCustomSettingsViewModel : ZzzPageViewModel
         catch (Exception exception)
         {
             _operations.Complete(operationId, ZzzGuiOperationState.Failed, exception: exception);
-            ErrorMessage = exception.Message;
+            base.ReportError(exception.Message);
         }
     }
 
     public bool Reload()
     {
-        IsLoading = true;
-        ErrorMessage = null;
-        try
-        {
-            ZzzBackendResult<ZzzConfigScopeValuesDto> result = _backend.GetConfigScope("custom");
-            if (!result.Success || result.Value is null)
-            {
-                ErrorMessage = result.Error ?? "自定义设置读取失败。";
-                return false;
-            }
-
-            IReadOnlyDictionary<string, object?> values = result.Value.Values;
-            SelectedLanguageValue = OptionValue(LanguageOptions, ReadString(values, "ui_language", "auto"));
-            SelectedThemeValue = OptionValue(ThemeOptions, ReadString(values, "theme", "Auto"));
-            SelectedBackgroundTypeValue = OptionValue(BackgroundTypeOptions, ReadString(values, "background_type", "version_poster"));
-            string closeWindowAction = ReadString(values, ZzzCloseWindowActionService.ConfigKey, "tray");
-            SelectedCloseWindowActionValue = ZzzCloseWindowActionService.TryParse(closeWindowAction, out ZzzCloseWindowAction action)
-                ? ZzzCloseWindowActionService.ToConfigValue(action)
-                : "tray";
-            CustomThemeColor = ReadBool(values, "custom_theme_color", false);
-            CustomBanner = ReadBool(values, "custom_banner", false);
-            GlobalThemeColor = ReadString(values, "global_theme_color", "0,120,215");
-            return true;
-        }
-        finally
-        {
-            IsLoading = false;
-            RefreshSelectedOptionBindings();
-        }
+        base.OnPageShown();
+        RefreshSelectedOptionBindings();
+        return LastError is null;
     }
 
     internal bool SaveThemeColor(string value)
     {
+        if (string.Equals(GlobalThemeColor, value, StringComparison.Ordinal))
+        {
+            return SaveValue(GlobalThemeColorField, value);
+        }
+
         GlobalThemeColor = value;
-        return Save("global_theme_color", value);
+        return LastError is null;
     }
 
-    internal bool PersistCustomBanner() => Save("custom_banner", CustomBanner);
+    internal bool PersistCustomBanner() => SaveValue(CustomBannerField, CustomBanner);
 
-    internal void ReportError(string message) => ErrorMessage = message;
+    internal new void ReportError(string message) => base.ReportError(message);
 
     [RelayCommand]
     private void RequestThemeColorEditor() => ThemeColorEditorRequested?.Invoke(this, EventArgs.Empty);
@@ -205,91 +273,31 @@ internal sealed partial class ZzzCustomSettingsViewModel : ZzzPageViewModel
     [RelayCommand]
     private void RequestCustomBannerSelection() => CustomBannerSelectionRequested?.Invoke(this, EventArgs.Empty);
 
-    partial void OnErrorMessageChanged(string? value) => OnPropertyChanged(nameof(HasError));
+    protected override void OnScopeLoaded(ZzzConfigScopeValuesDto values) => RefreshSelectedOptionBindings();
 
-    partial void OnSelectedLanguageValueChanged(string value)
+    private void OnViewModelPropertyChanged(object? sender, PropertyChangedEventArgs args)
     {
-        OnPropertyChanged(nameof(SelectedLanguage));
-        OnPropertyChanged(nameof(SelectedLanguageIndex));
-        if (!IsLoading && Save("ui_language", value))
+        if (string.Equals(args.PropertyName, nameof(LastError), StringComparison.Ordinal))
         {
-            RestartRequested?.Invoke(this, value);
-        }
-    }
-
-    partial void OnSelectedThemeValueChanged(string value)
-    {
-        OnPropertyChanged(nameof(SelectedTheme));
-        OnPropertyChanged(nameof(SelectedThemeIndex));
-        if (IsLoading || !Save("theme", value) || Avalonia.Application.Current is null)
-        {
-            return;
-        }
-
-        Avalonia.Application.Current.RequestedThemeVariant = value switch
-        {
-            "Light" => Avalonia.Styling.ThemeVariant.Light,
-            "Dark" => Avalonia.Styling.ThemeVariant.Dark,
-            _ => Avalonia.Styling.ThemeVariant.Default,
-        };
-    }
-
-    partial void OnSelectedBackgroundTypeValueChanged(string value)
-    {
-        OnPropertyChanged(nameof(SelectedBackgroundType));
-        OnPropertyChanged(nameof(SelectedBackgroundTypeIndex));
-        if (!IsLoading)
-        {
-            Save("background_type", value);
-        }
-    }
-
-    partial void OnSelectedCloseWindowActionValueChanged(string value)
-    {
-        OnPropertyChanged(nameof(SelectedCloseWindowAction));
-        OnPropertyChanged(nameof(SelectedCloseWindowActionIndex));
-        if (!IsLoading && ZzzCloseWindowActionService.TryParse(value, out ZzzCloseWindowAction action))
-        {
-            Save(ZzzCloseWindowActionService.ConfigKey, ZzzCloseWindowActionService.ToConfigValue(action));
-        }
-    }
-
-    partial void OnCustomThemeColorChanged(bool value)
-    {
-        if (!IsLoading)
-        {
-            Save("custom_theme_color", value);
-        }
-    }
-
-    partial void OnCustomBannerChanged(bool value)
-    {
-        if (!IsLoading)
-        {
-            Save("custom_banner", value);
+            OnPropertyChanged(nameof(ErrorMessage));
+            OnPropertyChanged(nameof(HasError));
         }
     }
 
     private void RefreshSelectedOptionBindings()
     {
         OnPropertyChanged(nameof(SelectedLanguageValue));
+        OnPropertyChanged(nameof(SelectedLanguage));
+        OnPropertyChanged(nameof(SelectedLanguageIndex));
         OnPropertyChanged(nameof(SelectedThemeValue));
+        OnPropertyChanged(nameof(SelectedTheme));
+        OnPropertyChanged(nameof(SelectedThemeIndex));
         OnPropertyChanged(nameof(SelectedBackgroundTypeValue));
+        OnPropertyChanged(nameof(SelectedBackgroundType));
+        OnPropertyChanged(nameof(SelectedBackgroundTypeIndex));
         OnPropertyChanged(nameof(SelectedCloseWindowActionValue));
-    }
-
-    private bool Save(string key, object? value)
-    {
-        ZzzBackendResult<ZzzConfigScopeValuesDto> result = _backend.SaveConfigScope(new ZzzSaveConfigScopeRequest(
-            "custom",
-            new Dictionary<string, object?> { [key] = value }));
-        if (result.Success)
-        {
-            return true;
-        }
-
-        ErrorMessage = result.Error ?? "自定义设置保存失败。";
-        return false;
+        OnPropertyChanged(nameof(SelectedCloseWindowAction));
+        OnPropertyChanged(nameof(SelectedCloseWindowActionIndex));
     }
 
     private static IReadOnlyList<ZzzCustomOption> Options(params (string Label, string Value)[] values) =>
@@ -316,33 +324,8 @@ internal sealed partial class ZzzCustomSettingsViewModel : ZzzPageViewModel
         }
     }
 
-    private static string ReadString(IReadOnlyDictionary<string, object?> values, string key, string defaultValue)
-    {
-        if (values.TryGetValue(key, out object? value) && value is string typed)
-        {
-            return typed;
-        }
-
-        if (value is System.Text.Json.JsonElement json && json.ValueKind == System.Text.Json.JsonValueKind.String)
-        {
-            return json.GetString() ?? defaultValue;
-        }
-
-        return defaultValue;
-    }
-
-    private static bool ReadBool(IReadOnlyDictionary<string, object?> values, string key, bool defaultValue)
-    {
-        if (values.TryGetValue(key, out object? value) && value is bool typed)
-        {
-            return typed;
-        }
-
-        if (value is System.Text.Json.JsonElement json && (json.ValueKind == System.Text.Json.JsonValueKind.True || json.ValueKind == System.Text.Json.JsonValueKind.False))
-        {
-            return json.GetBoolean();
-        }
-
-        return defaultValue;
-    }
+    private static string NormalizeCloseWindowAction(string value) =>
+        ZzzCloseWindowActionService.TryParse(value, out ZzzCloseWindowAction action)
+            ? ZzzCloseWindowActionService.ToConfigValue(action)
+            : "tray";
 }
