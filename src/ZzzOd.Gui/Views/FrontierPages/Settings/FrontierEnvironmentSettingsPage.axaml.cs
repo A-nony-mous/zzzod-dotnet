@@ -56,7 +56,8 @@ internal sealed partial class FrontierEnvironmentSettingsPage : UserControl, IZz
             ScreenshotMethods,
             ProxyTypes,
             runtimeCoordinator,
-            ShowError);
+            ShowError,
+            ReinitializeContextAsync);
         DataContext = _viewModel;
         _hotkeyButtons = new Dictionary<string, Button>(StringComparer.Ordinal)
         {
@@ -190,6 +191,27 @@ internal sealed partial class FrontierEnvironmentSettingsPage : UserControl, IZz
         foreach ((string key, Button button) in _hotkeyButtons)
         {
             button.Content = _viewModel.GetHotkey(key).ToUpperInvariant();
+        }
+    }
+
+    private async Task ReinitializeContextAsync()
+    {
+        if (_runtimeCoordinator is null)
+        {
+            return;
+        }
+
+        try
+        {
+            ZzzBackendResult<bool> result = await _runtimeCoordinator.ReinitializeContextAsync();
+            if (!result.Success)
+            {
+                ShowError(result.Error ?? "脚本环境重新初始化失败。");
+            }
+        }
+        catch (Exception exception)
+        {
+            ShowError(exception.Message);
         }
     }
 

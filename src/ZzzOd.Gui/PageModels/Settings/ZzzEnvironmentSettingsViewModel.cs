@@ -33,18 +33,21 @@ internal sealed class ZzzEnvironmentSettingsViewModel : ZzzConfigSectionViewMode
     ];
 
     private readonly IZzzEnvironmentRuntimeCoordinator? _runtimeCoordinator;
+    private readonly Func<Task>? _reinitializeContextAsync;
 
     public ZzzEnvironmentSettingsViewModel(
         IZzzAppBackend backend,
         IReadOnlyList<ZzzEnvironmentOption> screenshotMethods,
         IReadOnlyList<ZzzEnvironmentOption> proxyTypes,
         IZzzEnvironmentRuntimeCoordinator? runtimeCoordinator = null,
-        Action<string?>? errorReporter = null)
+        Action<string?>? errorReporter = null,
+        Func<Task>? reinitializeContextAsync = null)
         : base(backend, errorReporter)
     {
         ScreenshotMethods = screenshotMethods;
         ProxyTypes = proxyTypes;
         _runtimeCoordinator = runtimeCoordinator;
+        _reinitializeContextAsync = reinitializeContextAsync;
     }
 
     protected override string ScopeName => "env";
@@ -86,7 +89,9 @@ internal sealed class ZzzEnvironmentSettingsViewModel : ZzzConfigSectionViewMode
         {
             if (SetValue(IsDebugField, value) && !IsLoading && LastError is null)
             {
-                _ = ReinitializeContextAsync();
+                _ = _reinitializeContextAsync is null
+                    ? ReinitializeContextAsync()
+                    : _reinitializeContextAsync();
             }
         }
     }
