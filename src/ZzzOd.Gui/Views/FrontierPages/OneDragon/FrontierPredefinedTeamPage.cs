@@ -1,6 +1,3 @@
-using System.Collections.ObjectModel;
-using System.ComponentModel;
-using System.Runtime.CompilerServices;
 using Avalonia.Controls;
 using Avalonia.Interactivity;
 using Avalonia.Markup.Xaml;
@@ -8,11 +5,10 @@ using FluentAvalonia.UI.Controls;
 using ZzzOd.AppHost.Backend;
 using ZzzOd.GameLogic.Config;
 using ZzzOd.GameLogic.Const;
-using ZzzOd.GameLogic.GameData;
 using ZzzOd.Gui.Controls;
+using ZzzOd.Gui.PageModels.OneDragon;
 using ZzzOd.Gui.Services.RunIntent;
 using ZzzOd.Gui.Shell;
-using ZzzOd.Gui.Pages.OneDragon;
 
 namespace ZzzOd.Gui.Views.FrontierPages.OneDragon;
 
@@ -27,19 +23,15 @@ internal sealed partial class FrontierPredefinedTeamPage : UserControl, IZzzPage
         + "点击「开始」后将自动打开游戏内预备编队页面，\n"
         + "通过截图识别各编队中的代理人并填入左侧配置。";
 
-    private readonly IZzzAppBackend _backend;
-    private readonly ObservableCollection<ZzzPredefinedTeamRowModel> _rows = [];
+    private readonly ZzzPredefinedTeamSettingsViewModel _viewModel;
     private readonly ZzzRunPanel _runPanel;
-    private readonly FASettingsExpander _teamList;
     private readonly FAInfoBar _errorBar;
     private readonly Button _helpButton;
-    private bool _loading;
 
     public FrontierPredefinedTeamPage(IZzzAppBackend backend, ZzzGuiRunIntentService runIntent)
     {
-        _backend = backend;
+        _viewModel = new ZzzPredefinedTeamSettingsViewModel(backend, ShowError);
         AvaloniaXamlLoader.Load(this);
-        _teamList = Required<FASettingsExpander>("TeamList");
         _errorBar = Required<FAInfoBar>("TeamErrorBar");
         _helpButton = Required<Button>("HelpButton");
         _runPanel = new ZzzRunPanel(
@@ -48,11 +40,11 @@ internal sealed partial class FrontierPredefinedTeamPage : UserControl, IZzzPage
             "预备编队检查",
             runIntent);
         Required<ContentControl>("RunPanelHost").Content = _runPanel;
-        _teamList.ItemsSource = _rows;
         _helpButton.Click += OnHelpClicked;
+        DataContext = _viewModel;
     }
 
-    internal IReadOnlyList<ZzzPredefinedTeamRowModel> Teams => _rows;
+    internal IReadOnlyList<ZzzPredefinedTeamRowModel> Teams => _viewModel.Rows;
 
     internal ZzzRunPanel RunPanel => _runPanel;
 
@@ -69,65 +61,23 @@ internal sealed partial class FrontierPredefinedTeamPage : UserControl, IZzzPage
     public void DisposePage()
     {
         _helpButton.Click -= OnHelpClicked;
+        _viewModel.DisposePage();
         _runPanel.DisposePage();
     }
 
-    internal void Reload()
-    {
-        _loading = true;
-        _errorBar.IsOpen = false;
-        try
-        {
-            ZzzBackendResult<ZzzConfigScopeValuesDto> teamResult = _backend.GetConfigScope("team");
-            if (!teamResult.Success
-                || teamResult.Value is null
-                || !teamResult.Value.Values.TryGetValue("team_list", out object? rawTeams)
-                || rawTeams is not List<PredefinedTeamInfo> teams)
-            {
-                _rows.Clear();
-                ShowError(teamResult.Error ?? "预备编队配置读取失败。");
-                return;
-            }
-
-            ZzzBackendResult<ZzzBattleAssistantConfigCatalogDto> catalogResult = _backend.GetBattleAssistantConfigCatalog();
-            if (!catalogResult.Success || catalogResult.Value is null)
-            {
-                _rows.Clear();
-                ShowError(catalogResult.Error ?? "自动战斗配置读取失败。");
-                return;
-            }
-
-            IReadOnlyList<ZzzPredefinedTeamOption> autoBattleOptions = catalogResult.Value.AutoBattle
-                .Select(value => new ZzzPredefinedTeamOption(value, value))
-                .ToArray();
-            IReadOnlyList<ZzzPredefinedTeamOption> agentOptions = CreateAgentOptions();
-            _rows.Clear();
-            foreach (PredefinedTeamInfo team in teams)
-            {
-                team.EnsureThreeAgents();
-                _rows.Add(new ZzzPredefinedTeamRowModel(team, autoBattleOptions, agentOptions));
-            }
-        }
-        finally
-        {
-            _loading = false;
-        }
-    }
+    internal void Reload() => _viewModel.OnPageShown();
 
     internal static IReadOnlyList<ZzzPredefinedTeamOption> CreateAgentOptions() =>
-        [
-            new("代理人", "unknown"),
-            .. AgentEnum.Values.Select(item => new ZzzPredefinedTeamOption(item.Value.AgentName, item.Value.AgentId)),
-        ];
+        ZzzPredefinedTeamSettingsViewModel.CreateAgentOptions();
 
     internal static bool IsTeamNameWithinLimit(string value) =>
-        value.Sum(character => character > 127 ? 2 : 1) <= 14;
+        ZzzPredefinedTeamSettingsViewModel.IsTeamNameWithinLimit(value);
 
-    internal void SaveTeam(ZzzPredefinedTeamRowModel row) => Save(row);
+    internal void SaveTeam(ZzzPredefinedTeamRowModel row) => _viewModel.SaveTeam(row);
 
     private void OnTeamNameChanged(object? sender, TextChangedEventArgs args)
     {
-        if (_loading || sender is not TextBox { DataContext: ZzzPredefinedTeamRowModel row } textBox)
+        if (sender is not TextBox { DataContext: ZzzPredefinedTeamRowModel row } textBox)
         {
             return;
         }
@@ -147,44 +97,9 @@ internal sealed partial class FrontierPredefinedTeamPage : UserControl, IZzzPage
 
     private void OnTeamSelectionChanged(object? sender, SelectionChangedEventArgs args)
     {
-        if (_loading || sender is not Control { DataContext: ZzzPredefinedTeamRowModel row })
+        if (sender is Control { DataContext: ZzzPredefinedTeamRowModel row })
         {
-            return;
-        }
-
-        SaveTeam(row);
-    }
-
-    private void Save(ZzzPredefinedTeamRowModel changedRow)
-    {
-        if (!changedRow.HasChanges)
-        {
-            return;
-        }
-
-        List<PredefinedTeamInfo> teams = _rows.Select(row => new PredefinedTeamInfo(
-            row.Index,
-            row.Name,
-            row.AutoBattleValue,
-            [
-                row.Agent1Value,
-                row.Agent2Value,
-                row.Agent3Value,
-            ])).ToList();
-
-        ZzzBackendResult<ZzzConfigScopeValuesDto> result = _backend.SaveConfigScope(new ZzzSaveConfigScopeRequest(
-            "team",
-            new Dictionary<string, object?> { ["team_list"] = teams }));
-        if (!result.Success)
-        {
-            ShowError(result.Error ?? "预备编队配置保存失败。");
-            return;
-        }
-
-        _errorBar.IsOpen = false;
-        foreach (ZzzPredefinedTeamRowModel row in _rows)
-        {
-            row.MarkSaved();
+            SaveTeam(row);
         }
     }
 
@@ -192,7 +107,7 @@ internal sealed partial class FrontierPredefinedTeamPage : UserControl, IZzzPage
     {
         if (TopLevel.GetTopLevel(this) is not Window owner)
         {
-			ShowError("当前窗口不可用。");
+            ShowError("当前窗口不可用。");
             return;
         }
 
@@ -211,10 +126,10 @@ internal sealed partial class FrontierPredefinedTeamPage : UserControl, IZzzPage
         await dialog.ShowAsync(owner).ConfigureAwait(true);
     }
 
-    private void ShowError(string message)
+    private void ShowError(string? message)
     {
-        _errorBar.Message = message;
-        _errorBar.IsOpen = true;
+        _errorBar.Message = message ?? string.Empty;
+        _errorBar.IsOpen = !string.IsNullOrWhiteSpace(message);
     }
 
     private T Required<T>(string name) where T : Control =>

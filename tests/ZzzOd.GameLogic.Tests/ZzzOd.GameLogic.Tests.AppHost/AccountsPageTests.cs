@@ -5,7 +5,8 @@ using FluentAvalonia.UI.Controls;
 using Xunit;
 using ZzzOd.AppHost.Backend;
 using ZzzOd.GameLogic.Config;
-using ZzzOd.Gui.Pages.Accounts;
+using ZzzOd.Gui.PageModels.Accounts;
+using ZzzOd.Gui.Views.FrontierPages.Accounts;
 
 namespace ZzzOd.GameLogic.Tests.AppHost;
 
@@ -100,7 +101,7 @@ public sealed class AccountsPageTests
         AccountsBackendProxy proxy = Assert.IsAssignableFrom<AccountsBackendProxy>(backend);
         GuiParityAndFacadeTests.RunOnUiThread(() =>
         {
-            ZzzAccountsPage page = new(backend);
+            ZzzFrontierAccountsPage page = new(backend);
             try
             {
                 page.OnPageShown();
@@ -147,9 +148,9 @@ public sealed class AccountsPageTests
         return new ZzzAccountInstanceRow(instance, canSwitch: true, instanceCount: 1, runOptions);
     }
 
-    private static void InvokePageHandler(ZzzAccountsPage page, string methodName, Control sender)
+    private static void InvokePageHandler(ZzzFrontierAccountsPage page, string methodName, Control sender)
     {
-        MethodInfo method = typeof(ZzzAccountsPage).GetMethod(methodName, BindingFlags.Instance | BindingFlags.NonPublic)!;
+        MethodInfo method = typeof(ZzzFrontierAccountsPage).GetMethod(methodName, BindingFlags.Instance | BindingFlags.NonPublic)!;
         method.Invoke(page, [sender, null]);
     }
 }

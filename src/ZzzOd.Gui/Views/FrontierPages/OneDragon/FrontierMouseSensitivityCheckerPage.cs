@@ -5,7 +5,7 @@ using ZzzOd.GameLogic.Const;
 using ZzzOd.Gui.Controls;
 using ZzzOd.Gui.Services.RunIntent;
 using ZzzOd.Gui.Shell;
-using ZzzOd.Gui.Pages.OneDragon;
+using ZzzOd.Gui.PageModels.OneDragon;
 
 namespace ZzzOd.Gui.Views.FrontierPages.OneDragon;
 

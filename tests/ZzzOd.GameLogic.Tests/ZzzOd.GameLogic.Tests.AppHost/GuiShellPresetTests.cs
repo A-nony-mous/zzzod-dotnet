@@ -1,3 +1,5 @@
+using System.Reflection;
+using ZzzOd.AppHost.Backend;
 using ZzzOd.Gui.Shell;
 using ZzzOd.Gui.Views;
 using Xunit;
@@ -6,8 +8,85 @@ namespace ZzzOd.GameLogic.Tests.AppHost;
 
 public sealed class GuiShellPresetTests
 {
+    public class PresetBackendProxy : DispatchProxy
+    {
+        public Dictionary<string, object?> CustomValues { get; } = new(StringComparer.Ordinal);
+
+        public List<ZzzSaveConfigScopeRequest> SaveRequests { get; } = [];
+
+        protected override object? Invoke(MethodInfo? targetMethod, object?[]? args)
+        {
+            ArgumentNullException.ThrowIfNull(targetMethod);
+            if (targetMethod.Name == nameof(IZzzAppBackend.GetConfigScope))
+            {
+                ZzzConfigScopeDescriptorDto descriptor = new("custom", "custom", false, false, true, Array.Empty<ZzzConfigSettingDescriptorDto>());
+                return ZzzBackendResult<ZzzConfigScopeValuesDto>.Ok(
+                    new ZzzConfigScopeValuesDto(descriptor, null, null, new Dictionary<string, object?>(CustomValues, StringComparer.Ordinal)));
+            }
+
+            if (targetMethod.Name == nameof(IZzzAppBackend.SaveConfigScope) && args is [ZzzSaveConfigScopeRequest request])
+            {
+                SaveRequests.Add(request);
+                return ZzzBackendResult<ZzzConfigScopeValuesDto>.Ok(null!);
+            }
+
+            throw new NotSupportedException(targetMethod.Name);
+        }
+    }
+
     [Theory]
-    [InlineData("classic", ZzzGuiShellPreset.Classic)]
+    [InlineData("classic")]
+    [InlineData("mixed")]
+    public void Read_LegacyConfiguredValue_NormalizesToFrontierOnce(string legacy)
+    {
+        IZzzAppBackend backend = DispatchProxy.Create<IZzzAppBackend, PresetBackendProxy>();
+        PresetBackendProxy proxy = (PresetBackendProxy)backend;
+        proxy.CustomValues[ZzzGuiShellPresetService.ConfigKey] = legacy;
+
+        ZzzGuiShellPresetResolution resolution = new ZzzGuiShellPresetService(backend).Read();
+
+        Assert.True(resolution.Success);
+        Assert.Equal(ZzzGuiShellPreset.Frontier, resolution.Preset);
+        ZzzSaveConfigScopeRequest request = Assert.Single(proxy.SaveRequests);
+        Assert.Equal("custom", request.Scope);
+        Assert.Equal("frontier", request.Values[ZzzGuiShellPresetService.ConfigKey]);
+    }
+
+    [Theory]
+    [InlineData("frontier")]
+    [InlineData(null)]
+    public void Read_FrontierOrMissingValue_DoesNotWriteBack(string? configured)
+    {
+        IZzzAppBackend backend = DispatchProxy.Create<IZzzAppBackend, PresetBackendProxy>();
+        PresetBackendProxy proxy = (PresetBackendProxy)backend;
+        if (configured is not null)
+        {
+            proxy.CustomValues[ZzzGuiShellPresetService.ConfigKey] = configured;
+        }
+
+        ZzzGuiShellPresetResolution resolution = new ZzzGuiShellPresetService(backend).Read();
+
+        Assert.True(resolution.Success);
+        Assert.Empty(proxy.SaveRequests);
+    }
+
+    [Fact]
+    public void Read_UnregisteredValue_ReportsErrorAndKeepsConfiguredValue()
+    {
+        IZzzAppBackend backend = DispatchProxy.Create<IZzzAppBackend, PresetBackendProxy>();
+        PresetBackendProxy proxy = (PresetBackendProxy)backend;
+        proxy.CustomValues[ZzzGuiShellPresetService.ConfigKey] = "store-fluent";
+
+        ZzzGuiShellPresetResolution resolution = new ZzzGuiShellPresetService(backend).Read();
+
+        Assert.False(resolution.Success);
+        Assert.Equal(ZzzGuiShellPreset.Frontier, resolution.Preset);
+        Assert.Contains("store-fluent", resolution.Error, StringComparison.Ordinal);
+        Assert.Empty(proxy.SaveRequests);
+    }
+
+    [Theory]
+    [InlineData("classic", ZzzGuiShellPreset.Frontier)]
     [InlineData("mixed", ZzzGuiShellPreset.Frontier)]
     [InlineData("frontier", ZzzGuiShellPreset.Frontier)]
     [InlineData(" FRONTIER ", ZzzGuiShellPreset.Frontier)]
@@ -17,6 +96,19 @@ public sealed class GuiShellPresetTests
 
         Assert.True(success);
         Assert.Equal(expected, actual);
+    }
+
+    [Theory]
+    [InlineData("classic")]
+    [InlineData("mixed")]
+    public void FromValues_LegacyConfiguredValue_ResolvesFrontierWithoutError(string value)
+    {
+        ZzzGuiShellPresetResolution resolution = ZzzGuiShellPresetResolution.FromValues(
+            new Dictionary<string, object?> { [ZzzGuiShellPresetService.ConfigKey] = value });
+
+        Assert.True(resolution.Success);
+        Assert.Equal(ZzzGuiShellPreset.Frontier, resolution.Preset);
+        Assert.Null(resolution.Error);
     }
 
     [Fact]
@@ -41,7 +133,6 @@ public sealed class GuiShellPresetTests
     }
 
     [Theory]
-    [InlineData(ZzzGuiShellPreset.Classic, "classic")]
     [InlineData(ZzzGuiShellPreset.Frontier, "frontier")]
     public void ToConfigValue_MapsEachPresetToPersistentValue(ZzzGuiShellPreset preset, string expected)
     {
@@ -58,14 +149,6 @@ public sealed class GuiShellPresetTests
         Assert.Equal(expected, actual);
     }
 
-    [Theory]
-    [InlineData(ZzzGuiShellPreset.Classic, typeof(MainWindow))]
-    [InlineData(ZzzGuiShellPreset.Frontier, typeof(FrontierShellWindow))]
-    public void ShellWindowFactory_MapsEachPresetToDedicatedWindow(ZzzGuiShellPreset preset, Type expected)
-    {
-        Assert.Equal(expected, ZzzShellWindowFactory.GetWindowType(preset));
-    }
-
     [Fact]
     public void FrontierShellUsesSampleMaterialWithoutLegacyBackdropService()
     {
@@ -73,7 +156,6 @@ public sealed class GuiShellPresetTests
         string frontierCode = File.ReadAllText(Path.Combine(guiRoot, "Views", "FrontierShellWindow.cs"));
         string text = string.Join(
             Environment.NewLine,
-            File.ReadAllText(Path.Combine(guiRoot, "Views", "MainWindow.axaml")),
             File.ReadAllText(Path.Combine(guiRoot, "Views", "FrontierShellWindow.axaml")),
             File.ReadAllText(Path.Combine(guiRoot, "Shell", "ZzzShellWindowRuntime.cs")));
 

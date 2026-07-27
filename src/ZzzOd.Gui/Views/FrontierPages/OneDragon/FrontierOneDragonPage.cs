@@ -6,7 +6,7 @@ using ZzzOd.AppHost.Backend;
 using ZzzOd.Gui.Controls;
 using ZzzOd.Gui.Services.RunIntent;
 using ZzzOd.Gui.Shell;
-using ZzzOd.Gui.Pages.OneDragon;
+using ZzzOd.Gui.PageModels.OneDragon;
 
 namespace ZzzOd.Gui.Views.FrontierPages.OneDragon;
 
@@ -17,8 +17,8 @@ internal sealed partial class FrontierOneDragonPage : UserControl, IZzzPageLifec
     private readonly FrontierOneDragonRunPage _runPage;
     private readonly ZzzGuiOperationTracker _operations;
     private readonly ZzzPageStackHost _runPageStack;
-    private readonly FATabViewItem[] _tabs;
-    private readonly FATabView _pivot;
+    private readonly TabItem[] _tabs;
+    private readonly TabControl _pivot;
     private Control? _activePage;
     private bool _activePageIsShown;
     private bool _isShown;
@@ -39,13 +39,13 @@ internal sealed partial class FrontierOneDragonPage : UserControl, IZzzPageLifec
         ];
 
         AvaloniaXamlLoader.Load(this);
-        _pivot = Required<FATabView>("OneDragonPivot");
+        _pivot = Required<TabControl>("OneDragonPivot");
         _tabs =
         [
-            Required<FATabViewItem>("RunTab"),
-            Required<FATabViewItem>("ChargePlanTab"),
-            Required<FATabViewItem>("PredefinedTeamTab"),
-            Required<FATabViewItem>("SensitivityTab"),
+            Required<TabItem>("RunTab"),
+            Required<TabItem>("ChargePlanTab"),
+            Required<TabItem>("PredefinedTeamTab"),
+            Required<TabItem>("SensitivityTab"),
         ];
 
         Required<FAFrame>("RunFrame").Content = _pages[0];
@@ -63,7 +63,7 @@ internal sealed partial class FrontierOneDragonPage : UserControl, IZzzPageLifec
 
     public string SelectedHeader => Headers[SelectedIndex];
 
-    public string NavigationTargetKind => nameof(FATabView);
+    public string NavigationTargetKind => nameof(TabControl);
 
     internal bool ActiveChildIsShown => _activePageIsShown;
 

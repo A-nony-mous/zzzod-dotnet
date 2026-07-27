@@ -9,7 +9,8 @@ using Xunit;
 using ZzzOd.AppHost;
 using ZzzOd.AppHost.Backend;
 using ZzzOd.GameLogic.Application.RedemptionCode;
-using ZzzOd.Gui.Pages.ApplicationSettings;
+using FrontierRedemptionCodeAppSettingPage = ZzzOd.Gui.Views.FrontierPages.ApplicationSettings.FrontierRedemptionCodeAppSettingPage;
+using ZzzRedemptionCodeRowModel = ZzzOd.Gui.Views.FrontierPages.ApplicationSettings.ZzzRedemptionCodeRowModel;
 
 namespace ZzzOd.GameLogic.Tests.AppHost;
 
@@ -40,28 +41,6 @@ public sealed class RedemptionCodeAppSettingPageTests
 			_battleAssistantRuntimeSource.Dispose();
 			_logProvider.Dispose();
 		}
-	}
-
-	[Fact]
-	public void PageUsesAxamlFluentRowsAndPythonTexts()
-	{
-		string path = FindDirectory();
-		string text = File.ReadAllText(Path.Combine(path, "ZzzRedemptionCodeAppSettingPage.axaml"));
-		string actualString = File.ReadAllText(Path.Combine(path, "ZzzRedemptionCodeAppSettingPage.axaml.cs"));
-		AssertOrder(text, "兑换码", "过期日期", "Delete", "新增");
-		Assert.Contains("fa:FASettingsExpanderItem", text, StringComparison.Ordinal);
-		Assert.Contains("fa:FAInfoBar", text, StringComparison.Ordinal);
-		Assert.Contains("fa:FASymbolIcon", text, StringComparison.Ordinal);
-		Assert.Contains("请输入兑换码", actualString, StringComparison.Ordinal);
-		Assert.Contains("20990101", actualString, StringComparison.Ordinal);
-		Assert.Contains("DateTime.Now", actualString, StringComparison.Ordinal);
-		Assert.Contains("AddDays(30)", actualString, StringComparison.Ordinal);
-		Assert.Contains("兑换码已存在", actualString, StringComparison.Ordinal);
-		Assert.DoesNotContain("ZENLESSGIFT", text, StringComparison.Ordinal);
-		Assert.DoesNotContain("USERCODE", text, StringComparison.Ordinal);
-		Assert.DoesNotContain("new StackPanel", actualString, StringComparison.Ordinal);
-		Assert.DoesNotContain("PageModel", actualString, StringComparison.Ordinal);
-		Assert.DoesNotContain("Python", text, StringComparison.Ordinal);
 	}
 
 	[Fact]
@@ -119,7 +98,7 @@ public sealed class RedemptionCodeAppSettingPageTests
 			{
 				GuiParityAndFacadeTests.RunOnUiThread(delegate
 				{
-					ZzzRedemptionCodeAppSettingPage zzzRedemptionCodeAppSettingPage = new ZzzRedemptionCodeAppSettingPage(session.Backend);
+					FrontierRedemptionCodeAppSettingPage zzzRedemptionCodeAppSettingPage = new FrontierRedemptionCodeAppSettingPage(session.Backend);
 					Assert.Collection(zzzRedemptionCodeAppSettingPage.Rows, delegate(ZzzRedemptionCodeRowModel zzzRedemptionCodeRowModel3)
 					{
 						Assert.Equal("SAMPLE_ONLY", zzzRedemptionCodeRowModel3.Code);
@@ -134,7 +113,7 @@ public sealed class RedemptionCodeAppSettingPageTests
 					});
 					ZzzRedemptionCodeRowModel zzzRedemptionCodeRowModel = zzzRedemptionCodeAppSettingPage.AddRowForTest();
 					Assert.True(zzzRedemptionCodeRowModel.IsNew);
-					Assert.Equal(ZzzRedemptionCodeAppSettingPage.CreateDefaultEndDate(DateTime.Today), int.Parse(zzzRedemptionCodeRowModel.EndDateText, CultureInfo.InvariantCulture));
+					Assert.Equal(FrontierRedemptionCodeAppSettingPage.CreateDefaultEndDate(DateTime.Today), int.Parse(zzzRedemptionCodeRowModel.EndDateText, CultureInfo.InvariantCulture));
 					zzzRedemptionCodeRowModel.Code = "USER2";
 					zzzRedemptionCodeRowModel.EndDateText = "20990103";
 					zzzRedemptionCodeAppSettingPage.CommitRowForTest(zzzRedemptionCodeRowModel);
@@ -164,36 +143,6 @@ public sealed class RedemptionCodeAppSettingPageTests
 		{
 			Directory.Delete(text, recursive: true);
 		}
-	}
-
-	private static void AssertOrder(string text, params string[] markers)
-	{
-		int num = -1;
-		foreach (string text2 in markers)
-		{
-			int num2 = text.IndexOf(text2, StringComparison.Ordinal);
-			Assert.True(num2 > num, "未按顺序找到 " + text2 + "。");
-			num = num2;
-		}
-	}
-
-	private static string FindDirectory()
-	{
-		for (DirectoryInfo directoryInfo = new DirectoryInfo(AppContext.BaseDirectory); directoryInfo != null; directoryInfo = directoryInfo.Parent)
-		{
-			string[] buffer = new string[5];
-			buffer[0] = directoryInfo.FullName;
-			buffer[1] = "src";
-			buffer[2] = "ZzzOd.Gui";
-			buffer[3] = "Pages";
-			buffer[4] = "ApplicationSettings";
-			string text = Path.Combine(buffer);
-			if (Directory.Exists(text))
-			{
-				return text;
-			}
-		}
-		throw new DirectoryNotFoundException("未找到应用设置目录。");
 	}
 
 	private static string CreateRunRootWithCodes()

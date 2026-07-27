@@ -1,94 +1,24 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:fa="using:FluentAvalonia.UI.Controls"
-             x:Class="ZzzOd.Gui.Views.FrontierPages.GameAssistant.FrontierBattleAssistantSettings">
-  <UserControl.Styles>
-    <Style Selector="fa|FASettingsExpander">
-      <Setter Property="MinHeight" Value="48" />
-    </Style>
-    <!-- 内层 TabViewListView 的滚动区自带一份底部分隔线，/template/ 只能穿一层，需要单独关掉。 -->
-    <Style Selector="ScrollViewer /template/ Rectangle#LeftBottomBorderLine">
-      <Setter Property="IsVisible" Value="False" />
-    </Style>
-    <Style Selector="ScrollViewer /template/ Rectangle#RightBottomBorderLine">
-      <Setter Property="IsVisible" Value="False" />
-    </Style>
-    <Style Selector="fa|FATabView#ModeTabs /template/ Rectangle#LeftBottomBorderLine">
-      <Setter Property="IsVisible" Value="False" />
-    </Style>
-    <Style Selector="fa|FATabView#ModeTabs /template/ Rectangle#RightBottomBorderLine">
-      <Setter Property="IsVisible" Value="False" />
-    </Style>
-    <Style Selector="fa|FATabViewItem.battle-mode-tab">
-      <Setter Property="Background" Value="Transparent" />
-      <Setter Property="BorderThickness" Value="0" />
-      <Setter Property="Padding" Value="0" />
-      <Setter Property="HorizontalContentAlignment" Value="Stretch" />
-      <Setter Property="VerticalContentAlignment" Value="Top" />
-    </Style>
-    <Style Selector="fa|FATabViewItem.battle-mode-tab /template/ Border#BottomBorderLine">
-      <Setter Property="IsVisible" Value="False" />
-    </Style>
-    <Style Selector="fa|FATabViewItem.battle-mode-tab /template/ Path#LeftRadiusRenderArc">
-      <Setter Property="IsVisible" Value="False" />
-    </Style>
-    <Style Selector="fa|FATabViewItem.battle-mode-tab /template/ Path#RightRadiusRenderArc">
-      <Setter Property="IsVisible" Value="False" />
-    </Style>
-    <Style Selector="fa|FATabViewItem.battle-mode-tab /template/ Path#SelectedBackgroundPath">
-      <Setter Property="IsVisible" Value="False" />
-    </Style>
-    <Style Selector="fa|FATabViewItem.battle-mode-tab /template/ Border#TabSeparator">
-      <Setter Property="IsVisible" Value="False" />
-    </Style>
-    <Style Selector="fa|FATabViewItem.battle-mode-tab /template/ Border#TabContainerBorder">
-      <Setter Property="Background" Value="Transparent" />
-      <Setter Property="BorderThickness" Value="0" />
-      <Setter Property="Margin" Value="0" />
-      <Setter Property="Padding" Value="0" />
-    </Style>
-    <Style Selector="fa|FATabViewItem.battle-mode-tab Border.battle-mode-indicator">
-      <Setter Property="Opacity" Value="0" />
-    </Style>
-    <Style Selector="fa|FATabViewItem.battle-mode-tab:selected Border.battle-mode-indicator">
-      <Setter Property="Opacity" Value="1" />
-    </Style>
-  </UserControl.Styles>
+             xmlns:local="using:ZzzOd.Gui.PageModels.GameAssistant"
+             x:Class="ZzzOd.Gui.Views.FrontierPages.GameAssistant.FrontierBattleAssistantSettings"
+             x:DataType="local:ZzzBattleAssistantSettingsViewModel">
 
   <Grid>
     <ScrollViewer HorizontalScrollBarVisibility="Disabled"
                   VerticalScrollBarVisibility="Auto">
       <StackPanel Spacing="8" MaxWidth="720" HorizontalAlignment="Left" Margin="16,0,0,0">
         <fa:FAInfoBar x:Name="SettingsErrorBar"
-                    IsOpen="False"
+                    IsOpen="{Binding HasError}"
+                    Message="{Binding LastError}"
                     IsClosable="False"
                     Severity="Error" />
-        <fa:FATabView x:Name="ModeTabs"
-                    TabWidthMode="Equal"
-                    IsAddTabButtonVisible="False"
-                    CanDragTabs="False"
-                    CanReorderTabs="False">
-          <fa:FATabViewItem Header="自动战斗"
-                          IsClosable="False"
+        <TabControl Classes="zzz-pivot" x:Name="ModeTabs">
+          <TabItem Header="自动战斗"
                           Classes="battle-mode-tab"
                           HorizontalContentAlignment="Stretch"
                           VerticalContentAlignment="Top">
-            <fa:FATabViewItem.HeaderTemplate>
-              <DataTemplate>
-                <Grid Height="36" RowDefinitions="*,3">
-                  <TextBlock HorizontalAlignment="Center"
-                             VerticalAlignment="Center"
-                             Text="{Binding}" />
-                  <Border Grid.Row="1"
-                          Classes="battle-mode-indicator"
-                          Width="16"
-                          Height="3"
-                          CornerRadius="2"
-                          HorizontalAlignment="Center"
-                          Background="{DynamicResource AccentFillColorDefaultBrush}" />
-                </Grid>
-              </DataTemplate>
-            </fa:FATabViewItem.HeaderTemplate>
             <StackPanel Spacing="8">
               <fa:FACommandBar x:Name="HelpCommandBar"
                              Height="48"
@@ -126,11 +56,15 @@
                   <StackPanel Orientation="Horizontal"
                               Spacing="8">
                     <fa:FAComboBox x:Name="AutoBattleConfigCombo"
-                                   Width="120" />
+                                   Width="120"
+                                   ItemsSource="{Binding AutoBattleOptions}"
+                                   SelectedItem="{Binding SelectedAutoBattleConfig, Mode=TwoWay}"
+                                   IsEnabled="{Binding BattleValuesAvailable}" />
                     <fa:FACommandBarButton x:Name="DeleteAutoBattleConfigButton"
                                          Width="40"
                                          Label=""
                                          AutomationProperties.Name="删除战斗配置"
+                                         IsEnabled="{Binding CanDeleteAutoBattleConfig}"
                                          Click="OnDeleteAutoBattleConfigClicked">
                       <fa:FACommandBarButton.IconSource>
                         <fa:FASymbolIconSource Symbol="Delete" />
@@ -147,7 +81,9 @@
                 <fa:FASettingsExpander.Footer>
                   <ToggleSwitch x:Name="AutoUltimateToggle"
                                 OnContent="开"
-                                OffContent="关" />
+                                OffContent="关"
+                                IsChecked="{Binding AutoUltimateEnabled, Mode=TwoWay}"
+                                IsEnabled="{Binding BattleValuesAvailable}" />
                 </fa:FASettingsExpander.Footer>
               </fa:FASettingsExpander>
               <fa:FASettingsExpander Header="使用合并配置文件"
@@ -158,32 +94,17 @@
                 <fa:FASettingsExpander.Footer>
                   <ToggleSwitch x:Name="MergedFileToggle"
                                 OnContent="开"
-                                OffContent="关" />
+                                OffContent="关"
+                                IsChecked="{Binding UseMergedFile, Mode=TwoWay}"
+                                IsEnabled="{Binding BattleValuesAvailable}" />
                 </fa:FASettingsExpander.Footer>
               </fa:FASettingsExpander>
             </StackPanel>
-          </fa:FATabViewItem>
-          <fa:FATabViewItem Header="闪避助手"
-                          IsClosable="False"
+          </TabItem>
+          <TabItem Header="闪避助手"
                           Classes="battle-mode-tab"
                           HorizontalContentAlignment="Stretch"
                           VerticalContentAlignment="Top">
-            <fa:FATabViewItem.HeaderTemplate>
-              <DataTemplate>
-                <Grid Height="36" RowDefinitions="*,3">
-                  <TextBlock HorizontalAlignment="Center"
-                             VerticalAlignment="Center"
-                             Text="{Binding}" />
-                  <Border Grid.Row="1"
-                          Classes="battle-mode-indicator"
-                          Width="16"
-                          Height="3"
-                          CornerRadius="2"
-                          HorizontalAlignment="Center"
-                          Background="{DynamicResource AccentFillColorDefaultBrush}" />
-                </Grid>
-              </DataTemplate>
-            </fa:FATabViewItem.HeaderTemplate>
             <fa:FASettingsExpander Header="闪避方式"
                                      HorizontalAlignment="Stretch"
                                      VerticalAlignment="Top">
@@ -194,11 +115,15 @@
                 <StackPanel Orientation="Horizontal"
                             Spacing="8">
                   <fa:FAComboBox x:Name="DodgeConfigCombo"
-                                 Width="120" />
+                                 Width="120"
+                                 ItemsSource="{Binding DodgeOptions}"
+                                 SelectedItem="{Binding SelectedDodgeConfig, Mode=TwoWay}"
+                                 IsEnabled="{Binding BattleValuesAvailable}" />
                   <fa:FACommandBarButton x:Name="DeleteDodgeConfigButton"
                                        Width="40"
                                        Label=""
-                                       AutomationProperties.Name="删除闪避配置"
+                                        AutomationProperties.Name="删除闪避配置"
+                                       IsEnabled="{Binding CanDeleteDodgeConfig}"
                                        Click="OnDeleteDodgeConfigClicked">
                     <fa:FACommandBarButton.IconSource>
                       <fa:FASymbolIconSource Symbol="Delete" />
@@ -207,8 +132,8 @@
                 </StackPanel>
               </fa:FASettingsExpander.Footer>
             </fa:FASettingsExpander>
-          </fa:FATabViewItem>
-        </fa:FATabView>
+          </TabItem>
+        </TabControl>
         <fa:FASettingsExpander Header="GPU运算"
                                  Description="游戏画面掉帧的话 可以不启用">
           <fa:FASettingsExpander.IconSource>
@@ -217,7 +142,9 @@
           <fa:FASettingsExpander.Footer>
             <ToggleSwitch x:Name="GpuToggle"
                           OnContent="开"
-                          OffContent="关" />
+                          OffContent="关"
+                          IsChecked="{Binding FlashClassifierGpu, Mode=TwoWay}"
+                          IsEnabled="{Binding ModelValuesAvailable}" />
           </fa:FASettingsExpander.Footer>
         </fa:FASettingsExpander>
         <fa:FASettingsExpander Header="截图间隔 (秒)"
@@ -231,7 +158,9 @@
                           Maximum="0.1"
                           SmallChange="0.01"
                           SpinButtonPlacementMode="Inline"
-                          Width="140" />
+                          Width="140"
+                          Value="{Binding ScreenshotInterval, Mode=TwoWay}"
+                          IsEnabled="{Binding BattleValuesAvailable}" />
           </fa:FASettingsExpander.Footer>
         </fa:FASettingsExpander>
         <fa:FASettingsExpander Header="操作方式"
@@ -241,7 +170,10 @@
           </fa:FASettingsExpander.IconSource>
           <fa:FASettingsExpander.Footer>
             <fa:FAComboBox x:Name="ControlMethodCombo"
-                           Width="72" />
+                           Width="72"
+                           ItemsSource="{Binding ControlMethodOptions}"
+                           SelectedItem="{Binding SelectedControlMethod, Mode=TwoWay}"
+                           IsEnabled="{Binding BattleValuesAvailable}" />
           </fa:FASettingsExpander.Footer>
         </fa:FASettingsExpander>
       </StackPanel>

@@ -1,17 +1,19 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:fa="using:FluentAvalonia.UI.Controls"
-             xmlns:local="using:ZzzOd.Gui.Views.FrontierPages.DevTools"
-             x:Class="ZzzOd.Gui.Views.FrontierPages.DevTools.FrontierOperationDebugPage">
+             xmlns:local="using:ZzzOd.Gui.PageModels.Devtools"
+             x:Class="ZzzOd.Gui.Views.FrontierPages.DevTools.FrontierOperationDebugPage"
+             x:DataType="local:ZzzOperationDebugSettingsViewModel">
   <UserControl.Styles>
     <Style Selector="ContentControl#LogHost">
-      <Setter Property="Height" Value="220" />
+      <Setter Property="MinHeight" Value="120" />
+      <Setter Property="MaxHeight" Value="220" />
     </Style>
   </UserControl.Styles>
   <ScrollViewer HorizontalScrollBarVisibility="Disabled"
                 VerticalScrollBarVisibility="Auto">
     <StackPanel Margin="{DynamicResource SampleAppPageMargin}"
-                Spacing="10">
+                Spacing="8">
       <fa:FAInfoBar x:Name="ActionBar"
                   IsOpen="False"
                   IsClosable="False"
@@ -20,7 +22,7 @@
       <fa:FASettingsExpander>
         <fa:FASettingsExpander.Header>
           <TextBlock Text="指令调试"
-                     FontSize="20"
+                     FontSize="{DynamicResource ZzzFontSizeSection}"
                      FontWeight="SemiBold" />
         </fa:FASettingsExpander.Header>
 
@@ -35,7 +37,8 @@
               <fa:FAComboBox x:Name="OperationTemplateCombo"
                              MinWidth="300"
                              IsEditable="True"
-                             SelectionChanged="OnOperationTemplateChanged"
+                             ItemsSource="{Binding OperationTemplates}"
+                             SelectedItem="{Binding OperationTemplate, Mode=TwoWay}"
                              LostFocus="OnOperationTemplateLostFocus" />
               <fa:FACommandBar Grid.Column="1"
                              DefaultLabelPosition="Collapsed">
@@ -64,7 +67,8 @@
             <ToggleSwitch x:Name="RepeatToggle"
                           OnContent="开"
                           OffContent="关"
-                          IsCheckedChanged="OnRepeatChanged" />
+                          IsChecked="{Binding RepeatEnabled, Mode=TwoWay}"
+                          IsEnabled="{Binding ValuesAvailable}" />
           </fa:FASettingsExpanderItem.Footer>
         </fa:FASettingsExpanderItem>
 
@@ -76,7 +80,9 @@
           <fa:FASettingsExpanderItem.Footer>
             <fa:FAComboBox x:Name="ControlMethodCombo"
                            MinWidth="220"
-                           SelectionChanged="OnControlMethodChanged">
+                           ItemsSource="{Binding ControlMethodOptions}"
+                           SelectedItem="{Binding SelectedControlMethod, Mode=TwoWay}"
+                           IsEnabled="{Binding ValuesAvailable}">
               <fa:FAComboBox.ItemTemplate>
                 <DataTemplate x:DataType="local:ZzzOperationDebugOption">
                   <TextBlock Text="{Binding Label}" />

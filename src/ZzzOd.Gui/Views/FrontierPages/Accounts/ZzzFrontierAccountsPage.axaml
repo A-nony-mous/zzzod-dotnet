@@ -1,8 +1,9 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:fa="using:FluentAvalonia.UI.Controls"
-             xmlns:accounts="using:ZzzOd.Gui.Pages.Accounts"
-             x:Class="ZzzOd.Gui.Views.FrontierPages.Accounts.ZzzFrontierAccountsPage">
+             xmlns:accounts="using:ZzzOd.Gui.PageModels.Accounts"
+             x:Class="ZzzOd.Gui.Views.FrontierPages.Accounts.ZzzFrontierAccountsPage"
+             x:DataType="accounts:ZzzCurrentAccountSettingsPage">
   <Grid>
     <ScrollViewer Padding="{DynamicResource SampleAppPageMargin}"
                   HorizontalScrollBarVisibility="Disabled"
@@ -13,12 +14,12 @@
               ColumnDefinitions="*,Auto">
           <DockPanel Grid.Column="0">
             <fa:FASymbolIcon Symbol="People"
-                             FontSize="32"
+                             FontSize="{DynamicResource ZzzFontSizeDisplay}"
                              DockPanel.Dock="Left"
                              VerticalAlignment="Center" />
             <TextBlock Margin="12,0,0,0"
                        Text="账户管理"
-                       FontSize="24"
+                       FontSize="{DynamicResource ZzzFontSizeTitle}"
                        FontWeight="SemiBold"
                        VerticalAlignment="Center" />
           </DockPanel>
@@ -27,6 +28,7 @@
                   Content="新增"
                   MinWidth="100"
                   VerticalAlignment="Center"
+                  IsEnabled="{Binding InstanceManagement.CanAdd}"
                   Click="OnAddInstanceClicked" />
         </Grid>
 
@@ -52,7 +54,8 @@
           </fa:FASettingsExpander.IconSource>
 
           <fa:FASettingsExpanderItem x:Name="GamePathItem"
-                                     Content="游戏路径">
+                                     Content="游戏路径"
+                                     Description="{Binding GamePath}">
             <fa:FASettingsExpanderItem.IconSource>
               <fa:FASymbolIconSource Symbol="Folder" />
             </fa:FASettingsExpanderItem.IconSource>
@@ -71,11 +74,11 @@
                           Spacing="8">
                 <TextBox x:Name="CustomWindowTitleInput"
                          Width="214"
-                         LostFocus="OnCustomWindowTitleLostFocus" />
+                         Text="{Binding CustomWindowTitle, Mode=TwoWay, UpdateSourceTrigger=LostFocus}" />
                 <ToggleSwitch x:Name="UseCustomWindowTitleToggle"
                               OnContent=""
                               OffContent=""
-                              Click="OnUseCustomWindowTitleChanged" />
+                              IsChecked="{Binding UseCustomWindowTitle, Mode=TwoWay}" />
               </StackPanel>
             </fa:FASettingsExpanderItem.Footer>
           </fa:FASettingsExpanderItem>
@@ -87,7 +90,8 @@
             <fa:FASettingsExpanderItem.Footer>
               <fa:FAComboBox x:Name="GameRegionCombo"
                              Width="180"
-                             SelectionChanged="OnGameRegionChanged">
+                             ItemsSource="{Binding RegionOptions}"
+                             SelectedItem="{Binding SelectedGameRegion, Mode=TwoWay}">
                 <fa:FAComboBox.ItemTemplate>
                   <DataTemplate x:DataType="accounts:ZzzAccountOption">
                     <TextBlock Text="{Binding Label}" />
@@ -99,20 +103,22 @@
 
           <fa:FASettingsExpanderItem x:Name="AccountItem"
                                      Content="账号"
-                                     Description="所有信息都明文保存在本地">
+                                     Description="所有信息都明文保存在本地"
+                                     IsVisible="{Binding AccountPasswordVisible}">
             <fa:FASettingsExpanderItem.IconSource>
               <fa:FASymbolIconSource Symbol="People" />
             </fa:FASettingsExpanderItem.IconSource>
             <fa:FASettingsExpanderItem.Footer>
               <TextBox x:Name="AccountInput"
                        Width="260"
-                       LostFocus="OnAccountLostFocus" />
+                       Text="{Binding Account, Mode=TwoWay, UpdateSourceTrigger=LostFocus}" />
             </fa:FASettingsExpanderItem.Footer>
           </fa:FASettingsExpanderItem>
 
           <fa:FASettingsExpanderItem x:Name="PasswordItem"
                                      Content="密码"
-                                     Description="请自行妥善管理">
+                                     Description="请自行妥善管理"
+                                     IsVisible="{Binding AccountPasswordVisible}">
             <fa:FASettingsExpanderItem.IconSource>
               <fa:FASymbolIconSource Symbol="Permissions" />
             </fa:FASettingsExpanderItem.IconSource>
@@ -120,14 +126,14 @@
               <TextBox x:Name="PasswordInput"
                        Width="260"
                        PasswordChar="●"
-                       LostFocus="OnPasswordLostFocus" />
+                       Text="{Binding Password, Mode=TwoWay, UpdateSourceTrigger=LostFocus}" />
             </fa:FASettingsExpanderItem.Footer>
           </fa:FASettingsExpanderItem>
 
           <fa:FASettingsExpanderItem x:Name="BilibiliHelpItem"
                                      Content="B服使用提示"
                                      Description="B服请在『设置 - 脚本环境 - 基础』中设置截图方法为BitBit，否则可能无法识别登录框。"
-                                     IsVisible="False">
+                                     IsVisible="{Binding BilibiliVisible}">
             <fa:FASettingsExpanderItem.IconSource>
               <fa:FASymbolIconSource Symbol="Important" />
             </fa:FASettingsExpanderItem.IconSource>
@@ -136,7 +142,7 @@
           <fa:FASettingsExpanderItem x:Name="BilibiliAccountItem"
                                      Content="B服用户名"
                                      Description="B服为选择已有登录记录的用户进行登录，需要先手动登录游戏"
-                                     IsVisible="False">
+                                     IsVisible="{Binding BilibiliVisible}">
             <fa:FASettingsExpanderItem.IconSource>
               <fa:FASymbolIconSource Symbol="People" />
             </fa:FASettingsExpanderItem.IconSource>
@@ -144,7 +150,7 @@
               <TextBox x:Name="BilibiliAccountInput"
                        Width="300"
                        PlaceholderText="填写游戏中切换B服账号时显示的用户名"
-                       LostFocus="OnBilibiliAccountLostFocus" />
+                       Text="{Binding BilibiliAccountName, Mode=TwoWay, UpdateSourceTrigger=LostFocus}" />
             </fa:FASettingsExpanderItem.Footer>
           </fa:FASettingsExpanderItem>
 
@@ -154,6 +160,7 @@
               <ToggleSwitch x:Name="ForceLoginBeforeRunToggle"
                             OnContent=""
                             OffContent=""
+                            IsChecked="{Binding InstanceManagement.ForceLoginBeforeRun, Mode=OneWay}"
                             Click="OnForceLoginBeforeRunChanged" />
             </fa:FASettingsExpanderItem.Footer>
           </fa:FASettingsExpanderItem>
@@ -161,7 +168,8 @@
 
         <fa:FASettingsExpander x:Name="InstanceList"
                                Header="账户列表"
-                               IsExpanded="True">
+                               IsExpanded="True"
+                               ItemsSource="{Binding InstanceManagement.Rows}">
           <fa:FASettingsExpander.IconSource>
             <fa:FASymbolIconSource Symbol="People" />
           </fa:FASettingsExpander.IconSource>

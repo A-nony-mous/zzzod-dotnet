@@ -1,8 +1,9 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:fa="using:FluentAvalonia.UI.Controls"
-             xmlns:local="using:ZzzOd.Gui.Pages.OneDragon"
-             x:Class="ZzzOd.Gui.Views.FrontierPages.OneDragon.FrontierOneDragonRunPage">
+             xmlns:local="using:ZzzOd.Gui.PageModels.OneDragon"
+             x:Class="ZzzOd.Gui.Views.FrontierPages.OneDragon.FrontierOneDragonRunPage"
+             x:DataType="local:ZzzOneDragonRunSettings">
   <UserControl.Styles>
     <Style Selector="ItemsControl#AppList">
       <Setter Property="Cursor" Value="Hand" />
@@ -33,7 +34,8 @@
                 BorderThickness="{DynamicResource ExpanderHeaderBorderThickness}"
                 CornerRadius="{DynamicResource ControlCornerRadius}"
                 ClipToBounds="True">
-        <ItemsControl x:Name="AppList">
+        <ItemsControl x:Name="AppList"
+                      ItemsSource="{Binding AppRows}">
             <ItemsControl.ItemsPanel>
               <ItemsPanelTemplate>
                 <StackPanel Spacing="1" />
@@ -57,12 +59,12 @@
                                 Spacing="4">
                       <Border VerticalAlignment="Center"
                               Padding="8,2"
-                              CornerRadius="10"
+                              CornerRadius="{DynamicResource ControlCornerRadius}"
                               Background="{DynamicResource SubtleFillColorSecondaryBrush}"
                               IsVisible="{Binding IsMigrated}"
                               ToolTip.Tip="该应用已不在默认组，关闭后将从一条龙列表中永久移除">
                         <TextBlock Text="已迁移"
-                                   FontSize="12"
+                                   FontSize="{DynamicResource ZzzFontSizeCaption}"
                                    Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
                       </Border>
                       <Button Width="36"
@@ -154,7 +156,7 @@
               <ToggleSwitch x:Name="NotifyToggle"
                             OnContent=""
                             OffContent=""
-                            Click="OnNotifyToggleClicked" />
+                            IsChecked="{Binding NotifyEnabled, Mode=TwoWay}" />
             </StackPanel>
           </fa:FASettingsExpanderItem.Footer>
         </fa:FASettingsExpanderItem>
@@ -165,7 +167,8 @@
           <fa:FASettingsExpanderItem.Footer>
             <fa:FAComboBox x:Name="InstanceRunCombo"
                            Width="140"
-                           SelectionChanged="OnInstanceRunChanged" />
+                           ItemsSource="{Binding InstanceRunOptions}"
+                           SelectedItem="{Binding InstanceRun, Mode=TwoWay}" />
           </fa:FASettingsExpanderItem.Footer>
         </fa:FASettingsExpanderItem>
         <fa:FASettingsExpanderItem Content="结束后">
@@ -175,7 +178,8 @@
           <fa:FASettingsExpanderItem.Footer>
             <fa:FAComboBox x:Name="AfterDoneCombo"
                            Width="140"
-                           SelectionChanged="OnAfterDoneChanged" />
+                           ItemsSource="{Binding AfterDoneOptions}"
+                           SelectedItem="{Binding AfterDone, Mode=TwoWay}" />
           </fa:FASettingsExpanderItem.Footer>
         </fa:FASettingsExpanderItem>
         </fa:FASettingsExpander>

@@ -13,9 +13,9 @@ internal sealed partial class FrontierGameAssistantPage : UserControl, IZzzPageL
     private static readonly string[] Headers = ["战斗助手", "委托助手"];
     private readonly FrontierBattleAssistantPage _battlePage;
     private readonly FrontierCommissionAssistantPage _commissionPage;
-    private readonly FATabView _pivot;
-    private readonly FATabViewItem _battleTab;
-    private readonly FATabViewItem _commissionTab;
+    private readonly TabControl _pivot;
+    private readonly TabItem _battleTab;
+    private readonly TabItem _commissionTab;
     private Control? _activePage;
     private bool _activePageIsShown;
     private bool _isShown;
@@ -25,11 +25,11 @@ internal sealed partial class FrontierGameAssistantPage : UserControl, IZzzPageL
         _battlePage = new FrontierBattleAssistantPage(backend, runIntent);
         _commissionPage = new FrontierCommissionAssistantPage(backend, runIntent);
         AvaloniaXamlLoader.Load(this);
-        _pivot = this.FindControl<FATabView>("AssistantPivot")
+        _pivot = this.FindControl<TabControl>("AssistantPivot")
             ?? throw new InvalidOperationException("游戏助手缺少 TabView。");
-        _battleTab = this.FindControl<FATabViewItem>("BattleTab")
+        _battleTab = this.FindControl<TabItem>("BattleTab")
             ?? throw new InvalidOperationException("游戏助手缺少战斗助手 TabViewItem。");
-        _commissionTab = this.FindControl<FATabViewItem>("CommissionTab")
+        _commissionTab = this.FindControl<TabItem>("CommissionTab")
             ?? throw new InvalidOperationException("游戏助手缺少委托助手 TabViewItem。");
         FAFrame battleFrame = this.FindControl<FAFrame>("BattleFrame")
             ?? throw new InvalidOperationException("游戏助手缺少战斗助手 Frame。");
@@ -47,7 +47,7 @@ internal sealed partial class FrontierGameAssistantPage : UserControl, IZzzPageL
 
     public string SelectedHeader => Headers[_pivot.SelectedIndex is 1 ? 1 : 0];
 
-    public string NavigationTargetKind => nameof(FATabView);
+    public string NavigationTargetKind => nameof(TabControl);
 
     internal bool ActiveChildIsShown => _activePageIsShown;
 
@@ -74,7 +74,7 @@ internal sealed partial class FrontierGameAssistantPage : UserControl, IZzzPageL
 
     public bool FocusSegment(int index)
     {
-        FATabViewItem? item = index switch
+        TabItem? item = index switch
         {
             0 => _battleTab,
             1 => _commissionTab,

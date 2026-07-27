@@ -1,6 +1,4 @@
-using System.ComponentModel;
 using System.Diagnostics;
-using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.Json;
 using Avalonia.Controls;
@@ -13,77 +11,16 @@ using ZzzOd.AppHost.Backend;
 using ZzzOd.AppHost.Notifications;
 using ZzzOd.Gui.Shell;
 
-using ZzzOd.Gui.Pages.Settings;
-
 namespace ZzzOd.Gui.Views.FrontierPages.Settings;
-
-internal sealed record ZzzPushOption(string Label, string Value)
-{
-    public override string ToString() => Label;
-}
-
-internal sealed class ZzzPushFieldModel : INotifyPropertyChanged
-{
-    private string _value = string.Empty;
-    private ZzzPushOption? _selectedOption;
-
-    public required ZzzPushFieldDescriptor Descriptor { get; init; }
-
-    public string DisplayTitle => Descriptor.Required ? $"{Descriptor.Title} *" : Descriptor.Title;
-
-    public string Placeholder => Descriptor.Placeholder;
-
-    public bool IsCombo => Descriptor.FieldType == ZzzPushFieldType.Combo;
-
-    public bool IsText => !IsCombo;
-
-    public bool AcceptsReturn => Descriptor.FieldType is ZzzPushFieldType.KeyValue or ZzzPushFieldType.CodeEditor;
-
-    public IReadOnlyList<ZzzPushOption> Options { get; init; } = [];
-
-    public string Value
-    {
-        get => _value;
-        set => SetField(ref _value, value ?? string.Empty);
-    }
-
-    public ZzzPushOption? SelectedOption
-    {
-        get => _selectedOption;
-        set
-        {
-            if (SetField(ref _selectedOption, value) && value is not null)
-            {
-                Value = value.Value;
-            }
-        }
-    }
-
-    public event PropertyChangedEventHandler? PropertyChanged;
-
-    private bool SetField<T>(ref T field, T value, [CallerMemberName] string? propertyName = null)
-    {
-        if (EqualityComparer<T>.Default.Equals(field, value))
-        {
-            return false;
-        }
-
-        field = value;
-        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
-        return true;
-    }
-}
 
 internal sealed partial class FrontierPushSettingsPage : UserControl, IZzzPageLifecycle
 {
-    private readonly IZzzAppBackend _backend;
+    private readonly ZzzPushSettingsViewModel _viewModel;
     private readonly IZzzPushNotificationService _pushService;
     private readonly ZzzGuiOperationTracker _operations;
     private readonly FAInfoBar _resultBar;
-    private readonly FAComboBox _proxyCombo;
     private readonly FAComboBox _channelCombo;
     private readonly FAComboBox _emailServiceCombo;
-    private readonly FASettingsExpander _personalProxyItem;
     private readonly FASettingsExpander _curlItem;
     private readonly StackPanel _emailServicePanel;
     private readonly ItemsControl _channelFieldList;
@@ -92,21 +29,19 @@ internal sealed partial class FrontierPushSettingsPage : UserControl, IZzzPageLi
 
     public FrontierPushSettingsPage(IZzzAppBackend backend, IZzzPushNotificationService pushService, ZzzGuiOperationTracker? operations = null)
     {
-        _backend = backend;
         _pushService = pushService;
         _operations = operations ?? new ZzzGuiOperationTracker();
         AvaloniaXamlLoader.Load(this);
 
         _resultBar = Required<FAInfoBar>("ResultBar");
-        _proxyCombo = Required<FAComboBox>("ProxyCombo");
         _channelCombo = Required<FAComboBox>("ChannelCombo");
         _emailServiceCombo = Required<FAComboBox>("EmailServiceCombo");
-        _personalProxyItem = Required<FASettingsExpander>("PersonalProxyItem");
         _curlItem = Required<FASettingsExpander>("CurlItem");
         _emailServicePanel = Required<StackPanel>("EmailServicePanel");
         _channelFieldList = Required<ItemsControl>("ChannelFieldList");
 
-        _proxyCombo.ItemsSource = Options(("不启用", "NONE"), ("个人代理", "PERSONAL"));
+        _viewModel = new ZzzPushSettingsViewModel(backend, pushService, ShowError);
+        DataContext = _viewModel;
         _channelCombo.ItemsSource = _pushService.Channels
             .Select(channel => new ZzzPushOption(channel.ChannelName, channel.ChannelId))
             .ToArray();
@@ -141,43 +76,35 @@ internal sealed partial class FrontierPushSettingsPage : UserControl, IZzzPageLi
 
     public void DisposePage()
     {
+        _viewModel.DisposePage();
     }
 
     internal IReadOnlyList<ZzzPushChannelDescriptor> ChannelsForTest => _pushService.Channels;
 
     internal string GenerateWebhookCurlForTest(string style) => GenerateCurl(style);
 
-    internal void SaveValueForTest(string scope, string key, object? value) => Save(scope, key, value);
+    internal void SaveValueForTest(string scope, string key, object? value) => _viewModel.SaveValue(scope, key, value);
 
     private bool Reload()
     {
         _loading = true;
         _resultBar.IsOpen = false;
-        ZzzBackendResult<ZzzConfigScopeValuesDto> notify = _backend.GetConfigScope("notify");
-        ZzzBackendResult<ZzzConfigScopeValuesDto> push = _backend.GetConfigScope("push");
-        ZzzBackendResult<ZzzConfigScopeValuesDto> env = _backend.GetConfigScope("env");
-        if (!notify.Success || notify.Value is null || !push.Success || push.Value is null || !env.Success || env.Value is null)
+        _viewModel.OnPageShown();
+        if (_viewModel.LastError is not null)
         {
-            ShowError(notify.Error ?? push.Error ?? env.Error ?? "通知设置读取失败。");
             _loading = false;
             return false;
         }
 
-        Required<TextBox>("TitleTextBox").Text = ReadString(notify.Value.Values, "title");
-        Required<ToggleSwitch>("SendImageToggle").IsChecked = ReadBool(push.Value.Values, "send_image");
-        string proxy = ReadString(push.Value.Values, "proxy");
-        Select(_proxyCombo, proxy);
-        Required<TextBox>("PersonalProxyTextBox").Text = ReadString(env.Value.Values, "personal_proxy");
         foreach (ZzzPushFieldModel field in _channelFields.Values.SelectMany(fields => fields))
         {
-            string value = push.Value.Values.TryGetValue(field.Descriptor.Key, out object? raw)
-                ? Convert.ToString(raw, System.Globalization.CultureInfo.InvariantCulture) ?? string.Empty
-                : field.Descriptor.DefaultValue;
+            string value = Convert.ToString(
+                _viewModel.GetPushValue(field.Descriptor.Key, field.Descriptor.DefaultValue),
+                System.Globalization.CultureInfo.InvariantCulture) ?? field.Descriptor.DefaultValue;
             field.Value = value;
             field.SelectedOption = field.Options.FirstOrDefault(option => string.Equals(option.Value, value, StringComparison.Ordinal));
         }
 
-        _personalProxyItem.IsVisible = string.Equals(proxy, "PERSONAL", StringComparison.Ordinal);
         if (_channelCombo.SelectedIndex < 0 && _pushService.Channels.Count > 0)
         {
             _channelCombo.SelectedIndex = 0;
@@ -200,30 +127,13 @@ internal sealed partial class FrontierPushSettingsPage : UserControl, IZzzPageLi
         };
     }
 
-    private void OnTitleChanged(object? sender, RoutedEventArgs args) => Save("notify", "title", (sender as TextBox)?.Text ?? string.Empty);
-
-    private void OnSendImageChanged(object? sender, RoutedEventArgs args) => Save("push", "send_image", (sender as ToggleSwitch)?.IsChecked == true);
-
-    private void OnProxyChanged(object? sender, SelectionChangedEventArgs args)
-    {
-        if (_loading || _proxyCombo.SelectedItem is not ZzzPushOption option)
-        {
-            return;
-        }
-
-        Save("push", "proxy", option.Value);
-        _personalProxyItem.IsVisible = string.Equals(option.Value, "PERSONAL", StringComparison.Ordinal);
-    }
-
-    private void OnPersonalProxyChanged(object? sender, RoutedEventArgs args) => Save("env", "personal_proxy", (sender as TextBox)?.Text ?? string.Empty);
-
     private void OnChannelChanged(object? sender, SelectionChangedEventArgs args) => UpdateChannelFields();
 
     private void OnDynamicTextChanged(object? sender, RoutedEventArgs args)
     {
         if (!_loading && sender is TextBox { DataContext: ZzzPushFieldModel field })
         {
-            Save("push", field.Descriptor.Key, field.Value);
+            _viewModel.SaveValue("push", field.Descriptor.Key, field.Value);
         }
     }
 
@@ -231,7 +141,7 @@ internal sealed partial class FrontierPushSettingsPage : UserControl, IZzzPageLi
     {
         if (!_loading && sender is FAComboBox { DataContext: ZzzPushFieldModel field } && field.SelectedOption is not null)
         {
-            Save("push", field.Descriptor.Key, field.SelectedOption.Value);
+            _viewModel.SaveValue("push", field.Descriptor.Key, field.SelectedOption.Value);
         }
     }
 
@@ -382,7 +292,7 @@ internal sealed partial class FrontierPushSettingsPage : UserControl, IZzzPageLi
 
         field.Value = value;
         field.SelectedOption = field.Options.FirstOrDefault(option => string.Equals(option.Value, value, StringComparison.Ordinal));
-        Save("push", key, value);
+        _viewModel.SaveValue("push", key, value);
     }
 
     private void SetTestButtonsEnabled(bool enabled)
@@ -394,22 +304,14 @@ internal sealed partial class FrontierPushSettingsPage : UserControl, IZzzPageLi
     private void OnHelpClicked(object? sender, RoutedEventArgs args) =>
         Process.Start(new ProcessStartInfo("https://one-dragon.com/zzz/zh/setting_notify.html") { UseShellExecute = true });
 
-    private void Save(string scope, string key, object? value)
+    private void ShowError(string? message)
     {
-        if (_loading)
+        if (string.IsNullOrWhiteSpace(message))
         {
+            _resultBar.IsOpen = false;
             return;
         }
 
-        ZzzBackendResult<ZzzConfigScopeValuesDto> result = _backend.SaveConfigScope(new ZzzSaveConfigScopeRequest(scope, new Dictionary<string, object?> { [key] = value }));
-        if (!result.Success)
-        {
-            ShowError(result.Error ?? "通知设置保存失败。");
-        }
-    }
-
-    private void ShowError(string message)
-    {
         _resultBar.Title = "错误";
         _resultBar.Message = message;
         _resultBar.Severity = FAInfoBarSeverity.Error;
@@ -424,15 +326,7 @@ internal sealed partial class FrontierPushSettingsPage : UserControl, IZzzPageLi
         _resultBar.IsOpen = true;
     }
 
-    private static IReadOnlyList<ZzzPushOption> Options(params (string Label, string Value)[] options) => options.Select(option => new ZzzPushOption(option.Label, option.Value)).ToArray();
-
-    private static void Select(SelectingItemsControl combo, string value) => combo.SelectedItem = combo.ItemsSource?.OfType<ZzzPushOption>().FirstOrDefault(option => string.Equals(option.Value, value, StringComparison.Ordinal));
-
     private static string SelectedValue(SelectingItemsControl combo) => combo.SelectedItem is ZzzPushOption option ? option.Value : string.Empty;
-
-    private static string ReadString(IReadOnlyDictionary<string, object?> values, string key) => values.TryGetValue(key, out object? value) ? Convert.ToString(value, System.Globalization.CultureInfo.InvariantCulture) ?? string.Empty : string.Empty;
-
-    private static bool ReadBool(IReadOnlyDictionary<string, object?> values, string key) => values.TryGetValue(key, out object? value) && Convert.ToBoolean(value, System.Globalization.CultureInfo.InvariantCulture);
 
     private static string Quote(string value, bool powerShell) => powerShell ? $"'{value.Replace("'", "''", StringComparison.Ordinal)}'" : $"'{value.Replace("'", "'\\''", StringComparison.Ordinal)}'";
 

@@ -51,7 +51,7 @@
                     ClipToBounds="True" />
   </Grid>
     <Border x:Name="RunOperationOverlay"
-            Background="#66000000"
+            Background="{DynamicResource ZzzMediaOverlaySubtleBrush}"
             IsVisible="False">
       <fa:FAProgressRing Width="32"
                        Height="32"

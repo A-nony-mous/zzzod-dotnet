@@ -2,7 +2,8 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:fa="using:FluentAvalonia.UI.Controls"
              xmlns:settings="using:ZzzOd.Gui.Views.FrontierPages.Settings"
-             x:Class="ZzzOd.Gui.Views.FrontierPages.Settings.FrontierPushSettingsPage">
+             x:Class="ZzzOd.Gui.Views.FrontierPages.Settings.FrontierPushSettingsPage"
+             x:DataType="settings:ZzzPushSettingsViewModel">
   <ScrollViewer HorizontalScrollBarVisibility="Disabled"
                 VerticalScrollBarVisibility="Auto">
     <StackPanel Margin="{DynamicResource SampleAppPageMargin}"
@@ -26,14 +27,14 @@
           <TextBox x:Name="TitleTextBox"
                    Width="320"
                    PlaceholderText="一条龙运行通知"
-                   LostFocus="OnTitleChanged" />
+                   Text="{Binding Title, Mode=TwoWay, UpdateSourceTrigger=LostFocus}" />
         </fa:FASettingsExpander.Footer>
       </fa:FASettingsExpander>
 
       <fa:FASettingsExpander Header="通知中附带图片">
         <fa:FASettingsExpander.Footer>
           <ToggleSwitch x:Name="SendImageToggle"
-                        Click="OnSendImageChanged" />
+                        IsChecked="{Binding SendImage, Mode=TwoWay}" />
         </fa:FASettingsExpander.Footer>
       </fa:FASettingsExpander>
 
@@ -41,16 +42,18 @@
         <fa:FASettingsExpander.Footer>
           <fa:FAComboBox x:Name="ProxyCombo"
                          Width="200"
-                         SelectionChanged="OnProxyChanged" />
+                         ItemsSource="{Binding ProxyOptions}"
+                         SelectedItem="{Binding SelectedProxy, Mode=TwoWay}" />
         </fa:FASettingsExpander.Footer>
       </fa:FASettingsExpander>
 
       <fa:FASettingsExpander x:Name="PersonalProxyItem"
-                               Header="个人代理地址">
+                               Header="个人代理地址"
+                               IsVisible="{Binding PersonalProxyVisible}">
         <fa:FASettingsExpander.Footer>
           <TextBox x:Name="PersonalProxyTextBox"
                    Width="320"
-                   LostFocus="OnPersonalProxyChanged" />
+                   Text="{Binding PersonalProxy, Mode=TwoWay, UpdateSourceTrigger=LostFocus}" />
         </fa:FASettingsExpander.Footer>
       </fa:FASettingsExpander>
 
@@ -94,14 +97,14 @@
               <fa:FASettingsExpander.Footer>
                 <Grid>
                   <TextBox Width="320"
-                           Text="{Binding Value}"
+                           Text="{Binding Value, Mode=TwoWay}"
                            PlaceholderText="{Binding Placeholder}"
                            AcceptsReturn="{Binding AcceptsReturn}"
                            IsVisible="{Binding IsText}"
                            LostFocus="OnDynamicTextChanged" />
                   <fa:FAComboBox Width="320"
                                  ItemsSource="{Binding Options}"
-                                 SelectedItem="{Binding SelectedOption}"
+                                 SelectedItem="{Binding SelectedOption, Mode=TwoWay}"
                                  IsVisible="{Binding IsCombo}"
                                  SelectionChanged="OnDynamicComboChanged" />
                 </Grid>

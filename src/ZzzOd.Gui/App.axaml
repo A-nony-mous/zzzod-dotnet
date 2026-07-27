@@ -15,5 +15,6 @@
     <sty:FluentAvaloniaTheme PreferSystemTheme="True"
                              PreferUserAccentColor="True" />
     <StyleInclude Source="avares://ZzzOd.Gui/Theme/ZzzComponentStyles.axaml" />
+    <StyleInclude Source="avares://ZzzOd.Gui/Theme/ZzzPivotStyles.axaml" />
   </Application.Styles>
 </Application>

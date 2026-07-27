@@ -42,7 +42,7 @@
 
         <fa:FASettingsExpanderItem Content="截图方法">
           <fa:FASettingsExpanderItem.Footer>
-            <StackPanel Spacing="6">
+            <StackPanel Spacing="8">
               <TextBlock Text="1号大头像：3人组队，目标角色切到1号位" />
               <TextBlock Text="2号小头像：3人组队，目标角色切到2号位" />
               <TextBlock Text="连携头像：触发目标角色连携（头像在左边）" />
@@ -69,7 +69,7 @@
                                      Content="{Binding Name}">
               <fa:FASettingsExpanderItem.Footer>
                 <Grid RowDefinitions="220,Auto"
-                      RowSpacing="10">
+                      RowSpacing="8">
                   <Image Source="{Binding Preview}"
                          Stretch="Uniform" />
                   <fa:FACommandBar Grid.Row="1"

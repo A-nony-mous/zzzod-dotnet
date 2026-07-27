@@ -4,7 +4,6 @@ using System.IO;
 using System.Linq;
 using System.Xml;
 using System.Xml.Linq;
-using Avalonia;
 using Xunit;
 using ZzzOd.Gui.Shell;
 
@@ -16,27 +15,7 @@ namespace ZzzOd.GameLogic.Tests.Audit;
 [Trait("Category", "Audit")]
 public sealed class GuiStaticAuditTests
 {
-	private sealed record GuiAuditResult(IReadOnlyList<string> MissingAxaml, IReadOnlyList<string> DynamicVisualTree, IReadOnlyList<string> HardcodedVisualSurface, IReadOnlyList<string> UnapprovedControls, IReadOnlyList<string> HandwrittenFluentReplacements);
-
-	private static readonly string[] RequiredAxamlFiles = new string[27]
-	{
-		"Views/MainWindow.axaml", "Pages/Home/ZzzHomePage.axaml", "Pages/GameAssistant/ZzzGameAssistantPage.axaml", "Pages/GameAssistant/ZzzBattleAssistantPage.axaml", "Pages/GameAssistant/ZzzCommissionAssistantPage.axaml", "Pages/OneDragon/ZzzOneDragonPage.axaml", "Pages/OneDragon/ZzzOneDragonRunPage.axaml", "Pages/OneDragon/ZzzNotifySettingsPage.axaml", "Pages/OneDragon/ZzzChargePlanPage.axaml", "Pages/OneDragon/ZzzPredefinedTeamPage.axaml",
-		"Pages/OneDragon/ZzzMouseSensitivityCheckerPage.axaml", "Pages/Standalone/ZzzStandaloneAppRunPage.axaml", "Pages/Accounts/ZzzAccountsPage.axaml", "Pages/Settings/ZzzSettingsPage.axaml", "Pages/Settings/ZzzGameSettingsPage.axaml", "Pages/Settings/ZzzOverlaySettingsPage.axaml", "Pages/Settings/ZzzResourceDownloadPage.axaml", "Pages/Settings/ZzzEnvironmentSettingsPage.axaml", "Pages/Settings/ZzzPushSettingsPage.axaml", "Pages/Settings/ZzzCustomSettingsPage.axaml",
-		"Pages/Devtools/ZzzDevtoolsPage.axaml", "Pages/Devtools/ZzzImageAnalysisPage.axaml", "Pages/Devtools/ZzzTemplateHelperPage.axaml", "Pages/Devtools/ZzzScreenManagePage.axaml", "Pages/Devtools/ZzzAgentTemplateGeneratorPage.axaml", "Pages/Devtools/ZzzScreenshotHelperPage.axaml", "Pages/Devtools/ZzzOperationDebugAxamlPage.axaml"
-	};
-
-	/// <summary>
-	/// 审计器应确认纳入范围页面均已迁移，且不存在动态视觉树、硬编码表面和未批准控件。
-	/// </summary>
-	[Fact]
-	public void StaticAuditDetectsCurrentMigrationDebt()
-	{
-		GuiAuditResult guiAuditResult = Scan();
-		Assert.Empty(guiAuditResult.MissingAxaml);
-		Assert.Empty(guiAuditResult.DynamicVisualTree);
-		Assert.Empty(guiAuditResult.HardcodedVisualSurface);
-		Assert.Empty(guiAuditResult.UnapprovedControls);
-	}
+	private sealed record GuiAuditResult(IReadOnlyList<string> HandwrittenFluentReplacements);
 
 	[Fact]
 	public void FrontierShellUsesIndependentSampleMainViewWithoutExplanatoryCopy()
@@ -103,27 +82,18 @@ public sealed class GuiStaticAuditTests
 		{
 			Assert.True(File.Exists(Path.Combine(path, "Theme", fileName)));
 		}
-
-		string pageHost = File.ReadAllText(Path.Combine(path, "Views", "FrontierPageHost.axaml"));
-		Assert.Contains("<ScrollViewer x:Name=\"PageScrollViewer\"", pageHost, StringComparison.Ordinal);
-		Assert.Contains("Padding=\"{DynamicResource SampleAppPageMargin}\"", pageHost, StringComparison.Ordinal);
-		Assert.Contains("<StackPanel x:Name=\"StandardContentStack\"", pageHost, StringComparison.Ordinal);
-		Assert.Contains("Spacing=\"{DynamicResource SampleAppSectionSpacing}\"", pageHost, StringComparison.Ordinal);
-		Assert.Contains("<ContentControl x:Name=\"StandardContent\"", pageHost, StringComparison.Ordinal);
 	}
 
 	[Fact]
-	public void RunToastAndCommandLayoutAreSharedAcrossBothShells()
+	public void RunToastAndCommandLayoutAreSharedAcrossRunHosts()
 	{
 		string root = FindGuiRoot();
-		string classic = File.ReadAllText(Path.Combine(root, "Views", "MainWindow.axaml"));
 		string frontier = File.ReadAllText(Path.Combine(root, "Views", "FrontierMainView.axaml"));
 		string shellRuntime = File.ReadAllText(Path.Combine(root, "Shell", "ZzzShellWindowRuntime.cs"));
 		string runPanel = File.ReadAllText(Path.Combine(root, "Controls", "ZzzRunPanel.axaml"));
 		string componentStyles = File.ReadAllText(Path.Combine(root, "Theme", "ZzzComponentStyles.axaml"));
 		string spacing = File.ReadAllText(Path.Combine(root, "Theme", "ZzzSpacing.axaml"));
 
-		Assert.Contains("x:Name=\"ToastBar\"", classic, StringComparison.Ordinal);
 		Assert.Contains("x:Name=\"ToastBar\"", frontier, StringComparison.Ordinal);
 		Assert.Contains("run.stateChanged", shellRuntime, StringComparison.Ordinal);
 		Assert.Contains("ShowToast", shellRuntime, StringComparison.Ordinal);
@@ -134,8 +104,6 @@ public sealed class GuiStaticAuditTests
 
 		string[] localOverrides =
 		[
-			Path.Combine(root, "Pages", "GameAssistant", "ZzzBattleAssistantPage.axaml"),
-			Path.Combine(root, "Pages", "GameAssistant", "ZzzCommissionAssistantPage.axaml"),
 			Path.Combine(root, "Views", "FrontierPages", "GameAssistant", "FrontierBattleAssistantPage.axaml"),
 			Path.Combine(root, "Views", "FrontierPages", "GameAssistant", "FrontierCommissionAssistantPage.axaml"),
 		];
@@ -186,7 +154,7 @@ public sealed class GuiStaticAuditTests
 			Assert.DoesNotContain("ShowAsync()", source, StringComparison.Ordinal);
 		}
 
-		string editor = File.ReadAllText(Path.Combine(path, "Pages", "ApplicationSettings", "ZzzWorldPatrolLargeMapIconEditorWindow.axaml.cs"));
+		string editor = File.ReadAllText(Path.Combine(path, "Views", "FrontierPages", "WorldPatrol", "FrontierWorldPatrolLargeMapIconEditorWindow.cs"));
 		Assert.Contains("ShowAsync(this)", editor, StringComparison.Ordinal);
 		string dialog = File.ReadAllText(Path.Combine(path, "Services", "Dialogs", "ZzzDialogService.cs"));
 		string shellRuntime = File.ReadAllText(Path.Combine(path, "Shell", "ZzzShellWindowRuntime.cs"));
@@ -194,39 +162,6 @@ public sealed class GuiStaticAuditTests
 		Assert.Contains("FAContentDialog", dialog, StringComparison.Ordinal);
 		Assert.Contains("FAInfoBar", shellRuntime, StringComparison.Ordinal);
 		Assert.Contains("ShowToast", shellRuntime, StringComparison.Ordinal);
-	}
-
-	[Fact]
-	public void FrontierPageFactoryUsesDedicatedRouteViewsAndSampleContainers()
-	{
-		string path = FindGuiRoot();
-		string factory = File.ReadAllText(Path.Combine(path, "Shell", "ZzzFrontierPageFactory.cs"));
-		string views = File.ReadAllText(Path.Combine(path, "Views", "ZzzFrontierPageViews.cs"));
-		string host = File.ReadAllText(Path.Combine(path, "Views", "FrontierPageHost.axaml"));
-		foreach (string viewType in new[]
-		{
-			"FrontierHomePage", "FrontierGameAssistantPage", "FrontierOneDragonPage",
-			"FrontierStandalonePage", "FrontierDevtoolsPage", "FrontierAccountsPage",
-			"FrontierSettingsPage",
-		})
-		{
-			Assert.Contains(viewType, factory + views, StringComparison.Ordinal);
-		}
-
-		Assert.Contains("ScrollViewer x:Name=\"PageScrollViewer\"", host, StringComparison.Ordinal);
-		Assert.Contains("ContentControl x:Name=\"StandardContent\"", host, StringComparison.Ordinal);
-		Assert.Contains("FASettingsExpander", host, StringComparison.Ordinal);
-		Assert.Contains("FATabView", host, StringComparison.Ordinal);
-		Assert.Contains("FACommandBar", host, StringComparison.Ordinal);
-		Assert.Contains("FAInfoBar", host, StringComparison.Ordinal);
-		Assert.DoesNotContain("BackgroundVideoHost", factory + views + host, StringComparison.Ordinal);
-		Assert.DoesNotContain("LibVLC", factory + views + host, StringComparison.Ordinal);
-
-		string worldPatrol = File.ReadAllText(Path.Combine(path, "Pages", "ApplicationSettings", "ZzzWorldPatrolAppSettingPage.axaml"));
-		foreach (string action in new[] { "保存", "回退", "合并", "移除", "移动", "应用", "运行" })
-		{
-			Assert.Contains(action, worldPatrol, StringComparison.Ordinal);
-		}
 	}
 
 	[Fact]
@@ -267,16 +202,16 @@ public sealed class GuiStaticAuditTests
 		Assert.DoesNotContain("_videoTimer", homeCode, StringComparison.Ordinal);
 		Assert.DoesNotContain("RenderNextVideoFrame", homeCode, StringComparison.Ordinal);
 		Assert.DoesNotContain("BackgroundVideoHost", home + homeCode, StringComparison.Ordinal);
-		Assert.Contains("FATabView", oneDragon, StringComparison.Ordinal);
+		Assert.Contains("TabControl", oneDragon, StringComparison.Ordinal);
 		Assert.Contains("FAFrame", oneDragonChildren, StringComparison.Ordinal);
 		Assert.Contains("ScrollViewer", oneDragonChildren, StringComparison.Ordinal);
 		Assert.Contains("FACommandBar", oneDragonChildren, StringComparison.Ordinal);
-		Assert.Contains("FATabView", devtools, StringComparison.Ordinal);
+		Assert.Contains("TabControl", devtools, StringComparison.Ordinal);
 		Assert.Contains("FAFrame", devtools, StringComparison.Ordinal);
 		Assert.Contains("FACommandBar", string.Join(Environment.NewLine,
 			Directory.EnumerateFiles(Path.Combine(path, "Views", "FrontierPages", "DevTools"), "*.axaml")
 				.Select(File.ReadAllText)), StringComparison.Ordinal);
-		Assert.Contains("FATabView", worldPatrol, StringComparison.Ordinal);
+		Assert.Contains("TabControl", worldPatrol, StringComparison.Ordinal);
 		Assert.Contains("FASettingsExpander", worldPatrol, StringComparison.Ordinal);
 		Assert.Contains("FACommandBar", worldPatrol, StringComparison.Ordinal);
 		Assert.Contains("BattleFrame", gameAssistant, StringComparison.Ordinal);
@@ -331,9 +266,9 @@ public sealed class GuiStaticAuditTests
 
 		foreach (string content in new[] { standalone, resourceDownload, environment, push, notoriousHunt, redemptionCode, shiyuDefense })
 		{
-			Assert.DoesNotContain("using:ZzzOd.Gui.Pages.Standalone", content, StringComparison.Ordinal);
-			Assert.DoesNotContain("using:ZzzOd.Gui.Pages.Settings", content, StringComparison.Ordinal);
-			Assert.DoesNotContain("using:ZzzOd.Gui.Pages.ApplicationSettings", content, StringComparison.Ordinal);
+			Assert.DoesNotContain("using:ZzzOd.Gui.PageModels.Standalone", content, StringComparison.Ordinal);
+			Assert.DoesNotContain("using:ZzzOd.Gui.PageModels.Settings", content, StringComparison.Ordinal);
+			Assert.DoesNotContain("using:ZzzOd.Gui.PageModels.ApplicationSettings", content, StringComparison.Ordinal);
 		}
 	}
 
@@ -365,77 +300,6 @@ public sealed class GuiStaticAuditTests
 		})
 		{
 			Assert.Contains(pageType, factory, StringComparison.Ordinal);
-		}
-	}
-
-	[Fact]
-	public void FrontierPagesRetainBaselineNamesAndEventHandlers()
-	{
-		string guiRoot = FindGuiRoot();
-		string frontierRoot = Path.Combine(guiRoot, "Views", "FrontierPages");
-		string classicRoot = Path.Combine(guiRoot, "Pages");
-		HashSet<string> eventAttributes = new(StringComparer.Ordinal)
-		{
-			"Click", "SelectionChanged", "LostFocus", "ValueChanged", "KeyDown", "PointerPressed",
-			"PointerReleased", "PointerMoved", "DragOver", "Drop", "TextChanged", "Checked", "Unchecked",
-		};
-		HashSet<string> intentionallyMovedNames = new(StringComparer.Ordinal)
-		{
-			"BackgroundActionList", "KeyboardKeyList", "GamepadKeyList",
-		};
-
-		foreach (string frontierPath in Directory.EnumerateFiles(frontierRoot, "*.axaml", SearchOption.AllDirectories))
-		{
-			string relative = Path.GetRelativePath(frontierRoot, frontierPath);
-			string directory = Path.GetDirectoryName(relative) ?? string.Empty;
-			if (string.Equals(directory, "DevTools", StringComparison.Ordinal))
-			{
-				directory = "Devtools";
-			}
-
-			string name = Path.GetFileNameWithoutExtension(relative);
-			string classicName = name.Replace("Frontier", "Zzz", StringComparison.Ordinal);
-			if (string.Equals(name, "FrontierWorldPatrolPage", StringComparison.Ordinal))
-			{
-				classicName = "ZzzWorldPatrolAppSettingPage";
-			}
-
-			string classicPath = Path.Combine(classicRoot, directory, classicName + ".axaml");
-			if (!File.Exists(classicPath))
-			{
-				continue;
-			}
-
-			XDocument frontier = XDocument.Load(frontierPath);
-			XDocument classic = XDocument.Load(classicPath);
-			HashSet<string> frontierNames = frontier.Descendants()
-				.SelectMany(element => element.Attributes())
-				.Where(attribute => attribute.Name.LocalName == "Name")
-				.Select(attribute => attribute.Value)
-				.ToHashSet(StringComparer.Ordinal);
-			foreach (string expectedName in classic.Descendants()
-				.SelectMany(element => element.Attributes())
-				.Where(attribute => attribute.Name.LocalName == "Name")
-				.Select(attribute => attribute.Value)
-				.Distinct(StringComparer.Ordinal)
-				.Where(expected => !intentionallyMovedNames.Contains(expected)))
-			{
-				Assert.Contains(expectedName, frontierNames);
-			}
-
-			HashSet<string> frontierHandlers = frontier.Descendants()
-				.SelectMany(element => element.Attributes())
-				.Where(attribute => eventAttributes.Contains(attribute.Name.LocalName))
-				.Select(attribute => attribute.Value)
-				.ToHashSet(StringComparer.Ordinal);
-			foreach (string expectedHandler in classic.Descendants()
-				.SelectMany(element => element.Attributes())
-				.Where(attribute => eventAttributes.Contains(attribute.Name.LocalName))
-				.Select(attribute => attribute.Value)
-				.Distinct(StringComparer.Ordinal))
-			{
-				Assert.Contains(expectedHandler, frontierHandlers);
-			}
 		}
 	}
 
@@ -496,314 +360,6 @@ public sealed class GuiStaticAuditTests
 	}
 
 	/// <summary>
-	/// 游戏助手容器使用 AXAML FluentAvalonia TabView，并固定 BaselineParity 子页顺序。
-	/// </summary>
-	[Fact]
-	public void GameAssistantContainerUsesAxamlFluentPivot()
-	{
-		string path = FindGuiRoot();
-		string text = File.ReadAllText(Path.Combine(path, "Pages", "GameAssistant", "ZzzGameAssistantPage.axaml"));
-		string actualString = File.ReadAllText(Path.Combine(path, "Pages", "GameAssistant", "ZzzGameAssistantPage.cs"));
-		string text2 = File.ReadAllText(Path.Combine(path, "Pages", "ZzzPageFactory.cs"));
-		Assert.Contains("<fa:FATabView", text, StringComparison.Ordinal);
-		Assert.Contains("<fa:FATabViewItem", text, StringComparison.Ordinal);
-		Assert.Contains("Header=\"战斗助手\"", text, StringComparison.Ordinal);
-		Assert.Contains("Header=\"委托助手\"", text, StringComparison.Ordinal);
-		Assert.True(text.IndexOf("Header=\"战斗助手\"", StringComparison.Ordinal) < text.IndexOf("Header=\"委托助手\"", StringComparison.Ordinal));
-		Assert.Contains("x:Name=\"BattleFrame\"", text, StringComparison.Ordinal);
-		Assert.Contains("x:Name=\"CommissionFrame\"", text, StringComparison.Ordinal);
-		Assert.Contains("IsAddTabButtonVisible=\"False\"", text, StringComparison.Ordinal);
-		Assert.Contains("CanDragTabs=\"False\"", text, StringComparison.Ordinal);
-		Assert.Contains("CanReorderTabs=\"False\"", text, StringComparison.Ordinal);
-		Assert.Contains("IZzzPivotNavigationHost", actualString, StringComparison.Ordinal);
-		Assert.Contains("new ZzzGameAssistantPage(_backend, _runIntent)", text2, StringComparison.Ordinal);
-		int num = text2.IndexOf("CreateGameAssistantPage", StringComparison.Ordinal);
-		Assert.DoesNotContain("new ZzzPivotPage", text2.Substring(num, text2.IndexOf("CreateOneDragonPage", StringComparison.Ordinal) - num), StringComparison.Ordinal);
-	}
-
-	/// <summary>
-	/// 一条龙运行页使用 AXAML 左右分栏，并把列表与运行设置放在 BaselineParity 对应区域。
-	/// </summary>
-	[Fact]
-	public void OneDragonRunPageUsesAxamlPythonSplitLayout()
-	{
-		string path = FindGuiRoot();
-		string actualString = File.ReadAllText(Path.Combine(path, "Pages", "OneDragon", "ZzzOneDragonRunPage.axaml"));
-		string actualString2 = File.ReadAllText(Path.Combine(path, "Pages", "OneDragon", "ZzzOneDragonRunPage.cs"));
-		Assert.Contains("ColumnDefinitions=\"*,10,*\"", actualString, StringComparison.Ordinal);
-		Assert.Contains("x:Name=\"AppList\"", actualString, StringComparison.Ordinal);
-		Assert.Contains("<ItemsControl.ItemTemplate>", actualString, StringComparison.Ordinal);
-		Assert.Contains("<fa:FASettingsExpanderItem", actualString, StringComparison.Ordinal);
-		Assert.Contains("Glyph=\"{Binding StatusGlyph}\"", actualString, StringComparison.Ordinal);
-		Assert.Contains("Description=\"{Binding LastRunText}\"", actualString, StringComparison.Ordinal);
-		Assert.Contains("ToolTip.Tip=\"应用设置\"", actualString, StringComparison.Ordinal);
-		Assert.Contains("ToolTip.Tip=\"更多\"", actualString, StringComparison.Ordinal);
-		Assert.Contains("Header=\"通知设置\"", actualString, StringComparison.Ordinal);
-		Assert.Contains("Header=\"移到顶部\"", actualString, StringComparison.Ordinal);
-		Assert.Contains("ToolTip.Tip=\"运行\"", actualString, StringComparison.Ordinal);
-		Assert.Contains("<ToggleSwitch IsChecked=\"{Binding Enabled}\"", actualString, StringComparison.Ordinal);
-		Assert.Contains("Content=\"使用说明\"", actualString, StringComparison.Ordinal);
-		Assert.Contains("Content=\"应用通知\"", actualString, StringComparison.Ordinal);
-		Assert.Contains("Content=\"运行实例\"", actualString, StringComparison.Ordinal);
-		Assert.Contains("Content=\"结束后\"", actualString, StringComparison.Ordinal);
-		Assert.Contains("DragDrop.AllowDrop=\"True\"", actualString, StringComparison.Ordinal);
-		Assert.Contains("PointerMoved=\"OnAppPointerMoved\"", actualString, StringComparison.Ordinal);
-		Assert.Contains("DragDrop.DragOver=\"OnAppDragOver\"", actualString, StringComparison.Ordinal);
-		Assert.Contains("DragDrop.Drop=\"OnAppDrop\"", actualString, StringComparison.Ordinal);
-		Assert.Contains("x:Name=\"AppNotifyTip\"", actualString, StringComparison.Ordinal);
-		Assert.Contains("x:Name=\"AppLifecycleCombo\"", actualString, StringComparison.Ordinal);
-		Assert.Contains("x:Name=\"AppDetailCombo\"", actualString, StringComparison.Ordinal);
-		Assert.Contains("x:Name=\"RunHost\"", actualString, StringComparison.Ordinal);
-		Assert.Contains("new ZzzRunPanel", actualString2, StringComparison.Ordinal);
-		Assert.Contains("SecondaryPageRequested", actualString2, StringComparison.Ordinal);
-		Assert.Contains("SubscribeEvents", actualString2, StringComparison.Ordinal);
-		Assert.Contains("instance.activeChanged", actualString2, StringComparison.Ordinal);
-		Assert.Contains("run.stateChanged", actualString2, StringComparison.Ordinal);
-		Assert.DoesNotContain("new StackPanel", actualString2, StringComparison.Ordinal);
-		Assert.DoesNotContain("new ZzzSettingCard", actualString2, StringComparison.Ordinal);
-	}
-
-	/// <summary>
-	/// 一条龙通知二级页使用 AXAML Fluent 设置项和两列应用通知模板。
-	/// </summary>
-	[Fact]
-	public void OneDragonNotifySettingsUsesAxamlFluentControls()
-	{
-		string path = FindGuiRoot();
-		string actualString = File.ReadAllText(Path.Combine(path, "Pages", "OneDragon", "ZzzNotifySettingsPage.axaml"));
-		Assert.Contains("Text=\"通用\"", actualString, StringComparison.Ordinal);
-		Assert.Contains("Content=\"合并模式失败节点立即通知\"", actualString, StringComparison.Ordinal);
-		Assert.Contains("Text=\"应用通知\"", actualString, StringComparison.Ordinal);
-		Assert.Contains("<UniformGrid Columns=\"2\"", actualString, StringComparison.Ordinal);
-		Assert.Contains("<fa:FAComboBox", actualString, StringComparison.Ordinal);
-		Assert.Contains("SelectedLifecycle", actualString, StringComparison.Ordinal);
-		Assert.Contains("SelectedDetail", actualString, StringComparison.Ordinal);
-	}
-
-	/// <summary>
-	/// 体力计划页使用 AXAML、Fluent 设置组件、ContentDialog 和真实可拖拽模板。
-	/// </summary>
-	[Fact]
-	public void ChargePlanPageUsesAxamlFluentPlanEditor()
-	{
-		string path = FindGuiRoot();
-		string actualString = File.ReadAllText(Path.Combine(path, "Pages", "OneDragon", "ZzzChargePlanPage.axaml"));
-		string actualString2 = File.ReadAllText(Path.Combine(path, "Pages", "OneDragon", "ZzzChargePlanPage.cs"));
-		Assert.Contains("Content=\"体力计划说明\"", actualString, StringComparison.Ordinal);
-		Assert.Contains("Description=\"合理安排每日体力消耗，支持自定义优先级和循环执行\"", actualString, StringComparison.Ordinal);
-		Assert.Contains("Content=\"点此查看指南\"", actualString, StringComparison.Ordinal);
-		Assert.Contains("<fa:FASettingsExpander Header=\"双倍活动\"", actualString, StringComparison.Ordinal);
-		Assert.Contains("<fa:FACommandBar", actualString, StringComparison.Ordinal);
-		Assert.Contains("Label=\"撤销\"", actualString, StringComparison.Ordinal);
-		Assert.Contains("Label=\"删除已完成\"", actualString, StringComparison.Ordinal);
-		Assert.Contains("Label=\"删除所有\"", actualString, StringComparison.Ordinal);
-		Assert.Contains("DragDrop.AllowDrop=\"True\"", actualString, StringComparison.Ordinal);
-		Assert.Contains("x:Key=\"AddPlanDialog\"", actualString, StringComparison.Ordinal);
-		Assert.Contains("Title=\"新增体力计划\"", actualString, StringComparison.Ordinal);
-		Assert.Contains("PrimaryButtonText=\"确定\"", actualString, StringComparison.Ordinal);
-		Assert.Contains("CloseButtonText=\"取消\"", actualString, StringComparison.Ordinal);
-		Assert.DoesNotContain("DefaultPlan", actualString2, StringComparison.Ordinal);
-		Assert.DoesNotContain("new ZzzSettingCard", actualString2, StringComparison.Ordinal);
-		Assert.DoesNotContain("new StackPanel", actualString2, StringComparison.Ordinal);
-	}
-
-	/// <summary>
-	/// 预备编队和灵敏度页面使用独立 AXAML，并保留 BaselineParity 原文与运行面。
-	/// </summary>
-	[Fact]
-	public void PredefinedTeamAndSensitivityUseAxamlFluentControls()
-	{
-		string path = FindGuiRoot();
-		string actualString = File.ReadAllText(Path.Combine(path, "Pages", "OneDragon", "ZzzPredefinedTeamPage.axaml"));
-		string actualString2 = File.ReadAllText(Path.Combine(path, "Pages", "OneDragon", "ZzzPredefinedTeamPage.cs"));
-		string actualString3 = File.ReadAllText(Path.Combine(path, "Pages", "OneDragon", "ZzzMouseSensitivityCheckerPage.axaml"));
-		string actualString4 = File.ReadAllText(Path.Combine(path, "Pages", "OneDragon", "ZzzMouseSensitivityCheckerPage.cs"));
-		string actualString5 = File.ReadAllText(Path.Combine(path, "Pages", "OneDragon", "ZzzOneDragonPages.cs"));
-		Assert.Contains("ColumnDefinitions=\"500,10,*\"", actualString, StringComparison.Ordinal);
-		Assert.Contains("Text=\"战斗配置\"", actualString, StringComparison.Ordinal);
-		Assert.Contains("<fa:FAComboBox", actualString, StringComparison.Ordinal);
-		Assert.Contains("Content=\"预备编队识别\"", actualString, StringComparison.Ordinal);
-		Assert.Contains("Content=\"使用说明\"", actualString, StringComparison.Ordinal);
-		Assert.DoesNotContain("代理人 1", actualString, StringComparison.Ordinal);
-		Assert.DoesNotContain("代理人 2", actualString, StringComparison.Ordinal);
-		Assert.DoesNotContain("代理人 3", actualString, StringComparison.Ordinal);
-		Assert.Contains("AgentEnum.Values", actualString2, StringComparison.Ordinal);
-		Assert.Contains("GetBattleAssistantConfigCatalog()", actualString2, StringComparison.Ordinal);
-		Assert.Contains("ZzzApplicationIds.PredefinedTeamChecker", actualString2, StringComparison.Ordinal);
-		Assert.DoesNotContain("new ZzzSettingCard", actualString2, StringComparison.Ordinal);
-		Assert.DoesNotContain("new StackPanel", actualString2, StringComparison.Ordinal);
-		Assert.Contains("Content=\"使用说明\"", actualString3, StringComparison.Ordinal);
-		Assert.Contains("Description=\"点击「开始」后将自动校准鼠标/手柄的转向灵敏度，用于视角转动\"", actualString3, StringComparison.Ordinal);
-		Assert.Contains("x:Name=\"SensitivityRunHost\"", actualString3, StringComparison.Ordinal);
-		Assert.Contains("ZzzApplicationIds.MouseSensitivityChecker", actualString4, StringComparison.Ordinal);
-		Assert.DoesNotContain("one-dragon.com", actualString3, StringComparison.Ordinal);
-		Assert.DoesNotContain("class ZzzPredefinedTeamPage", actualString5, StringComparison.Ordinal);
-		Assert.DoesNotContain("class ZzzMouseSensitivityCheckerPage", actualString5, StringComparison.Ordinal);
-	}
-
-	/// <summary>
-	/// 战斗助手使用 AXAML BaselineParity 等价左右分栏，并保留真实空闲状态表结构。
-	/// </summary>
-	[Fact]
-	public void BattleAssistantUsesAxamlPythonSplitLayout()
-	{
-		string path = FindGuiRoot();
-		string actualString = File.ReadAllText(Path.Combine(path, "Pages", "GameAssistant", "ZzzBattleAssistantPage.axaml"));
-		string actualString2 = File.ReadAllText(Path.Combine(path, "Pages", "GameAssistant", "ZzzGameAssistantPages.cs"));
-		string spacing = File.ReadAllText(Path.Combine(path, "Theme", "ZzzSpacing.axaml"));
-		Assert.Contains("Margin=\"{DynamicResource SampleAppPageMargin}\"", actualString, StringComparison.Ordinal);
-		Assert.Contains("<Thickness x:Key=\"SampleAppPageMargin\">11</Thickness>", spacing, StringComparison.Ordinal);
-		Assert.Contains("ColumnDefinitions=\"*,12,Auto\"", actualString, StringComparison.Ordinal);
-		Assert.Contains("Width=\"350\"", actualString, StringComparison.Ordinal);
-		Assert.Contains("MinWidth=\"350\"", actualString, StringComparison.Ordinal);
-		Assert.Contains("MaxWidth=\"400\"", actualString, StringComparison.Ordinal);
-		Assert.Contains("x:Name=\"SettingsHost\"", actualString, StringComparison.Ordinal);
-		Assert.Contains("x:Name=\"RunHost\"", actualString, StringComparison.Ordinal);
-		Assert.Contains("x:Name=\"TaskDisplay\"", actualString, StringComparison.Ordinal);
-		Assert.Contains("x:Name=\"BattleStateDisplay\"", actualString, StringComparison.Ordinal);
-		Assert.Contains("Text=\"[触发器]\"", actualString, StringComparison.Ordinal);
-		Assert.Contains("Text=\"[条件集]\"", actualString, StringComparison.Ordinal);
-		Assert.Contains("Text=\"[持续时间]\"", actualString, StringComparison.Ordinal);
-		Assert.Contains("PlaceholderText=\"输入状态关键词过滤...\"", actualString, StringComparison.Ordinal);
-		Assert.Contains("Text=\"触发秒数\"", actualString, StringComparison.Ordinal);
-		Assert.Contains("Text=\"状态值\"", actualString, StringComparison.Ordinal);
-		Assert.Contains("x:Name=\"TaskTriggerValue\"", actualString, StringComparison.Ordinal);
-		Assert.Contains("x:Name=\"TaskExpressionValue\"", actualString, StringComparison.Ordinal);
-		Assert.Contains("x:Name=\"TaskDurationValue\"", actualString, StringComparison.Ordinal);
-		Assert.Contains("x:DataType=\"local:ZzzBattleAssistantStateRowModel\"", actualString, StringComparison.Ordinal);
-		Assert.Contains("Text=\"{Binding TriggerSecondsText}\"", actualString, StringComparison.Ordinal);
-		Assert.Contains("Text=\"{Binding ValueText}\"", actualString, StringComparison.Ordinal);
-		Assert.Contains("GetBattleAssistantRuntime()", actualString2, StringComparison.Ordinal);
-		Assert.Contains("TimeSpan.FromMilliseconds(100)", actualString2, StringComparison.Ordinal);
-		Assert.Contains("SubscribeBattleAssistantOperationLoaded", actualString2, StringComparison.Ordinal);
-		Assert.Contains("UnsubscribeBattleAssistantOperationLoaded", actualString2, StringComparison.Ordinal);
-		Assert.DoesNotContain("等待运行事件", actualString2, StringComparison.Ordinal);
-		Assert.DoesNotContain("Python TaskDisplay 对应区域", actualString2, StringComparison.Ordinal);
-		Assert.DoesNotContain("new ZzzSettingCard(\"任务状态\"", actualString2, StringComparison.Ordinal);
-	}
-
-	/// <summary>
-	/// 战斗助手帮助动作使用 AXAML Fluent CommandBar 和 ContentDialog。
-	/// </summary>
-	[Fact]
-	public void BattleAssistantHelpUsesOfficialCommandBarAndContentDialog()
-	{
-		string path = FindGuiRoot();
-		string actualString = File.ReadAllText(Path.Combine(path, "Pages", "GameAssistant", "ZzzBattleAssistantSettings.axaml"));
-		string text = File.ReadAllText(Path.Combine(path, "Pages", "GameAssistant", "ZzzGameAssistantPages.cs"));
-		Assert.Contains("<fa:FACommandBar", actualString, StringComparison.Ordinal);
-		Assert.Contains("<fa:FACommandBarButton Label=\"如何让AI打得更好？\"", actualString, StringComparison.Ordinal);
-		Assert.Contains("<fa:FACommandBarButton Label=\"查看指南\"", actualString, StringComparison.Ordinal);
-		Assert.Contains("<fa:FACommandBarButton Label=\"前往社区\"", actualString, StringComparison.Ordinal);
-		Assert.Contains("<fa:FAContentDialog", actualString, StringComparison.Ordinal);
-		Assert.Contains("Title=\"使用说明\"", actualString, StringComparison.Ordinal);
-		Assert.Contains("CloseButtonText=\"确认\"", actualString, StringComparison.Ordinal);
-		Assert.Contains("为了让您的自动战斗体验更加顺畅", actualString, StringComparison.Ordinal);
-		Assert.Contains("祝您游戏愉快！", actualString, StringComparison.Ordinal);
-		Assert.Contains("https://one-dragon.com/zzz/zh/feat_game_assistant.html", text, StringComparison.Ordinal);
-		Assert.Contains("https://pd.qq.com/g/onedrag00n", text, StringComparison.Ordinal);
-		int num = text.IndexOf("ZzzBattleAssistantSettings", StringComparison.Ordinal);
-		Assert.DoesNotContain("ZzzMultiPushSettingCard", text.Substring(num, text.IndexOf("ZzzCommissionAssistantSettings", StringComparison.Ordinal) - num), StringComparison.Ordinal);
-	}
-
-	/// <summary>
-	/// 战斗与闪避配置使用真实目录门面和官方删除命令，不向空目录追加当前值。
-	/// </summary>
-	[Fact]
-	public void BattleAssistantCatalogUsesBackendAndOfficialDeleteCommands()
-	{
-		string path = FindGuiRoot();
-		string actualString = File.ReadAllText(Path.Combine(path, "Pages", "GameAssistant", "ZzzBattleAssistantSettings.axaml"));
-		string actualString2 = File.ReadAllText(Path.Combine(path, "Pages", "GameAssistant", "ZzzGameAssistantPages.cs"));
-		Assert.Contains("x:Name=\"DeleteAutoBattleConfigButton\"", actualString, StringComparison.Ordinal);
-		Assert.Contains("x:Name=\"DeleteDodgeConfigButton\"", actualString, StringComparison.Ordinal);
-		Assert.Contains("<fa:FACommandBarButton", actualString, StringComparison.Ordinal);
-		Assert.Contains("GetBattleAssistantConfigCatalog()", actualString2, StringComparison.Ordinal);
-		Assert.Contains("DeleteBattleAssistantConfig", actualString2, StringComparison.Ordinal);
-		Assert.DoesNotContain("values.Add(currentValue)", actualString2, StringComparison.Ordinal);
-		Assert.DoesNotContain("new AutoBattleConfigProvider", actualString2, StringComparison.Ordinal);
-	}
-
-	/// <summary>
-	/// 战斗助手设置项由 AXAML 官方 Fluent 控件声明，并直接绑定真实 scope。
-	/// </summary>
-	[Fact]
-	public void BattleAssistantSettingsUseAxamlFluentControlsAndRealScopes()
-	{
-		string path = FindGuiRoot();
-		string actualString = File.ReadAllText(Path.Combine(path, "Pages", "GameAssistant", "ZzzBattleAssistantSettings.axaml"));
-		string text = File.ReadAllText(Path.Combine(path, "Pages", "GameAssistant", "ZzzGameAssistantPages.cs"));
-		int num = text.IndexOf("internal sealed partial class ZzzBattleAssistantSettings", StringComparison.Ordinal);
-		string actualString2 = text.Substring(num, text.IndexOf("internal sealed partial class ZzzCommissionAssistantSettings", StringComparison.Ordinal) - num);
-		Assert.Contains("<fa:FASettingsExpanderItem Content=\"终结技一好就放\"", actualString, StringComparison.Ordinal);
-		Assert.Contains("<fa:FASettingsExpanderItem Content=\"使用合并配置文件\"", actualString, StringComparison.Ordinal);
-		Assert.Contains("<fa:FASettingsExpanderItem Content=\"GPU运算\"", actualString, StringComparison.Ordinal);
-		Assert.Contains("<fa:FANumberBox x:Name=\"ScreenshotIntervalNumber\"", actualString, StringComparison.Ordinal);
-		Assert.Contains("Minimum=\"0.02\"", actualString, StringComparison.Ordinal);
-		Assert.Contains("Maximum=\"0.1\"", actualString, StringComparison.Ordinal);
-		Assert.Contains("<fa:FAComboBox x:Name=\"ControlMethodCombo\"", actualString, StringComparison.Ordinal);
-		Assert.Contains("GetConfigScope(\"battle-assistant\")", actualString2, StringComparison.Ordinal);
-		Assert.Contains("GetConfigScope(\"model\")", actualString2, StringComparison.Ordinal);
-		Assert.Contains("SaveConfigScope", actualString2, StringComparison.Ordinal);
-		Assert.Contains("string.Equals(evidenceTab, \"闪避助手\"", actualString2, StringComparison.Ordinal);
-		Assert.DoesNotContain("BuildAutoBattleSettings", actualString2, StringComparison.Ordinal);
-		Assert.DoesNotContain("ZzzBackendConfigBinding", actualString2, StringComparison.Ordinal);
-		Assert.DoesNotContain("ZzzComboBoxSettingCard", actualString2, StringComparison.Ordinal);
-	}
-
-	/// <summary>
-	/// 战斗助手模式切换由 AXAML TabView 和代码中的同一控件状态驱动。
-	/// </summary>
-	[Fact]
-	public void BattleAssistantModeUsesTabViewBinding()
-	{
-		string path = FindGuiRoot();
-		string axaml = File.ReadAllText(Path.Combine(path, "Pages", "GameAssistant", "ZzzBattleAssistantSettings.axaml"));
-		string source = File.ReadAllText(Path.Combine(path, "Pages", "GameAssistant", "ZzzGameAssistantPages.cs"));
-		Assert.Contains("<fa:FATabView x:Name=\"ModeTabs\"", axaml, StringComparison.Ordinal);
-		Assert.Contains("FindControl<FATabView>(\"ModeTabs\")", source, StringComparison.Ordinal);
-		Assert.Contains("_modeTabs.SelectionChanged += OnModeSelectionChanged", source, StringComparison.Ordinal);
-		Assert.Contains("_modeTabs.SelectedIndex != 1", source, StringComparison.Ordinal);
-		Assert.DoesNotContain("AutoBattleModeButton", source, StringComparison.Ordinal);
-		Assert.DoesNotContain("DodgeAssistantModeButton", source, StringComparison.Ordinal);
-		Assert.DoesNotContain("AutoBattleModeContent", source, StringComparison.Ordinal);
-		Assert.DoesNotContain("DodgeAssistantModeContent", source, StringComparison.Ordinal);
-		Assert.DoesNotContain("AutoUltimateToggleLabel", source, StringComparison.Ordinal);
-		Assert.DoesNotContain("MergedFileToggleLabel", source, StringComparison.Ordinal);
-		Assert.DoesNotContain("GpuToggleLabel", source, StringComparison.Ordinal);
-	}
-
-	/// <summary>
-	/// 委托助手使用 AXAML 两列设置区、真实配置 scope 和 BaselineParity 原文。
-	/// </summary>
-	[Fact]
-	public void CommissionAssistantUsesAxamlTwoColumnLayoutAndRealConfig()
-	{
-		string path = FindGuiRoot();
-		string actualString = File.ReadAllText(Path.Combine(path, "Pages", "GameAssistant", "ZzzCommissionAssistantPage.axaml"));
-		string actualString2 = File.ReadAllText(Path.Combine(path, "Pages", "GameAssistant", "ZzzCommissionAssistantSettings.axaml"));
-		string text = File.ReadAllText(Path.Combine(path, "Pages", "GameAssistant", "ZzzGameAssistantPages.cs"));
-		string actualString3 = text.Substring(text.IndexOf("internal sealed partial class ZzzCommissionAssistantSettings", StringComparison.Ordinal));
-		Assert.Contains("RowDefinitions=\"*,12,Auto\"", actualString, StringComparison.Ordinal);
-		Assert.Contains("ColumnDefinitions=\"*,12,*\"", actualString2, StringComparison.Ordinal);
-		Assert.Contains("Content=\"使用说明\"", actualString2, StringComparison.Ordinal);
-		Assert.Contains("Content=\"点此查看指南\"", actualString2, StringComparison.Ordinal);
-		Assert.Contains("Content=\"对话点击间隔(秒)\"", actualString2, StringComparison.Ordinal);
-		Assert.Contains("Maximum=\"10\"", actualString2, StringComparison.Ordinal);
-		Assert.Contains("SmallChange=\"0.05\"", actualString2, StringComparison.Ordinal);
-		Assert.Contains("当画面检测不到任何内容时, 开启下一轮检测的等待时间", actualString2, StringComparison.Ordinal);
-		Assert.Contains("Content=\"自动闪避开关\"", actualString2, StringComparison.Ordinal);
-		Assert.Contains("Content=\"自动战斗开关\"", actualString2, StringComparison.Ordinal);
-		Assert.Contains("x:Name=\"DodgeSwitchKeyBox\"", actualString2, StringComparison.Ordinal);
-		Assert.Contains("x:Name=\"AutoBattleSwitchKeyBox\"", actualString2, StringComparison.Ordinal);
-		Assert.Contains("GetConfigScope(", actualString3, StringComparison.Ordinal);
-		Assert.Contains("\"commission-assistant\"", actualString3, StringComparison.Ordinal);
-		Assert.Contains("GetBattleAssistantConfigCatalog()", actualString3, StringComparison.Ordinal);
-		Assert.DoesNotContain("ZzzBackendConfigBinding", actualString3, StringComparison.Ordinal);
-		Assert.DoesNotContain("ZzzVerticalScrollPage.CreateStack", actualString3, StringComparison.Ordinal);
-	}
-
-	/// <summary>
 	/// 共享运行面和日志使用 AXAML，且不再接受伪造截图运行状态。
 	/// </summary>
 	[Fact]
@@ -839,19 +395,7 @@ public sealed class GuiStaticAuditTests
 	}
 
 	[Fact]
-	public void ShellPageHostExposesSharedRouteLifecycleAndBackNavigationContract()
-	{
-		Assert.True(typeof(IZzzShellPageHost).IsAssignableFrom(typeof(ZzzShellPageHost)));
-		string path = FindGuiRoot();
-		string text = File.ReadAllText(Path.Combine(path, "Shell", "ZzzShellPageHost.cs"));
-		Assert.Contains("Dictionary<string, Control> _pageCache", text, StringComparison.Ordinal);
-		Assert.Contains("ZzzPageLifecycleService", text, StringComparison.Ordinal);
-		Assert.Contains("IZzzShellBackNavigationHost", text, StringComparison.Ordinal);
-		Assert.Contains("NavigateToRequestedTarget", text, StringComparison.Ordinal);
-	}
-
-	[Fact]
-	public void ClassicShellKeepsPythonPrimaryAndFooterNavigationOrder()
+	public void NavigationRegistryKeepsPythonPrimaryAndFooterNavigationOrder()
 	{
 		ZzzNavigationRegistry registry = new ZzzNavigationRegistry();
 		Assert.Equal(
@@ -864,155 +408,20 @@ public sealed class GuiStaticAuditTests
 		Assert.All(registry.Entries, entry => Assert.False(string.IsNullOrWhiteSpace(entry.AccessibleName)));
 	}
 
-	[Fact]
-	public void ClassicShellTitleBarUsesProjectInstanceVersionsIssueAndWindowControls()
-	{
-		string path = FindGuiRoot();
-		string window = File.ReadAllText(Path.Combine(path, "Views", "MainWindow.axaml"));
-		string viewModel = File.ReadAllText(Path.Combine(path, "Shell", "ZzzShellViewModel.cs"));
-		Assert.Contains("Text=\"{Binding WindowTitle}\"", window, StringComparison.Ordinal);
-		Assert.Contains("Content=\"{Binding LauncherVersionText}\"", window, StringComparison.Ordinal);
-		Assert.Contains("Content=\"{Binding CodeVersionText}\"", window, StringComparison.Ordinal);
-		Assert.Contains("Text=\"问题反馈\"", window, StringComparison.Ordinal);
-		Assert.Contains("OnMinimizeClicked", window, StringComparison.Ordinal);
-		Assert.Contains("OnMaximizeClicked", window, StringComparison.Ordinal);
-		Assert.Contains("OnCloseClicked", window, StringComparison.Ordinal);
-		Assert.Contains("GetCurrentInstance()", viewModel, StringComparison.Ordinal);
-		Assert.Contains("_issueUrl", viewModel, StringComparison.Ordinal);
-	}
-
-	[Fact]
-	public void ClassicHomeUsesRealMediaAnnouncementsAndProductActions()
-	{
-		string path = FindGuiRoot();
-		string home = File.ReadAllText(Path.Combine(path, "Pages", "Home", "ZzzHomePage.axaml"));
-		string homeCode = File.ReadAllText(Path.Combine(path, "Pages", "Home", "ZzzHomePage.cs"));
-		Assert.Contains("x:Name=\"StartButton\"", home, StringComparison.Ordinal);
-		Assert.Contains("x:Name=\"HomeLinkButton\"", home, StringComparison.Ordinal);
-		Assert.Contains("x:Name=\"GithubLinkButton\"", home, StringComparison.Ordinal);
-		Assert.Contains("GetDashboardMediaAsync", homeCode, StringComparison.Ordinal);
-		Assert.Contains("ZzzNoticeCard", home, StringComparison.Ordinal);
-	}
-
-	[Fact]
-	public void ShellResourcesStayIsolatedFromClassicWindow()
-	{
-		string path = FindGuiRoot();
-		string classic = File.ReadAllText(Path.Combine(path, "Views", "MainWindow.axaml"));
-		Assert.Contains("Theme/ClassicShellResources.axaml", classic, StringComparison.Ordinal);
-		Assert.DoesNotContain("Theme/MixedShellResources.axaml", classic, StringComparison.Ordinal);
-		Assert.DoesNotContain("Theme/FrontierShellResources.axaml", classic, StringComparison.Ordinal);
-	}
-
 	/// <summary>
-	/// 首页路由使用零边距和标题栏首页样式，离开首页恢复 BaselineParity 普通页面边距。
+	/// Fluent Pivot 必须复用原生 TabControl 主题，并让两层 Frame 拉伸实际页面。
 	/// </summary>
 	[Fact]
-	public void MainWindowSwitchesPythonEquivalentHomeModeState()
-	{
-		ZzzShellRouteVisualState zzzShellRouteVisualState = ZzzShellRouteVisualState.ForRoute("home");
-		ZzzShellRouteVisualState zzzShellRouteVisualState2 = ZzzShellRouteVisualState.ForRoute("settings");
-		Assert.True(zzzShellRouteVisualState.IsHomeMode);
-		Assert.Equal(new Thickness(0.0), zzzShellRouteVisualState.ContentMargin);
-		Assert.False(zzzShellRouteVisualState2.IsHomeMode);
-		Assert.Equal(new Thickness(11.0, 32.0, 11.0, 0.0), zzzShellRouteVisualState2.ContentMargin);
-		string path = FindGuiRoot();
-		string actualString = File.ReadAllText(Path.Combine(path, "Views", "MainWindow.axaml"));
-		string actualString2 = File.ReadAllText(Path.Combine(path, "Views", "MainWindow.cs"));
-		string actualString3 = File.ReadAllText(Path.Combine(path, "Theme", "ZzzComponentStyles.axaml"));
-		Assert.Contains("Classes=\"zzz-titlebar\"", actualString, StringComparison.Ordinal);
-		Assert.Contains("_pageHost.RouteChanged += OnRouteChanged", actualString2, StringComparison.Ordinal);
-		Assert.Contains("_titleBar.Classes.Set(\"home-mode\", state.IsHomeMode)", actualString2, StringComparison.Ordinal);
-		Assert.Contains("Grid.zzz-titlebar.home-mode TextBlock.zzz-titlebar-title", actualString3, StringComparison.Ordinal);
-		Assert.Contains("Grid.zzz-titlebar.home-mode Button.zzz-titlebar-action", actualString3, StringComparison.Ordinal);
-		Assert.Contains("Grid.zzz-titlebar.home-mode Button.zzz-window-control", actualString3, StringComparison.Ordinal);
-		Assert.Contains("<DropShadowDirectionEffect", actualString3, StringComparison.Ordinal);
-	}
-
-	/// <summary>
-	/// 首页主体使用 AXAML、Fluent icon button、TeachingTip、ContentDialog 和 NoticeCard 复合模块。
-	/// </summary>
-	[Fact]
-	public void HomePageUsesAxamlFluentComposition()
-	{
-		string path = FindGuiRoot();
-		string text = File.ReadAllText(Path.Combine(path, "Pages", "Home", "ZzzHomePage.axaml"));
-		string actualString = File.ReadAllText(Path.Combine(path, "Pages", "Home", "ZzzHomePage.cs"));
-		string actualString2 = File.ReadAllText(Path.Combine(path, "Theme", "ZzzComponentStyles.axaml"));
-		string text2 = File.ReadAllText(Path.Combine(path, "Controls", "Home", "ZzzNoticeCard.axaml"));
-		string actualString3 = File.ReadAllText(Path.Combine(path, "Controls", "Home", "ZzzNoticeCard.axaml.cs"));
-		Assert.Contains("<home:ZzzNoticeCard", text, StringComparison.Ordinal);
-		Assert.Contains("<fa:FASymbolIcon Symbol=\"Home\"", text, StringComparison.Ordinal);
-		Assert.Contains("<fa:FAPathIcon", text, StringComparison.Ordinal);
-		Assert.Contains("<fa:FASymbolIcon Symbol=\"Library\"", text, StringComparison.Ordinal);
-		Assert.Contains("<fa:FASymbolIcon Symbol=\"Message\"", text, StringComparison.Ordinal);
-		Assert.True(text.IndexOf("x:Name=\"HomeLinkButton\"", StringComparison.Ordinal) < text.IndexOf("x:Name=\"GithubLinkButton\"", StringComparison.Ordinal));
-		Assert.True(text.IndexOf("x:Name=\"GithubLinkButton\"", StringComparison.Ordinal) < text.IndexOf("x:Name=\"DocsLinkButton\"", StringComparison.Ordinal));
-		Assert.True(text.IndexOf("x:Name=\"DocsLinkButton\"", StringComparison.Ordinal) < text.IndexOf("x:Name=\"ChannelLinkButton\"", StringComparison.Ordinal));
-		Assert.Contains("<fa:FATeachingTip", text, StringComparison.Ordinal);
-		Assert.Contains("<fa:FAContentDialog", text, StringComparison.Ordinal);
-		Assert.Contains("Title=\"运行前检查\"", text, StringComparison.Ordinal);
-		Assert.Contains("PrimaryButtonText=\"前往配置\"", text, StringComparison.Ordinal);
-		Assert.Contains("CloseButtonText=\"仍然继续\"", text, StringComparison.Ordinal);
-		Assert.Contains("Text=\"以下配置项未就绪，可能影响正常运行：\"", text, StringComparison.Ordinal);
-		Assert.Contains("MinWidth=\"420\"", text, StringComparison.Ordinal);
-		Assert.Contains("Classes=\"zzz-home-start\"", text, StringComparison.Ordinal);
-		Assert.Contains("x:Name=\"StartButtonIcon\"", text, StringComparison.Ordinal);
-		Assert.Contains("Symbol=\"PlayFilled\"", text, StringComparison.Ordinal);
-		Assert.Contains("Height=\"48\"", text, StringComparison.Ordinal);
-		Assert.Contains("MinWidth=\"180\"", text, StringComparison.Ordinal);
-		Assert.Contains("CornerRadius\" Value=\"24\"", actualString2, StringComparison.Ordinal);
-		Assert.Contains("ZzzHomeStartBackgroundBrush", actualString2, StringComparison.Ordinal);
-		Assert.Contains("ZzzHomeStartForegroundBrush", actualString2, StringComparison.Ordinal);
-		Assert.Contains("ButtonBackgroundPointerOver", actualString, StringComparison.Ordinal);
-		Assert.Contains("ButtonForegroundPointerOver", actualString, StringComparison.Ordinal);
-		Assert.Contains("FASymbol.PlayFilled : FASymbol.Settings", actualString, StringComparison.Ordinal);
-		Assert.Contains("Width=\"589\"", text2, StringComparison.Ordinal);
-		Assert.Contains("Width=\"225\"", text2, StringComparison.Ordinal);
-		Assert.Contains("<fa:FATabView", text2, StringComparison.Ordinal);
-		Assert.Contains("SelectedIndex=\"2\"", text2, StringComparison.Ordinal);
-		Assert.Contains("IsAddTabButtonVisible=\"False\"", text2, StringComparison.Ordinal);
-		Assert.Equal(4, text2.Split("IsClosable=\"False\"").Length - 1);
-		Assert.Contains("Text=\"{Binding Title}\"", text2, StringComparison.Ordinal);
-		Assert.Contains("Text=\"{Binding Date}\"", text2, StringComparison.Ordinal);
-		Assert.Contains("SelectionChanged=\"OnPostSelectionChanged\"", text2, StringComparison.Ordinal);
-		Assert.Contains("Title=\"公告加载失败\"", text2, StringComparison.Ordinal);
-		Assert.Contains("_failureInfoBar.Message = FailureMessage", actualString3, StringComparison.Ordinal);
-		Assert.Contains("_failureInfoBar.IsOpen = true", actualString3, StringComparison.Ordinal);
-		Assert.DoesNotContain("new StackPanel", actualString, StringComparison.Ordinal);
-		Assert.DoesNotContain("new Border", actualString, StringComparison.Ordinal);
-		Assert.DoesNotContain("new Button", actualString, StringComparison.Ordinal);
-		Assert.DoesNotContain("new TextBlock", actualString, StringComparison.Ordinal);
-		Assert.DoesNotContain("zzz-home-media-scrim", text, StringComparison.Ordinal);
-		string actualString4 = text + Environment.NewLine + text2;
-		string[] array = new string[12]
-		{
-			"readiness", "宿主模式", "业务上下文", "应用注册", "窗口就绪", "模型就绪", "PageModel", "链接来源", "实现说明", "对应 Python",
-			"Python 页面", "来源说明"
-		};
-		foreach (string expectedSubstring in array)
-		{
-			Assert.DoesNotContain(expectedSubstring, actualString4, StringComparison.OrdinalIgnoreCase);
-		}
-	}
-
-	/// <summary>
-	/// Fluent Pivot 必须复用官方 TabView 主题，并让两层 Frame 拉伸实际页面。
-	/// </summary>
-	[Fact]
-	public void FluentPivotUsesBaseTabViewThemeAndStretchFrames()
+	public void FluentPivotUsesNativeTabControlThemeAndStretchFrames()
 	{
 		string path = FindGuiRoot();
 		string actualString = File.ReadAllText(Path.Combine(path, "Controls", "ZzzPivotPage.cs"));
 		string actualString2 = File.ReadAllText(Path.Combine(path, "Controls", "ZzzPageStackHost.axaml"));
-		string actualString3 = File.ReadAllText(Path.Combine(path, "Views", "MainWindow.axaml"));
-		Assert.Contains("StyleKeyOverride => typeof(FATabView)", actualString, StringComparison.Ordinal);
-		Assert.Contains("((IList)TabItems).Add(tabItem)", actualString, StringComparison.Ordinal);
+		Assert.Contains("StyleKeyOverride => typeof(TabControl)", actualString, StringComparison.Ordinal);
+		Assert.Contains("ItemsSource = _tabItems", actualString, StringComparison.Ordinal);
 		Assert.DoesNotContain("_compatibilityFrame", actualString, StringComparison.Ordinal);
 		Assert.Contains("HorizontalContentAlignment=\"Stretch\"", actualString2, StringComparison.Ordinal);
 		Assert.Contains("VerticalContentAlignment=\"Stretch\"", actualString2, StringComparison.Ordinal);
-		Assert.Contains("HorizontalContentAlignment=\"Stretch\"", actualString3, StringComparison.Ordinal);
-		Assert.Contains("VerticalContentAlignment=\"Stretch\"", actualString3, StringComparison.Ordinal);
 	}
 
 	/// <summary>
@@ -1035,29 +444,6 @@ public sealed class GuiStaticAuditTests
 	private static GuiAuditResult Scan()
 	{
 		string guiRoot = FindGuiRoot();
-		string path = Path.Combine(guiRoot, "Pages");
-		List<string> missingAxaml = RequiredAxamlFiles.Where((string relativePath) => !File.Exists(Path.Combine(guiRoot, relativePath.Replace('/', Path.DirectorySeparatorChar)))).ToList();
-		List<string> list = new List<string>();
-		List<string> list2 = new List<string>();
-		List<string> list3 = new List<string>();
-		IEnumerable<string> enumerable = Directory.EnumerateFiles(path, "*.cs", SearchOption.AllDirectories).Append(Path.Combine(guiRoot, "Views", "MainWindow.cs"));
-		foreach (string item2 in enumerable)
-		{
-			string text = File.ReadAllText(item2);
-			string item = Normalize(Path.GetRelativePath(guiRoot, item2));
-			if (ContainsAny(text, "new StackPanel", "new Border", "new Button", "new TextBox", "new ComboBox", "new NumericUpDown"))
-			{
-				list.Add(item);
-			}
-			if (ContainsAny(text, "Background = Brushes.", "CornerRadius =", "BorderBrush = Brushes."))
-			{
-				list2.Add(item);
-			}
-			if (ContainsAny(text, "new ComboBox", "new NumericUpDown", "ComboBox = new", "NumericUpDown = new"))
-			{
-				list3.Add(item);
-			}
-		}
 		string path2 = Path.Combine(guiRoot, "Controls");
 		List<string> list4 = new List<string>();
 		foreach (string item3 in Directory.EnumerateFiles(path2, "*.cs", SearchOption.AllDirectories))
@@ -1075,7 +461,7 @@ public sealed class GuiStaticAuditTests
 				list4.Add(Normalize(Path.GetRelativePath(guiRoot, item3)));
 			}
 		}
-		return new GuiAuditResult(missingAxaml, list.Distinct<string>(StringComparer.Ordinal).ToArray(), list2.Distinct<string>(StringComparer.Ordinal).ToArray(), list3.Distinct<string>(StringComparer.Ordinal).ToArray(), list4.Distinct<string>(StringComparer.Ordinal).ToArray());
+		return new GuiAuditResult(list4.Distinct<string>(StringComparer.Ordinal).ToArray());
 	}
 
 	private static string FindGuiRoot()

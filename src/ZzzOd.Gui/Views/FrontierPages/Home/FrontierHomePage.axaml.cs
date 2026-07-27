@@ -17,23 +17,17 @@ using ZzzOd.Gui.Services.Notices;
 using ZzzOd.Gui.Services.RunIntent;
 using ZzzOd.Gui.Shell;
 using ZzzOd.Gui.Controls.Home;
+using ZzzOd.Gui.PageModels.Home;
 
 namespace ZzzOd.Gui.Views.FrontierPages.Home;
 
 public sealed partial class FrontierHomePage : UserControl, IZzzPageLifecycle
 {
     private static readonly TimeSpan DashboardLoadTimeout = TimeSpan.FromSeconds(20);
-    private static readonly IReadOnlyList<ZzzHomeQuickLinkDefinition> QuickLinkDefinitions =
-    [
-        new("home", "官网", "使用说明 · 功能介绍", "home_page_link"),
-        new("github", "GitHub", "源码 · 反馈 · Star⭐", "github_homepage"),
-        new("docs", "帮助文档", "遇到问题？点这里找答案", "doc_link"),
-        new("official-channel", "官方频道", "加入官方交流频道", "qq_link"),
-    ];
-
     private readonly ZzzLauncherMediaService _mediaService;
     private readonly ZzzNoticeService _noticeService;
-    private readonly IZzzAppBackend _backend;
+    private readonly ZzzHomeProjectSettingsViewModel _projectSettings;
+    private readonly ZzzHomeThemeSettingsViewModel _themeSettings;
     private readonly ZzzDashboardReadinessService _readinessService;
     private readonly ZzzShellNavigationService _navigation;
     private readonly ZzzGuiRunIntentService _runIntent;
@@ -77,7 +71,8 @@ public sealed partial class FrontierHomePage : UserControl, IZzzPageLifecycle
         ZzzGuiOperationTracker? operations = null)
     {
         ArgumentNullException.ThrowIfNull(dialogService);
-        _backend = backend;
+        _projectSettings = new ZzzHomeProjectSettingsViewModel(backend);
+        _themeSettings = new ZzzHomeThemeSettingsViewModel(backend);
         _mediaService = mediaService;
         _noticeService = noticeService;
         _readinessService = readinessService;
@@ -107,8 +102,10 @@ public sealed partial class FrontierHomePage : UserControl, IZzzPageLifecycle
             ?? throw new InvalidOperationException("首页缺少 ContentDialog。");
         _preFlightIssueList = (ItemsControl)((StackPanel)_preFlightDialog.Content!).Children[1];
 
-        QuickLinks = ReadQuickLinks(backend);
-        _noticeUrl = ReadProjectValue(backend, "notice_url");
+        DataContext = _projectSettings;
+        _projectSettings.OnPageShown();
+        QuickLinks = _projectSettings.QuickLinks;
+        _noticeUrl = _projectSettings.NoticeUrl;
         ApplyQuickLinkAvailability();
 
         _bannerTimer = new DispatcherTimer
@@ -228,6 +225,8 @@ public sealed partial class FrontierHomePage : UserControl, IZzzPageLifecycle
         ClearCurrentMedia();
         _noticeCard.DisposeNotice();
         _noticeCard.RetryRequested -= OnNoticeRetryRequested;
+        _projectSettings.DisposePage();
+        _themeSettings.DisposePage();
 
         // 原子摘下再释放：DisposePage 可能被页面宿主和缓存清理重复调用，
         // 之前的写法在第二次调用时会对已释放的 CTS 调 Cancel，异常一路抛到窗口 OnClosed。
@@ -601,40 +600,11 @@ public sealed partial class FrontierHomePage : UserControl, IZzzPageLifecycle
     private Button GetRequiredButton(string name) =>
         this.FindControl<Button>(name) ?? throw new InvalidOperationException($"首页缺少按钮 {name}。");
 
-    private static IReadOnlyList<ZzzHomeQuickLink> ReadQuickLinks(IZzzAppBackend backend)
-    {
-        ZzzBackendResult<ZzzConfigScopeValuesDto> project = backend.GetConfigScope("project");
-        IReadOnlyDictionary<string, object?> values = project.Success && project.Value is not null
-            ? project.Value.Values
-            : new Dictionary<string, object?>();
-        return QuickLinkDefinitions
-            .Select(definition => new ZzzHomeQuickLink(
-                definition.Key,
-                definition.Label,
-                definition.Tooltip,
-                ReadString(values, definition.ConfigKey)))
-            .ToArray();
-    }
-
-    private static string ReadProjectValue(IZzzAppBackend backend, string key)
-    {
-        ZzzBackendResult<ZzzConfigScopeValuesDto> project = backend.GetConfigScope("project");
-        return project.Success && project.Value is not null
-            ? ReadString(project.Value.Values, key)
-            : string.Empty;
-    }
-
-    private static string ReadString(IReadOnlyDictionary<string, object?> values, string key) =>
-        values.TryGetValue(key, out object? value) ? value?.ToString()?.Trim() ?? string.Empty : string.Empty;
-
     private void ApplyThemeColor(ZzzLauncherMediaItem item)
     {
-        ZzzBackendResult<ZzzConfigScopeValuesDto> custom = _backend.GetConfigScope("custom");
-        IReadOnlyDictionary<string, object?> values = custom.Success && custom.Value is not null
-            ? custom.Value.Values
-            : new Dictionary<string, object?>();
-        if (ReadBool(values, "custom_theme_color")
-            && TryParseColor(ReadString(values, "global_theme_color"), out Color customColor))
+        _themeSettings.Reload();
+        if (_themeSettings.CustomThemeColor
+            && TryParseColor(_themeSettings.GlobalThemeColor, out Color customColor))
         {
             ApplyAccentAndStartButton(customColor);
             return;
@@ -642,7 +612,7 @@ public sealed partial class FrontierHomePage : UserControl, IZzzPageLifecycle
 
         if (item.LocalPath is null || !TryExtractThemeColor(item.LocalPath, item.IsVideo, out Color mediaColor))
         {
-            if (TryParseColor(ReadString(values, "global_theme_color"), out Color savedColor))
+            if (TryParseColor(_themeSettings.GlobalThemeColor, out Color savedColor))
             {
                 ApplyAccentAndStartButton(savedColor);
             }
@@ -651,12 +621,7 @@ public sealed partial class FrontierHomePage : UserControl, IZzzPageLifecycle
         }
 
         ApplyAccentAndStartButton(mediaColor);
-        _backend.SaveConfigScope(new ZzzSaveConfigScopeRequest(
-            "custom",
-            new Dictionary<string, object?>
-            {
-                ["global_theme_color"] = $"{mediaColor.R},{mediaColor.G},{mediaColor.B}",
-            }));
+        _themeSettings.SaveExtractedThemeColor($"{mediaColor.R},{mediaColor.G},{mediaColor.B}");
     }
 
     private void ApplyAccentAndStartButton(Color color)
@@ -696,9 +661,6 @@ public sealed partial class FrontierHomePage : UserControl, IZzzPageLifecycle
         return false;
     }
 
-    private static bool ReadBool(IReadOnlyDictionary<string, object?> values, string key) =>
-        values.TryGetValue(key, out object? value) && Convert.ToBoolean(value);
-
     private static void OpenUri(string uri)
     {
         if (!Uri.TryCreate(uri, UriKind.Absolute, out Uri? target))
@@ -722,7 +684,3 @@ public enum ZzzHomeMediaLoadState
 
     Failed,
 }
-
-public sealed record ZzzHomeQuickLink(string Key, string Label, string Tooltip, string Uri);
-
-internal sealed record ZzzHomeQuickLinkDefinition(string Key, string Label, string Tooltip, string ConfigKey);

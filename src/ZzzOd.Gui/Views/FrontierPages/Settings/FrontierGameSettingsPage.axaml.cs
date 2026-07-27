@@ -1,5 +1,4 @@
 using System.Diagnostics;
-using System.Text.Json;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
@@ -11,21 +10,18 @@ using ZzzOd.GameLogic.Application.BattleAssistant.AutoBattle;
 using ZzzOd.Gui.Services.Windows;
 using ZzzOd.Gui.Shell;
 
-using ZzzOd.Gui.Pages.Settings;
+using ZzzOd.Gui.PageModels.Settings;
 
 namespace ZzzOd.Gui.Views.FrontierPages.Settings;
 
 internal sealed partial class FrontierGameSettingsPage : UserControl, IZzzPageLifecycle
 {
     private const string HelpUrl = "https://one-dragon.com/zzz/zh/setting_game.html";
-    private readonly IZzzAppBackend _backend;
     private readonly IZzzManualAutoHdrService _hdrService;
     private readonly IVirtualGamepadDependencyChecker _virtualGamepadDependencyChecker;
     private readonly ZzzGlobalInputMonitor _inputMonitor;
     private readonly ZzzGuiOperationTracker _operations;
     private readonly bool _ownsInputMonitor;
-    private readonly int? _instanceIndex;
-    private readonly string? _instanceUnavailableMessage;
     private readonly DispatcherTimer _warningTimer;
     private readonly FAInfoBar _dependencyWarningBar;
     private readonly Button _disableHdrButton;
@@ -38,16 +34,11 @@ internal sealed partial class FrontierGameSettingsPage : UserControl, IZzzPageLi
         ZzzGlobalInputMonitor? inputMonitor = null,
         ZzzGuiOperationTracker? operations = null)
     {
-        _backend = backend;
         _hdrService = hdrService ?? new ZzzWindowsManualAutoHdrService();
         _virtualGamepadDependencyChecker = virtualGamepadDependencyChecker ?? new ViGEmVirtualGamepadDependencyChecker();
         _inputMonitor = inputMonitor ?? new ZzzGlobalInputMonitor();
         _operations = operations ?? new ZzzGuiOperationTracker();
         _ownsInputMonitor = inputMonitor is null;
-        ZzzBackendResult<ZzzInstanceDto> current = backend.GetCurrentInstance();
-        _instanceIndex = current.Success && current.Value is not null ? current.Value.Index : null;
-        _instanceUnavailableMessage = current.Error;
-
         AvaloniaXamlLoader.Load(this);
         ZzzGameSettingsViewModel viewModel = new(backend, _virtualGamepadDependencyChecker, _operations);
         viewModel.WarningRequested += (_, warning) => ShowWarning(warning.Title, warning.Message);
@@ -118,14 +109,7 @@ internal sealed partial class FrontierGameSettingsPage : UserControl, IZzzPageLi
 
     private string ReadGamePath()
     {
-        ZzzBackendResult<ZzzConfigScopeValuesDto> result = _backend.GetConfigScope("instance", _instanceIndex);
-        if (result.Success && result.Value is not null && result.Value.Values.TryGetValue("game_path", out object? value))
-        {
-            if (value is JsonElement json && json.ValueKind == JsonValueKind.String)
-                return json.GetString() ?? string.Empty;
-            return value?.ToString() ?? string.Empty;
-        }
-        return string.Empty;
+        return (DataContext as ZzzGameSettingsViewModel)?.GetGamePath() ?? string.Empty;
     }
 
 

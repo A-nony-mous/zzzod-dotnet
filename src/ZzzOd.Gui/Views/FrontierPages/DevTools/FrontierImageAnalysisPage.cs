@@ -12,7 +12,7 @@ using ZzzOd.AppHost.Backend;
 using ZzzOd.AppHost.Devtools;
 using ZzzOd.Gui.Shell;
 
-using ZzzOd.Gui.Pages.Devtools;
+using ZzzOd.Gui.PageModels.Devtools;
 
 namespace ZzzOd.Gui.Views.FrontierPages.DevTools;
 

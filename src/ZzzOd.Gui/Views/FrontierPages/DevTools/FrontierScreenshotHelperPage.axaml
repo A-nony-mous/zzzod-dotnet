@@ -1,10 +1,13 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:fa="using:FluentAvalonia.UI.Controls"
-             x:Class="ZzzOd.Gui.Views.FrontierPages.DevTools.FrontierScreenshotHelperPage">
+             xmlns:local="using:ZzzOd.Gui.PageModels.Devtools"
+             x:Class="ZzzOd.Gui.Views.FrontierPages.DevTools.FrontierScreenshotHelperPage"
+             x:DataType="local:ZzzScreenshotHelperSettingsViewModel">
   <UserControl.Styles>
     <Style Selector="ContentControl#LogHost">
-      <Setter Property="Height" Value="220" />
+      <Setter Property="MinHeight" Value="120" />
+      <Setter Property="MaxHeight" Value="220" />
     </Style>
   </UserControl.Styles>
   <ScrollViewer HorizontalScrollBarVisibility="Disabled"
@@ -29,7 +32,8 @@
                         Maximum="60"
                         SmallChange="0.01"
                         SpinButtonPlacementMode="Compact"
-                        ValueChanged="OnFrequencyChanged" />
+                        Value="{Binding FrequencySecond, Mode=TwoWay}"
+                        IsEnabled="{Binding ValuesAvailable}" />
         </fa:FASettingsExpanderItem.Footer>
       </fa:FASettingsExpanderItem>
 
@@ -44,7 +48,8 @@
                         Maximum="3600"
                         SmallChange="0.1"
                         SpinButtonPlacementMode="Compact"
-                        ValueChanged="OnLengthChanged" />
+                        Value="{Binding LengthSecond, Mode=TwoWay}"
+                        IsEnabled="{Binding ValuesAvailable}" />
         </fa:FASettingsExpanderItem.Footer>
       </fa:FASettingsExpanderItem>
 
@@ -56,6 +61,7 @@
         <fa:FASettingsExpanderItem.Footer>
           <Button x:Name="SaveKeyButton"
                   Width="160"
+                  IsEnabled="{Binding ValuesAvailable}"
                   Click="OnSaveKeyClicked" />
         </fa:FASettingsExpanderItem.Footer>
       </fa:FASettingsExpanderItem>
@@ -69,7 +75,8 @@
           <ToggleSwitch x:Name="DodgeDetectToggle"
                         OnContent=""
                         OffContent=""
-                        Click="OnDodgeDetectChanged" />
+                        IsChecked="{Binding DodgeDetect, Mode=TwoWay}"
+                        IsEnabled="{Binding ValuesAvailable}" />
         </fa:FASettingsExpanderItem.Footer>
       </fa:FASettingsExpanderItem>
 
@@ -82,7 +89,8 @@
           <ToggleSwitch x:Name="ScreenshotBeforeKeyToggle"
                         OnContent=""
                         OffContent=""
-                        Click="OnScreenshotBeforeKeyChanged" />
+                        IsChecked="{Binding ScreenshotBeforeKey, Mode=TwoWay}"
+                        IsEnabled="{Binding ValuesAvailable}" />
         </fa:FASettingsExpanderItem.Footer>
       </fa:FASettingsExpanderItem>
 
@@ -95,7 +103,8 @@
           <ToggleSwitch x:Name="MiniMapAngleDetectToggle"
                         OnContent=""
                         OffContent=""
-                        Click="OnMiniMapAngleDetectChanged" />
+                        IsChecked="{Binding MiniMapAngleDetect, Mode=TwoWay}"
+                        IsEnabled="{Binding ValuesAvailable}" />
         </fa:FASettingsExpanderItem.Footer>
       </fa:FASettingsExpanderItem>
       </fa:FASettingsExpander>

@@ -16,55 +16,6 @@ namespace ZzzOd.GameLogic.Tests.AppHost;
 public sealed class ScreenshotHelperAxamlPageTests
 {
 	/// <summary>
-	/// 页面保持 BaselineParity 控件顺序，并绑定当前实例、默认组和真实运行面。
-	/// </summary>
-	[Fact]
-	public void PageUsesAxamlFluentControlsCurrentInstanceAndProductionRunPanel()
-	{
-		string path = FindDevtoolsDirectory();
-		string text = File.ReadAllText(Path.Combine(path, "ZzzScreenshotHelperPage.axaml"));
-		string actualString = File.ReadAllText(Path.Combine(path, "ZzzScreenshotHelperPage.cs"));
-		AssertOrder(text, "截图间隔(秒)", "持续时间(秒)", "保存截图按键", "闪避检测", "按键前截图", "小地图朝向检测", "RunHost");
-		Assert.Contains("x:Class=\"ZzzOd.Gui.Pages.Devtools.ZzzScreenshotHelperAxamlPage\"", text, StringComparison.Ordinal);
-		Assert.Contains("fa:FASettingsExpanderItem", text, StringComparison.Ordinal);
-		Assert.Contains("fa:FANumberBox", text, StringComparison.Ordinal);
-		Assert.Contains("ToggleSwitch", text, StringComparison.Ordinal);
-		Assert.Contains("new ZzzRunPanel(", actualString, StringComparison.Ordinal);
-		Assert.Contains("ZzzApplicationIds.ScreenshotHelper", actualString, StringComparison.Ordinal);
-		Assert.Contains("fixedGroupId: ScreenshotHelperConstants.DefaultGroupId", actualString, StringComparison.Ordinal);
-		Assert.Contains("GetCurrentInstance()", actualString, StringComparison.Ordinal);
-		Assert.Contains("GetConfigScope(", actualString, StringComparison.Ordinal);
-		Assert.Contains("SaveConfigScope", actualString, StringComparison.Ordinal);
-		Assert.Contains("_instanceIndex", actualString, StringComparison.Ordinal);
-		Assert.DoesNotContain("InstanceIndex: 0", actualString, StringComparison.Ordinal);
-		Assert.DoesNotContain("instanceIndex: 0", actualString, StringComparison.Ordinal);
-		Assert.DoesNotContain("ZzzBackendConfigBinding", actualString, StringComparison.Ordinal);
-		Assert.DoesNotContain("ZzzSettingCard", actualString, StringComparison.Ordinal);
-		Assert.DoesNotContain("new StackPanel", actualString, StringComparison.Ordinal);
-		Assert.DoesNotContain("PageModel", actualString, StringComparison.Ordinal);
-		Assert.DoesNotContain("Python", text, StringComparison.Ordinal);
-		Assert.DoesNotContain("来源", text, StringComparison.Ordinal);
-		Assert.DoesNotContain("未接入", text, StringComparison.Ordinal);
-		Assert.DoesNotContain("fallback", actualString, StringComparison.OrdinalIgnoreCase);
-	}
-
-	/// <summary>
-	/// 页面应把 GUI 全局按键转发给真实 screenshot helper app。
-	/// </summary>
-	[Fact]
-	public void PageBridgesGlobalInputWithoutInventingDetectorState()
-	{
-		string path = FindDevtoolsDirectory();
-		string actualString = File.ReadAllText(Path.Combine(path, "ZzzScreenshotHelperPage.axaml"));
-		string actualString2 = File.ReadAllText(Path.Combine(path, "ZzzScreenshotHelperPage.cs"));
-		Assert.Contains("GlobalInputPressed += OnGlobalInputPressed", actualString2, StringComparison.Ordinal);
-		Assert.Contains("ScreenshotHelperGlobalInputSource.Suspend()", actualString2, StringComparison.Ordinal);
-		Assert.DoesNotContain("NullScreenshotHelper", actualString2, StringComparison.Ordinal);
-		Assert.DoesNotContain("detector", actualString, StringComparison.OrdinalIgnoreCase);
-		Assert.DoesNotContain("全局按键", actualString, StringComparison.Ordinal);
-	}
-
-	/// <summary>
 	/// 生产 app 必须使用真实闪避和小地图 detector，并让订阅跟随 app 生命周期。
 	/// </summary>
 	[Fact]
@@ -116,36 +67,6 @@ public sealed class ScreenshotHelperAxamlPageTests
 			CollectionsMarshal.AsSpan(list)[0] = "1";
 			Assert.Equal<List<string>>(list, received);
 		}
-	}
-
-	private static void AssertOrder(string text, params string[] markers)
-	{
-		int num = -1;
-		foreach (string text2 in markers)
-		{
-			int num2 = text.IndexOf(text2, StringComparison.Ordinal);
-			Assert.True(num2 > num, "未按顺序找到 " + text2 + "。");
-			num = num2;
-		}
-	}
-
-	private static string FindDevtoolsDirectory()
-	{
-		for (DirectoryInfo directoryInfo = new DirectoryInfo(AppContext.BaseDirectory); directoryInfo != null; directoryInfo = directoryInfo.Parent)
-		{
-			string[] buffer = new string[5];
-			buffer[0] = directoryInfo.FullName;
-			buffer[1] = "src";
-			buffer[2] = "ZzzOd.Gui";
-			buffer[3] = "Pages";
-			buffer[4] = "Devtools";
-			string text = Path.Combine(buffer);
-			if (Directory.Exists(text))
-			{
-				return text;
-			}
-		}
-		throw new DirectoryNotFoundException("未找到开发工具页目录。");
 	}
 
 	private static string FindRepositoryRoot()

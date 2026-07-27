@@ -70,40 +70,6 @@ public sealed class ScreenManageProductionParityTests
 		}
 	}
 
-	[Fact]
-	public void ScreenManageAxamlContainsPythonControlContractAndNoDemoRows()
-	{
-		string text = FindRepositoryRoot();
-		string[] buffer = new string[6];
-		buffer[0] = text;
-		buffer[1] = "src";
-		buffer[2] = "ZzzOd.Gui";
-		buffer[3] = "Pages";
-		buffer[4] = "Devtools";
-		buffer[5] = "ZzzScreenManagePage.axaml";
-		string text2 = File.ReadAllText(Path.Combine(buffer));
-		string[] buffer2 = new string[6];
-		buffer2[0] = text;
-		buffer2[1] = "src";
-		buffer2[2] = "ZzzOd.Gui";
-		buffer2[3] = "Pages";
-		buffer2[4] = "Devtools";
-		buffer2[5] = "ZzzScreenAreaTable.axaml";
-		string text3 = File.ReadAllText(Path.Combine(buffer2));
-		Assert.Contains("更新合并配置文件", text2, StringComparison.Ordinal);
-		Assert.Contains("选择已有", text2, StringComparison.Ordinal);
-		Assert.Contains("导入模板区域", text2, StringComparison.Ordinal);
-		Assert.Contains("画面信息", text2, StringComparison.Ordinal);
-		Assert.Contains("区域表格", text2, StringComparison.Ordinal);
-		Assert.Contains("鼠标点击坐标", text2, StringComparison.Ordinal);
-		Assert.Contains("fa:FACommandBar", text2, StringComparison.Ordinal);
-		Assert.Contains("fa:FAComboBox", text2, StringComparison.Ordinal);
-		Assert.Contains("fa:FANumberBox", text3, StringComparison.Ordinal);
-		Assert.DoesNotContain("主按钮", text2 + text3, StringComparison.Ordinal);
-		Assert.DoesNotContain("Python", text2 + text3, StringComparison.OrdinalIgnoreCase);
-		Assert.DoesNotContain("PageModel", text2 + text3, StringComparison.OrdinalIgnoreCase);
-	}
-
 	private static string NewRoot()
 	{
 		string text = Path.Combine(Path.GetTempPath(), "zzz-screen-manage-tests", Guid.NewGuid().ToString("N"));
@@ -111,15 +77,4 @@ public sealed class ScreenManageProductionParityTests
 		return text;
 	}
 
-	private static string FindRepositoryRoot()
-	{
-		for (DirectoryInfo directoryInfo = new DirectoryInfo(AppContext.BaseDirectory); directoryInfo != null; directoryInfo = directoryInfo.Parent)
-		{
-			if (File.Exists(Path.Combine(directoryInfo.FullName, "ZzzOneDragon.slnx")))
-			{
-				return directoryInfo.FullName;
-			}
-		}
-		throw new DirectoryNotFoundException("未找到 zzzod-dotnet 仓库根目录。");
-	}
 }

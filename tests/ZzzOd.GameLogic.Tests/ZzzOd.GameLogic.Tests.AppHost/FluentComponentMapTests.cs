@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using Avalonia.Controls;
 using FluentAvalonia.UI.Controls;
 using Xunit;
 using ZzzOd.Gui;
@@ -40,7 +41,7 @@ public sealed class FluentComponentMapTests
 		dictionary[ZzzFluentComponentRole.Dialog] = typeof(FAContentDialog);
 		dictionary[ZzzFluentComponentRole.FATeachingTip] = typeof(FATeachingTip);
 		dictionary[ZzzFluentComponentRole.FAInfoBar] = typeof(FAInfoBar);
-		dictionary[ZzzFluentComponentRole.Tab] = typeof(FATabView);
+		dictionary[ZzzFluentComponentRole.Tab] = typeof(TabControl);
 		dictionary[ZzzFluentComponentRole.FAFrame] = typeof(FAFrame);
 		dictionary[ZzzFluentComponentRole.Navigation] = typeof(FANavigationView);
 		dictionary[ZzzFluentComponentRole.FASymbolIcon] = typeof(FASymbolIcon);
@@ -50,7 +51,10 @@ public sealed class FluentComponentMapTests
 		foreach (var (role, type2) in dictionary2)
 		{
 			Assert.Equal(type2, ZzzFluentComponentMap.GetRequired(role));
-			Assert.Equal(typeof(FANavigationView).Assembly, type2.Assembly);
+			if (role != ZzzFluentComponentRole.Tab)
+			{
+				Assert.Equal(typeof(FANavigationView).Assembly, type2.Assembly);
+			}
 		}
 	}
 }

@@ -6,6 +6,7 @@ using Avalonia.Threading;
 using FluentAvalonia.UI.Controls;
 using ZzzOd.AppHost.Backend;
 using ZzzOd.GameLogic.Const;
+using ZzzOd.Gui.PageModels.Run;
 using ZzzOd.Gui.Services.RunIntent;
 using ZzzOd.Gui.Shell;
 
@@ -14,6 +15,7 @@ namespace ZzzOd.Gui.Controls;
 internal sealed partial class ZzzRunPanel : UserControl, IZzzPageLifecycle
 {
     private readonly IZzzAppBackend _backend;
+    private readonly ZzzRunPanelHotkeyViewModel _hotkeyViewModel;
     private readonly ZzzGuiRunIntentService? _runIntent;
     private readonly string? _fixedAppId;
     private readonly string? _fixedGroupId;
@@ -49,6 +51,13 @@ internal sealed partial class ZzzRunPanel : UserControl, IZzzPageLifecycle
         string? fixedGroupId = null)
     {
         _backend = backend;
+        _hotkeyViewModel = new ZzzRunPanelHotkeyViewModel(backend, error =>
+        {
+            if (!string.IsNullOrWhiteSpace(error))
+            {
+                ShowError(error);
+            }
+        });
         _runIntent = runIntent;
         _fixedAppId = fixedAppId;
         _fixedGroupId = fixedGroupId;
@@ -175,6 +184,7 @@ internal sealed partial class ZzzRunPanel : UserControl, IZzzPageLifecycle
         _apps.SelectionChanged -= OnAppSelectionChanged;
         _primaryButton.Click -= OnPrimaryButtonClicked;
         _stopButton.Click -= OnStopButtonClicked;
+        _hotkeyViewModel.DisposePage();
         _logCard.DisposePage();
     }
 
@@ -205,18 +215,9 @@ internal sealed partial class ZzzRunPanel : UserControl, IZzzPageLifecycle
 
     private void RefreshHotkeys()
     {
-        ZzzBackendResult<ZzzConfigScopeValuesDto> result = _backend.GetConfigScope("env");
-        if (!result.Success || result.Value is null)
-        {
-            _startHotkey = string.Empty;
-            _stopHotkey = string.Empty;
-            ShowError(result.Error ?? "运行热键读取失败。");
-            ApplyButtonLabels(PrimaryActionText);
-            return;
-        }
-
-        _startHotkey = ReadHotkey(result.Value.Values, "key_start_running");
-        _stopHotkey = ReadHotkey(result.Value.Values, "key_stop_running");
+        _hotkeyViewModel.OnPageShown();
+        _startHotkey = _hotkeyViewModel.LastError is null ? _hotkeyViewModel.StartHotkey : string.Empty;
+        _stopHotkey = _hotkeyViewModel.LastError is null ? _hotkeyViewModel.StopHotkey : string.Empty;
         ApplyButtonLabels(PrimaryActionText);
     }
 
@@ -448,11 +449,6 @@ internal sealed partial class ZzzRunPanel : UserControl, IZzzPageLifecycle
 
     private void OnStopButtonClicked(object? sender, Avalonia.Interactivity.RoutedEventArgs args) =>
         _ = InvokeStopActionAsync();
-
-    private static string ReadHotkey(IReadOnlyDictionary<string, object?> values, string key) =>
-        values.TryGetValue(key, out object? value) && value is string text && !string.IsNullOrWhiteSpace(text)
-            ? text.ToUpperInvariant()
-            : string.Empty;
 
     private static string JoinActionAndHotkey(string action, string hotkey) =>
         string.IsNullOrWhiteSpace(hotkey) ? action : $"{action} {hotkey}";

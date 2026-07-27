@@ -52,7 +52,9 @@ int windowDpiAwareness = NativeMethods.GetAwarenessFromDpiAwarenessContext(
 try
 {
     using FreeThreadedWindowCapture compositorCapture = new(window.Handle);
-    using Mat? image = await compositorCapture.CaptureAsync(options.Timeout);
+    using Mat? rawImage = await compositorCapture.CaptureAsync(options.Timeout);
+    using Mat? croppedImage = rawImage is null ? null : TryCropToClient(rawImage, window.Handle, rect.Value, attempts);
+    Mat? image = croppedImage ?? rawImage;
     if (image is null || image.Empty())
     {
         attempts.Add(new
@@ -218,6 +220,46 @@ static async Task<GeometryRect?> WaitForWindowAsync(IGameWindow window, TimeSpan
     }
 
     return null;
+}
+
+static Mat? TryCropToClient(Mat image, nint handle, GeometryRect clientRect, List<object> attempts)
+{
+    if (!NativeMethods.TryGetExtendedFrameBounds(handle, out NativeMethods.NativeRect frameRect))
+    {
+        return null;
+    }
+
+    int clientLeft = clientRect.X1;
+    int clientTop = clientRect.Y1;
+    int clientWidth = clientRect.Width;
+    int clientHeight = clientRect.Height;
+    int offsetX = clientLeft - frameRect.Left;
+    int offsetY = clientTop - frameRect.Top;
+    if (offsetX < 0 || offsetY < 0
+        || clientWidth <= 0 || clientHeight <= 0
+        || offsetX + clientWidth > image.Width
+        || offsetY + clientHeight > image.Height)
+    {
+        return null;
+    }
+
+    if (offsetX == 0 && offsetY == 0 && clientWidth == image.Width && clientHeight == image.Height)
+    {
+        return null;
+    }
+
+    attempts.Add(new
+    {
+        method = FreeThreadedWindowCapture.MethodName,
+        status = "client-cropped",
+        frameWidth = image.Width,
+        frameHeight = image.Height,
+        clientWidth,
+        clientHeight,
+        offsetX,
+        offsetY,
+    });
+    return new Mat(image, new OpenCvSharp.Rect(offsetX, offsetY, clientWidth, clientHeight)).Clone();
 }
 
 internal sealed record CaptureOptions(
@@ -412,6 +454,19 @@ internal static class NativeMethods
     [DllImport("user32.dll")]
     [return: MarshalAs(UnmanagedType.Bool)]
     internal static extern bool ClientToScreen(nint hWnd, ref NativePoint point);
+
+    [DllImport("dwmapi.dll")]
+    internal static extern int DwmGetWindowAttribute(
+        nint hWnd,
+        uint dwAttribute,
+        out NativeRect pvAttribute,
+        int cbAttribute);
+
+    internal static bool TryGetExtendedFrameBounds(nint hWnd, out NativeRect rect)
+    {
+        const uint DwmwaExtendedFrameBounds = 9;
+        return DwmGetWindowAttribute(hWnd, DwmwaExtendedFrameBounds, out rect, Marshal.SizeOf<NativeRect>()) == 0;
+    }
 }
 
 internal sealed class FreeThreadedWindowCapture : IDisposable

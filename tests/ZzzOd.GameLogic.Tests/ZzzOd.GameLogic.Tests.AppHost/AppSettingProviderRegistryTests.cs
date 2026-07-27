@@ -80,44 +80,6 @@ public sealed class AppSettingProviderRegistryTests
 	}
 
 	/// <summary>
-	/// 一条龙和独立运行页应通过 provider 导航器打开真实设置目标。
-	/// </summary>
-	[Fact]
-	public void RunPagesUseRegistryBackedSettingClickInsteadOfDisabledButtons()
-	{
-		string path = FindGuiRoot();
-		string actualString = File.ReadAllText(Path.Combine(path, "Pages", "OneDragon", "ZzzOneDragonRunPage.axaml"));
-		string actualString2 = File.ReadAllText(Path.Combine(path, "Pages", "Standalone", "ZzzStandaloneAppRunPage.axaml"));
-		string actualString3 = File.ReadAllText(Path.Combine(path, "Pages", "OneDragon", "ZzzOneDragonRunPage.cs"));
-		string actualString4 = File.ReadAllText(Path.Combine(path, "Pages", "Standalone", "ZzzStandaloneAppRunPage.cs"));
-		string actualString5 = File.ReadAllText(Path.Combine(path, "Pages", "ApplicationSettings", "ZzzAppSettingNavigator.cs"));
-		Assert.Contains("Click=\"OnAppSettingClicked\"", actualString, StringComparison.Ordinal);
-		Assert.Contains("Click=\"OnAppSettingClicked\"", actualString2, StringComparison.Ordinal);
-		Assert.DoesNotContain("ToolTip.Tip=\"应用设置\"\r\n                              IsVisible=\"{Binding SettingVisible}\"\r\n                              IsEnabled=\"False\"", actualString, StringComparison.Ordinal);
-		Assert.DoesNotContain("ToolTip.Tip=\"应用设置\"\r\n                            IsVisible=\"{Binding SettingVisible}\"\r\n                            IsEnabled=\"False\"", actualString2, StringComparison.Ordinal);
-		Assert.Contains("ZzzAppSettingProviderRegistry.TryGetImplemented", actualString4, StringComparison.Ordinal);
-		Assert.Contains("SecondaryPageRequested", actualString3, StringComparison.Ordinal);
-		Assert.Contains("SecondaryPageRequested", actualString4, StringComparison.Ordinal);
-		Assert.Contains("FlyoutBase.ShowAttachedFlyout(target)", actualString5, StringComparison.Ordinal);
-		Assert.Contains("_backend.GetCurrentInstance()", actualString5, StringComparison.Ordinal);
-		Assert.Contains("CreateTarget(provider.ImplementedTarget!, current.Value.Index, groupId)", actualString5, StringComparison.Ordinal);
-		Assert.Contains("new ZzzWorldPatrolAppSettingPage(_backend, worldPatrolBackend, instanceIndex, groupId)", actualString5, StringComparison.Ordinal);
-		Assert.Contains("new ZzzChargePlanPage(_backend)", actualString5, StringComparison.Ordinal);
-		Assert.Contains("new ZzzWitheredDomainAppSettingPage(_backend, instanceIndex, groupId)", actualString5, StringComparison.Ordinal);
-		Assert.Contains("new ZzzDriveDiscDismantleSettingsFlyoutContent(_backend, instanceIndex, groupId)", actualString5, StringComparison.Ordinal);
-		Assert.Contains("new ZzzRedemptionCodeAppSettingPage(redemptionCodeBackend)", actualString5, StringComparison.Ordinal);
-		Assert.Contains("new ZzzLostVoidAppSettingPage(_backend, lostVoidBackend, instanceIndex, groupId)", actualString5, StringComparison.Ordinal);
-		Assert.Contains("new ZzzSuibianTempleAppSettingPage(_backend, instanceIndex, groupId)", actualString5, StringComparison.Ordinal);
-		Assert.Contains("new ZzzCoffeeAppSettingPage(_backend, instanceIndex, groupId)", actualString5, StringComparison.Ordinal);
-		Assert.Contains("new ZzzNotoriousHuntAppSettingPage(_backend, instanceIndex, groupId)", actualString5, StringComparison.Ordinal);
-		Assert.Contains("new ZzzRandomPlaySettingsFlyoutContent(_backend, instanceIndex, groupId)", actualString5, StringComparison.Ordinal);
-		Assert.Contains("new ZzzLifeOnLineSettingsFlyoutContent(_backend, instanceIndex, groupId)", actualString5, StringComparison.Ordinal);
-		Assert.Contains("new ZzzIntelBoardSettingsFlyoutContent(_backend, progressBackend, instanceIndex, groupId)", actualString5, StringComparison.Ordinal);
-		Assert.Contains("new ZzzShiyuDefenseAppSettingPage(_backend, instanceIndex, groupId)", actualString5, StringComparison.Ordinal);
-		Assert.DoesNotContain("ZzzApplicationSettingsPage", actualString5, StringComparison.Ordinal);
-	}
-
-	/// <summary>
 	/// 新增的应用设置 scope 应写入 BaselineParity group 路径，并保持实例和 group 绑定。
 	/// </summary>
 	[Fact]
@@ -174,16 +136,4 @@ public sealed class AppSettingProviderRegistryTests
 		}
 	}
 
-	private static string FindGuiRoot()
-	{
-		for (DirectoryInfo directoryInfo = new DirectoryInfo(AppContext.BaseDirectory); directoryInfo != null; directoryInfo = directoryInfo.Parent)
-		{
-			string text = Path.Combine(directoryInfo.FullName, "src", "ZzzOd.Gui");
-			if (Directory.Exists(text))
-			{
-				return text;
-			}
-		}
-		throw new DirectoryNotFoundException("找不到 src/ZzzOd.Gui。");
-	}
 }

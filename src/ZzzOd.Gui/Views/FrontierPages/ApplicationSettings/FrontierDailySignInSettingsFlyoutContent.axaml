@@ -1,7 +1,9 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:fa="using:FluentAvalonia.UI.Controls"
+             xmlns:model="using:ZzzOd.Gui.PageModels.ApplicationSettings"
              x:Class="ZzzOd.Gui.Views.FrontierPages.ApplicationSettings.FrontierDailySignInSettingsFlyoutContent"
+             x:DataType="model:ZzzDailySignInSettingsViewModel"
              MinWidth="420">
   <StackPanel Margin="8" Spacing="1">
     <fa:FAInfoBar x:Name="ErrorBar" IsOpen="False" IsClosable="True" Severity="Error" />
@@ -9,7 +11,8 @@
       <fa:FASettingsExpander.Footer>
         <fa:FAComboBox x:Name="ShopCombo"
                        Width="180"
-                       SelectionChanged="OnShopChanged" />
+                       ItemsSource="{Binding ShopOptions}"
+                       SelectedItem="{Binding SelectedShop, Mode=TwoWay}" />
       </fa:FASettingsExpander.Footer>
     </fa:FASettingsExpander>
   </StackPanel>

@@ -31,12 +31,11 @@ using ZzzOd.GameLogic.Application.ChargePlan;
 using ZzzOd.GameLogic.Config;
 using ZzzOd.Gui;
 using ZzzOd.Gui.Controls;
-using ZzzOd.Gui.Pages.Accounts;
-using ZzzOd.Gui.Pages.Devtools;
-using ZzzOd.Gui.Pages.GameAssistant;
-using ZzzOd.Gui.Pages.Home;
-using ZzzOd.Gui.Pages.OneDragon;
-using ZzzOd.Gui.Pages.Standalone;
+using ZzzOd.Gui.PageModels.Accounts;
+using ZzzOd.Gui.Views.FrontierPages.Accounts;
+using ZzzOd.Gui.PageModels.Devtools;
+using ZzzOd.Gui.Views.FrontierPages.GameAssistant;
+using ZzzOd.Gui.PageModels.OneDragon;
 using ZzzOd.Gui.Overlay;
 using ZzzOd.Gui.Services.Config;
 using ZzzOd.Gui.Services.Dialogs;
@@ -760,20 +759,6 @@ public sealed class GuiParityAndFacadeTests
 	}
 
 	/// <summary>
-	/// 诊断入口只作为显式本地辅助项。
-	/// </summary>
-	[Fact]
-	public void NavigationRegistryGatesDiagnosticsAsLocalTool()
-	{
-		WithGuiEnvironment(null, "1", delegate
-		{
-			ZzzNavigationRegistry zzzNavigationRegistry = new ZzzNavigationRegistry();
-			Assert.Contains((IEnumerable<ZzzNavigationEntry>)zzzNavigationRegistry.Entries, (Predicate<ZzzNavigationEntry>)((ZzzNavigationEntry entry) => entry.Key == "diagnostics" && entry.Placement == ZzzNavigationPlacement.Footer));
-			Assert.Contains((IEnumerable<ZzzNavigationEntry>)zzzNavigationRegistry.Entries, (Predicate<ZzzNavigationEntry>)((ZzzNavigationEntry entry) => entry.Key == "devtools" && entry.Placement == ZzzNavigationPlacement.Footer));
-		});
-	}
-
-	/// <summary>
 	/// 已批准的截图对账路由不包含旧 change 排除项。
 	/// </summary>
 	[Fact]
@@ -802,8 +787,8 @@ public sealed class GuiParityAndFacadeTests
 		EnsureAvaloniaServices();
 		RunOnUiThread(delegate
 		{
-			ZzzGameAssistantPage zzzGameAssistantPage = new ZzzGameAssistantPage(new FakeBackend(), new ZzzGuiRunIntentService());
-			Assert.Equal("FATabView", zzzGameAssistantPage.NavigationTargetKind);
+			ZzzOd.Gui.Views.FrontierPages.GameAssistant.FrontierGameAssistantPage zzzGameAssistantPage = new ZzzOd.Gui.Views.FrontierPages.GameAssistant.FrontierGameAssistantPage(new FakeBackend(), new ZzzGuiRunIntentService());
+			Assert.Equal("TabControl", zzzGameAssistantPage.NavigationTargetKind);
 			Assert.Equal(new string[2] { "战斗助手", "委托助手" }, zzzGameAssistantPage.ItemHeaders);
 			Assert.Equal("战斗助手", zzzGameAssistantPage.SelectedHeader);
 			Assert.True(zzzGameAssistantPage.SelectByHeader("委托助手"));
@@ -830,8 +815,8 @@ public sealed class GuiParityAndFacadeTests
 		EnsureAvaloniaServices();
 		RunOnUiThread(delegate
 		{
-			ZzzOneDragonPage zzzOneDragonPage = new ZzzOneDragonPage(new FakeBackend(), new ZzzGuiRunIntentService());
-			Assert.Equal("FATabView", zzzOneDragonPage.NavigationTargetKind);
+			FrontierOneDragonPage zzzOneDragonPage = new FrontierOneDragonPage(new FakeBackend(), new ZzzGuiRunIntentService());
+			Assert.Equal("TabControl", zzzOneDragonPage.NavigationTargetKind);
 			Assert.Equal(new string[4] { "一条龙运行", "体力计划", "预备编队", "灵敏度校准" }, zzzOneDragonPage.ItemHeaders);
 			Assert.Equal("一条龙运行", zzzOneDragonPage.SelectedHeader);
 			Assert.True(zzzOneDragonPage.SelectByHeader("体力计划"));
@@ -939,7 +924,7 @@ public sealed class GuiParityAndFacadeTests
 				FakeBackend backend = new FakeBackend(contextReady: true, hasOneDragonApp: true, windowValid: true, runRoot);
 				using ZzzRuntimeManager runtime = new ZzzRuntimeManager(runRoot, NullLogger<ZzzRuntimeManager>.Instance);
 				IZzzImageAnalysisService service = new ZzzImageAnalysisService(new ZzzRunRoot(runRoot), runtime);
-				ZzzImageAnalysisPage zzzImageAnalysisPage = new ZzzImageAnalysisPage(backend, service);
+				ZzzOd.Gui.Views.FrontierPages.DevTools.FrontierImageAnalysisPage zzzImageAnalysisPage = new ZzzOd.Gui.Views.FrontierPages.DevTools.FrontierImageAnalysisPage(backend, service);
 				zzzImageAnalysisPage.OpenImageForTest(imagePath);
 				zzzImageAnalysisPage.AddStepForTest("灰度化");
 				zzzImageAnalysisPage.RunPipelineForTest();
@@ -947,7 +932,7 @@ public sealed class GuiParityAndFacadeTests
 				Assert.Contains("灰度化", (IEnumerable<string>)zzzImageAnalysisPage.PipelineSteps);
 				Assert.True(File.Exists(path));
 				Assert.Contains("step: 灰度化", File.ReadAllText(path), StringComparison.Ordinal);
-				ZzzTemplateHelperAxamlPage zzzTemplateHelperAxamlPage = new ZzzTemplateHelperAxamlPage(backend);
+				ZzzOd.Gui.Views.FrontierPages.DevTools.FrontierTemplateHelperPage zzzTemplateHelperAxamlPage = new ZzzOd.Gui.Views.FrontierPages.DevTools.FrontierTemplateHelperPage(backend);
 				zzzTemplateHelperAxamlPage.CreateTemplateForTest("battle", "avatar_test", "测试头像");
 				zzzTemplateHelperAxamlPage.ChooseImageForTest(imagePath);
 				zzzTemplateHelperAxamlPage.AddPointForTest(20, 40);
@@ -990,7 +975,7 @@ public sealed class GuiParityAndFacadeTests
 				buffer2[3] = "screen_info";
 				buffer2[4] = "battle_main.yml";
 				Assert.True(File.Exists(Path.Combine(buffer2)));
-				ZzzAgentTemplateGeneratorPage zzzAgentTemplateGeneratorPage = new ZzzAgentTemplateGeneratorPage(backend);
+				ZzzOd.Gui.Views.FrontierPages.DevTools.FrontierAgentTemplateGeneratorPage zzzAgentTemplateGeneratorPage = new ZzzOd.Gui.Views.FrontierPages.DevTools.FrontierAgentTemplateGeneratorPage(backend);
 				Assert.True(zzzAgentTemplateGeneratorPage.SetAgentIdForTest("anby"));
 				Assert.Equal(6, zzzAgentTemplateGeneratorPage.Cards.Count);
 			});
@@ -1014,7 +999,7 @@ public sealed class GuiParityAndFacadeTests
 		RunOnUiThread(delegate
 		{
 			FakeBackend fakeBackend = new FakeBackend();
-			ZzzScreenshotHelperAxamlPage zzzScreenshotHelperAxamlPage = new ZzzScreenshotHelperAxamlPage(fakeBackend, new ZzzGuiRunIntentService());
+			ZzzOd.Gui.Views.FrontierPages.DevTools.FrontierScreenshotHelperPage zzzScreenshotHelperAxamlPage = new ZzzOd.Gui.Views.FrontierPages.DevTools.FrontierScreenshotHelperPage(fakeBackend, new ZzzGuiRunIntentService());
 			fakeBackend.SaveConfigScope(new ZzzSaveConfigScopeRequest("screenshot-helper", new Dictionary<string, object>
 			{
 				["frequency_second"] = 0.25,
@@ -1030,7 +1015,7 @@ public sealed class GuiParityAndFacadeTests
 			Assert.True((bool)value.Values["dodge_detect"]);
 			Assert.Equal("screenshot_helper", fakeBackend.LastStartRequest?.AppId);
 			fakeBackend.StopRunAsync().GetAwaiter().GetResult();
-			ZzzOperationDebugAxamlPage zzzOperationDebugAxamlPage = new ZzzOperationDebugAxamlPage(fakeBackend, new ZzzGuiRunIntentService());
+			ZzzOd.Gui.Views.FrontierPages.DevTools.FrontierOperationDebugPage zzzOperationDebugAxamlPage = new ZzzOd.Gui.Views.FrontierPages.DevTools.FrontierOperationDebugPage(fakeBackend, new ZzzGuiRunIntentService());
 			fakeBackend.SaveConfigScope(new ZzzSaveConfigScopeRequest("operation-debug", new Dictionary<string, object>
 			{
 				["operation_template"] = "battle/dodge",
@@ -1213,9 +1198,9 @@ public sealed class GuiParityAndFacadeTests
 		RunOnUiThread(delegate
 		{
 			FakeBackend fakeBackend = new FakeBackend();
-			ZzzBattleAssistantPage zzzBattleAssistantPage = new ZzzBattleAssistantPage(fakeBackend, new ZzzGuiRunIntentService());
+			FrontierBattleAssistantPage zzzBattleAssistantPage = new FrontierBattleAssistantPage(fakeBackend, new ZzzGuiRunIntentService());
 			zzzBattleAssistantPage.OnPageShown();
-			ZzzBattleAssistantSettings zzzBattleAssistantSettings = Assert.IsType<ZzzBattleAssistantSettings>(zzzBattleAssistantPage.LeftContent);
+			FrontierBattleAssistantSettings zzzBattleAssistantSettings = Assert.IsType<FrontierBattleAssistantSettings>(zzzBattleAssistantPage.LeftContent);
 			ZzzGameAssistantPageModel pageModel = zzzBattleAssistantSettings.PageModel;
 			Assert.Equal(new string[2] { "自动战斗", "闪避助手" }, pageModel.ModeHeaders);
 			Assert.Equal("auto_battle", pageModel.SelectedAppId);
@@ -1258,9 +1243,9 @@ public sealed class GuiParityAndFacadeTests
 				["auto_battle_config"] = "全配队通用",
 				["dodge_assistant_config"] = "闪避"
 			}));
-			ZzzBattleAssistantPage zzzBattleAssistantPage = new ZzzBattleAssistantPage(fakeBackend, new ZzzGuiRunIntentService());
+			FrontierBattleAssistantPage zzzBattleAssistantPage = new FrontierBattleAssistantPage(fakeBackend, new ZzzGuiRunIntentService());
 			zzzBattleAssistantPage.OnPageShown();
-			ZzzBattleAssistantSettings zzzBattleAssistantSettings = Assert.IsType<ZzzBattleAssistantSettings>(zzzBattleAssistantPage.LeftContent);
+			FrontierBattleAssistantSettings zzzBattleAssistantSettings = Assert.IsType<FrontierBattleAssistantSettings>(zzzBattleAssistantPage.LeftContent);
 			Assert.Empty(zzzBattleAssistantSettings.AutoBattleOptions);
 			Assert.Empty(zzzBattleAssistantSettings.DodgeOptions);
 			Assert.Null(zzzBattleAssistantSettings.SelectedAutoBattleConfig);
@@ -1274,9 +1259,9 @@ public sealed class GuiParityAndFacadeTests
 				["auto_battle_config"] = "配置A",
 				["dodge_assistant_config"] = "闪避A"
 			}));
-			ZzzBattleAssistantPage zzzBattleAssistantPage2 = new ZzzBattleAssistantPage(fakeBackend2, new ZzzGuiRunIntentService());
+			FrontierBattleAssistantPage zzzBattleAssistantPage2 = new FrontierBattleAssistantPage(fakeBackend2, new ZzzGuiRunIntentService());
 			zzzBattleAssistantPage2.OnPageShown();
-			ZzzBattleAssistantSettings zzzBattleAssistantSettings2 = Assert.IsType<ZzzBattleAssistantSettings>(zzzBattleAssistantPage2.LeftContent);
+			FrontierBattleAssistantSettings zzzBattleAssistantSettings2 = Assert.IsType<FrontierBattleAssistantSettings>(zzzBattleAssistantPage2.LeftContent);
 			Assert.Equal(new string[2] { "配置A", "配置B" }, zzzBattleAssistantSettings2.AutoBattleOptions);
 			Assert.Equal(new string[2] { "闪避A", "闪避B" }, zzzBattleAssistantSettings2.DodgeOptions);
 			Assert.Equal("配置A", zzzBattleAssistantSettings2.SelectedAutoBattleConfig);
@@ -1299,6 +1284,7 @@ public sealed class GuiParityAndFacadeTests
 		EnsureAvaloniaServices();
 		RunOnUiThread(delegate
 		{
+			EnsureFluentTheme();
 			FakeBackend fakeBackend = new FakeBackend
 			{
 				BattleAssistantRuntime = new ZzzBattleAssistantRuntimeDto(IsRunning: true, "闪避识别-红光", "红光 ← 前台-安比", 0.123456, new ZzzBattleAssistantStateDto[3]
@@ -1308,7 +1294,7 @@ public sealed class GuiParityAndFacadeTests
 					new ZzzBattleAssistantStateDto("攻击", 12.0, 0.1, 2, 3L)
 				})
 			};
-			ZzzBattleAssistantPage zzzBattleAssistantPage = new ZzzBattleAssistantPage(fakeBackend, new ZzzGuiRunIntentService());
+			FrontierBattleAssistantPage zzzBattleAssistantPage = new FrontierBattleAssistantPage(fakeBackend, new ZzzGuiRunIntentService());
 			zzzBattleAssistantPage.OnPageShown();
 			Assert.True(zzzBattleAssistantPage.IsRuntimeRefreshActive);
 			Assert.Equal("闪避识别-红光", zzzBattleAssistantPage.TaskTriggerText);
@@ -1319,7 +1305,7 @@ public sealed class GuiParityAndFacadeTests
 			Assert.Equal(string.Empty, zzzBattleAssistantPage.DisplayedStateRows.Single((ZzzBattleAssistantStateRowModel row) => row.StateName == "治疗").ValueText);
 			zzzBattleAssistantPage.SetBattleStateFilter("闪");
 			Assert.Equal(new string[3] { "闪避", "攻击", "治疗" }, zzzBattleAssistantPage.DisplayedStateRows.Select((ZzzBattleAssistantStateRowModel row) => row.StateName));
-			ZzzBattleAssistantSettings zzzBattleAssistantSettings = Assert.IsType<ZzzBattleAssistantSettings>(zzzBattleAssistantPage.LeftContent);
+			FrontierBattleAssistantSettings zzzBattleAssistantSettings = Assert.IsType<FrontierBattleAssistantSettings>(zzzBattleAssistantPage.LeftContent);
 			Assert.True(zzzBattleAssistantSettings.SelectModeByHeader("闪避助手"));
 			Assert.False(zzzBattleAssistantPage.IsTaskDisplayVisible);
 			Assert.True(zzzBattleAssistantPage.IsRuntimeRefreshActive);
@@ -1342,8 +1328,9 @@ public sealed class GuiParityAndFacadeTests
 		EnsureAvaloniaServices();
 		RunOnUiThread(delegate
 		{
+			EnsureFluentTheme();
 			FakeBackend fakeBackend = new FakeBackend();
-			ZzzBattleAssistantPage zzzBattleAssistantPage = new ZzzBattleAssistantPage(fakeBackend, new ZzzGuiRunIntentService());
+			FrontierBattleAssistantPage zzzBattleAssistantPage = new FrontierBattleAssistantPage(fakeBackend, new ZzzGuiRunIntentService());
 			zzzBattleAssistantPage.OnPageShown();
 			Assert.Equal(1, fakeBackend.BattleAssistantOperationLoadedSubscriberCount);
 			Assert.False(zzzBattleAssistantPage.IsRuntimeRefreshActive);
@@ -1397,9 +1384,9 @@ public sealed class GuiParityAndFacadeTests
 		RunOnUiThread(delegate
 		{
 			FakeBackend fakeBackend = new FakeBackend();
-			ZzzCommissionAssistantPage zzzCommissionAssistantPage = new ZzzCommissionAssistantPage(fakeBackend, new ZzzGuiRunIntentService());
+			FrontierCommissionAssistantPage zzzCommissionAssistantPage = new FrontierCommissionAssistantPage(fakeBackend, new ZzzGuiRunIntentService());
 			zzzCommissionAssistantPage.OnPageShown();
-			ZzzCommissionAssistantSettings zzzCommissionAssistantSettings = Assert.IsType<ZzzCommissionAssistantSettings>(zzzCommissionAssistantPage.LeftContent);
+			FrontierCommissionAssistantSettings zzzCommissionAssistantSettings = Assert.IsType<FrontierCommissionAssistantSettings>(zzzCommissionAssistantPage.LeftContent);
 			ZzzGameAssistantPageModel pageModel = zzzCommissionAssistantSettings.PageModel;
 			Assert.Equal("game-assistant-commission", pageModel.Key);
 			Assert.Equal(new string[] { "commission_assistant" }, pageModel.RunAppIds);
@@ -1459,7 +1446,7 @@ public sealed class GuiParityAndFacadeTests
 				new OneDragonApplicationConfigItem("charge_plan", enabled: true),
 				new OneDragonApplicationConfigItem("coffee", enabled: false)
 			} }, 0, "one_dragon"));
-			ZzzOneDragonRunPage zzzOneDragonRunPage = new ZzzOneDragonRunPage(fakeBackend, new ZzzGuiRunIntentService());
+			FrontierOneDragonRunPage zzzOneDragonRunPage = new FrontierOneDragonRunPage(fakeBackend, new ZzzGuiRunIntentService());
 			zzzOneDragonRunPage.OnPageShown();
 			ZzzOneDragonRunSettings settings = zzzOneDragonRunPage.Settings;
 			Assert.False(typeof(Control).IsAssignableFrom(typeof(ZzzOneDragonRunSettings)));
@@ -1495,7 +1482,7 @@ public sealed class GuiParityAndFacadeTests
 			Assert.Equal("关机", configScope.Value.Values["after_done"]);
 			ZzzBackendResult<ZzzConfigScopeValuesDto> configScope2 = fakeBackend.GetConfigScope("notify", 0);
 			Assert.False((bool)configScope2.Value.Values["enable_notify"]);
-			Dictionary<string, NotifyApplicationSetting> dictionary = ZzzNotifySettingsPage.ReadApplications(configScope2.Value.Values);
+			Dictionary<string, NotifyApplicationSetting> dictionary = ZzzNotifySettingsReader.ReadApplications(configScope2.Value.Values);
 			Assert.Equal("finish_only", dictionary["coffee"].Lifecycle);
 			Assert.Equal("merge", dictionary["coffee"].Detail);
 			zzzOneDragonRunPage.RunPanel.InvokePrimaryActionAsync().GetAwaiter().GetResult();
@@ -1518,7 +1505,7 @@ public sealed class GuiParityAndFacadeTests
 		RunOnUiThread(delegate
 		{
 			FakeBackend backend = new FakeBackend();
-			ZzzOneDragonRunPage zzzOneDragonRunPage = new ZzzOneDragonRunPage(backend, new ZzzGuiRunIntentService());
+			FrontierOneDragonRunPage zzzOneDragonRunPage = new FrontierOneDragonRunPage(backend, new ZzzGuiRunIntentService());
 			Control requested = null;
 			zzzOneDragonRunPage.SecondaryPageRequested += delegate(object? _, Control control)
 			{
@@ -1527,7 +1514,7 @@ public sealed class GuiParityAndFacadeTests
 			zzzOneDragonRunPage.OnPageShown();
 			Button button = zzzOneDragonRunPage.FindControl<Button>("GlobalNotifySettingsButton");
 			button.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
-			Assert.IsType<ZzzNotifySettingsPage>(requested);
+			Assert.IsType<FrontierNotifySettingsPage>(requested);
 			zzzOneDragonRunPage.OnPageHidden();
 			zzzOneDragonRunPage.DisposePage();
 		});
@@ -1559,10 +1546,10 @@ public sealed class GuiParityAndFacadeTests
 			new OneDragonApplicationConfigItem("charge_plan", enabled: false),
 			new OneDragonApplicationConfigItem("coffee", enabled: true)
 		} }, 1, "one_dragon"));
-		ZzzOneDragonRunPage page = null;
+		FrontierOneDragonRunPage page = null;
 		RunOnUiThread(delegate
 		{
-			page = new ZzzOneDragonRunPage(backend, new ZzzGuiRunIntentService());
+			page = new FrontierOneDragonRunPage(backend, new ZzzGuiRunIntentService());
 			page.OnPageShown();
 			Assert.False(page.Settings.AppRows.Single((ZzzOneDragonAppRowModel row) => row.AppId == "coffee").Enabled);
 			Assert.True(backend.EventSubscriberCount > 0);
@@ -1663,7 +1650,7 @@ public sealed class GuiParityAndFacadeTests
 					}
 				}
 			}, 0, ChargePlanConstants.DefaultGroupId));
-			ZzzChargePlanPage zzzChargePlanPage = new ZzzChargePlanPage(fakeBackend);
+			FrontierChargePlanPage zzzChargePlanPage = new FrontierChargePlanPage(fakeBackend);
 			zzzChargePlanPage.OnPageShown();
 			Assert.True(SpinWait.SpinUntil(() => zzzChargePlanPage.State.Plans.Count == 2, TimeSpan.FromSeconds(1)));
 			Assert.Equal("one-dragon-charge-plan", zzzChargePlanPage.PageModel.Key);
@@ -1797,7 +1784,7 @@ public sealed class GuiParityAndFacadeTests
 			teamConfig.TeamList = list;
 			dictionary["team_list"] = teamConfig.TeamList;
 			fakeBackend.SaveConfigScope(new ZzzSaveConfigScopeRequest("team", dictionary));
-			ZzzPredefinedTeamPage zzzPredefinedTeamPage = new ZzzPredefinedTeamPage(fakeBackend, new ZzzGuiRunIntentService());
+			FrontierPredefinedTeamPage zzzPredefinedTeamPage = new FrontierPredefinedTeamPage(fakeBackend, new ZzzGuiRunIntentService());
 			zzzPredefinedTeamPage.OnPageShown();
 			Assert.Equal("predefined_team_checker", zzzPredefinedTeamPage.RunPanel.SelectedAppId);
 			Assert.Equal(20, zzzPredefinedTeamPage.Teams.Count);
@@ -1824,7 +1811,7 @@ public sealed class GuiParityAndFacadeTests
 			zzzPredefinedTeamPage.RunPanel.InvokePrimaryActionAsync().GetAwaiter().GetResult();
 			Assert.Equal("predefined_team_checker", fakeBackend.LastStartRequest?.AppId);
 			zzzPredefinedTeamPage.RunPanel.InvokeStopActionAsync().GetAwaiter().GetResult();
-			ZzzMouseSensitivityCheckerPage zzzMouseSensitivityCheckerPage = new ZzzMouseSensitivityCheckerPage(fakeBackend, new ZzzGuiRunIntentService());
+			FrontierMouseSensitivityCheckerPage zzzMouseSensitivityCheckerPage = new FrontierMouseSensitivityCheckerPage(fakeBackend, new ZzzGuiRunIntentService());
 			zzzMouseSensitivityCheckerPage.OnPageShown();
 			Assert.Equal("one-dragon-sensitivity", zzzMouseSensitivityCheckerPage.PageModel.Key);
 			Assert.Equal("mouse_sensitivity_checker", zzzMouseSensitivityCheckerPage.RunPanel.SelectedAppId);
@@ -1854,9 +1841,9 @@ public sealed class GuiParityAndFacadeTests
 				["app_list"] = new List<string> { "missing_app", "charge_plan" },
 				["active_app_id"] = "missing_app"
 			}));
-			ZzzStandaloneAppRunPage zzzStandaloneAppRunPage = new ZzzStandaloneAppRunPage(fakeBackend, new ZzzGuiRunIntentService());
+			ZzzOd.Gui.Views.FrontierPages.Standalone.FrontierStandaloneAppRunPage zzzStandaloneAppRunPage = new ZzzOd.Gui.Views.FrontierPages.Standalone.FrontierStandaloneAppRunPage(fakeBackend, new ZzzGuiRunIntentService());
 			zzzStandaloneAppRunPage.OnPageShown();
-			Assert.Equal(new ReadOnlySpan<string>("charge_plan"), zzzStandaloneAppRunPage.AppRows.Select((ZzzStandaloneAppRowModel row) => row.AppId).ToArray());
+			Assert.Equal(new ReadOnlySpan<string>("charge_plan"), zzzStandaloneAppRunPage.AppRows.Select(row => row.AppId).ToArray());
 			Assert.Equal("charge_plan", zzzStandaloneAppRunPage.SelectedAppId);
 			Assert.Equal("charge_plan", zzzStandaloneAppRunPage.RunPanel.SelectedAppId);
 			ZzzBackendResult<ZzzConfigScopeValuesDto> configScope = fakeBackend.GetConfigScope("standalone-app");
@@ -1922,10 +1909,10 @@ public sealed class GuiParityAndFacadeTests
 			["app_list"] = new List<string>(),
 			["active_app_id"] = string.Empty
 		}));
-		ZzzStandaloneAppRunPage page = null;
+		ZzzOd.Gui.Views.FrontierPages.Standalone.FrontierStandaloneAppRunPage page = null;
 		RunOnUiThread(delegate
 		{
-			page = new ZzzStandaloneAppRunPage(backend, new ZzzGuiRunIntentService());
+			page = new ZzzOd.Gui.Views.FrontierPages.Standalone.FrontierStandaloneAppRunPage(backend, new ZzzGuiRunIntentService());
 			page.OnPageShown();
 			Assert.Empty(page.AppRows);
 			Assert.Null(page.SelectedAppId);
@@ -1954,7 +1941,7 @@ public sealed class GuiParityAndFacadeTests
 				new ZzzInstanceDto(0, "主号", Active: true, "config/00"),
 				new ZzzInstanceDto(1, "副号", Active: false, "config/01")
 			});
-			ZzzAccountsPage zzzAccountsPage = new ZzzAccountsPage(fakeBackend);
+			ZzzFrontierAccountsPage zzzAccountsPage = new ZzzFrontierAccountsPage(fakeBackend);
 			zzzAccountsPage.OnPageShown();
 			ZzzInstanceManagementPage instanceManagement = zzzAccountsPage.InstanceManagement;
 			Assert.Equal("accounts", instanceManagement.PageModel.Key);
@@ -2007,7 +1994,7 @@ public sealed class GuiParityAndFacadeTests
 				new ZzzInstanceDto(0, "主号", Active: true, "config/00"),
 				new ZzzInstanceDto(1, "副号", Active: false, "config/01")
 			}, new ZzzRunStatusDto(ZzzRunState.Running, "coffee", "咖啡店"));
-			ZzzAccountsPage zzzAccountsPage = new ZzzAccountsPage(backend);
+			ZzzFrontierAccountsPage zzzAccountsPage = new ZzzFrontierAccountsPage(backend);
 			zzzAccountsPage.OnPageShown();
 			Assert.False(zzzAccountsPage.InstanceManagement.CanSwitch);
 			Assert.Contains("Running", zzzAccountsPage.InstanceManagement.BlockedReason, StringComparison.Ordinal);
@@ -2120,7 +2107,7 @@ public sealed class GuiParityAndFacadeTests
 					new ZzzPivotPageItem("第一页", lifecycleControl),
 					new ZzzPivotPageItem("第二页", lifecycleControl2)
 				});
-				Assert.Equal("FATabView", zzzPivotPage.NavigationTargetKind);
+				Assert.Equal("TabControl", zzzPivotPage.NavigationTargetKind);
 				Assert.Equal(new string[2] { "第一页", "第二页" }, zzzPivotPage.ItemHeaders);
 				Assert.Equal(new string[2] { "第一页 选项卡", "第二页 选项卡" }, zzzPivotPage.ItemAutomationNames);
 				Assert.All(zzzPivotPage.ItemFocusableStates, Assert.True);
@@ -2615,39 +2602,6 @@ public sealed class GuiParityAndFacadeTests
 	}
 
 	/// <summary>
-	/// 首页应保留 BaselineParity 入口按钮，并排除代码更新和自更新命令。
-	/// </summary>
-	[Fact]
-	public void HomePageReadsPythonQuickLinksFromRealProjectConfigAndExcludesUpdateCommands()
-	{
-		EnsureAvaloniaServices();
-		RunOnUiThread(delegate
-		{
-			using BackendHarness backendHarness = BackendHarness.Create();
-			File.WriteAllText(Path.Combine(backendHarness.RunRoot, "config", "project.yml"), "project_name: ZenlessZoneZero-OneDragon\nhome_page_link: https://one-dragon.com/zzz/zh/home.html\ngithub_homepage: https://github.com/OneDragon-Anything/ZenlessZoneZero-OneDragon\ndoc_link: https://docs.qq.com/doc/p/7add96a4600d363b75d2df83bb2635a7c6a969b5\nqq_link: https://pd.qq.com/g/onedrag00n");
-			ZzzHomePage zzzHomePage = CreateHomePage(backendHarness.Backend, backendHarness.RunRoot);
-			string[] buffer = new string[4];
-			buffer[0] = "官网";
-			buffer[1] = "GitHub";
-			buffer[2] = "帮助文档";
-			buffer[3] = "官方频道";
-			Assert.Equal(buffer, zzzHomePage.QuickLinks.Select((ZzzHomeQuickLink link) => link.Label).ToArray());
-			Assert.Equal("https://one-dragon.com/zzz/zh/home.html", zzzHomePage.QuickLinks.Single((ZzzHomeQuickLink link) => link.Key == "home").Uri);
-			Assert.Equal("https://github.com/OneDragon-Anything/ZenlessZoneZero-OneDragon", zzzHomePage.QuickLinks.Single((ZzzHomeQuickLink link) => link.Key == "github").Uri);
-			Assert.Equal("https://docs.qq.com/doc/p/7add96a4600d363b75d2df83bb2635a7c6a969b5", zzzHomePage.QuickLinks.Single((ZzzHomeQuickLink link) => link.Key == "docs").Uri);
-			Assert.Equal("https://pd.qq.com/g/onedrag00n", zzzHomePage.QuickLinks.Single((ZzzHomeQuickLink link) => link.Key == "official-channel").Uri);
-			Assert.Equal("使用说明 · 功能介绍", zzzHomePage.QuickLinks.Single((ZzzHomeQuickLink link) => link.Key == "home").Tooltip);
-			Assert.Equal("源码 · 反馈 · Star⭐", zzzHomePage.QuickLinks.Single((ZzzHomeQuickLink link) => link.Key == "github").Tooltip);
-			Assert.Equal("遇到问题？点这里找答案", zzzHomePage.QuickLinks.Single((ZzzHomeQuickLink link) => link.Key == "docs").Tooltip);
-			Assert.Equal("加入官方交流频道", zzzHomePage.QuickLinks.Single((ZzzHomeQuickLink link) => link.Key == "official-channel").Tooltip);
-			Assert.DoesNotContain((IEnumerable<string>)zzzHomePage.VisibleActionLabels, (Predicate<string>)((string label) => label.Contains("代码更新", StringComparison.Ordinal)));
-			Assert.DoesNotContain((IEnumerable<string>)zzzHomePage.VisibleActionLabels, (Predicate<string>)((string label) => label.Contains("自更新", StringComparison.Ordinal)));
-			Assert.DoesNotContain((IEnumerable<string>)zzzHomePage.VisibleActionLabels, (Predicate<string>)((string label) => label.Contains("自动更新", StringComparison.Ordinal)));
-			zzzHomePage.DisposePage();
-		});
-	}
-
-	/// <summary>
 	/// 首页预检查应只核对 BaselineParity 的游戏路径和闪光识别模型文件。
 	/// </summary>
 	[Fact]
@@ -2707,46 +2661,6 @@ public sealed class GuiParityAndFacadeTests
 		Assert.Contains("闪光识别模型未下载", zzzDashboardReadinessResult.Issues[0].Message, StringComparison.Ordinal);
 		File.WriteAllBytes(Path.Combine(text, "model.onnx"), default(ReadOnlySpan<byte>));
 		Assert.True(zzzDashboardReadinessService.Check().Ready);
-	}
-
-	/// <summary>
-	/// 首页启动按钮应在 BaselineParity 预检查通过后发出运行意图并进入一条龙页。
-	/// </summary>
-	[Fact]
-	public void HomePrimaryActionStartsOneDragonWhenPreFlightPasses()
-	{
-		EnsureAvaloniaServices();
-		RunOnUiThread(delegate
-		{
-			using BackendHarness backendHarness = BackendHarness.Create();
-			ModelConfig modelConfig = new ModelConfig();
-			backendHarness.Backend.SaveConfigScope(new ZzzSaveConfigScopeRequest("instance", new Dictionary<string, object> { ["game_path"] = Path.Combine(backendHarness.RunRoot, "ZenlessZoneZero.exe") }, 0));
-			backendHarness.Backend.SaveConfigScope(new ZzzSaveConfigScopeRequest("model", new Dictionary<string, object> { ["flash_classifier"] = modelConfig.FlashClassifier }));
-			string[] buffer = new string[5];
-			buffer[0] = backendHarness.RunRoot;
-			buffer[1] = "assets";
-			buffer[2] = "models";
-			buffer[3] = "flash_classifier";
-			buffer[4] = modelConfig.FlashClassifier;
-			string text = Path.Combine(buffer);
-			Directory.CreateDirectory(text);
-			File.WriteAllText(Path.Combine(text, "labels.csv"), string.Empty);
-			File.WriteAllBytes(Path.Combine(text, "model.onnx"), default(ReadOnlySpan<byte>));
-			ZzzShellNavigationService zzzShellNavigationService = new ZzzShellNavigationService();
-			ZzzGuiRunIntentService zzzGuiRunIntentService = new ZzzGuiRunIntentService();
-			string navigationKey = null;
-			zzzShellNavigationService.NavigationRequested += delegate(object? _, string key)
-			{
-				navigationKey = key;
-			};
-			ZzzHomePage zzzHomePage = CreateHomePage(backendHarness.Backend, backendHarness.RunRoot, zzzShellNavigationService, zzzGuiRunIntentService, null, createModelAssets: false);
-			zzzHomePage.InvokePrimaryAction();
-			Assert.True(zzzHomePage.LastReadiness.Ready);
-			Assert.True(zzzGuiRunIntentService.ConsumeStartOneDragon());
-			Assert.Equal("one-dragon", navigationKey);
-			Assert.Equal(FASymbol.PlayFilled, zzzHomePage.FindControl<FASymbolIcon>("StartButtonIcon").Symbol);
-			zzzHomePage.DisposePage();
-		});
 	}
 
 	/// <summary>
@@ -2898,40 +2812,6 @@ public sealed class GuiParityAndFacadeTests
 	}
 
 	/// <summary>
-	/// 首页按 BaselineParity 选择单个媒体，隐藏或离开时保持轮换计时器停止。
-	/// </summary>
-	[Fact]
-	public void HomeLifecycleLoadsSingleSelectedMediaWithoutCarouselRotation()
-	{
-		EnsureAvaloniaServices();
-		RunOnUiThread(delegate
-		{
-			using BackendHarness backendHarness = BackendHarness.Create();
-			string text = Path.Combine(backendHarness.RunRoot, "assets", "ui");
-			Directory.CreateDirectory(text);
-			File.WriteAllBytes(Path.Combine(text, "index.png"), OnePixelPng);
-			backendHarness.Backend.SaveConfigScope(new ZzzSaveConfigScopeRequest("custom", new Dictionary<string, object>
-			{
-				["background_type"] = "none",
-				["custom_banner"] = false
-			}));
-			ZzzHomePage zzzHomePage = CreateHomePage(backendHarness.Backend, backendHarness.RunRoot);
-			zzzHomePage.ActivateDashboardAsync().GetAwaiter().GetResult();
-			Assert.Single(zzzHomePage.MediaItems);
-			Assert.Equal(ZzzLauncherMediaKind.DefaultBackground, zzzHomePage.MediaItems[0].Kind);
-			Assert.True(zzzHomePage.MediaReadiness.HasAnyMedia);
-			Assert.False(zzzHomePage.IsMediaRotationActive);
-			zzzHomePage.OnPageHidden();
-			Assert.False(zzzHomePage.IsMediaRotationActive);
-			zzzHomePage.ActivateDashboardAsync().GetAwaiter().GetResult();
-			Assert.False(zzzHomePage.IsMediaRotationActive);
-			zzzHomePage.OnPageLeave();
-			Assert.False(zzzHomePage.IsMediaRotationActive);
-			zzzHomePage.DisposePage();
-		});
-	}
-
-	/// <summary>
 	/// 业务门面应提供已知配置 scope，并拒绝未知 key。
 	/// </summary>
 	[Fact]
@@ -3033,7 +2913,7 @@ public sealed class GuiParityAndFacadeTests
 					Detail = "legacy_unknown"
 				} }
 			}, 0));
-			ZzzNotifySettingsPage zzzNotifySettingsPage = new ZzzNotifySettingsPage(fakeBackend, 0);
+			FrontierNotifySettingsPage zzzNotifySettingsPage = new FrontierNotifySettingsPage(fakeBackend, 0);
 			zzzNotifySettingsPage.OnPageShown();
 			Assert.False(zzzNotifySettingsPage.FindControl<FAInfoBar>("ErrorBar").IsOpen);
 			zzzNotifySettingsPage.DisposePage();
@@ -3474,21 +3354,26 @@ public sealed class GuiParityAndFacadeTests
 		{
 			Avalonia.Application.Current.Styles.Add(new FluentAvaloniaTheme());
 		}
+
+		if (Avalonia.Application.Current is { } application
+			&& !application.TryGetResource("ZzzBattleStateRecentBrush1", ThemeVariant.Light, out _))
+		{
+			ResourceDictionary resources = (ResourceDictionary)AvaloniaXamlLoader.Load(
+				new Uri("avares://ZzzOd.Gui/Theme/ZzzFluentTheme.axaml"),
+				new Uri("avares://ZzzOd.Gui/"));
+			application.Resources.MergedDictionaries.Add(resources);
+		}
+
+		if (Avalonia.Application.Current is { } current
+			&& current.ActualThemeVariant == ThemeVariant.Default)
+		{
+			current.RequestedThemeVariant = ThemeVariant.Light;
+		}
 	}
 
 	internal static void RunOnUiThread(Action action)
 	{
 		AvaloniaThread.Value.Invoke(action);
-	}
-
-	private static ZzzHomePage CreateHomePage(IZzzAppBackend backend, string runRoot, ZzzShellNavigationService? navigation = null, ZzzGuiRunIntentService? runIntent = null, IZzzDialogService? dialogService = null, bool createModelAssets = true)
-	{
-		if (createModelAssets)
-		{
-			Directory.CreateDirectory(Path.Combine(runRoot, "assets/models"));
-		}
-		ZzzRunRoot runRoot2 = new ZzzRunRoot(runRoot);
-		return new ZzzHomePage(backend, new ZzzLauncherMediaService(runRoot2, backend), new ZzzNoticeService(runRoot2), new ZzzDashboardReadinessService(backend, runRoot2), navigation ?? new ZzzShellNavigationService(), runIntent ?? new ZzzGuiRunIntentService(), dialogService ?? new ZzzDialogService());
 	}
 
 	private static void WithGuiEnvironment(string? devMode, string? diagnostics, Action action)
@@ -3638,7 +3523,7 @@ public sealed class GuiParityAndFacadeTests
 		{
 			if (!(control is FASettingsExpander { Footer: var footer } settingsExpander))
 			{
-				if (!(control is FATabView tabView))
+				if (!(control is TabControl tabControl))
 				{
 					if (control is Border border)
 					{
@@ -3675,7 +3560,7 @@ public sealed class GuiParityAndFacadeTests
 					}
 					yield break;
 				}
-				foreach (object item in tabView.TabItems)
+			foreach (object item in tabControl.Items)
 				{
 					if (item is Control child3)
 					{

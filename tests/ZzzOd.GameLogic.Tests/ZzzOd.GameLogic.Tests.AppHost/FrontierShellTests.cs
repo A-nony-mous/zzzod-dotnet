@@ -9,6 +9,7 @@ using Avalonia.Threading;
 using Avalonia.VisualTree;
 using FluentAvalonia.Styling;
 using FluentAvalonia.UI.Controls;
+using FluentAvalonia.UI.Media.Animation;
 using FluentAvalonia.UI.Windowing;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit;
@@ -27,7 +28,6 @@ using ZzzOd.Gui.Services.Windows;
 using ZzzOd.Gui.Views.FrontierPages.Accounts;
 using ZzzOd.Gui.Views.FrontierPages.Settings;
 using ZzzOd.Gui.Views.FrontierPages.WorldPatrol;
-using ZzzOd.Gui.Pages.ApplicationSettings;
 using FrontierHomeVisual = ZzzOd.Gui.Views.FrontierPages.Home.FrontierHomePage;
 using FrontierStandaloneVisual = ZzzOd.Gui.Views.FrontierPages.Standalone.FrontierStandalonePage;
 
@@ -185,8 +185,8 @@ public sealed class FrontierShellTests
             EnsureFluentTheme();
             ZzzNavigationRegistry registry = new(
             [
-                new ZzzNavigationEntry("home", "仪表盘", "H", "h", "主页仪表盘", ZzzNavigationPlacement.Primary, _ => new LifecyclePage()),
-                new ZzzNavigationEntry("standalone", "应用运行", "A", "a", "独立应用", ZzzNavigationPlacement.Primary, _ => new LifecyclePage()),
+                new ZzzNavigationEntry("home", "仪表盘", "H", "h", "主页仪表盘", ZzzNavigationPlacement.Primary),
+                new ZzzNavigationEntry("standalone", "应用运行", "A", "a", "独立应用", ZzzNavigationPlacement.Primary),
             ]);
             IZzzAppBackend backend = DispatchProxy.Create<IZzzAppBackend, ShellBackendProxy>();
             using ServiceProvider services = CreateFrontierTestServices(backend);
@@ -242,38 +242,21 @@ public sealed class FrontierShellTests
                 new RecordingWindowRuntime(),
                 new ZzzRunRoot(Path.GetTempPath()),
                 enableSplash: false);
-            IZzzAppBackend classicBackend = DispatchProxy.Create<IZzzAppBackend, ShellBackendProxy>();
-            using ServiceProvider classicServices = new ServiceCollection().BuildServiceProvider();
-            using ZzzShellViewModel classicViewModel = new(classicBackend, new ImmediateDispatcher());
-            MainWindow classic = new(
-                classicServices,
-                CreateRegistry(new LifecyclePage(), new LifecyclePage()),
-                new ZzzPageLifecycleService(),
-                new ZzzShellNavigationService(),
-                classicViewModel,
-                new RecordingWindowRuntime(),
-                new ZzzRunRoot(Path.GetTempPath()));
             ZzzOverlayTechnicalWindow technical = new();
             ZzzOverlayInfoPanelWindow info = new();
             FrontierWorldPatrolLargeMapIconEditorWindow frontierEditor = new([]);
-            ZzzWorldPatrolLargeMapIconEditorWindow classicEditor = new([]);
             try
             {
-                Assert.IsNotType<MainWindow>(frontier);
                 Assert.IsType<FrontierShellWindow>(frontier);
-                Assert.IsType<MainWindow>(classic);
                 Assert.IsAssignableFrom<Window>(technical);
                 Assert.IsAssignableFrom<Window>(info);
                 Assert.IsAssignableFrom<Window>(frontierEditor);
-                Assert.IsAssignableFrom<Window>(classicEditor);
             }
             finally
             {
-                classicEditor.Close();
                 frontierEditor.Close();
                 info.Close();
                 technical.Close();
-                classic.Close();
                 frontier.Close();
             }
         });
@@ -306,10 +289,14 @@ public sealed class FrontierShellTests
                 window);
             try
             {
+                WireTestPages(view, home, settings);
+                FANavigationTransitionInfo? transition = null;
+                view.NavigationFrame.Navigated += (_, args) => transition = args.NavigationTransitionInfo;
                 Assert.Null(view.ActiveRoute);
                 Assert.Equal(0, view.CreatedPageCount);
                 Assert.Equal(0, home.Shown);
                 view.StartInitialNavigation();
+                Assert.IsType<FAEntranceNavigationTransitionInfo>(transition);
                 Assert.Equal("test-home", view.ActiveRoute);
                 Assert.Equal(1, view.CreatedPageCount);
                 Assert.Equal(2, view.NavigationItems.Count);
@@ -336,6 +323,7 @@ public sealed class FrontierShellTests
                 Assert.True(homeLabel.IsVisible);
 
                 Assert.True(view.NavigateForTesting("test-settings"));
+                Assert.IsType<FAEntranceNavigationTransitionInfo>(transition);
                 Assert.Equal("test-settings", view.ActiveRoute);
                 Assert.Equal(2, view.CreatedPageCount);
                 Assert.True(view.CanGoBack);
@@ -390,7 +378,9 @@ public sealed class FrontierShellTests
         GuiParityAndFacadeTests.RunOnUiThread(() =>
         {
             EnsureFluentTheme();
-            ZzzNavigationRegistry registry = CreateFrontierRegistry(new LifecyclePage(), new LifecyclePage());
+            LifecyclePage home = new();
+            LifecyclePage settings = new();
+            ZzzNavigationRegistry registry = CreateFrontierRegistry(home, settings);
             IZzzAppBackend backend = DispatchProxy.Create<IZzzAppBackend, ShellBackendProxy>();
             using ServiceProvider services = CreateFrontierTestServices(backend);
             using ZzzShellViewModel shellViewModel = new(backend, new ImmediateDispatcher());
@@ -408,9 +398,8 @@ public sealed class FrontierShellTests
             {
                 ContentControl host = Assert.IsType<ContentControl>(window.FindControl<ContentControl>("MainViewHost"));
                 Assert.Null(host.Content);
-                Assert.IsNotType<MainWindow>(window);
                 Assert.IsAssignableFrom<FAAppWindow>(window);
-                window.InitializeMainViewForTesting();
+                window.InitializeMainViewForTesting(view => WireTestPages(view, home, settings));
                 Assert.IsType<FrontierMainView>(host.Content);
                 window.Show();
                 Assert.True(window.IsVisible);
@@ -430,7 +419,9 @@ public sealed class FrontierShellTests
         GuiParityAndFacadeTests.RunOnUiThread(() =>
         {
             EnsureFluentTheme();
-            ZzzNavigationRegistry registry = CreateFrontierRegistry(new LifecyclePage(), new LifecyclePage());
+            LifecyclePage home = new();
+            LifecyclePage settings = new();
+            ZzzNavigationRegistry registry = CreateFrontierRegistry(home, settings);
             IZzzAppBackend backend = DispatchProxy.Create<IZzzAppBackend, ShellBackendProxy>();
             using ServiceProvider services = CreateFrontierTestServices(backend);
             using ZzzShellViewModel shellViewModel = new(backend, new ImmediateDispatcher());
@@ -446,7 +437,7 @@ public sealed class FrontierShellTests
 
             try
             {
-                window.InitializeMainViewForTesting();
+                window.InitializeMainViewForTesting(view => WireTestPages(view, home, settings));
                 window.Show();
                 ContentControl host = Assert.IsType<ContentControl>(window.FindControl<ContentControl>("MainViewHost"));
                 FrontierMainView view = Assert.IsType<FrontierMainView>(host.Content);
@@ -496,7 +487,7 @@ public sealed class FrontierShellTests
 
             try
             {
-                window.InitializeMainViewForTesting();
+                window.InitializeMainViewForTesting(view => WireTestPages(view, home, settings));
                 window.Show();
                 ContentControl host = Assert.IsType<ContentControl>(window.FindControl<ContentControl>("MainViewHost"));
                 FrontierMainView view = Assert.IsType<FrontierMainView>(host.Content);
@@ -538,54 +529,19 @@ public sealed class FrontierShellTests
         });
     }
 
-    [Fact]
-    public void ClassicMainWindowLoadsItsExistingNavigationTreeAndCloses()
-    {
-        GuiParityAndFacadeTests.RunOnUiThread(() =>
-        {
-            EnsureFluentTheme();
-            LifecyclePage home = new();
-            LifecyclePage settings = new();
-            ZzzNavigationRegistry registry = CreateRegistry(home, settings);
-            using ServiceProvider services = new ServiceCollection().BuildServiceProvider();
-            IZzzAppBackend backend = DispatchProxy.Create<IZzzAppBackend, ShellBackendProxy>();
-            using ZzzShellViewModel shellViewModel = new(backend, new ImmediateDispatcher());
-            MainWindow window = new(
-                services,
-                registry,
-                new ZzzPageLifecycleService(),
-                new ZzzShellNavigationService(),
-                shellViewModel,
-                new RecordingWindowRuntime(),
-                new ZzzRunRoot(Path.GetTempPath()));
-            try
-            {
-                Assert.NotNull(window.FindControl<FANavigationView>("Navigation"));
-                Assert.NotNull(window.FindControl<FAFrame>("ContentFrame"));
-                window.Show();
-                Assert.True(window.IsVisible);
-                Assert.Equal(1, home.Shown);
-            }
-            finally
-            {
-                window.Close();
-            }
-
-            Assert.False(window.IsVisible);
-        });
-    }
-
-    private static ZzzNavigationRegistry CreateRegistry(LifecyclePage home, LifecyclePage settings) => new(
-        [
-            new ZzzNavigationEntry("home", "仪表盘", "\uE80F", "\uEA8A", "主页仪表盘", ZzzNavigationPlacement.Primary, _ => home),
-            new ZzzNavigationEntry("settings", "设置", "\uE713", "\uE713", "设置选项", ZzzNavigationPlacement.Footer, _ => settings),
-        ]);
-
     private static ZzzNavigationRegistry CreateFrontierRegistry(LifecyclePage home, LifecyclePage settings) => new(
         [
-            new ZzzNavigationEntry("test-home", "仪表盘", "\uE80F", "\uEA8A", "主页仪表盘", ZzzNavigationPlacement.Primary, _ => home),
-            new ZzzNavigationEntry("test-settings", "设置", "\uE713", "\uE713", "设置选项", ZzzNavigationPlacement.Footer, _ => settings),
+            new ZzzNavigationEntry("test-home", "仪表盘", "\uE80F", "\uEA8A", "主页仪表盘", ZzzNavigationPlacement.Primary),
+            new ZzzNavigationEntry("test-settings", "设置", "\uE713", "\uE713", "设置选项", ZzzNavigationPlacement.Footer),
         ]);
+
+    private static void WireTestPages(FrontierMainView view, LifecyclePage home, LifecyclePage settings) =>
+        view.PageFactoryForTest.CreateRoutePageOverrideForTest = route => route.Key switch
+        {
+            "test-home" => home,
+            "test-settings" => settings,
+            _ => throw new InvalidOperationException($"测试注册表没有 {route.Key} 路由。"),
+        };
 
     private static ServiceProvider CreateFrontierTestServices(IZzzAppBackend backend)
     {

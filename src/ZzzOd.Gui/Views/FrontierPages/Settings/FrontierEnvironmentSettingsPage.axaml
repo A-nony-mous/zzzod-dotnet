@@ -2,7 +2,8 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:fa="using:FluentAvalonia.UI.Controls"
              xmlns:local="using:ZzzOd.Gui.Views.FrontierPages.Settings"
-             x:Class="ZzzOd.Gui.Views.FrontierPages.Settings.FrontierEnvironmentSettingsPage">
+             x:Class="ZzzOd.Gui.Views.FrontierPages.Settings.FrontierEnvironmentSettingsPage"
+             x:DataType="local:ZzzEnvironmentSettingsViewModel">
   <ScrollViewer HorizontalScrollBarVisibility="Disabled"
                 VerticalScrollBarVisibility="Auto">
     <StackPanel Margin="{DynamicResource SampleAppPageMargin}"
@@ -21,7 +22,8 @@
           <fa:FASettingsExpanderItem.Footer>
             <fa:FAComboBox x:Name="ScreenshotMethodCombo"
                            Width="180"
-                           SelectionChanged="OnScreenshotMethodChanged">
+                           ItemsSource="{Binding ScreenshotMethods}"
+                           SelectedItem="{Binding SelectedScreenshotMethod, Mode=TwoWay}">
               <fa:FAComboBox.ItemTemplate>
                 <DataTemplate x:DataType="local:ZzzEnvironmentOption">
                   <TextBlock Text="{Binding Label}" />
@@ -40,7 +42,7 @@
             <ToggleSwitch x:Name="DebugToggle"
                           OnContent=""
                           OffContent=""
-                          Click="OnDebugChanged" />
+                          IsChecked="{Binding IsDebug, Mode=TwoWay}" />
           </fa:FASettingsExpanderItem.Footer>
         </fa:FASettingsExpanderItem>
 
@@ -53,7 +55,7 @@
             <ToggleSwitch x:Name="CopyScreenshotToggle"
                           OnContent=""
                           OffContent=""
-                          Click="OnCopyScreenshotChanged" />
+                          IsChecked="{Binding CopyScreenshot, Mode=TwoWay}" />
           </fa:FASettingsExpanderItem.Footer>
         </fa:FASettingsExpanderItem>
       </fa:FASettingsExpander>
@@ -67,7 +69,8 @@
           <fa:FASettingsExpanderItem.Footer>
             <fa:FAComboBox x:Name="ProxyTypeCombo"
                            Width="180"
-                           SelectionChanged="OnProxyTypeChanged">
+                           ItemsSource="{Binding ProxyTypes}"
+                           SelectedItem="{Binding SelectedProxyType, Mode=TwoWay}">
               <fa:FAComboBox.ItemTemplate>
                 <DataTemplate x:DataType="local:ZzzEnvironmentOption">
                   <TextBlock Text="{Binding Label}" />
@@ -79,7 +82,7 @@
 
         <fa:FASettingsExpanderItem x:Name="PersonalProxyItem"
                                  Content="个人代理"
-                                 IsVisible="False">
+                                 IsVisible="{Binding PersonalProxyVisible}">
           <fa:FASettingsExpanderItem.IconSource>
             <fa:FAFontIconSource Glyph="&#xE701;" />
           </fa:FASettingsExpanderItem.IconSource>
@@ -87,7 +90,7 @@
             <TextBox x:Name="PersonalProxyInput"
                      Width="300"
                      PlaceholderText="http://127.0.0.1:8080"
-                     LostFocus="OnPersonalProxyLostFocus" />
+                     Text="{Binding PersonalProxy, Mode=TwoWay, UpdateSourceTrigger=LostFocus}" />
           </fa:FASettingsExpanderItem.Footer>
         </fa:FASettingsExpanderItem>
       </fa:FASettingsExpander>

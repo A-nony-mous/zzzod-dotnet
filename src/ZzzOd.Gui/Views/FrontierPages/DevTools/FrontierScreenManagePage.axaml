@@ -52,7 +52,7 @@
           </fa:FASettingsExpanderItem>
         </fa:FASettingsExpander>
 
-        <TextBlock Text="区域表格" FontSize="18" FontWeight="SemiBold" />
+        <TextBlock Text="区域表格" FontSize="{DynamicResource ZzzFontSizeSubtitle}" FontWeight="SemiBold" />
         <local:FrontierScreenAreaTable x:Name="AreaTable" Height="310" />
         <fa:FACommandBar IsOpen="True" DefaultLabelPosition="Right">
           <fa:FACommandBar.PrimaryCommands>
@@ -67,7 +67,7 @@
     <Grid Grid.Column="1" RowDefinitions="Auto,*" RowSpacing="8">
       <fa:FASettingsExpander Header="鼠标点击坐标" Description="图片左上角为(0, 0)">
         <fa:FASettingsExpander.Footer>
-          <StackPanel Orientation="Horizontal" Spacing="6">
+          <StackPanel Orientation="Horizontal" Spacing="8">
             <TextBox x:Name="XPositionBox" Width="90" PlaceholderText="横" IsReadOnly="True" />
             <TextBox x:Name="YPositionBox" Width="90" PlaceholderText="纵" IsReadOnly="True" />
           </StackPanel>

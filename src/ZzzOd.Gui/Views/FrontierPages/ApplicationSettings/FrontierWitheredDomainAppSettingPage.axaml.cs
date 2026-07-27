@@ -2,13 +2,15 @@ using System.Globalization;
 using Avalonia.Controls;
 using Avalonia.Interactivity;
 using Avalonia.Markup.Xaml;
+using CommunityToolkit.Mvvm.Input;
 using FluentAvalonia.UI.Controls;
 using OneDragon.Core.Configuration;
 using ZzzOd.AppHost.Backend;
 using ZzzOd.GameLogic.Application.HollowZero.WitheredDomain;
+using ZzzOd.Gui.Services.Config;
 using ZzzOd.Gui.Shell;
 
-using ZzzOd.Gui.Pages.ApplicationSettings;
+using ZzzOd.Gui.PageModels.ApplicationSettings;
 
 namespace ZzzOd.Gui.Views.FrontierPages.ApplicationSettings;
 
@@ -22,44 +24,160 @@ internal sealed record ZzzWitheredDomainChallengeChoice(ZzzWitheredDomainChallen
     public override string ToString() => Config.ModuleName;
 }
 
-internal sealed class ZzzWitheredDomainAppSettingState
+internal sealed partial class ZzzWitheredDomainAppSettingViewModel : ZzzConfigSectionViewModel
 {
-    private const string ScopeName = "withered-domain";
-    private readonly IZzzAppBackend _backend;
+    private static readonly ZzzConfigField MissionNameField =
+        new("mission_name", typeof(string), "旧都列车-内部");
+    private static readonly ZzzConfigField ChallengeConfigNameField =
+        new("challenge_config", typeof(string), "默认-专属空洞-艾莲");
+    private static readonly ZzzConfigField WeeklyPlanTimesField =
+        new("weekly_plan_times", typeof(int), 2);
+    private static readonly ZzzConfigField DailyPlanTimesField =
+        new("daily_plan_times", typeof(int), 99);
+    private static readonly ZzzConfigField ExtraTaskField =
+        new("extra_task", typeof(string), "刷满周期奖励");
+    private static readonly ZzzConfigField ExtraExitField =
+        new("extra_exit", typeof(string), "通关");
+    private static readonly IReadOnlyList<ZzzConfigField> FieldList =
+    [
+        MissionNameField,
+        ChallengeConfigNameField,
+        WeeklyPlanTimesField,
+        DailyPlanTimesField,
+        ExtraTaskField,
+        ExtraExitField,
+    ];
+
     private readonly IZzzWitheredDomainSettingsBackend _settingsBackend;
     private readonly int _instanceIndex;
     private readonly string _groupId;
     private List<ZzzWitheredDomainChallengeConfigDto> _challengeConfigs = [];
     private string? _originalModuleName;
 
-    public ZzzWitheredDomainAppSettingState(IZzzAppBackend backend, int instanceIndex, string groupId)
+    public ZzzWitheredDomainAppSettingViewModel(
+        IZzzAppBackend backend,
+        int instanceIndex,
+        string groupId,
+        Action<string?>? errorReporter = null)
+        : base(backend, errorReporter)
     {
-        _backend = backend;
         _settingsBackend = backend as IZzzWitheredDomainSettingsBackend
             ?? throw new InvalidOperationException("当前后端未提供枯萎之都设置服务。");
         _instanceIndex = instanceIndex;
         _groupId = groupId;
     }
 
-    public string MissionName { get; private set; } = string.Empty;
+    protected override string ScopeName => "withered-domain";
 
-    public string ChallengeConfigName { get; private set; } = string.Empty;
+    protected override IReadOnlyList<ZzzConfigField> Fields => FieldList;
 
-    public int WeeklyPlanTimes { get; private set; }
+    protected override int? InstanceIndex => _instanceIndex;
 
-    public int DailyPlanTimes { get; private set; }
+    protected override string? GroupId => _groupId;
 
-    public string ExtraTask { get; private set; } = string.Empty;
+    public string MissionName
+    {
+        get => GetValue<string>(MissionNameField);
+        set => SetValue(MissionNameField, value);
+    }
 
-    public string ExtraExit { get; private set; } = string.Empty;
+    public string ChallengeConfigName
+    {
+        get => GetValue<string>(ChallengeConfigNameField);
+        set => SetValue(ChallengeConfigNameField, value);
+    }
 
-    public string? LastError { get; private set; }
+    public double WeeklyPlanTimes
+    {
+        get => GetValue<int>(WeeklyPlanTimesField);
+        set => SetValue(WeeklyPlanTimesField, (int)value);
+    }
+
+    public double DailyPlanTimes
+    {
+        get => GetValue<int>(DailyPlanTimesField);
+        set => SetValue(DailyPlanTimesField, (int)value);
+    }
+
+    public string ExtraTask
+    {
+        get => GetValue<string>(ExtraTaskField);
+        set => SetValue(ExtraTaskField, value);
+    }
+
+    public string ExtraExit
+    {
+        get => GetValue<string>(ExtraExitField);
+        set => SetValue(ExtraExitField, value);
+    }
 
     public ZzzWitheredDomainSettingsCatalogDto? Catalog { get; private set; }
 
     public ZzzWitheredDomainChallengeConfigDto? SelectedChallenge { get; private set; }
 
     public IReadOnlyList<ZzzWitheredDomainChallengeConfigDto> ChallengeConfigs => _challengeConfigs;
+
+    public IReadOnlyList<ZzzWitheredDomainOption> MissionOptions => Catalog?.Missions
+        .Select(value => new ZzzWitheredDomainOption(value, value))
+        .ToArray() ?? [];
+
+    public IReadOnlyList<ZzzWitheredDomainOption> BaseChallengeOptions => Catalog?.ChallengeConfigs
+        .Select(item => new ZzzWitheredDomainOption(item.ModuleName, item.ModuleName))
+        .ToArray() ?? [];
+
+    public IReadOnlyList<ZzzWitheredDomainOption> ExtraTaskOptions { get; } =
+        ToOptions(WitheredDomainExtraTask.Options);
+
+    public IReadOnlyList<ZzzWitheredDomainOption> ExtraExitOptions { get; } =
+        ToOptions(WitheredDomainExtraExit.Options);
+
+    public ZzzWitheredDomainOption? SelectedMission
+    {
+        get => Find(MissionOptions, MissionName);
+        set
+        {
+            if (value is not null)
+            {
+                MissionName = value.Value;
+            }
+        }
+    }
+
+    public ZzzWitheredDomainOption? SelectedBaseChallenge
+    {
+        get => Find(BaseChallengeOptions, ChallengeConfigName);
+        set
+        {
+            if (value is not null)
+            {
+                ChallengeConfigName = value.Value;
+            }
+        }
+    }
+
+    public ZzzWitheredDomainOption? SelectedExtraTask
+    {
+        get => Find(ExtraTaskOptions, ExtraTask);
+        set
+        {
+            if (value is not null)
+            {
+                ExtraTask = value.Value;
+            }
+        }
+    }
+
+    public ZzzWitheredDomainOption? SelectedExtraExit
+    {
+        get => Find(ExtraExitOptions, ExtraExit);
+        set
+        {
+            if (value is not null)
+            {
+                ExtraExit = value.Value;
+            }
+        }
+    }
 
     public string RunRecordDescription => Catalog?.RunRecord switch
     {
@@ -69,64 +187,58 @@ internal sealed class ZzzWitheredDomainAppSettingState
         _ => string.Empty,
     };
 
-    public void Reload()
+    private void NotifyBaseBindings()
     {
-        LastError = null;
-        ZzzBackendResult<ZzzWitheredDomainSettingsCatalogDto> catalog =
-            _settingsBackend.GetWitheredDomainSettingsCatalog(_instanceIndex);
-        ZzzBackendResult<ZzzConfigScopeValuesDto> config = _backend.GetConfigScope(
-            ScopeName,
-            _instanceIndex,
-            _groupId);
-        if (!catalog.Success || catalog.Value is null || !config.Success || config.Value is null)
+        OnPropertyChanged(nameof(MissionOptions));
+        OnPropertyChanged(nameof(BaseChallengeOptions));
+        OnPropertyChanged(nameof(SelectedMission));
+        OnPropertyChanged(nameof(SelectedBaseChallenge));
+        OnPropertyChanged(nameof(SelectedExtraTask));
+        OnPropertyChanged(nameof(SelectedExtraExit));
+        OnPropertyChanged(nameof(WeeklyPlanTimes));
+        OnPropertyChanged(nameof(DailyPlanTimes));
+        OnPropertyChanged(nameof(RunRecordDescription));
+    }
+
+    public override void OnPageShown()
+    {
+        base.OnPageShown();
+        if (LastError is not null)
         {
-            LastError = catalog.Error ?? config.Error ?? "枯萎之都设置读取失败。";
             Catalog = null;
             _challengeConfigs = [];
             SelectedChallenge = null;
             return;
         }
 
-        try
+        ZzzBackendResult<ZzzWitheredDomainSettingsCatalogDto> catalog =
+            _settingsBackend.GetWitheredDomainSettingsCatalog(_instanceIndex);
+        if (!catalog.Success || catalog.Value is null)
         {
-            Catalog = catalog.Value;
-            _challengeConfigs = catalog.Value.ChallengeConfigs.ToList();
-            IReadOnlyDictionary<string, object?> values = config.Value.Values;
-            MissionName = RequiredString(values, "mission_name");
-            ChallengeConfigName = RequiredString(values, "challenge_config");
-            WeeklyPlanTimes = RequiredInt(values, "weekly_plan_times");
-            DailyPlanTimes = RequiredInt(values, "daily_plan_times");
-            ExtraTask = RequiredString(values, "extra_task");
-            ExtraExit = RequiredString(values, "extra_exit");
+            ReportError(catalog.Error ?? "枯萎之都设置读取失败。");
+            Catalog = null;
+            _challengeConfigs = [];
+            SelectedChallenge = null;
+            return;
         }
-        catch (Exception exception)
-        {
-            LastError = exception.Message;
-        }
+
+        Catalog = catalog.Value;
+        _challengeConfigs = catalog.Value.ChallengeConfigs.ToList();
+        ReportError(null);
+        NotifyBaseBindings();
     }
 
     public void SaveBase(string key, object value)
     {
-        ZzzBackendResult<ZzzConfigScopeValuesDto> result = _backend.SaveConfigScope(new ZzzSaveConfigScopeRequest(
-            ScopeName,
-            new Dictionary<string, object?> { [key] = value },
-            _instanceIndex,
-            _groupId));
-        LastError = result.Success ? null : result.Error ?? "枯萎之都配置保存失败。";
-        if (!result.Success)
-        {
-            Reload();
-            return;
-        }
-
         switch (key)
         {
             case "mission_name": MissionName = Convert.ToString(value, CultureInfo.InvariantCulture) ?? string.Empty; break;
             case "challenge_config": ChallengeConfigName = Convert.ToString(value, CultureInfo.InvariantCulture) ?? string.Empty; break;
-            case "weekly_plan_times": WeeklyPlanTimes = Convert.ToInt32(value, CultureInfo.InvariantCulture); break;
-            case "daily_plan_times": DailyPlanTimes = Convert.ToInt32(value, CultureInfo.InvariantCulture); break;
+            case "weekly_plan_times": WeeklyPlanTimes = Convert.ToDouble(value, CultureInfo.InvariantCulture); break;
+            case "daily_plan_times": DailyPlanTimes = Convert.ToDouble(value, CultureInfo.InvariantCulture); break;
             case "extra_task": ExtraTask = Convert.ToString(value, CultureInfo.InvariantCulture) ?? string.Empty; break;
             case "extra_exit": ExtraExit = Convert.ToString(value, CultureInfo.InvariantCulture) ?? string.Empty; break;
+            default: throw new ArgumentOutOfRangeException(nameof(key), key, "未知的枯萎之都配置字段。");
         }
     }
 
@@ -134,7 +246,7 @@ internal sealed class ZzzWitheredDomainAppSettingState
     {
         SelectedChallenge = config;
         _originalModuleName = config.ModuleName;
-        LastError = null;
+        ReportError(null);
     }
 
     public void CreateChallenge()
@@ -157,7 +269,7 @@ internal sealed class ZzzWitheredDomainAppSettingState
             [],
             true);
         _originalModuleName = null;
-        LastError = null;
+        ReportError(null);
     }
 
     public void CopyChallenge()
@@ -174,14 +286,14 @@ internal sealed class ZzzWitheredDomainAppSettingState
             ValidationError = null,
         };
         _originalModuleName = null;
-        LastError = null;
+        ReportError(null);
     }
 
     public void CloseChallenge()
     {
         SelectedChallenge = null;
         _originalModuleName = null;
-        LastError = null;
+        ReportError(null);
     }
 
     public void SaveChallenge(ZzzSaveWitheredDomainChallengeConfigRequest request)
@@ -190,7 +302,7 @@ internal sealed class ZzzWitheredDomainAppSettingState
             _settingsBackend.SaveWitheredDomainChallengeConfig(request with { OriginalModuleName = _originalModuleName });
         if (!result.Success || result.Value is null)
         {
-            LastError = result.Error ?? "挑战配置保存失败。";
+            ReportError(result.Error ?? "挑战配置保存失败。");
             return;
         }
 
@@ -209,7 +321,7 @@ internal sealed class ZzzWitheredDomainAppSettingState
             _challengeConfigs.Add(result.Value);
         }
 
-        LastError = result.Value.ValidationError;
+        ReportError(result.Value.ValidationError);
     }
 
     public void DeleteChallenge()
@@ -223,7 +335,7 @@ internal sealed class ZzzWitheredDomainAppSettingState
             _settingsBackend.DeleteWitheredDomainChallengeConfig(SelectedChallenge.ModuleName);
         if (!result.Success || result.Value is null)
         {
-            LastError = result.Error ?? "挑战配置删除失败。";
+            ReportError(result.Error ?? "挑战配置删除失败。");
             return;
         }
 
@@ -231,51 +343,36 @@ internal sealed class ZzzWitheredDomainAppSettingState
         CloseChallenge();
     }
 
+    [RelayCommand]
     public void ResetRunRecord()
     {
         ZzzBackendResult<ZzzWitheredDomainRunRecordDto> result =
             _settingsBackend.ResetWitheredDomainRunRecord(_instanceIndex);
         if (!result.Success || result.Value is null || Catalog is null)
         {
-            LastError = result.Error ?? "运行记录重置失败。";
+            ReportError(result.Error ?? "运行记录重置失败。");
             return;
         }
 
         Catalog = Catalog with { RunRecord = result.Value };
-        LastError = null;
+        ReportError(null);
+        OnPropertyChanged(nameof(RunRecordDescription));
     }
 
-    private static string RequiredString(IReadOnlyDictionary<string, object?> values, string key)
-    {
-        if (!values.TryGetValue(key, out object? value))
-        {
-            throw new InvalidOperationException($"枯萎之都配置缺少 {key}。");
-        }
-        return Convert.ToString(value, CultureInfo.InvariantCulture) ?? string.Empty;
-    }
+    private static IReadOnlyList<ZzzWitheredDomainOption> ToOptions(IReadOnlyList<ConfigItem> options) =>
+        options.Select(item => new ZzzWitheredDomainOption(item.Label, item.Value?.ToString() ?? string.Empty)).ToArray();
 
-    private static int RequiredInt(IReadOnlyDictionary<string, object?> values, string key)
-    {
-        if (!values.TryGetValue(key, out object? value))
-        {
-            throw new InvalidOperationException($"枯萎之都配置缺少 {key}。");
-        }
-        return Convert.ToInt32(value, CultureInfo.InvariantCulture);
-    }
+    private static ZzzWitheredDomainOption? Find(
+        IReadOnlyList<ZzzWitheredDomainOption> options,
+        string value) => options.FirstOrDefault(item => item.Value == value);
+
 }
 
 internal sealed partial class FrontierWitheredDomainAppSettingPage : UserControl, IZzzPageLifecycle
 {
-    private readonly ZzzWitheredDomainAppSettingState _state;
+    private readonly ZzzWitheredDomainAppSettingViewModel _viewModel;
     private readonly FAInfoBar _baseErrorBar;
     private readonly FAInfoBar _challengeErrorBar;
-    private readonly FAComboBox _missionCombo;
-    private readonly FANumberBox _weeklyTimesNumber;
-    private readonly FAComboBox _extraTaskCombo;
-    private readonly FASettingsExpander _runRecordItem;
-    private readonly FAComboBox _baseChallengeCombo;
-    private readonly FANumberBox _dailyTimesNumber;
-    private readonly FAComboBox _extraExitCombo;
     private readonly FAComboBox _existingChallengeCombo;
     private readonly FACommandBarButton _createButton;
     private readonly FACommandBarButton _copyButton;
@@ -296,17 +393,15 @@ internal sealed partial class FrontierWitheredDomainAppSettingPage : UserControl
 
     public FrontierWitheredDomainAppSettingPage(IZzzAppBackend backend, int instanceIndex, string groupId)
     {
-        _state = new ZzzWitheredDomainAppSettingState(backend, instanceIndex, groupId);
         AvaloniaXamlLoader.Load(this);
         _baseErrorBar = Required<FAInfoBar>("BaseErrorBar");
         _challengeErrorBar = Required<FAInfoBar>("ChallengeErrorBar");
-        _missionCombo = Required<FAComboBox>("MissionCombo");
-        _weeklyTimesNumber = Required<FANumberBox>("WeeklyTimesNumber");
-        _extraTaskCombo = Required<FAComboBox>("ExtraTaskCombo");
-        _runRecordItem = Required<FASettingsExpander>("RunRecordItem");
-        _baseChallengeCombo = Required<FAComboBox>("BaseChallengeCombo");
-        _dailyTimesNumber = Required<FANumberBox>("DailyTimesNumber");
-        _extraExitCombo = Required<FAComboBox>("ExtraExitCombo");
+        _viewModel = new ZzzWitheredDomainAppSettingViewModel(
+            backend,
+            instanceIndex,
+            groupId,
+            _ => ShowErrors());
+        DataContext = _viewModel;
         _existingChallengeCombo = Required<FAComboBox>("ExistingChallengeCombo");
         _createButton = Required<FACommandBarButton>("CreateButton");
         _copyButton = Required<FACommandBarButton>("CopyButton");
@@ -329,22 +424,12 @@ internal sealed partial class FrontierWitheredDomainAppSettingPage : UserControl
     public void OnPageShown() => Reload();
     public void OnPageHidden() { }
     public void OnPageLeave() { }
-    public void DisposePage() { }
+    public void DisposePage() => _viewModel.DisposePage();
 
     private void Reload()
     {
         _loading = true;
-        _state.Reload();
-        if (_state.Catalog is { } catalog)
-        {
-            SetOptions(_missionCombo, catalog.Missions.Select(value => new ZzzWitheredDomainOption(value, value)), _state.MissionName);
-            SetOptions(_baseChallengeCombo, catalog.ChallengeConfigs.Select(item => new ZzzWitheredDomainOption(item.ModuleName, item.ModuleName)), _state.ChallengeConfigName);
-            SetOptions(_extraTaskCombo, Options(WitheredDomainExtraTask.Options), _state.ExtraTask);
-            SetOptions(_extraExitCombo, Options(WitheredDomainExtraExit.Options), _state.ExtraExit);
-            _weeklyTimesNumber.Value = _state.WeeklyPlanTimes;
-            _dailyTimesNumber.Value = _state.DailyPlanTimes;
-            _runRecordItem.Description = _state.RunRecordDescription;
-        }
+        _viewModel.OnPageShown();
         RefreshChallengeChoices();
         RefreshEditor();
         _loading = false;
@@ -353,13 +438,13 @@ internal sealed partial class FrontierWitheredDomainAppSettingPage : UserControl
 
     private void RefreshChallengeChoices()
     {
-        _existingChallengeCombo.ItemsSource = _state.ChallengeConfigs.Select(item => new ZzzWitheredDomainChallengeChoice(item)).ToArray();
+        _existingChallengeCombo.ItemsSource = _viewModel.ChallengeConfigs.Select(item => new ZzzWitheredDomainChallengeChoice(item)).ToArray();
         _existingChallengeCombo.SelectedIndex = -1;
     }
 
     private void RefreshEditor()
     {
-        ZzzWitheredDomainChallengeConfigDto? selected = _state.SelectedChallenge;
+        ZzzWitheredDomainChallengeConfigDto? selected = _viewModel.SelectedChallenge;
         bool chosen = selected is not null;
         bool editable = chosen && selected!.IsSample is false;
         _existingChallengeCombo.IsEnabled = !chosen;
@@ -377,7 +462,7 @@ internal sealed partial class FrontierWitheredDomainAppSettingPage : UserControl
             control.IsEnabled = editable;
         }
 
-        if (selected is null || _state.Catalog is null)
+        if (selected is null || _viewModel.Catalog is null)
         {
             _challengeNameText.Text = string.Empty;
             _customPathGrid.IsVisible = false;
@@ -385,7 +470,7 @@ internal sealed partial class FrontierWitheredDomainAppSettingPage : UserControl
         }
 
         _challengeNameText.Text = selected.ModuleName;
-        ZzzWitheredDomainOption[] agentOptions = _state.Catalog.AgentOptions.Select(item => new ZzzWitheredDomainOption(item.Label, item.Value)).ToArray();
+        ZzzWitheredDomainOption[] agentOptions = _viewModel.Catalog.AgentOptions.Select(item => new ZzzWitheredDomainOption(item.Label, item.Value)).ToArray();
         for (int index = 0; index < _agentCombos.Length; index++)
         {
             _agentCombos[index].ItemsSource = agentOptions;
@@ -395,8 +480,8 @@ internal sealed partial class FrontierWitheredDomainAppSettingPage : UserControl
             _agentCombos[index].Text = option?.Label ?? value;
         }
         _buyOnlyPriorityToggle.IsChecked = selected.BuyOnlyPriority;
-        SetOptions(_autoBattleCombo, _state.Catalog.AutoBattleConfigs.Select(value => new ZzzWitheredDomainOption(value, value)), selected.AutoBattle);
-        SetOptions(_pathFindingCombo, _state.Catalog.PathFindingOptions.Select(item => new ZzzWitheredDomainOption(item.Label, item.Value)), selected.PathFinding);
+        SetOptions(_autoBattleCombo, _viewModel.Catalog.AutoBattleConfigs.Select(value => new ZzzWitheredDomainOption(value, value)), selected.AutoBattle);
+        SetOptions(_pathFindingCombo, _viewModel.Catalog.PathFindingOptions.Select(item => new ZzzWitheredDomainOption(item.Label, item.Value)), selected.PathFinding);
         _goInOneStepText.Text = string.Join('\n', selected.GoInOneStep);
         _waypointText.Text = string.Join('\n', selected.Waypoint);
         _avoidText.Text = string.Join('\n', selected.Avoid);
@@ -404,36 +489,11 @@ internal sealed partial class FrontierWitheredDomainAppSettingPage : UserControl
         _customPathGrid.IsVisible = selected.PathFinding == WitheredDomainPathFinding.Custom;
     }
 
-    private void OnBaseComboChanged(object? sender, SelectionChangedEventArgs args)
-    {
-        if (!_loading && sender is FAComboBox { Tag: string key, SelectedItem: ZzzWitheredDomainOption option })
-        {
-            _state.SaveBase(key, option.Value);
-            ShowErrors();
-        }
-    }
-
-    private void OnBaseNumberChanged(FANumberBox sender, FANumberBoxValueChangedEventArgs args)
-    {
-        if (!_loading && sender.Tag is string key)
-        {
-            _state.SaveBase(key, (int)sender.Value);
-            ShowErrors();
-        }
-    }
-
-    private void OnResetRecordClicked(object? sender, RoutedEventArgs args)
-    {
-        _state.ResetRunRecord();
-        _runRecordItem.Description = _state.RunRecordDescription;
-        ShowErrors();
-    }
-
     private void OnExistingChallengeChanged(object? sender, SelectionChangedEventArgs args)
     {
         if (!_loading && _existingChallengeCombo.SelectedItem is ZzzWitheredDomainChallengeChoice choice)
         {
-            _state.SelectChallenge(choice.Config);
+            _viewModel.SelectChallenge(choice.Config);
             _loading = true;
             RefreshEditor();
             _loading = false;
@@ -441,16 +501,16 @@ internal sealed partial class FrontierWitheredDomainAppSettingPage : UserControl
         }
     }
 
-    private void OnCreateClicked(object? sender, RoutedEventArgs args) { _state.CreateChallenge(); RefreshEditorSafely(); }
-    private void OnCopyClicked(object? sender, RoutedEventArgs args) { _state.CopyChallenge(); RefreshEditorSafely(); }
-    private void OnCloseEditorClicked(object? sender, RoutedEventArgs args) { _state.CloseChallenge(); RefreshEditorSafely(); }
+    private void OnCreateClicked(object? sender, RoutedEventArgs args) { _viewModel.CreateChallenge(); RefreshEditorSafely(); }
+    private void OnCopyClicked(object? sender, RoutedEventArgs args) { _viewModel.CopyChallenge(); RefreshEditorSafely(); }
+    private void OnCloseEditorClicked(object? sender, RoutedEventArgs args) { _viewModel.CloseChallenge(); RefreshEditorSafely(); }
 
     private async void OnDeleteClicked(object? sender, RoutedEventArgs args)
     {
         if (TopLevel.GetTopLevel(this) is Window owner
             && await _deleteDialog.ShowAsync(owner).ConfigureAwait(true) == FAContentDialogResult.Primary)
         {
-            _state.DeleteChallenge();
+            _viewModel.DeleteChallenge();
             RefreshChallengeChoices();
             RefreshEditorSafely();
         }
@@ -469,13 +529,13 @@ internal sealed partial class FrontierWitheredDomainAppSettingPage : UserControl
 
     private void SaveEditor()
     {
-        if (_loading || _state.SelectedChallenge is null || _state.SelectedChallenge.IsSample) return;
-        _state.SaveChallenge(new ZzzSaveWitheredDomainChallengeConfigRequest(
+        if (_loading || _viewModel.SelectedChallenge is null || _viewModel.SelectedChallenge.IsSample) return;
+        _viewModel.SaveChallenge(new ZzzSaveWitheredDomainChallengeConfigRequest(
             null,
             _challengeNameText.Text ?? string.Empty,
             (_autoBattleCombo.SelectedItem as ZzzWitheredDomainOption)?.Value ?? string.Empty,
             _resoniumPriorityText.Text ?? string.Empty,
-            string.Join('\n', _state.SelectedChallenge.EventPriority),
+            string.Join('\n', _viewModel.SelectedChallenge.EventPriority),
             _agentCombos.Select(ReadEditableValue).ToArray(),
             (_pathFindingCombo.SelectedItem as ZzzWitheredDomainOption)?.Value ?? WitheredDomainPathFinding.Default,
             _goInOneStepText.Text ?? string.Empty,
@@ -496,13 +556,13 @@ internal sealed partial class FrontierWitheredDomainAppSettingPage : UserControl
 
     private void ShowErrors()
     {
-        _baseErrorBar.IsOpen = !string.IsNullOrWhiteSpace(_state.LastError) && _state.SelectedChallenge is null;
-        _baseErrorBar.Message = _state.LastError;
-        _challengeErrorBar.IsOpen = _state.SelectedChallenge?.IsSample == true || (!string.IsNullOrWhiteSpace(_state.LastError) && _state.SelectedChallenge is not null);
-        _challengeErrorBar.Severity = _state.SelectedChallenge?.IsSample == true && string.IsNullOrWhiteSpace(_state.LastError)
+        _baseErrorBar.IsOpen = !string.IsNullOrWhiteSpace(_viewModel.LastError) && _viewModel.SelectedChallenge is null;
+        _baseErrorBar.Message = _viewModel.LastError;
+        _challengeErrorBar.IsOpen = _viewModel.SelectedChallenge?.IsSample == true || (!string.IsNullOrWhiteSpace(_viewModel.LastError) && _viewModel.SelectedChallenge is not null);
+        _challengeErrorBar.Severity = _viewModel.SelectedChallenge?.IsSample == true && string.IsNullOrWhiteSpace(_viewModel.LastError)
             ? FAInfoBarSeverity.Informational : FAInfoBarSeverity.Error;
-        _challengeErrorBar.Message = _state.SelectedChallenge?.IsSample == true && string.IsNullOrWhiteSpace(_state.LastError)
-            ? "当前为默认配置，点击复制后可修改" : _state.LastError;
+        _challengeErrorBar.Message = _viewModel.SelectedChallenge?.IsSample == true && string.IsNullOrWhiteSpace(_viewModel.LastError)
+            ? "当前为默认配置，点击复制后可修改" : _viewModel.LastError;
     }
 
     private void OnHelpClicked(object? sender, RoutedEventArgs args)
@@ -513,9 +573,6 @@ internal sealed partial class FrontierWitheredDomainAppSettingPage : UserControl
 
     private static string? ReadEditableValue(FAComboBox combo) =>
         combo.SelectedItem is ZzzWitheredDomainOption option ? option.Value : string.IsNullOrWhiteSpace(combo.Text) ? null : combo.Text;
-
-    private static IReadOnlyList<ZzzWitheredDomainOption> Options(IReadOnlyList<ConfigItem> options) =>
-        options.Select(item => new ZzzWitheredDomainOption(item.Label, item.Value?.ToString() ?? string.Empty)).ToArray();
 
     private static void SetOptions(FAComboBox combo, IEnumerable<ZzzWitheredDomainOption> options, string value)
     {

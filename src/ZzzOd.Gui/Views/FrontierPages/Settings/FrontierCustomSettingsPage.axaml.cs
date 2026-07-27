@@ -12,7 +12,7 @@ using ZzzOd.AppHost.Backend;
 using ZzzOd.Gui.Services.LauncherMedia;
 using ZzzOd.Gui.Shell;
 
-using ZzzOd.Gui.Pages.Settings;
+using ZzzOd.Gui.PageModels.Settings;
 
 namespace ZzzOd.Gui.Views.FrontierPages.Settings;
 
@@ -27,7 +27,6 @@ internal sealed partial class FrontierCustomSettingsPage : UserControl, IZzzPage
     private readonly ZzzCustomSettingsViewModel _viewModel;
     private readonly ComboBox _languageCombo;
     private readonly ComboBox _themeCombo;
-    private readonly ComboBox _shellPresetCombo;
     private readonly ComboBox _backgroundTypeCombo;
     private readonly ComboBox _closeWindowActionCombo;
     private readonly ToggleSwitch _customThemeColorToggle;
@@ -53,16 +52,6 @@ internal sealed partial class FrontierCustomSettingsPage : UserControl, IZzzPage
                 RestartApplication();
             }
         };
-        viewModel.ShellRestartRequested += async (sender, _) =>
-        {
-            FAContentDialog dialog = CreateRestartDialog();
-            ConfigureShellRestartDialog(dialog);
-            if (TopLevel.GetTopLevel(this) is { } owner
-                && await dialog.ShowAsync(owner).ConfigureAwait(true) == FAContentDialogResult.Primary)
-            {
-                RestartApplication();
-            }
-        };
         viewModel.ThemeColorEditorRequested += ShowThemeColorEditorAsync;
         viewModel.CustomBannerSelectionRequested += SelectCustomBannerAsync;
         AvaloniaXamlLoader.Load(this);
@@ -74,7 +63,6 @@ internal sealed partial class FrontierCustomSettingsPage : UserControl, IZzzPage
         _customBannerPassword = Required<TextBox>("CustomBannerPassword");
         _languageCombo = Required<ComboBox>("LanguageCombo");
         _themeCombo = Required<ComboBox>("ThemeCombo");
-        _shellPresetCombo = Required<ComboBox>("ShellPresetCombo");
         _backgroundTypeCombo = Required<ComboBox>("BackgroundTypeCombo");
         _closeWindowActionCombo = Required<ComboBox>("CloseWindowActionCombo");
     }
@@ -269,22 +257,12 @@ internal sealed partial class FrontierCustomSettingsPage : UserControl, IZzzPage
     {
         _languageCombo.ItemsSource = _viewModel.LanguageOptions;
         _themeCombo.ItemsSource = _viewModel.ThemeOptions;
-        _shellPresetCombo.ItemsSource = _viewModel.ShellPresetOptions;
         _backgroundTypeCombo.ItemsSource = _viewModel.BackgroundTypeOptions;
         _closeWindowActionCombo.ItemsSource = _viewModel.CloseWindowActionOptions;
         _languageCombo.SelectedItem = _viewModel.SelectedLanguage;
         _themeCombo.SelectedItem = _viewModel.SelectedTheme;
-        _shellPresetCombo.SelectedItem = _viewModel.SelectedShellPreset;
         _backgroundTypeCombo.SelectedItem = _viewModel.SelectedBackgroundType;
         _closeWindowActionCombo.SelectedItem = _viewModel.SelectedCloseWindowAction;
-    }
-
-    private static void ConfigureShellRestartDialog(FAContentDialog dialog)
-    {
-        dialog.Title = "提示";
-        dialog.Content = "界面样式已保存，重启应用后生效";
-        dialog.PrimaryButtonText = "立即重启";
-        dialog.CloseButtonText = "稍后重启";
     }
 
     private static void RestartApplication()

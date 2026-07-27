@@ -11,6 +11,7 @@ using Avalonia.Media.Imaging;
 using Avalonia.Styling;
 using Avalonia.Threading;
 using FluentAvalonia.UI.Controls;
+using FluentAvalonia.UI.Media.Animation;
 using FluentAvalonia.UI.Navigation;
 using ZzzOd.AppHost;
 using ZzzOd.Gui.Shell;
@@ -89,6 +90,8 @@ internal sealed partial class FrontierMainView : UserControl, IDisposable
     internal string? ActiveRoute => _activeRoute;
 
     internal int CreatedPageCount => _pageFactory.CreatedPages.Count;
+
+    internal ZzzFrontierPageFactory PageFactoryForTest => _pageFactory;
 
     internal bool CanGoBack =>
         _backNavigationHost?.CanGoBack == true || _frame.CanGoBack || CanReturnToRoot;
@@ -197,7 +200,12 @@ internal sealed partial class FrontierMainView : UserControl, IDisposable
 
 
 
-            if (!_frame.NavigateFromObject(route))
+            FAFrameNavigationOptions navigationOptions = new()
+            {
+                IsNavigationStackEnabled = true,
+                TransitionInfoOverride = new FAEntranceNavigationTransitionInfo(),
+            };
+            if (!_frame.NavigateFromObject(route, navigationOptions))
             {
                 _pendingPivotHeader = null;
             }

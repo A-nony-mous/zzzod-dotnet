@@ -12,7 +12,7 @@ using ZzzOd.AppHost;
 using ZzzOd.AppHost.Backend;
 using ZzzOd.GameLogic.Application.WorldPatrol;
 using ZzzOd.GameLogic.Context;
-using ZzzOd.Gui.Pages.ApplicationSettings;
+using ZzzOd.Gui.PageModels.ApplicationSettings;
 using ZzzOd.Gui.Views.FrontierPages.ApplicationSettings;
 using ZzzOd.Gui.Views.FrontierPages.WorldPatrol;
 
@@ -48,91 +48,6 @@ public sealed class WorldPatrolAppSettingPageTests
 	}
 
 	[Fact]
-	public void PageUsesAxamlForAllFourPythonWorldPatrolSettingSlices()
-	{
-		string path = FindDirectory();
-		string text = File.ReadAllText(Path.Combine(path, "ZzzWorldPatrolAppSettingPage.axaml"));
-		string actualString = File.ReadAllText(Path.Combine(path, "ZzzWorldPatrolAppSettingPage.axaml.cs"));
-		string actualString2 = File.ReadAllText(Path.Combine(path, "ZzzWorldPatrolLargeMapIconEditorWindow.axaml"));
-		string actualString3 = File.ReadAllText(Path.Combine(path, "ZzzWorldPatrolLargeMapIconEditorWindow.axaml.cs"));
-		string actualString4 = File.ReadAllText(Path.Combine(path, "ZzzWorldPatrolImageViewer.axaml"));
-		string actualString5 = File.ReadAllText(Path.Combine(path, "ZzzWorldPatrolImageViewer.axaml.cs"));
-		AssertOrder(text, "锄大地配置", "路线列表", "大地图录制", "锄地路线录制");
-		AssertOrder(text, "自动战斗", "界面消失预警时间", "单条路线重试上限", "锄地每日循环次数", "运行记录", "路线名单", "界面消失处理方式", "路线重试处理方式", "每轮最少占用时长（敌人刷新时间）");
-		Assert.Contains("fa:FATabView", text, StringComparison.Ordinal);
-		Assert.Contains("fa:FASettingsExpanderItem", text, StringComparison.Ordinal);
-		Assert.Contains("fa:FACommandBar", text, StringComparison.Ordinal);
-		Assert.Contains("当前区域可用路线", text, StringComparison.Ordinal);
-		Assert.Contains("GetWorldPatrolCatalog", actualString, StringComparison.Ordinal);
-		Assert.Contains("ResetWorldPatrolRunRecord", actualString, StringComparison.Ordinal);
-		Assert.Contains("SaveWorldPatrolRoute", actualString, StringComparison.Ordinal);
-		Assert.Contains("DeleteWorldPatrolRoute", actualString, StringComparison.Ordinal);
-		Assert.Contains("DebugWorldPatrolRouteAsync", actualString, StringComparison.Ordinal);
-		Assert.Contains("CaptureWorldPatrolRoutePosition", actualString, StringComparison.Ordinal);
-		Assert.Contains("LoadWorldPatrolLargeMapRecorder", actualString, StringComparison.Ordinal);
-		Assert.Contains("CaptureWorldPatrolLargeMapRecorderAsync", actualString, StringComparison.Ordinal);
-		Assert.Contains("CalculateWorldPatrolLargeMapRecorderPosition", actualString, StringComparison.Ordinal);
-		Assert.Contains("ToggleWorldPatrolLargeMapRecorderOverlap", actualString, StringComparison.Ordinal);
-		Assert.Contains("MergeWorldPatrolLargeMapRecorder", actualString, StringComparison.Ordinal);
-		Assert.Contains("UndoWorldPatrolLargeMapRecorder", actualString, StringComparison.Ordinal);
-		Assert.Contains("UpdateWorldPatrolLargeMapRecorderIcons", actualString, StringComparison.Ordinal);
-		Assert.Contains("RenderWorldPatrolRouteRecorder", actualString, StringComparison.Ordinal);
-		Assert.Contains("ConvertWorldPatrolRouteRecorderClick", actualString, StringComparison.Ordinal);
-		Assert.Contains("_appliedLargeMapIconThreshold", actualString, StringComparison.Ordinal);
-		Assert.Contains("new ZzzLogDisplayCard(_backend)", actualString, StringComparison.Ordinal);
-		Assert.Contains("ZzzWorldPatrolLargeMapIconEditorWindow", actualString, StringComparison.Ordinal);
-		Assert.Contains("ScreenshotHelperGlobalInputSource.Subscribe", actualString, StringComparison.Ordinal);
-		Assert.Contains("\"1\" => () => _ = CaptureLargeMapAsync()", actualString, StringComparison.Ordinal);
-		Assert.Contains("\"2\" => CalculateLargeMapPosition", actualString, StringComparison.Ordinal);
-		Assert.Contains("\"3\" => ToggleLargeMapOverlap", actualString, StringComparison.Ordinal);
-		Assert.Contains("\"4\" => MergeLargeMap", actualString, StringComparison.Ordinal);
-		Assert.Contains("\"1\" => CaptureAndAppendMove", actualString, StringComparison.Ordinal);
-		Assert.Contains("\"2\" => null", actualString, StringComparison.Ordinal);
-		Assert.Contains("\"3\" => null", actualString, StringComparison.Ordinal);
-		Assert.Contains("\"4\" =>", actualString, StringComparison.Ordinal);
-		Assert.Contains("\"5\" => UndoLastOperation", actualString, StringComparison.Ordinal);
-		Assert.Contains("x:Name=\"RouteOperationList\"", text, StringComparison.Ordinal);
-		Assert.Contains("Content=\"截图(1)\"", text, StringComparison.Ordinal);
-		Assert.Contains("Content=\"添加移动(4)\"", text, StringComparison.Ordinal);
-		Assert.Contains("Content=\"回退(5)\"", text, StringComparison.Ordinal);
-		Assert.Contains("Label=\"定位(2)\"", text, StringComparison.Ordinal);
-		Assert.Contains("Label=\"重叠(3)\"", text, StringComparison.Ordinal);
-		Assert.Contains("Label=\"合并(4)\"", text, StringComparison.Ordinal);
-		Assert.Contains("Label=\"编辑图标\"", text, StringComparison.Ordinal);
-		Assert.Contains("x:Name=\"LargeMapMiniMap1Image\"", text, StringComparison.Ordinal);
-		Assert.Contains("x:Name=\"LargeMapMiniMap2Image\"", text, StringComparison.Ordinal);
-		Assert.Contains("x:Name=\"LargeMapMiniMapMergedImage\"", text, StringComparison.Ordinal);
-		Assert.Contains("x:Name=\"LargeMapViewer\"", text, StringComparison.Ordinal);
-		Assert.Contains("x:Name=\"RouteMiniMapRoadImage\"", text, StringComparison.Ordinal);
-		Assert.Contains("x:Name=\"RouteMapViewer\"", text, StringComparison.Ordinal);
-		Assert.Contains("Content=\"点击后自动追加移动\"", text, StringComparison.Ordinal);
-		Assert.Contains("x:Name=\"LargeMapLogHost\"", text, StringComparison.Ordinal);
-		Assert.Contains("x:Name=\"RouteRecorderLogHost\"", text, StringComparison.Ordinal);
-		Assert.Contains("Label=\"添加操作\"", text, StringComparison.Ordinal);
-		Assert.Contains("Label=\"删除选中\"", text, StringComparison.Ordinal);
-		Assert.Contains("PrimaryButtonText=\"保存\"", text, StringComparison.Ordinal);
-		Assert.Contains("CloseButtonText=\"取消\"", text, StringComparison.Ordinal);
-		Assert.Contains("PrimaryButtonClick=\"OnSaveRouteOperationsClicked\"", text, StringComparison.Ordinal);
-		Assert.Contains("_routeOperationDraft = CloneOperations(_routeOperations)", actualString, StringComparison.Ordinal);
-		Assert.Contains("double.TryParse(operation.Data1", actualString, StringComparison.Ordinal);
-		Assert.Contains("args.Cancel = true", actualString, StringComparison.Ordinal);
-		Assert.Contains("确定要删除第{index}个操作吗？", actualString, StringComparison.Ordinal);
-		Assert.Contains("x:Class=\"ZzzOd.Gui.Pages.ApplicationSettings.ZzzWorldPatrolLargeMapIconEditorWindow\"", actualString2, StringComparison.Ordinal);
-		Assert.Contains("Show(owner)", actualString, StringComparison.Ordinal);
-		Assert.Contains("Activate()", actualString, StringComparison.Ordinal);
-		Assert.Contains("Saved", actualString3, StringComparison.Ordinal);
-		Assert.Contains("x:Class=\"ZzzOd.Gui.Pages.ApplicationSettings.ZzzWorldPatrolImageViewer\"", actualString4, StringComparison.Ordinal);
-		Assert.Contains("StrokeDashArray=\"4,2\"", actualString4, StringComparison.Ordinal);
-		Assert.Contains("Label=\"适应窗口\"", actualString4, StringComparison.Ordinal);
-		Assert.Contains("SetScaleFactor(scale", actualString5, StringComparison.Ordinal);
-		Assert.Contains("previousOffset", actualString5, StringComparison.Ordinal);
-		Assert.Contains("PointClicked?.Invoke", actualString5, StringComparison.Ordinal);
-		Assert.DoesNotContain("六分街 01", text, StringComparison.Ordinal);
-		Assert.DoesNotContain("默认白名单", text, StringComparison.Ordinal);
-		Assert.DoesNotContain("new StackPanel", actualString, StringComparison.Ordinal);
-	}
-
-	[Fact]
 	public void RouteRecorderHotkeysAppendUndoAndPersistRealMoveOperations()
 	{
 		string text = CreateRunRoot();
@@ -144,7 +59,7 @@ public sealed class WorldPatrolAppSettingPageTests
 				string fullId = Assert.Single(session.Backend.GetWorldPatrolCatalog(2).Value.Routes).FullId;
 				GuiParityAndFacadeTests.RunOnUiThread(delegate
 				{
-					ZzzWorldPatrolAppSettingPage zzzWorldPatrolAppSettingPage = new ZzzWorldPatrolAppSettingPage(session.Backend, session.Backend, 2, "daily");
+					FrontierWorldPatrolPage zzzWorldPatrolAppSettingPage = new FrontierWorldPatrolPage(session.Backend, session.Backend, 2, "daily");
 					zzzWorldPatrolAppSettingPage.LoadRouteForTest(fullId);
 					Assert.Equal(2, zzzWorldPatrolAppSettingPage.RouteOperationCountForTest);
 					Assert.True(zzzWorldPatrolAppSettingPage.HandleRouteRecorderKeyForTest("4"));
@@ -249,7 +164,7 @@ public sealed class WorldPatrolAppSettingPageTests
 			{
 				GuiParityAndFacadeTests.RunOnUiThread(delegate
 				{
-					ZzzWorldPatrolAppSettingPage zzzWorldPatrolAppSettingPage = new ZzzWorldPatrolAppSettingPage(session.Backend, session.Backend, 2, "daily");
+					FrontierWorldPatrolPage zzzWorldPatrolAppSettingPage = new FrontierWorldPatrolPage(session.Backend, session.Backend, 2, "daily");
 					zzzWorldPatrolAppSettingPage.BeginNewListForTest("页面名单");
 					Assert.Equal("页面名单", zzzWorldPatrolAppSettingPage.CurrentRouteList.Name);
 					zzzWorldPatrolAppSettingPage.SaveListForTest();
@@ -382,72 +297,6 @@ public sealed class WorldPatrolAppSettingPageTests
 		{
 			Directory.Delete(runRoot, recursive: true);
 		}
-	}
-
-	[Fact]
-	public void ProviderNavigatorOpensRealWorldPatrolInterfaceForCurrentInstanceAndGroup()
-	{
-		string text = CreateRunRoot();
-		try
-		{
-			BackendSession session = new BackendSession(text);
-			try
-			{
-				GuiParityAndFacadeTests.RunOnUiThread(delegate
-				{
-					ZzzAppSettingNavigator zzzAppSettingNavigator = new ZzzAppSettingNavigator(session.Backend);
-					Control requested = null;
-					bool condition = zzzAppSettingNavigator.Open("world_patrol", "daily", new Button(), delegate(Control control)
-					{
-						requested = control;
-					});
-					Assert.True(condition);
-					ZzzWorldPatrolAppSettingPage zzzWorldPatrolAppSettingPage = Assert.IsType<ZzzWorldPatrolAppSettingPage>(requested);
-					zzzWorldPatrolAppSettingPage.OnPageShown();
-				});
-			}
-			finally
-			{
-				if (session != null)
-				{
-					((IDisposable)session).Dispose();
-				}
-			}
-		}
-		finally
-		{
-			Directory.Delete(text, recursive: true);
-		}
-	}
-
-	private static void AssertOrder(string text, params string[] markers)
-	{
-		int num = -1;
-		foreach (string text2 in markers)
-		{
-			int num2 = text.IndexOf(text2, StringComparison.Ordinal);
-			Assert.True(num2 > num, "未按顺序找到 " + text2 + "。");
-			num = num2;
-		}
-	}
-
-	private static string FindDirectory()
-	{
-		for (DirectoryInfo directoryInfo = new DirectoryInfo(AppContext.BaseDirectory); directoryInfo != null; directoryInfo = directoryInfo.Parent)
-		{
-			string[] buffer = new string[5];
-			buffer[0] = directoryInfo.FullName;
-			buffer[1] = "src";
-			buffer[2] = "ZzzOd.Gui";
-			buffer[3] = "Pages";
-			buffer[4] = "ApplicationSettings";
-			string text = Path.Combine(buffer);
-			if (Directory.Exists(text))
-			{
-				return text;
-			}
-		}
-		throw new DirectoryNotFoundException("未找到应用设置目录。");
 	}
 
 	private static string CreateRunRoot()

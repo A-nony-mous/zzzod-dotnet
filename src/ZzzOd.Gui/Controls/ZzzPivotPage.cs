@@ -1,4 +1,3 @@
-using System.Collections;
 using Avalonia.Controls;
 using Avalonia.Input;
 using FluentAvalonia.UI.Controls;
@@ -6,15 +5,15 @@ using ZzzOd.Gui.Shell;
 
 namespace ZzzOd.Gui.Controls;
 
-public class ZzzPivotPage : FATabView, IZzzPageLifecycle, IZzzShellBackNavigationHost, IZzzPivotNavigationHost
+public class ZzzPivotPage : TabControl, IZzzPageLifecycle, IZzzShellBackNavigationHost, IZzzPivotNavigationHost
 {
     private readonly IReadOnlyList<ZzzPivotPageItem> _items;
     private readonly IReadOnlyList<ZzzPageStackHost> _pageHosts;
-    private readonly IReadOnlyList<FATabViewItem> _tabItems;
+    private readonly IReadOnlyList<TabItem> _tabItems;
     private ZzzPageStackHost? _currentHost;
     private int _lastNotifiedIndex = int.MinValue;
 
-    protected override Type StyleKeyOverride => typeof(FATabView);
+    protected override Type StyleKeyOverride => typeof(TabControl);
 
     public ZzzPivotPage(IEnumerable<ZzzPivotPageItem> items)
     {
@@ -25,20 +24,19 @@ public class ZzzPivotPage : FATabView, IZzzPageLifecycle, IZzzShellBackNavigatio
             host.BackNavigationStateChanged += OnHostBackNavigationStateChanged;
         }
 
-        _tabItems = _items.Select((item, index) => new FATabViewItem
+        _tabItems = _items.Select((item, index) => new TabItem
         {
             Header = item.Header,
             Content = _pageHosts[index],
-            IsClosable = false,
             Focusable = true,
         }).ToArray();
-        IsAddTabButtonVisible = false;
-        CanDragTabs = false;
-        CanReorderTabs = false;
-        foreach (FATabViewItem tabItem in _tabItems)
+        Classes.Add("zzz-pivot");
+        foreach (TabItem tabItem in _tabItems)
         {
-            ((IList)TabItems).Add(tabItem);
+            tabItem.Classes.Add("zzz-pivot-item");
         }
+
+        ItemsSource = _tabItems;
 
         int initialIndex = 0;
         string? evidenceTab = ZzzGuiEvidenceSelection.FromEnvironment().Tab;
@@ -56,7 +54,7 @@ public class ZzzPivotPage : FATabView, IZzzPageLifecycle, IZzzShellBackNavigatio
         base.SelectionChanged += (_, _) => ApplySelection(notifySelectionChanged: true);
     }
 
-    public string NavigationTargetKind => nameof(FATabView);
+    public string NavigationTargetKind => nameof(TabControl);
 
     public IReadOnlyList<string> ItemHeaders => _items.Select(item => item.Header).ToArray();
 

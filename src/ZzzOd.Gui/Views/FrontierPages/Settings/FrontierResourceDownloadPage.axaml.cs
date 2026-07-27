@@ -1,7 +1,4 @@
-using System.Globalization;
-using System.Text.Json;
 using Avalonia.Controls;
-using Avalonia.Controls.Primitives;
 using Avalonia.Interactivity;
 using Avalonia.Markup.Xaml;
 using Avalonia.Threading;
@@ -11,18 +8,14 @@ using ZzzOd.AppHost.Resources;
 using ZzzOd.Gui.Controls;
 using ZzzOd.Gui.Shell;
 
-using ZzzOd.Gui.Pages.Settings;
-
 namespace ZzzOd.Gui.Views.FrontierPages.Settings;
-
-internal sealed record ZzzResourceModelOption(string Label, string Value);
 
 internal sealed partial class FrontierResourceDownloadPage : UserControl, IZzzPageLifecycle
 {
-    private const string ScopeName = "model";
     private readonly IZzzAppBackend _backend;
     private readonly IZzzResourceDownloadService _resourceService;
     private readonly ZzzGuiOperationTracker _operations;
+    private readonly ZzzResourceDownloadSettingsViewModel _viewModel;
     private readonly FAInfoBar _configErrorBar;
     private readonly ZzzLogDisplayCard _logCard;
     private readonly Dictionary<string, FAComboBox> _modelCombos;
@@ -30,8 +23,6 @@ internal sealed partial class FrontierResourceDownloadPage : UserControl, IZzzPa
     private readonly Dictionary<string, Button> _downloadButtons;
     private readonly Dictionary<string, Button> _cancelButtons;
     private readonly Dictionary<string, FASettingsExpander> _items;
-    private readonly Dictionary<string, IReadOnlyList<ZzzResourceModelOption>> _options = new(StringComparer.Ordinal);
-    private bool _loading;
     private bool _shown;
 
     public FrontierResourceDownloadPage(
@@ -45,6 +36,8 @@ internal sealed partial class FrontierResourceDownloadPage : UserControl, IZzzPa
         AvaloniaXamlLoader.Load(this);
 
         _configErrorBar = Required<FAInfoBar>("ConfigErrorBar");
+        _viewModel = new ZzzResourceDownloadSettingsViewModel(backend, resourceService, ShowConfigError);
+        DataContext = _viewModel;
         _modelCombos = new Dictionary<string, FAComboBox>(StringComparer.Ordinal)
         {
             ["ocr"] = Required<FAComboBox>("OcrProfileCombo"),
@@ -90,9 +83,6 @@ internal sealed partial class FrontierResourceDownloadPage : UserControl, IZzzPa
         Required<ContentControl>("LogHost").Content = _logCard;
     }
 
-    internal IReadOnlyList<ZzzResourceModelOption> OcrOptions =>
-        _options.TryGetValue("ocr", out IReadOnlyList<ZzzResourceModelOption>? options) ? options : [];
-
     internal bool HasActiveConfigError => _configErrorBar.IsOpen;
 
     public void OnPageShown()
@@ -103,7 +93,23 @@ internal sealed partial class FrontierResourceDownloadPage : UserControl, IZzzPa
         Guid operationId = _operations.Start("settings-resource-download", "reload-resource-settings");
         try
         {
-            _operations.Complete(operationId, Reload() ? ZzzGuiOperationState.Succeeded : ZzzGuiOperationState.Failed);
+            _viewModel.OnPageShown();
+            bool loaded = _viewModel.LastError is null;
+            if (!loaded)
+            {
+                SetInputsEnabled(false);
+            }
+            else
+            {
+                SetInputsEnabled(true);
+            }
+
+            foreach (ZzzResourceDownloadItemDto resource in _resourceService.GetItems())
+            {
+                ApplyStatus(resource.Status);
+            }
+
+            _operations.Complete(operationId, loaded ? ZzzGuiOperationState.Succeeded : ZzzGuiOperationState.Failed);
         }
         catch (Exception exception)
         {
@@ -128,41 +134,8 @@ internal sealed partial class FrontierResourceDownloadPage : UserControl, IZzzPa
     {
         _shown = false;
         _resourceService.StatusChanged -= OnResourceStatusChanged;
+        _viewModel.DisposePage();
         _logCard.DisposePage();
-    }
-
-    private bool Reload()
-    {
-        ZzzBackendResult<ZzzConfigScopeValuesDto> result = _backend.GetConfigScope(ScopeName);
-        if (!result.Success || result.Value is null)
-        {
-            SetInputsEnabled(false);
-            ShowConfigError(result.Error ?? "模型配置读取失败。");
-            return false;
-        }
-
-        return ApplyValues(result.Value.Values, _resourceService.GetItems());
-    }
-
-    private void OnModelSelectionChanged(object? sender, SelectionChangedEventArgs args)
-    {
-        if (_loading
-            || sender is not FAComboBox { Tag: string key, SelectedItem: ZzzResourceModelOption selected })
-        {
-            return;
-        }
-
-        Save(new Dictionary<string, object?> { [key] = selected.Value });
-    }
-
-    private void OnGpuChanged(object? sender, RoutedEventArgs args)
-    {
-        if (_loading || sender is not ToggleSwitch { Tag: string key } toggle)
-        {
-            return;
-        }
-
-        Save(new Dictionary<string, object?> { [key] = toggle.IsChecked == true });
     }
 
     private async void OnDownloadClicked(object? sender, RoutedEventArgs args)
@@ -189,60 +162,6 @@ internal sealed partial class FrontierResourceDownloadPage : UserControl, IZzzPa
         if (sender is Button { Tag: string resourceId })
         {
             _ = _resourceService.Cancel(resourceId);
-        }
-    }
-
-    private void Save(IReadOnlyDictionary<string, object?> values)
-    {
-        ZzzBackendResult<ZzzConfigScopeValuesDto> result = _backend.SaveConfigScope(
-            new ZzzSaveConfigScopeRequest(ScopeName, values));
-        if (!result.Success || result.Value is null)
-        {
-            ShowConfigError(result.Error ?? "模型配置保存失败。");
-            return;
-        }
-
-        ApplyValues(result.Value.Values, _resourceService.GetItems());
-    }
-
-    private bool ApplyValues(
-        IReadOnlyDictionary<string, object?> values,
-        IReadOnlyList<ZzzResourceDownloadItemDto> resources)
-    {
-        _loading = true;
-        try
-        {
-            foreach (ZzzResourceDownloadItemDto resource in resources)
-            {
-                IReadOnlyList<ZzzResourceModelOption> options = resource.Options
-                    .Select(option => new ZzzResourceModelOption(option.Label, option.ModelId))
-                    .ToArray();
-                _options[resource.ResourceId] = options;
-                FAComboBox combo = _modelCombos[resource.ResourceId];
-                combo.ItemsSource = options;
-                string selectedValue = resource.ResourceId == "ocr"
-                    ? ReadString(values, "ocr", resource.SelectedModelId)
-                    : ReadString(values, resource.ResourceId, resource.SelectedModelId);
-                Select(combo, options, selectedValue);
-                _gpuToggles[resource.ResourceId].IsChecked = resource.ResourceId == "ocr"
-                    ? ReadBool(values, "ocr_use_gpu")
-                    : ReadBool(values, resource.ResourceId + "_gpu");
-                _gpuToggles[resource.ResourceId].IsEnabled = true;
-                ApplyStatus(resource.Status);
-            }
-
-            _configErrorBar.IsOpen = false;
-            return true;
-        }
-        catch (Exception exception) when (exception is FormatException or InvalidCastException or JsonException)
-        {
-            SetInputsEnabled(false);
-            ShowConfigError($"模型配置读取失败：{exception.Message}");
-            return false;
-        }
-        finally
-        {
-            _loading = false;
         }
     }
 
@@ -294,43 +213,17 @@ internal sealed partial class FrontierResourceDownloadPage : UserControl, IZzzPa
         }
     }
 
-    private void ShowConfigError(string message)
+    private void ShowConfigError(string? message)
     {
+        if (message is null)
+        {
+            _configErrorBar.IsOpen = false;
+            return;
+        }
+
         _configErrorBar.Title = "模型配置错误";
         _configErrorBar.Message = message;
         _configErrorBar.IsOpen = true;
-    }
-
-    private static void Select(
-        SelectingItemsControl combo,
-        IReadOnlyList<ZzzResourceModelOption> options,
-        string value)
-    {
-        combo.SelectedItem = options.FirstOrDefault(option => string.Equals(option.Value, value, StringComparison.Ordinal));
-    }
-
-    private static bool ReadBool(IReadOnlyDictionary<string, object?> values, string key)
-    {
-        if (!values.TryGetValue(key, out object? value) || value is null)
-        {
-            return false;
-        }
-
-        return value is JsonElement element
-            ? element.ValueKind == JsonValueKind.True
-            : Convert.ToBoolean(value, CultureInfo.InvariantCulture);
-    }
-
-    private static string ReadString(IReadOnlyDictionary<string, object?> values, string key, string fallback)
-    {
-        if (!values.TryGetValue(key, out object? value) || value is null)
-        {
-            return fallback;
-        }
-
-        return value is JsonElement element
-            ? element.GetString() ?? fallback
-            : Convert.ToString(value, CultureInfo.InvariantCulture) ?? fallback;
     }
 
     private T Required<T>(string name) where T : Control =>

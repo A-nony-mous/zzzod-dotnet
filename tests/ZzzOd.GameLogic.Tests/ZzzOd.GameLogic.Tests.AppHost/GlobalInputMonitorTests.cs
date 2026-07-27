@@ -37,8 +37,8 @@ public sealed class GlobalInputMonitorTests
 		string path = FindRepositoryRoot();
 		string path2 = Path.Combine(path, "src", "ZzzOd.Gui");
 		string actualString = File.ReadAllText(Path.Combine(path2, "Services", "Windows", "ZzzGlobalInputMonitor.cs"));
-		string actualString2 = File.ReadAllText(Path.Combine(path2, "Pages", "Settings", "ZzzGameSettingsPage.cs"));
-		string actualString3 = File.ReadAllText(Path.Combine(path2, "Pages", "Settings", "ZzzEnvironmentSettingsPage.axaml.cs"));
+		string actualString2 = File.ReadAllText(Path.Combine(path2, "Views", "FrontierPages", "Settings", "FrontierGameSettingsPage.axaml.cs"));
+		string actualString3 = File.ReadAllText(Path.Combine(path2, "Views", "FrontierPages", "Settings", "FrontierEnvironmentSettingsPage.axaml.cs"));
 		string actualString4 = File.ReadAllText(Path.Combine(path2, "Program.cs"));
 		Assert.Contains("SetWindowsHookExW(WhKeyboardLl", actualString, StringComparison.Ordinal);
 		Assert.Contains("SetWindowsHookExW(WhMouseLl", actualString, StringComparison.Ordinal);

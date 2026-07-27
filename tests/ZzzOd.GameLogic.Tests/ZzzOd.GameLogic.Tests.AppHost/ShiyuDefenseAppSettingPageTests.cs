@@ -47,31 +47,6 @@ public sealed class ShiyuDefenseAppSettingPageTests
 	}
 
 	/// <summary>
-	/// 页面应使用独立 AXAML 和 BaselineParity 八列表格。
-	/// </summary>
-	[Fact]
-	public void PageUsesAxamlFluentControlsAndPythonTableOrder()
-	{
-		string path = FindDirectory();
-		string text = File.ReadAllText(Path.Combine(path, "ZzzShiyuDefenseAppSettingPage.axaml"));
-		string actualString = File.ReadAllText(Path.Combine(path, "ZzzShiyuDefenseAppSettingPage.axaml.cs"));
-		AssertOrder(text, "剧变节点 重置运行记录", "Text=\"预备配队\"", "Text=\"剧变节点\"", "Text=\"电属性\"", "Text=\"以太属性\"", "Text=\"物理属性\"", "Text=\"火属性\"", "Text=\"冰属性\"", "Text=\"风属性\"");
-		Assert.Contains("fa:FASettingsExpanderItem", text, StringComparison.Ordinal);
-		Assert.Contains("<ListBox", text, StringComparison.Ordinal);
-		Assert.Contains("<CheckBox", text, StringComparison.Ordinal);
-		Assert.Contains("MinHeight=\"500\"", text, StringComparison.Ordinal);
-		Assert.Contains("GetConfigScope(\"team\", _instanceIndex)", actualString, StringComparison.Ordinal);
-		Assert.Contains("GetConfigScope(", actualString, StringComparison.Ordinal);
-		Assert.Contains("SaveConfigScope", actualString, StringComparison.Ordinal);
-		Assert.Contains("ResetShiyuDefenseRunRecord(_instanceIndex)", actualString, StringComparison.Ordinal);
-		Assert.Contains("AutoBattleConfig = team.AutoBattle", actualString, StringComparison.Ordinal);
-		Assert.DoesNotContain("new StackPanel", actualString, StringComparison.Ordinal);
-		Assert.DoesNotContain("PageModel", actualString, StringComparison.Ordinal);
-		Assert.DoesNotContain("Python", text, StringComparison.Ordinal);
-		Assert.DoesNotContain("自动战斗", text, StringComparison.Ordinal);
-	}
-
-	/// <summary>
 	/// 队伍选项应写入当前实例和应用组的真实配置路径。
 	/// </summary>
 	[Fact]
@@ -162,17 +137,6 @@ public sealed class ShiyuDefenseAppSettingPageTests
 		}
 	}
 
-	private static void AssertOrder(string text, params string[] markers)
-	{
-		int num = -1;
-		foreach (string text2 in markers)
-		{
-			int num2 = text.IndexOf(text2, StringComparison.Ordinal);
-			Assert.True(num2 > num, "未按顺序找到 " + text2 + "。");
-			num = num2;
-		}
-	}
-
 	private static string CreateRunRoot(string prefix)
 	{
 		string text = Path.Combine(Path.GetTempPath(), prefix, Guid.NewGuid().ToString("N"));
@@ -189,22 +153,4 @@ public sealed class ShiyuDefenseAppSettingPageTests
 		File.WriteAllText(Path.Combine(runRoot, "config", "one_dragon.yml"), "instance_list:\n- idx: 0\n  name: '00'\n  active: true\n  active_in_od: true");
 	}
 
-	private static string FindDirectory()
-	{
-		for (DirectoryInfo directoryInfo = new DirectoryInfo(AppContext.BaseDirectory); directoryInfo != null; directoryInfo = directoryInfo.Parent)
-		{
-			string[] buffer = new string[5];
-			buffer[0] = directoryInfo.FullName;
-			buffer[1] = "src";
-			buffer[2] = "ZzzOd.Gui";
-			buffer[3] = "Pages";
-			buffer[4] = "ApplicationSettings";
-			string text = Path.Combine(buffer);
-			if (Directory.Exists(text))
-			{
-				return text;
-			}
-		}
-		throw new DirectoryNotFoundException("未找到应用设置目录。");
-	}
 }

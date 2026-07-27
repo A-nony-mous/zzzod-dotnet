@@ -12,10 +12,10 @@ using ZzzOd.GameLogic.Application.OneDragonApp;
 using ZzzOd.GameLogic.Config;
 using ZzzOd.GameLogic.Const;
 using ZzzOd.Gui.Controls;
-using ZzzOd.Gui.Pages.ApplicationSettings;
+using ZzzOd.Gui.PageModels.ApplicationSettings;
 using ZzzOd.Gui.Services.RunIntent;
 using ZzzOd.Gui.Shell;
-using ZzzOd.Gui.Pages.OneDragon;
+using ZzzOd.Gui.PageModels.OneDragon;
 using ZzzOd.Gui.Views.FrontierPages.ApplicationSettings;
 
 namespace ZzzOd.Gui.Views.FrontierPages.OneDragon;
@@ -43,12 +43,8 @@ internal sealed partial class FrontierOneDragonRunPage : UserControl, IZzzPageLi
     private readonly IZzzAppBackend _backend;
     private readonly ZzzOneDragonRunSettings _settings;
     private readonly ZzzAppSettingNavigator _appSettingNavigator;
-    private readonly ItemsControl _appList;
     private readonly FAInfoBar _actionInfoBar;
     private readonly DispatcherTimer _actionInfoTimer;
-    private readonly ToggleSwitch _notifyToggle;
-    private readonly FAComboBox _instanceRunCombo;
-    private readonly FAComboBox _afterDoneCombo;
     private readonly FATeachingTip _appNotifyTip;
     private readonly FAComboBox _appLifecycleCombo;
     private readonly FAComboBox _appDetailCombo;
@@ -59,7 +55,6 @@ internal sealed partial class FrontierOneDragonRunPage : UserControl, IZzzPageLi
     private Point _dragStart;
     private PointerPressedEventArgs? _dragPointerPressedArgs;
     private string? _notifyAppId;
-    private bool _loadingSettings;
     private bool _loadingAppNotify;
     private readonly ZzzGuiOperationTracker _operations;
 
@@ -67,7 +62,13 @@ internal sealed partial class FrontierOneDragonRunPage : UserControl, IZzzPageLi
     {
         _backend = backend;
         _operations = operations ?? new ZzzGuiOperationTracker();
-        _settings = new ZzzOneDragonRunSettings(backend);
+        _settings = new ZzzOneDragonRunSettings(backend, error =>
+        {
+            if (!string.IsNullOrWhiteSpace(error))
+            {
+                ShowAction(error, FAInfoBarSeverity.Error);
+            }
+        });
         _appSettingNavigator = new ZzzAppSettingNavigator(
             backend,
             new FrontierAppSettingPageFactory(backend).Create);
@@ -79,22 +80,17 @@ internal sealed partial class FrontierOneDragonRunPage : UserControl, IZzzPageLi
             fixedGroupId: ZOneDragonAppConstants.DefaultGroupId);
 
         AvaloniaXamlLoader.Load(this);
-        _appList = Required<ItemsControl>("AppList");
         _actionInfoBar = Required<FAInfoBar>("ActionInfoBar");
         _actionInfoTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(4) };
         _actionInfoTimer.Tick += OnActionInfoTimerTick;
-        _notifyToggle = Required<ToggleSwitch>("NotifyToggle");
-        _instanceRunCombo = Required<FAComboBox>("InstanceRunCombo");
-        _afterDoneCombo = Required<FAComboBox>("AfterDoneCombo");
         _appNotifyTip = Required<FATeachingTip>("AppNotifyTip");
         _appLifecycleCombo = Required<FAComboBox>("AppLifecycleCombo");
         _appDetailCombo = Required<FAComboBox>("AppDetailCombo");
         Required<ContentControl>("RunHost").Content = RunPanel;
 
-        _instanceRunCombo.ItemsSource = new[] { "全部实例", "仅运行当前" };
-        _afterDoneCombo.ItemsSource = new[] { "无", "关闭游戏", "关机" };
         _appLifecycleCombo.ItemsSource = LifecycleOptions;
         _appDetailCombo.ItemsSource = DetailOptions;
+        DataContext = _settings;
     }
 
     public ZzzOneDragonRunSettings Settings => _settings;
@@ -109,8 +105,7 @@ internal sealed partial class FrontierOneDragonRunPage : UserControl, IZzzPageLi
         try
         {
             _settings.Reload();
-            RefreshRows();
-            RefreshSettings();
+            ShowSettingsError();
             StartEvents();
             RunPanel.OnPageShown();
             _operations.Complete(operationId, ZzzGuiOperationState.Succeeded);
@@ -150,6 +145,7 @@ internal sealed partial class FrontierOneDragonRunPage : UserControl, IZzzPageLi
         HideActionToast();
         _actionInfoTimer.Tick -= OnActionInfoTimerTick;
         _appNotifyTip.IsOpen = false;
+        _settings.DisposePage();
         RunPanel.DisposePage();
     }
 
@@ -186,7 +182,6 @@ internal sealed partial class FrontierOneDragonRunPage : UserControl, IZzzPageLi
         if (sender is ToggleSwitch toggle && toggle.DataContext is ZzzOneDragonAppRowModel row)
         {
             _settings.SetAppEnabled(row.AppId, toggle.IsChecked == true);
-            RefreshRows();
             ShowSettingsError();
         }
     }
@@ -205,38 +200,7 @@ internal sealed partial class FrontierOneDragonRunPage : UserControl, IZzzPageLi
             index--;
         }
 
-        RefreshRows();
         ShowSettingsError();
-    }
-
-    private void OnNotifyToggleClicked(object? sender, RoutedEventArgs args)
-    {
-        if (_loadingSettings)
-        {
-            return;
-        }
-
-        _settings.SetNotifyEnabled(_notifyToggle.IsChecked == true);
-        RefreshRows();
-        ShowSettingsError();
-    }
-
-    private void OnInstanceRunChanged(object? sender, SelectionChangedEventArgs args)
-    {
-        if (!_loadingSettings && _instanceRunCombo.SelectedItem is string value)
-        {
-            _settings.SetInstanceRun(value);
-            ShowSettingsError();
-        }
-    }
-
-    private void OnAfterDoneChanged(object? sender, SelectionChangedEventArgs args)
-    {
-        if (!_loadingSettings && _afterDoneCombo.SelectedItem is string value)
-        {
-            _settings.SetAfterDone(value);
-            ShowSettingsError();
-        }
     }
 
     private void OnGlobalNotifySettingsClicked(object? sender, RoutedEventArgs args)
@@ -369,29 +333,12 @@ internal sealed partial class FrontierOneDragonRunPage : UserControl, IZzzPageLi
         }
 
         _settings.MoveAppTo(sourceAppId!, Math.Clamp(insertionIndex, 0, rows.Count - 1));
-        RefreshRows();
         ShowSettingsError();
         args.DragEffects = DragDropEffects.Move;
         args.Handled = true;
     }
 
     private void OnHelpClicked(object? sender, RoutedEventArgs args) => OpenUrl("https://one-dragon.com/zzz/zh/feat_one_dragon/onedragon.html");
-
-    private void RefreshRows()
-    {
-        _appList.ItemsSource = null;
-        _appList.ItemsSource = _settings.AppRows;
-    }
-
-    private void RefreshSettings()
-    {
-        _loadingSettings = true;
-        _notifyToggle.IsChecked = _settings.NotifyEnabled;
-        _instanceRunCombo.SelectedItem = _settings.InstanceRun;
-        _afterDoneCombo.SelectedItem = _settings.AfterDone;
-        _loadingSettings = false;
-        ShowSettingsError();
-    }
 
     private void StartEvents()
     {
@@ -411,8 +358,7 @@ internal sealed partial class FrontierOneDragonRunPage : UserControl, IZzzPageLi
                         await Dispatcher.UIThread.InvokeAsync(() =>
                         {
                             _settings.Reload();
-                            RefreshRows();
-                            RefreshSettings();
+                            ShowSettingsError();
                         });
                     }
                     else if (item.Type == "run.stateChanged")
@@ -420,7 +366,6 @@ internal sealed partial class FrontierOneDragonRunPage : UserControl, IZzzPageLi
                         await Dispatcher.UIThread.InvokeAsync(() =>
                         {
                             _settings.ReloadApps();
-                            RefreshRows();
                             ShowSettingsError();
                         });
                     }

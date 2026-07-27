@@ -1,7 +1,9 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:fa="using:FluentAvalonia.UI.Controls"
-             x:Class="ZzzOd.Gui.Views.FrontierPages.Settings.FrontierOverlaySettingsPage">
+             xmlns:local="using:ZzzOd.Gui.Views.FrontierPages.Settings"
+             x:Class="ZzzOd.Gui.Views.FrontierPages.Settings.FrontierOverlaySettingsPage"
+             x:DataType="local:ZzzOverlaySettingsViewModel">
   <ScrollViewer HorizontalScrollBarVisibility="Disabled"
                 VerticalScrollBarVisibility="Auto">
     <StackPanel x:Name="SettingsRoot"
@@ -27,37 +29,33 @@
                                  Content="启用 Overlay">
           <fa:FASettingsExpanderItem.Footer>
             <ToggleSwitch x:Name="EnabledToggle"
-                          Tag="enabled"
                           OnContent="开启"
                           OffContent="关闭"
-                          Click="OnToggleChanged" />
+                          IsChecked="{Binding Enabled, Mode=TwoWay}" />
           </fa:FASettingsExpanderItem.Footer>
         </fa:FASettingsExpanderItem>
         <fa:FASettingsExpanderItem Content="显隐热键主键">
           <fa:FASettingsExpanderItem.Footer>
             <TextBox x:Name="HotkeyTextBox"
-                     Tag="toggle_hotkey"
                      Width="180"
                      MaxLength="24"
-                     LostFocus="OnTextChanged" />
+                     Text="{Binding ToggleHotkey, Mode=TwoWay, UpdateSourceTrigger=LostFocus}" />
           </fa:FASettingsExpanderItem.Footer>
         </fa:FASettingsExpanderItem>
         <fa:FASettingsExpanderItem Content="默认显示">
           <fa:FASettingsExpanderItem.Footer>
             <ToggleSwitch x:Name="VisibleToggle"
-                          Tag="visible"
                           OnContent="开启"
                           OffContent="关闭"
-                          Click="OnToggleChanged" />
+                          IsChecked="{Binding Visible, Mode=TwoWay}" />
           </fa:FASettingsExpanderItem.Footer>
         </fa:FASettingsExpanderItem>
         <fa:FASettingsExpanderItem Content="防截图保护">
           <fa:FASettingsExpanderItem.Footer>
             <ToggleSwitch x:Name="AntiCaptureToggle"
-                          Tag="anti_capture"
                           OnContent="开启"
                           OffContent="关闭"
-                          Click="OnToggleChanged" />
+                          IsChecked="{Binding AntiCapture, Mode=TwoWay}" />
           </fa:FASettingsExpanderItem.Footer>
         </fa:FASettingsExpanderItem>
       </fa:FASettingsExpander>
@@ -65,47 +63,47 @@
       <fa:FASettingsExpander Header="视觉绘制">
         <fa:FASettingsExpanderItem Content="启用视觉层">
           <fa:FASettingsExpanderItem.Footer>
-            <ToggleSwitch x:Name="VisionLayerToggle" Tag="vision_layer_enabled" Click="OnToggleChanged" />
+            <ToggleSwitch x:Name="VisionLayerToggle" IsChecked="{Binding VisionLayerEnabled, Mode=TwoWay}" />
           </fa:FASettingsExpanderItem.Footer>
         </fa:FASettingsExpanderItem>
         <fa:FASettingsExpanderItem Content="显示 YOLO">
           <fa:FASettingsExpanderItem.Footer>
-            <ToggleSwitch x:Name="VisionYoloToggle" Tag="vision_yolo_enabled" Click="OnToggleChanged" />
+            <ToggleSwitch x:Name="VisionYoloToggle" IsChecked="{Binding VisionYoloEnabled, Mode=TwoWay}" />
           </fa:FASettingsExpanderItem.Footer>
         </fa:FASettingsExpanderItem>
         <fa:FASettingsExpanderItem Content="显示 OCR">
           <fa:FASettingsExpanderItem.Footer>
-            <ToggleSwitch x:Name="VisionOcrToggle" Tag="vision_ocr_enabled" Click="OnToggleChanged" />
+            <ToggleSwitch x:Name="VisionOcrToggle" IsChecked="{Binding VisionOcrEnabled, Mode=TwoWay}" />
           </fa:FASettingsExpanderItem.Footer>
         </fa:FASettingsExpanderItem>
         <fa:FASettingsExpanderItem Content="显示 Template">
           <fa:FASettingsExpanderItem.Footer>
-            <ToggleSwitch x:Name="VisionTemplateToggle" Tag="vision_template_enabled" Click="OnToggleChanged" />
+            <ToggleSwitch x:Name="VisionTemplateToggle" IsChecked="{Binding VisionTemplateEnabled, Mode=TwoWay}" />
           </fa:FASettingsExpanderItem.Footer>
         </fa:FASettingsExpanderItem>
         <fa:FASettingsExpanderItem Content="显示 CV Pipeline">
           <fa:FASettingsExpanderItem.Footer>
-            <ToggleSwitch x:Name="VisionCvToggle" Tag="vision_cv_enabled" Click="OnToggleChanged" />
+            <ToggleSwitch x:Name="VisionCvToggle" IsChecked="{Binding VisionCvEnabled, Mode=TwoWay}" />
           </fa:FASettingsExpanderItem.Footer>
         </fa:FASettingsExpanderItem>
         <fa:FASettingsExpanderItem Content="视觉层 X 偏移">
           <fa:FASettingsExpanderItem.Footer>
-            <fa:FANumberBox x:Name="VisionOffsetXNumber" Tag="vision_offset_x" Width="180" Minimum="-400" Maximum="400" SmallChange="1" ValueChanged="OnNumberChanged" />
+            <fa:FANumberBox x:Name="VisionOffsetXNumber" Width="180" Minimum="-400" Maximum="400" SmallChange="1" Value="{Binding VisionOffsetX, Mode=TwoWay}" />
           </fa:FASettingsExpanderItem.Footer>
         </fa:FASettingsExpanderItem>
         <fa:FASettingsExpanderItem Content="视觉层 Y 偏移">
           <fa:FASettingsExpanderItem.Footer>
-            <fa:FANumberBox x:Name="VisionOffsetYNumber" Tag="vision_offset_y" Width="180" Minimum="-400" Maximum="400" SmallChange="1" ValueChanged="OnNumberChanged" />
+            <fa:FANumberBox x:Name="VisionOffsetYNumber" Width="180" Minimum="-400" Maximum="400" SmallChange="1" Value="{Binding VisionOffsetY, Mode=TwoWay}" />
           </fa:FASettingsExpanderItem.Footer>
         </fa:FASettingsExpanderItem>
         <fa:FASettingsExpanderItem Content="视觉层 X 缩放">
           <fa:FASettingsExpanderItem.Footer>
-            <fa:FANumberBox x:Name="VisionScaleXNumber" Tag="vision_scale_x" Width="180" Minimum="0.5" Maximum="1.5" SmallChange="0.01" ValueChanged="OnNumberChanged" />
+            <fa:FANumberBox x:Name="VisionScaleXNumber" Width="180" Minimum="0.5" Maximum="1.5" SmallChange="0.01" Value="{Binding VisionScaleX, Mode=TwoWay}" />
           </fa:FASettingsExpanderItem.Footer>
         </fa:FASettingsExpanderItem>
         <fa:FASettingsExpanderItem Content="视觉层 Y 缩放">
           <fa:FASettingsExpanderItem.Footer>
-            <fa:FANumberBox x:Name="VisionScaleYNumber" Tag="vision_scale_y" Width="180" Minimum="0.5" Maximum="1.5" SmallChange="0.01" ValueChanged="OnNumberChanged" />
+            <fa:FANumberBox x:Name="VisionScaleYNumber" Width="180" Minimum="0.5" Maximum="1.5" SmallChange="0.01" Value="{Binding VisionScaleY, Mode=TwoWay}" />
           </fa:FASettingsExpanderItem.Footer>
         </fa:FASettingsExpanderItem>
       </fa:FASettingsExpander>
@@ -113,82 +111,82 @@
       <fa:FASettingsExpander Header="面板与刷新">
         <fa:FASettingsExpanderItem Content="显示日志面板">
           <fa:FASettingsExpanderItem.Footer>
-            <ToggleSwitch x:Name="LogPanelToggle" Tag="log_panel_enabled" Click="OnToggleChanged" />
+            <ToggleSwitch x:Name="LogPanelToggle" IsChecked="{Binding LogPanelEnabled, Mode=TwoWay}" />
           </fa:FASettingsExpanderItem.Footer>
         </fa:FASettingsExpanderItem>
         <fa:FASettingsExpanderItem Content="显示状态面板">
           <fa:FASettingsExpanderItem.Footer>
-            <ToggleSwitch x:Name="StatePanelToggle" Tag="state_panel_enabled" Click="OnToggleChanged" />
+            <ToggleSwitch x:Name="StatePanelToggle" IsChecked="{Binding StatePanelEnabled, Mode=TwoWay}" />
           </fa:FASettingsExpanderItem.Footer>
         </fa:FASettingsExpanderItem>
         <fa:FASettingsExpanderItem Content="显示决策链路面板">
           <fa:FASettingsExpanderItem.Footer>
-            <ToggleSwitch x:Name="DecisionPanelToggle" Tag="decision_panel_enabled" Click="OnToggleChanged" />
+            <ToggleSwitch x:Name="DecisionPanelToggle" IsChecked="{Binding DecisionPanelEnabled, Mode=TwoWay}" />
           </fa:FASettingsExpanderItem.Footer>
         </fa:FASettingsExpanderItem>
         <fa:FASettingsExpanderItem Content="显示时间轴面板">
           <fa:FASettingsExpanderItem.Footer>
-            <ToggleSwitch x:Name="TimelinePanelToggle" Tag="timeline_panel_enabled" Click="OnToggleChanged" />
+            <ToggleSwitch x:Name="TimelinePanelToggle" IsChecked="{Binding TimelinePanelEnabled, Mode=TwoWay}" />
           </fa:FASettingsExpanderItem.Footer>
         </fa:FASettingsExpanderItem>
         <fa:FASettingsExpanderItem Content="显示性能面板">
           <fa:FASettingsExpanderItem.Footer>
-            <ToggleSwitch x:Name="PerformancePanelToggle" Tag="performance_panel_enabled" Click="OnToggleChanged" />
+            <ToggleSwitch x:Name="PerformancePanelToggle" IsChecked="{Binding PerformancePanelEnabled, Mode=TwoWay}" />
           </fa:FASettingsExpanderItem.Footer>
         </fa:FASettingsExpanderItem>
         <fa:FASettingsExpanderItem Content="面板编辑模式">
           <fa:FASettingsExpanderItem.Footer>
-            <ToggleSwitch x:Name="PanelEditModeToggle" Tag="panel_edit_mode" Click="OnToggleChanged" />
+            <ToggleSwitch x:Name="PanelEditModeToggle" IsChecked="{Binding PanelEditMode, Mode=TwoWay}" />
           </fa:FASettingsExpanderItem.Footer>
         </fa:FASettingsExpanderItem>
         <fa:FASettingsExpanderItem Content="面板锁定到游戏窗口">
           <fa:FASettingsExpanderItem.Footer>
-            <ToggleSwitch x:Name="PanelLockToGameWindowToggle" Tag="panel_lock_to_game_window" Click="OnToggleChanged" />
+            <ToggleSwitch x:Name="PanelLockToGameWindowToggle" IsChecked="{Binding PanelLockToGameWindow, Mode=TwoWay}" />
           </fa:FASettingsExpanderItem.Footer>
         </fa:FASettingsExpanderItem>
         <fa:FASettingsExpanderItem Content="面板字体大小">
           <fa:FASettingsExpanderItem.Footer>
-            <fa:FANumberBox x:Name="FontSizeNumber" Tag="font_size" Width="180" Minimum="10" Maximum="28" SmallChange="1" ValueChanged="OnNumberChanged" />
+            <fa:FANumberBox x:Name="FontSizeNumber" Width="180" Minimum="10" Maximum="28" SmallChange="1" Value="{Binding FontSize, Mode=TwoWay}" />
           </fa:FASettingsExpanderItem.Footer>
         </fa:FASettingsExpanderItem>
         <fa:FASettingsExpanderItem Content="文字颜色">
           <fa:FASettingsExpanderItem.Footer>
-            <TextBox x:Name="PanelTextColorTextBox" Tag="panel_text_color" Width="180" PlaceholderText="#f2f2f2" MaxLength="7" LostFocus="OnTextChanged" />
+            <TextBox x:Name="PanelTextColorTextBox" Width="180" PlaceholderText="#f2f2f2" MaxLength="7" Text="{Binding PanelTextColor, Mode=TwoWay, UpdateSourceTrigger=LostFocus}" />
           </fa:FASettingsExpanderItem.Footer>
         </fa:FASettingsExpanderItem>
         <fa:FASettingsExpanderItem Content="日志最大行数">
           <fa:FASettingsExpanderItem.Footer>
-            <fa:FANumberBox x:Name="LogMaxLinesNumber" Tag="log_max_lines" Width="180" Minimum="20" Maximum="500" SmallChange="10" ValueChanged="OnNumberChanged" />
+            <fa:FANumberBox x:Name="LogMaxLinesNumber" Width="180" Minimum="20" Maximum="500" SmallChange="10" Value="{Binding LogMaxLines, Mode=TwoWay}" />
           </fa:FASettingsExpanderItem.Footer>
         </fa:FASettingsExpanderItem>
         <fa:FASettingsExpanderItem Content="日志过期秒数">
           <fa:FASettingsExpanderItem.Footer>
-            <fa:FANumberBox x:Name="LogFadeSecondsNumber" Tag="log_fade_seconds" Width="180" Minimum="3" Maximum="120" SmallChange="1" ValueChanged="OnNumberChanged" />
+            <fa:FANumberBox x:Name="LogFadeSecondsNumber" Width="180" Minimum="3" Maximum="120" SmallChange="1" Value="{Binding LogFadeSeconds, Mode=TwoWay}" />
           </fa:FASettingsExpanderItem.Footer>
         </fa:FASettingsExpanderItem>
         <fa:FASettingsExpanderItem Content="窗口跟随间隔(ms)">
           <fa:FASettingsExpanderItem.Footer>
-            <fa:FANumberBox x:Name="FollowIntervalNumber" Tag="follow_interval_ms" Width="180" Minimum="30" Maximum="500" SmallChange="10" ValueChanged="OnNumberChanged" />
+            <fa:FANumberBox x:Name="FollowIntervalNumber" Width="180" Minimum="30" Maximum="500" SmallChange="10" Value="{Binding FollowIntervalMs, Mode=TwoWay}" />
           </fa:FASettingsExpanderItem.Footer>
         </fa:FASettingsExpanderItem>
         <fa:FASettingsExpanderItem Content="输入轮询间隔(ms)">
           <fa:FASettingsExpanderItem.Footer>
-            <fa:FANumberBox x:Name="InputPollIntervalNumber" Tag="input_poll_interval_ms" Width="180" Minimum="20" SmallChange="10" ValueChanged="OnNumberChanged" />
+            <fa:FANumberBox x:Name="InputPollIntervalNumber" Width="180" Minimum="20" SmallChange="10" Value="{Binding InputPollIntervalMs, Mode=TwoWay}" />
           </fa:FASettingsExpanderItem.Footer>
         </fa:FASettingsExpanderItem>
         <fa:FASettingsExpanderItem Content="状态刷新间隔(ms)">
           <fa:FASettingsExpanderItem.Footer>
-            <fa:FANumberBox x:Name="StatePollIntervalNumber" Tag="state_poll_interval_ms" Width="180" Minimum="80" Maximum="1000" SmallChange="20" ValueChanged="OnNumberChanged" />
+            <fa:FANumberBox x:Name="StatePollIntervalNumber" Width="180" Minimum="80" Maximum="1000" SmallChange="20" Value="{Binding StatePollIntervalMs, Mode=TwoWay}" />
           </fa:FASettingsExpanderItem.Footer>
         </fa:FASettingsExpanderItem>
         <fa:FASettingsExpanderItem Content="面板透明度(%)">
           <fa:FASettingsExpanderItem.Footer>
-            <fa:FANumberBox x:Name="PanelOpacityNumber" Tag="panel_opacity" Width="180" Minimum="5" Maximum="100" SmallChange="1" ValueChanged="OnNumberChanged" />
+            <fa:FANumberBox x:Name="PanelOpacityNumber" Width="180" Minimum="5" Maximum="100" SmallChange="1" Value="{Binding PanelOpacity, Mode=TwoWay}" />
           </fa:FASettingsExpanderItem.Footer>
         </fa:FASettingsExpanderItem>
         <fa:FASettingsExpanderItem Content="重置面板位置">
           <fa:FASettingsExpanderItem.Footer>
-            <Button x:Name="ResetGeometryButton" Content="重置" Click="OnResetGeometryClicked" />
+            <Button x:Name="ResetGeometryButton" Content="重置" Command="{Binding ResetPanelGeometryCommand}" />
           </fa:FASettingsExpanderItem.Footer>
         </fa:FASettingsExpanderItem>
       </fa:FASettingsExpander>
@@ -196,27 +194,27 @@
       <fa:FASettingsExpander Header="性能指标">
         <fa:FASettingsExpanderItem Content="显示 OCR 耗时">
           <fa:FASettingsExpanderItem.Footer>
-            <ToggleSwitch x:Name="OcrMetricToggle" Tag="perf:ocr_ms" Click="OnToggleChanged" />
+            <ToggleSwitch x:Name="OcrMetricToggle" IsChecked="{Binding OcrMetricEnabled, Mode=TwoWay}" />
           </fa:FASettingsExpanderItem.Footer>
         </fa:FASettingsExpanderItem>
         <fa:FASettingsExpanderItem Content="显示 YOLO 耗时">
           <fa:FASettingsExpanderItem.Footer>
-            <ToggleSwitch x:Name="YoloMetricToggle" Tag="perf:yolo_ms" Click="OnToggleChanged" />
+            <ToggleSwitch x:Name="YoloMetricToggle" IsChecked="{Binding YoloMetricEnabled, Mode=TwoWay}" />
           </fa:FASettingsExpanderItem.Footer>
         </fa:FASettingsExpanderItem>
         <fa:FASettingsExpanderItem Content="显示 CV Pipeline 耗时">
           <fa:FASettingsExpanderItem.Footer>
-            <ToggleSwitch x:Name="CvMetricToggle" Tag="perf:cv_pipeline_ms" Click="OnToggleChanged" />
+            <ToggleSwitch x:Name="CvMetricToggle" IsChecked="{Binding CvPipelineMetricEnabled, Mode=TwoWay}" />
           </fa:FASettingsExpanderItem.Footer>
         </fa:FASettingsExpanderItem>
         <fa:FASettingsExpanderItem Content="显示 节点轮次耗时">
           <fa:FASettingsExpanderItem.Footer>
-            <ToggleSwitch x:Name="OperationMetricToggle" Tag="perf:operation_round_ms" Click="OnToggleChanged" />
+            <ToggleSwitch x:Name="OperationMetricToggle" IsChecked="{Binding OperationRoundMetricEnabled, Mode=TwoWay}" />
           </fa:FASettingsExpanderItem.Footer>
         </fa:FASettingsExpanderItem>
         <fa:FASettingsExpanderItem Content="显示 Overlay 刷新耗时">
           <fa:FASettingsExpanderItem.Footer>
-            <ToggleSwitch x:Name="OverlayMetricToggle" Tag="perf:overlay_refresh_ms" Click="OnToggleChanged" />
+            <ToggleSwitch x:Name="OverlayMetricToggle" IsChecked="{Binding OverlayRefreshMetricEnabled, Mode=TwoWay}" />
           </fa:FASettingsExpanderItem.Footer>
         </fa:FASettingsExpanderItem>
       </fa:FASettingsExpander>
@@ -224,12 +222,12 @@
       <fa:FASettingsExpander Header="截图">
         <fa:FASettingsExpanderItem Content="保存 patched 合成图">
           <fa:FASettingsExpanderItem.Footer>
-            <ToggleSwitch x:Name="PatchedCaptureToggle" Tag="patched_capture_enabled" Click="OnToggleChanged" />
+            <ToggleSwitch x:Name="PatchedCaptureToggle" IsChecked="{Binding PatchedCaptureEnabled, Mode=TwoWay}" />
           </fa:FASettingsExpanderItem.Footer>
         </fa:FASettingsExpanderItem>
         <fa:FASettingsExpanderItem Content="patched 文件后缀">
           <fa:FASettingsExpanderItem.Footer>
-            <TextBox x:Name="PatchedSuffixTextBox" Tag="patched_capture_suffix" Width="180" PlaceholderText="_patched" MaxLength="40" LostFocus="OnTextChanged" />
+            <TextBox x:Name="PatchedSuffixTextBox" Width="180" PlaceholderText="_patched" MaxLength="40" Text="{Binding PatchedCaptureSuffix, Mode=TwoWay, UpdateSourceTrigger=LostFocus}" />
           </fa:FASettingsExpanderItem.Footer>
         </fa:FASettingsExpanderItem>
       </fa:FASettingsExpander>

@@ -2,7 +2,8 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:fa="using:FluentAvalonia.UI.Controls"
              xmlns:local="using:ZzzOd.Gui.Views.FrontierPages.Settings"
-             x:Class="ZzzOd.Gui.Views.FrontierPages.Settings.FrontierResourceDownloadPage">
+             x:Class="ZzzOd.Gui.Views.FrontierPages.Settings.FrontierResourceDownloadPage"
+             x:DataType="local:ZzzResourceDownloadSettingsViewModel">
   <ScrollViewer HorizontalScrollBarVisibility="Disabled"
                 VerticalScrollBarVisibility="Auto">
     <StackPanel Margin="{DynamicResource SampleAppPageMargin}"
@@ -13,7 +14,7 @@
                   Severity="Error" />
 
       <TextBlock Text="资源下载"
-                 FontSize="18"
+                 FontSize="{DynamicResource ZzzFontSizeSubtitle}"
                  FontWeight="SemiBold" />
 
       <fa:FASettingsExpander Header="下载说明"
@@ -31,7 +32,8 @@
           <StackPanel Orientation="Horizontal" Spacing="8">
             <fa:FAComboBox x:Name="OcrProfileCombo"
                            Width="230"
-                           SelectionChanged="OnModelSelectionChanged">
+                           ItemsSource="{Binding OcrOptions}"
+                           SelectedItem="{Binding SelectedOcr, Mode=TwoWay}">
               <fa:FAComboBox.ItemTemplate>
                 <DataTemplate x:DataType="local:ZzzResourceModelOption">
                   <TextBlock Text="{Binding Label}" />
@@ -44,7 +46,7 @@
                           Tag="ocr_use_gpu"
                           OnContent="GPU"
                           OffContent="CPU"
-                          Click="OnGpuChanged" />
+                          IsChecked="{Binding OcrUseGpu, Mode=TwoWay}" />
           </StackPanel>
         </fa:FASettingsExpander.Footer>
       </fa:FASettingsExpander>
@@ -57,7 +59,8 @@
           <StackPanel Orientation="Horizontal" Spacing="8">
             <fa:FAComboBox x:Name="FlashClassifierCombo"
                            Width="270"
-                           SelectionChanged="OnModelSelectionChanged">
+                           ItemsSource="{Binding FlashClassifierOptions}"
+                           SelectedItem="{Binding SelectedFlashClassifier, Mode=TwoWay}">
               <fa:FAComboBox.ItemTemplate>
                 <DataTemplate x:DataType="local:ZzzResourceModelOption">
                   <TextBlock Text="{Binding Label}" />
@@ -70,7 +73,7 @@
                           Tag="flash_classifier_gpu"
                           OnContent="GPU"
                           OffContent="CPU"
-                          Click="OnGpuChanged" />
+                          IsChecked="{Binding FlashClassifierGpu, Mode=TwoWay}" />
           </StackPanel>
         </fa:FASettingsExpander.Footer>
       </fa:FASettingsExpander>
@@ -83,7 +86,8 @@
           <StackPanel Orientation="Horizontal" Spacing="8">
             <fa:FAComboBox x:Name="HollowZeroEventCombo"
                            Width="270"
-                           SelectionChanged="OnModelSelectionChanged">
+                           ItemsSource="{Binding HollowZeroEventOptions}"
+                           SelectedItem="{Binding SelectedHollowZeroEvent, Mode=TwoWay}">
               <fa:FAComboBox.ItemTemplate>
                 <DataTemplate x:DataType="local:ZzzResourceModelOption">
                   <TextBlock Text="{Binding Label}" />
@@ -96,7 +100,7 @@
                           Tag="hollow_zero_event_gpu"
                           OnContent="GPU"
                           OffContent="CPU"
-                          Click="OnGpuChanged" />
+                          IsChecked="{Binding HollowZeroEventGpu, Mode=TwoWay}" />
           </StackPanel>
         </fa:FASettingsExpander.Footer>
       </fa:FASettingsExpander>
@@ -109,7 +113,8 @@
           <StackPanel Orientation="Horizontal" Spacing="8">
             <fa:FAComboBox x:Name="LostVoidDetectorCombo"
                            Width="270"
-                           SelectionChanged="OnModelSelectionChanged">
+                           ItemsSource="{Binding LostVoidDetectorOptions}"
+                           SelectedItem="{Binding SelectedLostVoidDetector, Mode=TwoWay}">
               <fa:FAComboBox.ItemTemplate>
                 <DataTemplate x:DataType="local:ZzzResourceModelOption">
                   <TextBlock Text="{Binding Label}" />
@@ -122,17 +127,18 @@
                           Tag="lost_void_det_gpu"
                           OnContent="GPU"
                           OffContent="CPU"
-                          Click="OnGpuChanged" />
+                          IsChecked="{Binding LostVoidDetGpu, Mode=TwoWay}" />
           </StackPanel>
         </fa:FASettingsExpander.Footer>
       </fa:FASettingsExpander>
 
       <TextBlock Text="日志显示"
                  Margin="0,8,0,0"
-                 FontSize="20"
+                 FontSize="{DynamicResource ZzzFontSizeSection}"
                  FontWeight="SemiBold" />
       <ContentControl x:Name="LogHost"
-                      Height="220" />
+                      MinHeight="120"
+                      MaxHeight="220" />
     </StackPanel>
   </ScrollViewer>
 </UserControl>

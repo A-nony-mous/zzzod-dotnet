@@ -4,7 +4,6 @@ using System.IO;
 using System.Reflection;
 using Xunit;
 using ZzzOd.AppHost.Backend;
-using ZzzOd.Gui.Pages.Settings;
 
 namespace ZzzOd.GameLogic.Tests.AppHost;
 
@@ -56,52 +55,20 @@ public sealed class SettingsEnvironmentPageTests
 	}
 
 	[Fact]
-	public void AxamlKeepsApprovedGroupsTextsAndControlsOnly()
-	{
-		string text = File.ReadAllText(FindGuiFile("Pages", "Settings", "ZzzEnvironmentSettingsPage.axaml"));
-		int num = text.IndexOf("Header=\"基础\"", StringComparison.Ordinal);
-		int num2 = text.IndexOf("Header=\"网络相关\"", StringComparison.Ordinal);
-		int num3 = text.IndexOf("Header=\"脚本按键\"", StringComparison.Ordinal);
-		Assert.True(num >= 0 && num < num2 && num2 < num3);
-		Assert.Contains("fa:FASettingsExpander", text, StringComparison.Ordinal);
-		Assert.Contains("fa:FASettingsExpanderItem", text, StringComparison.Ordinal);
-		Assert.Contains("fa:FAComboBox", text, StringComparison.Ordinal);
-		Assert.Contains("正常无需开启", text, StringComparison.Ordinal);
-		Assert.Contains("按下截图按键时，自动将截图复制到剪贴板", text, StringComparison.Ordinal);
-		Assert.Contains("开始、暂停、恢复某个应用", text, StringComparison.Ordinal);
-		Assert.Contains("停止正在运行的应用，不能恢复", text, StringComparison.Ordinal);
-		Assert.Contains("用于开发、提交bug。会自动对UID打码，保存在 .debug/images/ 文件夹中", text, StringComparison.Ordinal);
-		Assert.Contains("用于开发，部分应用开始调试", text, StringComparison.Ordinal);
-		Assert.DoesNotContain("Git相关", text, StringComparison.Ordinal);
-		Assert.DoesNotContain("代码源", text, StringComparison.Ordinal);
-		Assert.DoesNotContain("自动更新", text, StringComparison.Ordinal);
-		Assert.DoesNotContain("强制更新", text, StringComparison.Ordinal);
-		Assert.DoesNotContain("Python下载源", text, StringComparison.Ordinal);
-		Assert.DoesNotContain("Pip源", text, StringComparison.Ordinal);
-		Assert.DoesNotContain("免费代理", text, StringComparison.Ordinal);
-		Assert.DoesNotContain("GitHub 代理", text, StringComparison.Ordinal);
-		Assert.DoesNotContain("已适配", text, StringComparison.Ordinal);
-		Assert.DoesNotContain("已从 .NET GUI 移除", text, StringComparison.Ordinal);
-	}
-
-	[Fact]
 	public void ScreenshotMethodOptionsExposeOnlyImplementedBackends()
 	{
 		string root = FindGuiFile();
-		string standardPage = File.ReadAllText(Path.Combine(root, "Pages", "Settings", "ZzzEnvironmentSettingsPage.axaml.cs"));
 		string frontierPage = File.ReadAllText(Path.Combine(root, "Views", "FrontierPages", "Settings", "FrontierEnvironmentSettingsPage.axaml.cs"));
-		foreach (string source in new[] { standardPage, frontierPage })
-		{
-			Assert.Contains("Windows Graphics Capture", source, StringComparison.Ordinal);
-			Assert.Contains("print_window", source, StringComparison.Ordinal);
-			Assert.Contains("bitblt", source, StringComparison.Ordinal);
-			Assert.True(source.IndexOf("new(\"自动\", \"auto\")", StringComparison.Ordinal) < source.IndexOf("new(\"Windows Graphics Capture\", \"wgc\")", StringComparison.Ordinal));
-			Assert.True(source.IndexOf("new(\"Windows Graphics Capture\", \"wgc\")", StringComparison.Ordinal) < source.IndexOf("new(\"BitBlt\", \"bitblt\")", StringComparison.Ordinal));
-			Assert.True(source.IndexOf("new(\"BitBlt\", \"bitblt\")", StringComparison.Ordinal) < source.IndexOf("new(\"Print Window\", \"print_window\")", StringComparison.Ordinal));
-			Assert.DoesNotContain("new(\"MSS\"", source, StringComparison.Ordinal);
-			Assert.DoesNotContain("new(\"PIL\"", source, StringComparison.Ordinal);
-			Assert.DoesNotContain("DWM Shared Surface", source, StringComparison.Ordinal);
-		}
+		string source = frontierPage;
+		Assert.Contains("Windows Graphics Capture", source, StringComparison.Ordinal);
+		Assert.Contains("print_window", source, StringComparison.Ordinal);
+		Assert.Contains("bitblt", source, StringComparison.Ordinal);
+		Assert.True(source.IndexOf("new(\"自动\", \"auto\")", StringComparison.Ordinal) < source.IndexOf("new(\"Windows Graphics Capture\", \"wgc\")", StringComparison.Ordinal));
+		Assert.True(source.IndexOf("new(\"Windows Graphics Capture\", \"wgc\")", StringComparison.Ordinal) < source.IndexOf("new(\"BitBlt\", \"bitblt\")", StringComparison.Ordinal));
+		Assert.True(source.IndexOf("new(\"BitBlt\", \"bitblt\")", StringComparison.Ordinal) < source.IndexOf("new(\"Print Window\", \"print_window\")", StringComparison.Ordinal));
+		Assert.DoesNotContain("new(\"MSS\"", source, StringComparison.Ordinal);
+		Assert.DoesNotContain("new(\"PIL\"", source, StringComparison.Ordinal);
+		Assert.DoesNotContain("DWM Shared Surface", source, StringComparison.Ordinal);
 	}
 
 	[Fact]
@@ -115,7 +82,7 @@ public sealed class SettingsEnvironmentPageTests
 		{
 			GuiParityAndFacadeTests.RunOnUiThread(delegate
 			{
-				ZzzEnvironmentSettingsAxamlPage zzzEnvironmentSettingsAxamlPage = new ZzzEnvironmentSettingsAxamlPage(backend);
+				ZzzOd.Gui.Views.FrontierPages.Settings.FrontierEnvironmentSettingsPage zzzEnvironmentSettingsAxamlPage = new ZzzOd.Gui.Views.FrontierPages.Settings.FrontierEnvironmentSettingsPage(backend);
 				zzzEnvironmentSettingsAxamlPage.OnPageShown();
 				Assert.Equal("None", zzzEnvironmentSettingsAxamlPage.SelectedProxyType);
 				Assert.False(zzzEnvironmentSettingsAxamlPage.PersonalProxyVisible);

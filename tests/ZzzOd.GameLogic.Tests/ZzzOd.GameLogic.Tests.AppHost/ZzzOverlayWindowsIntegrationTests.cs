@@ -13,7 +13,6 @@ using Xunit;
 using ZzzOd.AppHost.Backend;
 using ZzzOd.AppHost.Overlay;
 using ZzzOd.Gui.Overlay;
-using ZzzOd.Gui.Pages.ApplicationSettings;
 using ZzzOd.Gui.Views.FrontierPages.WorldPatrol;
 using AvaloniaWindow = Avalonia.Controls.Window;
 using DrawingBitmap = System.Drawing.Bitmap;
@@ -66,7 +65,6 @@ public sealed class ZzzOverlayWindowsIntegrationTests
             };
             ZzzOverlayTechnicalWindow overlay = new();
             ZzzOverlayInfoPanelWindow panel = new();
-            ZzzWorldPatrolLargeMapIconEditorWindow classicEditor = new([]);
             FrontierWorldPatrolLargeMapIconEditorWindow frontierEditor = new([]);
             Exception? testFailure = null;
             try
@@ -278,9 +276,6 @@ public sealed class ZzzOverlayWindowsIntegrationTests
                 Assert.True(restored.Dpi > 0);
 
                 evidence?.RecordWindowLifecycle(
-                    "classic-editor-lifecycle",
-                    AssertOwnedWindowCanOpenAndClose(owner, classicEditor, () => classicEditor.ResourcesReleased));
-                evidence?.RecordWindowLifecycle(
                     "frontier-editor-lifecycle",
                     AssertOwnedWindowCanOpenAndClose(owner, frontierEditor, () => frontierEditor.ResourcesReleased));
                 evidence?.RecordWindowLifecycle(
@@ -319,7 +314,6 @@ public sealed class ZzzOverlayWindowsIntegrationTests
                 finally
                 {
                     frontierEditor.Close();
-                    classicEditor.Close();
                     panel.Close();
                     overlay.Close();
                     owner.Close();

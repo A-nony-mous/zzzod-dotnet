@@ -8,7 +8,7 @@ using Xunit;
 using ZzzOd.AppHost;
 using ZzzOd.AppHost.Backend;
 using ZzzOd.GameLogic.Application.OneDragonApp;
-using ZzzOd.Gui.Pages.Standalone;
+using ZzzOd.Gui.Views.FrontierPages.Standalone;
 
 namespace ZzzOd.GameLogic.Tests.AppHost;
 
@@ -62,7 +62,7 @@ public sealed class StandaloneRunProductionParityTests
 				where !string.Equals(appId, "one_dragon", StringComparison.Ordinal)
 				select appId).ToArray();
 			Assert.Equal(expected, value.Select((ZzzAppDto app) => app.AppId));
-			IReadOnlyList<ZzzAppDto> source = ZzzStandaloneAppRunPage.OrderRequestedApps(value, new string[3] { "world_patrol", "city_fund", "charge_plan" });
+			IReadOnlyList<ZzzAppDto> source = FrontierStandaloneAppRunPage.OrderRequestedApps(value, new string[3] { "world_patrol", "city_fund", "charge_plan" });
 			Assert.Equal(new string[3] { "charge_plan", "city_fund", "world_patrol" }, source.Select((ZzzAppDto app) => app.AppId));
 		}
 		finally

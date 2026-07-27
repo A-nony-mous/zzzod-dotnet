@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.ComponentModel;
 using System.Globalization;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
@@ -11,18 +12,19 @@ using FluentAvalonia.UI.Controls;
 using ZzzOd.AppHost.Backend;
 using ZzzOd.GameLogic.Application.Devtools.ScreenshotHelper;
 using ZzzOd.Gui.Controls;
-using ZzzOd.Gui.Pages.Devtools;
+using ZzzOd.Gui.PageModels.Devtools;
+using ZzzOd.Gui.PageModels.WorldPatrol;
 using ZzzOd.Gui.Shell;
 
-using ZzzOd.Gui.Pages.ApplicationSettings;
+using ZzzOd.Gui.PageModels.ApplicationSettings;
 
 namespace ZzzOd.Gui.Views.FrontierPages.WorldPatrol;
 
 internal sealed partial class FrontierWorldPatrolPage : UserControl, IZzzPageLifecycle
 {
-    private const string ScopeName = "world-patrol";
     private readonly IZzzAppBackend _backend;
     private readonly IZzzWorldPatrolSettingsBackend _worldPatrolBackend;
+    private readonly ZzzWorldPatrolSettingsViewModel _viewModel;
     private readonly int _instanceIndex;
     private readonly string _groupId;
     private readonly FAInfoBar _settingsErrorBar;
@@ -30,16 +32,8 @@ internal sealed partial class FrontierWorldPatrolPage : UserControl, IZzzPageLif
     private readonly FAInfoBar _largeMapErrorBar;
     private readonly FAInfoBar _largeMapStatusBar;
     private readonly FAInfoBar _routeEditorErrorBar;
-    private readonly FATabView _settingsTabView;
+    private readonly TabControl _settingsTabView;
     private readonly FASettingsExpander _runRecordItem;
-    private readonly FAComboBox _autoBattleCombo;
-    private readonly FAComboBox _routeListConfigCombo;
-    private readonly FAComboBox _uiDisappearActionCombo;
-    private readonly FAComboBox _routeRetryActionCombo;
-    private readonly FANumberBox _uiDisappearSecondsBox;
-    private readonly FANumberBox _routeRetryTimesBox;
-    private readonly FANumberBox _dailyLoopCountBox;
-    private readonly FANumberBox _loopIntervalSecondsBox;
     private readonly FAComboBox _editorRouteListCombo;
     private readonly FAComboBox _listTypeCombo;
     private readonly FAComboBox _entryCombo;
@@ -104,22 +98,15 @@ internal sealed partial class FrontierWorldPatrolPage : UserControl, IZzzPageLif
         _worldPatrolBackend = worldPatrolBackend;
         _instanceIndex = instanceIndex;
         _groupId = groupId;
+        _viewModel = new ZzzWorldPatrolSettingsViewModel(backend, instanceIndex, groupId, ShowSettingsError);
         AvaloniaXamlLoader.Load(this);
         _settingsErrorBar = Required<FAInfoBar>("SettingsErrorBar");
         _routeListErrorBar = Required<FAInfoBar>("RouteListErrorBar");
         _largeMapErrorBar = Required<FAInfoBar>("LargeMapErrorBar");
         _largeMapStatusBar = Required<FAInfoBar>("LargeMapStatusBar");
         _routeEditorErrorBar = Required<FAInfoBar>("RouteEditorErrorBar");
-        _settingsTabView = Required<FATabView>("SettingsTabView");
+        _settingsTabView = Required<TabControl>("SettingsTabView");
         _runRecordItem = Required<FASettingsExpander>("RunRecordItem");
-        _autoBattleCombo = Required<FAComboBox>("AutoBattleCombo");
-        _routeListConfigCombo = Required<FAComboBox>("RouteListConfigCombo");
-        _uiDisappearActionCombo = Required<FAComboBox>("UiDisappearActionCombo");
-        _routeRetryActionCombo = Required<FAComboBox>("RouteRetryActionCombo");
-        _uiDisappearSecondsBox = Required<FANumberBox>("UiDisappearSecondsBox");
-        _routeRetryTimesBox = Required<FANumberBox>("RouteRetryTimesBox");
-        _dailyLoopCountBox = Required<FANumberBox>("DailyLoopCountBox");
-        _loopIntervalSecondsBox = Required<FANumberBox>("LoopIntervalSecondsBox");
         _editorRouteListCombo = Required<FAComboBox>("EditorRouteListCombo");
         _listTypeCombo = Required<FAComboBox>("ListTypeCombo");
         _entryCombo = Required<FAComboBox>("EntryCombo");
@@ -178,18 +165,9 @@ internal sealed partial class FrontierWorldPatrolPage : UserControl, IZzzPageLif
             new ZzzWorldPatrolOption("白名单", "whitelist"),
             new ZzzWorldPatrolOption("黑名单", "blacklist"),
         };
-        _uiDisappearActionCombo.ItemsSource = new[]
-        {
-            new ZzzWorldPatrolOption("静默失败", "silent_fail"),
-            new ZzzWorldPatrolOption("重开游戏并跳过路线", "restart_and_skip"),
-            new ZzzWorldPatrolOption("重开游戏并重试路线", "restart_and_retry"),
-        };
-        _routeRetryActionCombo.ItemsSource = new[]
-        {
-            new ZzzWorldPatrolOption("若再次卡住则跳过脱困", "skip_on_stuck_again"),
-            new ZzzWorldPatrolOption("若再次卡住仍尝试脱困", "retry_on_stuck_again"),
-        };
         _debugStartBox.Value = 0;
+        DataContext = _viewModel;
+        _viewModel.PropertyChanged += OnSettingsPropertyChanged;
         Reload();
     }
 
@@ -218,6 +196,8 @@ internal sealed partial class FrontierWorldPatrolPage : UserControl, IZzzPageLif
     public void DisposePage()
     {
         _pageShown = false;
+        _viewModel.PropertyChanged -= OnSettingsPropertyChanged;
+        _viewModel.DisposePage();
         DisposeLargeMapHotkeySubscription();
         DisposeRouteHotkeySubscription();
         _largeMapLogCard.DisposePage();
@@ -258,13 +238,11 @@ internal sealed partial class FrontierWorldPatrolPage : UserControl, IZzzPageLif
         _routeEditorErrorBar.IsOpen = false;
         try
         {
-            ZzzBackendResult<ZzzConfigScopeValuesDto> configResult =
-                _backend.GetConfigScope(ScopeName, _instanceIndex, _groupId);
+            _viewModel.OnPageShown();
             ZzzBackendResult<ZzzWorldPatrolCatalogDto> catalogResult =
                 _worldPatrolBackend.GetWorldPatrolCatalog(_instanceIndex);
-            if (!configResult.Success || configResult.Value is null)
+            if (_viewModel.LastError is not null)
             {
-                ShowSettingsError(configResult.Error ?? "锄大地配置读取失败。");
                 return;
             }
 
@@ -275,17 +253,9 @@ internal sealed partial class FrontierWorldPatrolPage : UserControl, IZzzPageLif
             }
 
             _catalog = catalogResult.Value;
+            _viewModel.SetCatalog(_catalog);
             ApplyCatalog(_catalog);
-            IReadOnlyDictionary<string, object?> values = configResult.Value.Values;
-            Select(_autoBattleCombo, RequiredString(values, "auto_battle"));
-            Select(_routeListConfigCombo, RequiredString(values, "route_list"));
-            Select(_uiDisappearActionCombo, RequiredString(values, "ui_disappear_action"));
-            Select(_routeRetryActionCombo, RequiredString(values, "route_retry_action"));
-            _uiDisappearSecondsBox.Value = RequiredInt(values, "ui_disappear_seconds");
-            _routeRetryTimesBox.Value = RequiredInt(values, "route_retry_times");
-            _dailyLoopCount = RequiredInt(values, "daily_loop_count");
-            _dailyLoopCountBox.Value = _dailyLoopCount;
-            _loopIntervalSecondsBox.Value = RequiredInt(values, "loop_interval_seconds");
+            _dailyLoopCount = Convert.ToInt32(_viewModel.DailyLoopCount, CultureInfo.InvariantCulture);
             UpdateRunRecordDisplay(_catalog.RunRecord);
         }
         catch (InvalidOperationException exception)
@@ -302,10 +272,6 @@ internal sealed partial class FrontierWorldPatrolPage : UserControl, IZzzPageLif
 
     private void ApplyCatalog(ZzzWorldPatrolCatalogDto catalog)
     {
-        _autoBattleCombo.ItemsSource = catalog.AutoBattleConfigs.Select(value => new ZzzWorldPatrolOption(value, value)).ToArray();
-        _routeListConfigCombo.ItemsSource = new[] { new ZzzWorldPatrolOption("全部", string.Empty) }
-            .Concat(catalog.RouteLists.Select(item => new ZzzWorldPatrolOption(item.Name, item.Name)))
-            .ToArray();
         _editorRouteListCombo.ItemsSource = catalog.RouteLists
             .Select(item => new ZzzWorldPatrolOption($"{item.Name} ({item.ListType})", item.Name))
             .ToArray();
@@ -324,43 +290,17 @@ internal sealed partial class FrontierWorldPatrolPage : UserControl, IZzzPageLif
         RefreshRouteOperations();
     }
 
-    private void OnConfigComboChanged(object? sender, SelectionChangedEventArgs args)
+    private void OnSettingsPropertyChanged(object? sender, PropertyChangedEventArgs args)
     {
-        if (!_loading && sender is FAComboBox { Tag: string key, SelectedItem: ZzzWorldPatrolOption option })
-        {
-            SaveConfig(key, option.Value);
-        }
-    }
-
-    private void OnConfigNumberChanged(FANumberBox sender, FANumberBoxValueChangedEventArgs args)
-    {
-        if (_loading || sender.Tag is not string key)
+        if (!string.Equals(args.PropertyName, nameof(ZzzWorldPatrolSettingsViewModel.DailyLoopCount), StringComparison.Ordinal))
         {
             return;
         }
 
-        int value = (int)sender.Value;
-        SaveConfig(key, value);
-        if (key == "daily_loop_count")
+        _dailyLoopCount = Convert.ToInt32(_viewModel.DailyLoopCount, CultureInfo.InvariantCulture);
+        if (_catalog is not null)
         {
-            _dailyLoopCount = value;
-            if (_catalog is not null)
-            {
-                UpdateRunRecordDisplay(_catalog.RunRecord);
-            }
-        }
-    }
-
-    private void SaveConfig(string key, object value)
-    {
-        ZzzBackendResult<ZzzConfigScopeValuesDto> result = _backend.SaveConfigScope(new ZzzSaveConfigScopeRequest(
-            ScopeName,
-            new Dictionary<string, object?> { [key] = value },
-            _instanceIndex,
-            _groupId));
-        if (!result.Success)
-        {
-            ShowSettingsError(result.Error ?? "锄大地配置保存失败。");
+            UpdateRunRecordDisplay(_catalog.RunRecord);
         }
     }
 
@@ -1293,7 +1233,7 @@ internal sealed partial class FrontierWorldPatrolPage : UserControl, IZzzPageLif
     {
         _largeMapHotkeySubscription?.Dispose();
         _largeMapHotkeySubscription = null;
-        _largeMapLogCard.OnPageHidden();
+        _largeMapLogCard?.OnPageHidden();
     }
 
     private bool HandleLargeMapRecorderKey(string key)
@@ -1341,7 +1281,7 @@ internal sealed partial class FrontierWorldPatrolPage : UserControl, IZzzPageLif
     {
         _routeHotkeySubscription?.Dispose();
         _routeHotkeySubscription = null;
-        _routeRecorderLogCard.OnPageHidden();
+        _routeRecorderLogCard?.OnPageHidden();
     }
 
     private bool HandleRouteRecorderKey(string key)
@@ -1599,10 +1539,10 @@ internal sealed partial class FrontierWorldPatrolPage : UserControl, IZzzPageLif
         Required<Button>("MoveOperationDownButton").IsEnabled = hasRoute && operationSelected;
     }
 
-    private void ShowSettingsError(string message)
+    private void ShowSettingsError(string? message)
     {
-        _settingsErrorBar.Message = message;
-        _settingsErrorBar.IsOpen = true;
+        _settingsErrorBar.Message = message ?? string.Empty;
+        _settingsErrorBar.IsOpen = !string.IsNullOrWhiteSpace(message);
     }
 
     private void ShowRouteListError(string message)
@@ -1628,26 +1568,6 @@ internal sealed partial class FrontierWorldPatrolPage : UserControl, IZzzPageLif
     {
         combo.SelectedItem = combo.ItemsSource?.OfType<ZzzWorldPatrolOption>()
             .FirstOrDefault(option => Equals(option.Value, value));
-    }
-
-    private static string RequiredString(IReadOnlyDictionary<string, object?> values, string key)
-    {
-        if (!values.TryGetValue(key, out object? value))
-        {
-            throw new InvalidOperationException($"锄大地配置缺少 {key}。");
-        }
-
-        return Convert.ToString(value, CultureInfo.InvariantCulture) ?? string.Empty;
-    }
-
-    private static int RequiredInt(IReadOnlyDictionary<string, object?> values, string key)
-    {
-        if (!values.TryGetValue(key, out object? value))
-        {
-            throw new InvalidOperationException($"锄大地配置缺少 {key}。");
-        }
-
-        return Convert.ToInt32(value, CultureInfo.InvariantCulture);
     }
 
     private T Required<T>(string name) where T : Control =>

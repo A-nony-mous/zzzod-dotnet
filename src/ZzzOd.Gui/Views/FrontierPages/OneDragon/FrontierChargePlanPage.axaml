@@ -1,12 +1,12 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:fa="using:FluentAvalonia.UI.Controls"
-             xmlns:local="using:ZzzOd.Gui.Pages.OneDragon"
+             xmlns:local="using:ZzzOd.Gui.PageModels.OneDragon"
              x:Class="ZzzOd.Gui.Views.FrontierPages.OneDragon.FrontierChargePlanPage">
   <UserControl.Resources>
     <DataTemplate x:Key="ChargePlanRowTemplate"
                   x:DataType="local:ZzzChargePlanRowModel">
-      <fa:FASettingsExpander Margin="0,0,0,6"
+      <fa:FASettingsExpander Margin="0,0,0,8"
                                DragDrop.AllowDrop="True"
                                PointerPressed="OnPlanPointerPressed"
                                PointerMoved="OnPlanPointerMoved"
@@ -16,10 +16,10 @@
           <fa:FAFontIconSource Glyph="&#xE787;" />
         </fa:FASettingsExpander.IconSource>
         <fa:FASettingsExpander.Footer>
-          <StackPanel Spacing="6">
+          <StackPanel Spacing="8">
             <WrapPanel Orientation="Horizontal">
               <fa:FAComboBox Width="132"
-                             Margin="0,0,6,6"
+                             Margin="0,0,8,8"
                              ItemsSource="{Binding CategoryOptions}"
                              SelectedItem="{Binding SelectedCategory, Mode=TwoWay}"
                              SelectionChanged="OnCategoryChanged">
@@ -30,7 +30,7 @@
                 </fa:FAComboBox.ItemTemplate>
               </fa:FAComboBox>
               <fa:FAComboBox Width="142"
-                             Margin="0,0,6,6"
+                             Margin="0,0,8,8"
                              ItemsSource="{Binding MissionTypeOptions}"
                              SelectedItem="{Binding SelectedMissionType, Mode=TwoWay}"
                              SelectionChanged="OnMissionTypeChanged">
@@ -41,7 +41,7 @@
                 </fa:FAComboBox.ItemTemplate>
               </fa:FAComboBox>
               <fa:FAComboBox Width="132"
-                             Margin="0,0,6,6"
+                             Margin="0,0,8,8"
                              IsVisible="{Binding IsMissionVisible}"
                              ItemsSource="{Binding MissionOptions}"
                              SelectedItem="{Binding SelectedMission, Mode=TwoWay}"
@@ -53,7 +53,7 @@
                 </fa:FAComboBox.ItemTemplate>
               </fa:FAComboBox>
               <fa:FAComboBox Width="110"
-                             Margin="0,0,6,6"
+                             Margin="0,0,8,8"
                              IsVisible="{Binding IsCardNumVisible}"
                              ItemsSource="{Binding CardNumOptions}"
                              SelectedItem="{Binding SelectedCardNum, Mode=TwoWay}"
@@ -65,7 +65,7 @@
                 </fa:FAComboBox.ItemTemplate>
               </fa:FAComboBox>
               <fa:FAComboBox Width="112"
-                             Margin="0,0,6,6"
+                             Margin="0,0,8,8"
                              IsVisible="{Binding IsBuffVisible}"
                              ItemsSource="{Binding BuffOptions}"
                              SelectedItem="{Binding SelectedBuff, Mode=TwoWay}"
@@ -77,7 +77,7 @@
                 </fa:FAComboBox.ItemTemplate>
               </fa:FAComboBox>
               <fa:FAComboBox Width="132"
-                             Margin="0,0,6,6"
+                             Margin="0,0,8,8"
                              ItemsSource="{Binding TeamOptions}"
                              SelectedItem="{Binding SelectedTeam, Mode=TwoWay}"
                              SelectionChanged="OnTeamChanged">
@@ -88,7 +88,7 @@
                 </fa:FAComboBox.ItemTemplate>
               </fa:FAComboBox>
               <fa:FAComboBox Width="142"
-                             Margin="0,0,6,6"
+                             Margin="0,0,8,8"
                              IsVisible="{Binding IsAutoBattleVisible}"
                              ItemsSource="{Binding AutoBattleOptions}"
                              SelectedItem="{Binding SelectedAutoBattle, Mode=TwoWay}"
@@ -101,7 +101,7 @@
               </fa:FAComboBox>
             </WrapPanel>
             <StackPanel Orientation="Horizontal"
-                        Spacing="6"
+                        Spacing="8"
                         HorizontalAlignment="Right">
               <TextBlock Text="已运行次数"
                          VerticalAlignment="Center" />
@@ -233,23 +233,23 @@
               <WrapPanel Orientation="Horizontal">
                 <fa:FAComboBox x:Name="DoubleCategoryCombo"
                                Width="132"
-                               Margin="0,0,6,6"
+                               Margin="0,0,8,8"
                                IsEnabled="False" />
                 <fa:FAComboBox x:Name="DoubleMissionTypeCombo"
                                Width="142"
-                               Margin="0,0,6,6"
+                               Margin="0,0,8,8"
                                SelectionChanged="OnDoubleMissionTypeChanged" />
                 <fa:FAComboBox x:Name="DoubleMissionCombo"
                                Width="132"
-                               Margin="0,0,6,6"
+                               Margin="0,0,8,8"
                                SelectionChanged="OnDoubleMissionChanged" />
                 <fa:FAComboBox x:Name="DoubleTeamCombo"
                                Width="132"
-                               Margin="0,0,6,6"
+                               Margin="0,0,8,8"
                                SelectionChanged="OnDoubleTeamChanged" />
                 <fa:FAComboBox x:Name="DoubleAutoBattleCombo"
                                Width="142"
-                               Margin="0,0,6,6"
+                               Margin="0,0,8,8"
                                SelectionChanged="OnDoubleAutoBattleChanged" />
               </WrapPanel>
             </fa:FASettingsExpanderItem.Footer>
@@ -284,7 +284,7 @@
     </ScrollViewer>
     <Button x:Name="AddPlanButton"
             Grid.Row="1"
-            Margin="11,6"
+            Margin="12,8"
             Content="新增"
             HorizontalAlignment="Left"
             Click="OnAddClicked" />

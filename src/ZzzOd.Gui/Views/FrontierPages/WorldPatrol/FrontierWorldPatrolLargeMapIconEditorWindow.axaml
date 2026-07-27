@@ -2,7 +2,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:fa="using:FluentAvalonia.UI.Controls"
         xmlns:local="using:ZzzOd.Gui.Views.FrontierPages.WorldPatrol"
-        xmlns:model="using:ZzzOd.Gui.Pages.ApplicationSettings"
+        xmlns:model="using:ZzzOd.Gui.PageModels.ApplicationSettings"
         x:Class="ZzzOd.Gui.Views.FrontierPages.WorldPatrol.FrontierWorldPatrolLargeMapIconEditorWindow"
         Title="图标编辑器"
         Width="760"
@@ -13,7 +13,7 @@
   <Grid Margin="12" RowDefinitions="Auto,*,Auto,Auto" RowSpacing="8">
     <Grid Grid.Row="0"
           ColumnDefinitions="160,150,90,90,90,90"
-          ColumnSpacing="6">
+          ColumnSpacing="8">
       <TextBlock Grid.Column="0" Text="图标名称" FontWeight="SemiBold" />
       <TextBlock Grid.Column="1" Text="模板ID" FontWeight="SemiBold" />
       <TextBlock Grid.Column="2" Text="X坐标" FontWeight="SemiBold" />
@@ -29,7 +29,7 @@
         <DataTemplate x:DataType="model:ZzzWorldPatrolEditableIcon">
           <Grid Margin="0,2"
                 ColumnDefinitions="160,150,90,90,90,90"
-                ColumnSpacing="6">
+                ColumnSpacing="8">
             <TextBox Grid.Column="0" Text="{Binding IconName}" PlaceholderText="图标名称" />
             <TextBlock Grid.Column="1" Text="{Binding TemplateId}" VerticalAlignment="Center" />
             <TextBlock Grid.Column="2" Text="{Binding LargeMapX}" VerticalAlignment="Center" />

@@ -6,7 +6,6 @@ using System.Runtime.CompilerServices;
 using System.Threading.Channels;
 using Xunit;
 using ZzzOd.AppHost.Backend;
-using ZzzOd.Gui.Pages.Devtools;
 using ZzzOd.Gui.Services.RunIntent;
 
 namespace ZzzOd.GameLogic.Tests.AppHost;
@@ -112,33 +111,6 @@ public sealed class OperationDebugAxamlPageTests
 	}
 
 	[Fact]
-	public void AxamlKeepsPythonOrderAndUsesFluentRunControls()
-	{
-		string path = FindDevtoolsDirectory();
-		string text = File.ReadAllText(Path.Combine(path, "ZzzOperationDebugAxamlPage.axaml"));
-		string actualString = File.ReadAllText(Path.Combine(path, "ZzzOperationDebugAxamlPage.cs"));
-		AssertOrder(text, "指令配置", "循环指令", "操作方式", "RunPanelHost");
-		Assert.Contains("config/auto_battle_operation", text, StringComparison.Ordinal);
-		Assert.Contains("fa:FASettingsExpander", text, StringComparison.Ordinal);
-		Assert.Contains("fa:FASettingsExpanderItem", text, StringComparison.Ordinal);
-		Assert.Contains("fa:FAComboBox", text, StringComparison.Ordinal);
-		Assert.Contains("fa:FACommandBar", text, StringComparison.Ordinal);
-		Assert.Contains("fa:FACommandBarButton", text, StringComparison.Ordinal);
-		Assert.Contains("ToggleSwitch", text, StringComparison.Ordinal);
-		Assert.Contains("new ZzzRunPanel", actualString, StringComparison.Ordinal);
-		Assert.Contains("ZzzApplicationIds.OperationDebug", actualString, StringComparison.Ordinal);
-		Assert.Contains("OperationDebugConstants.DefaultGroupId", actualString, StringComparison.Ordinal);
-		Assert.Contains("OperationTemplateConfigProvider", actualString, StringComparison.Ordinal);
-		Assert.Contains("GetCurrentInstance()", actualString, StringComparison.Ordinal);
-		Assert.Contains("SaveConfigScope", actualString, StringComparison.Ordinal);
-		Assert.DoesNotContain("new StackPanel", actualString, StringComparison.Ordinal);
-		Assert.DoesNotContain("PageModel", actualString, StringComparison.Ordinal);
-		Assert.DoesNotContain("Ui.Source", actualString, StringComparison.Ordinal);
-		Assert.DoesNotContain("Python", text, StringComparison.Ordinal);
-		Assert.DoesNotContain("sample", text.Replace("SampleAppPageMargin", string.Empty, StringComparison.OrdinalIgnoreCase), StringComparison.OrdinalIgnoreCase);
-	}
-
-	[Fact]
 	public void PageReadsRecursiveRealFilesDeletesOnlyNormalYamlAndSavesCurrentInstance()
 	{
 		string text = Path.Combine(Path.GetTempPath(), "zzzod-operation-debug-page-tests", Guid.NewGuid().ToString("N"));
@@ -154,7 +126,7 @@ public sealed class OperationDebugAxamlPageTests
 			recordingBackendProxy.RunRoot = text;
 			GuiParityAndFacadeTests.RunOnUiThread(delegate
 			{
-				ZzzOperationDebugAxamlPage zzzOperationDebugAxamlPage = new ZzzOperationDebugAxamlPage(backend, new ZzzGuiRunIntentService());
+				ZzzOd.Gui.Views.FrontierPages.DevTools.FrontierOperationDebugPage zzzOperationDebugAxamlPage = new ZzzOd.Gui.Views.FrontierPages.DevTools.FrontierOperationDebugPage(backend, new ZzzGuiRunIntentService());
 				zzzOperationDebugAxamlPage.ReloadForTest();
 				Assert.Equal(7, zzzOperationDebugAxamlPage.ActiveInstanceIndex);
 				Assert.Equal(new string[2] { "alpha", "sub/beta" }, zzzOperationDebugAxamlPage.OperationTemplates);
@@ -181,33 +153,4 @@ public sealed class OperationDebugAxamlPageTests
 		}
 	}
 
-	private static void AssertOrder(string text, params string[] markers)
-	{
-		int num = -1;
-		foreach (string text2 in markers)
-		{
-			int num2 = text.IndexOf(text2, StringComparison.Ordinal);
-			Assert.True(num2 > num, "未按顺序找到 " + text2 + "。");
-			num = num2;
-		}
-	}
-
-	private static string FindDevtoolsDirectory()
-	{
-		for (DirectoryInfo directoryInfo = new DirectoryInfo(AppContext.BaseDirectory); directoryInfo != null; directoryInfo = directoryInfo.Parent)
-		{
-			string[] buffer = new string[5];
-			buffer[0] = directoryInfo.FullName;
-			buffer[1] = "src";
-			buffer[2] = "ZzzOd.Gui";
-			buffer[3] = "Pages";
-			buffer[4] = "Devtools";
-			string text = Path.Combine(buffer);
-			if (Directory.Exists(text))
-			{
-				return text;
-			}
-		}
-		throw new DirectoryNotFoundException("未找到开发工具页目录。");
-	}
 }

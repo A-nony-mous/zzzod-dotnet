@@ -11,7 +11,7 @@
                   HorizontalScrollBarVisibility="Disabled"
                   VerticalScrollBarVisibility="Auto"
                   HorizontalContentAlignment="Stretch"
-                  Padding="8,6"
+                  Padding="8,8"
                   ClipToBounds="True"
                   Classes="zzz-log-scroll">
       <TextBox x:Name="OutputText"

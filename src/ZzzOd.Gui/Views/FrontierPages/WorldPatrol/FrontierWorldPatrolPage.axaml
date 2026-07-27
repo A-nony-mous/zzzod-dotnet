@@ -2,14 +2,15 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:fa="using:FluentAvalonia.UI.Controls"
              xmlns:local="using:ZzzOd.Gui.Views.FrontierPages.WorldPatrol"
-             xmlns:model="using:ZzzOd.Gui.Pages.ApplicationSettings"
+             xmlns:model="using:ZzzOd.Gui.PageModels.ApplicationSettings"
+             xmlns:settings="using:ZzzOd.Gui.PageModels.WorldPatrol"
              xmlns:controls="using:ZzzOd.Gui.Controls"
-             x:Class="ZzzOd.Gui.Views.FrontierPages.WorldPatrol.FrontierWorldPatrolPage">
+             x:Class="ZzzOd.Gui.Views.FrontierPages.WorldPatrol.FrontierWorldPatrolPage"
+             x:DataType="settings:ZzzWorldPatrolSettingsViewModel">
   <Grid>
-    <fa:FATabView x:Name="SettingsTabView"
-                TabWidthMode="SizeToContent"
+    <TabControl Classes="zzz-pivot" x:Name="SettingsTabView"
                 SelectionChanged="OnSettingsTabSelectionChanged">
-      <fa:FATabViewItem Header="锄大地配置" IsClosable="False">
+      <TabItem Classes="zzz-pivot-item" Header="锄大地配置">
         <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
           <StackPanel Margin="{DynamicResource SampleAppPageMargin}"
                       Spacing="{DynamicResource SampleAppSectionSpacing}">
@@ -22,16 +23,16 @@
                   </fa:FASettingsExpander.Footer>
                 </fa:FASettingsExpander>
                 <fa:FASettingsExpander Header="自动战斗">
-                  <fa:FASettingsExpander.Footer><fa:FAComboBox x:Name="AutoBattleCombo" Tag="auto_battle" Width="210" SelectionChanged="OnConfigComboChanged" /></fa:FASettingsExpander.Footer>
+                  <fa:FASettingsExpander.Footer><fa:FAComboBox x:Name="AutoBattleCombo" Width="210" ItemsSource="{Binding AutoBattleOptions}" SelectedItem="{Binding SelectedAutoBattle, Mode=TwoWay}" /></fa:FASettingsExpander.Footer>
                 </fa:FASettingsExpander>
                 <fa:FASettingsExpander Header="界面消失预警时间" Description="UI完全消失持续到该秒数后判定为卡电梯">
-                  <fa:FASettingsExpander.Footer><fa:FANumberBox x:Name="UiDisappearSecondsBox" Tag="ui_disappear_seconds" Minimum="0" Maximum="999" SmallChange="1" ValueChanged="OnConfigNumberChanged" /></fa:FASettingsExpander.Footer>
+                  <fa:FASettingsExpander.Footer><fa:FANumberBox x:Name="UiDisappearSecondsBox" Minimum="0" Maximum="999" SmallChange="1" Value="{Binding UiDisappearSeconds, Mode=TwoWay}" /></fa:FASettingsExpander.Footer>
                 </fa:FASettingsExpander>
                 <fa:FASettingsExpander Header="单条路线重试上限" Description="单条路线累计重试次数，超限后跳过该路线">
-                  <fa:FASettingsExpander.Footer><fa:FANumberBox x:Name="RouteRetryTimesBox" Tag="route_retry_times" Minimum="0" Maximum="99" SmallChange="1" ValueChanged="OnConfigNumberChanged" /></fa:FASettingsExpander.Footer>
+                  <fa:FASettingsExpander.Footer><fa:FANumberBox x:Name="RouteRetryTimesBox" Minimum="0" Maximum="99" SmallChange="1" Value="{Binding RouteRetryTimes, Mode=TwoWay}" /></fa:FASettingsExpander.Footer>
                 </fa:FASettingsExpander>
                 <fa:FASettingsExpander Header="锄地每日循环次数" Description="一次任务执行内总共执行的轮数">
-                  <fa:FASettingsExpander.Footer><fa:FANumberBox x:Name="DailyLoopCountBox" Tag="daily_loop_count" Minimum="0" Maximum="99" SmallChange="1" ValueChanged="OnConfigNumberChanged" /></fa:FASettingsExpander.Footer>
+                  <fa:FASettingsExpander.Footer><fa:FANumberBox x:Name="DailyLoopCountBox" Minimum="0" Maximum="99" SmallChange="1" Value="{Binding DailyLoopCount, Mode=TwoWay}" /></fa:FASettingsExpander.Footer>
                 </fa:FASettingsExpander>
               </StackPanel>
               <StackPanel Grid.Column="1" Spacing="1">
@@ -39,30 +40,30 @@
                   <fa:FASettingsExpander.Footer><Button Content="重置记录" Click="OnResetRecordClicked" /></fa:FASettingsExpander.Footer>
                 </fa:FASettingsExpander>
                 <fa:FASettingsExpander Header="路线名单">
-                  <fa:FASettingsExpander.Footer><fa:FAComboBox x:Name="RouteListConfigCombo" Tag="route_list" Width="210" SelectionChanged="OnConfigComboChanged" /></fa:FASettingsExpander.Footer>
+                  <fa:FASettingsExpander.Footer><fa:FAComboBox x:Name="RouteListConfigCombo" Width="210" ItemsSource="{Binding RouteListOptions}" SelectedItem="{Binding SelectedRouteList, Mode=TwoWay}" /></fa:FASettingsExpander.Footer>
                 </fa:FASettingsExpander>
                 <fa:FASettingsExpander Header="界面消失处理方式" Description="判定为疑似卡电梯后的处理方式">
-                  <fa:FASettingsExpander.Footer><fa:FAComboBox x:Name="UiDisappearActionCombo" Tag="ui_disappear_action" Width="210" SelectionChanged="OnConfigComboChanged" /></fa:FASettingsExpander.Footer>
+                  <fa:FASettingsExpander.Footer><fa:FAComboBox x:Name="UiDisappearActionCombo" Width="210" ItemsSource="{Binding UiDisappearActionOptionsList}" SelectedItem="{Binding SelectedUiDisappearAction, Mode=TwoWay}" /></fa:FASettingsExpander.Footer>
                 </fa:FASettingsExpander>
                 <fa:FASettingsExpander Header="路线重试处理方式" Description="路线脱困失败，重试后再次卡住时的处理方式">
-                  <fa:FASettingsExpander.Footer><fa:FAComboBox x:Name="RouteRetryActionCombo" Tag="route_retry_action" Width="210" SelectionChanged="OnConfigComboChanged" /></fa:FASettingsExpander.Footer>
+                  <fa:FASettingsExpander.Footer><fa:FAComboBox x:Name="RouteRetryActionCombo" Width="210" ItemsSource="{Binding RouteRetryActionOptionsList}" SelectedItem="{Binding SelectedRouteRetryAction, Mode=TwoWay}" /></fa:FASettingsExpander.Footer>
                 </fa:FASettingsExpander>
                 <fa:FASettingsExpander Header="每轮最少占用时长（敌人刷新时间）" Description="每轮跑完：不足则补等到该秒数，超过则立即开始下一轮">
-                  <fa:FASettingsExpander.Footer><fa:FANumberBox x:Name="LoopIntervalSecondsBox" Tag="loop_interval_seconds" Minimum="0" Maximum="86400" SmallChange="1" ValueChanged="OnConfigNumberChanged" /></fa:FASettingsExpander.Footer>
+                  <fa:FASettingsExpander.Footer><fa:FANumberBox x:Name="LoopIntervalSecondsBox" Minimum="0" Maximum="86400" SmallChange="1" Value="{Binding LoopIntervalSeconds, Mode=TwoWay}" /></fa:FASettingsExpander.Footer>
                 </fa:FASettingsExpander>
               </StackPanel>
             </Grid>
           </StackPanel>
         </ScrollViewer>
-      </fa:FATabViewItem>
+      </TabItem>
 
-      <fa:FATabViewItem Header="路线列表" IsClosable="False">
+      <TabItem Classes="zzz-pivot-item" Header="路线列表">
         <Grid Margin="{DynamicResource SampleAppPageMargin}" ColumnDefinitions="360,*" ColumnSpacing="12">
           <StackPanel Grid.Column="0" Spacing="8">
             <fa:FAInfoBar x:Name="RouteListErrorBar" IsOpen="False" IsClosable="True" Severity="Error" />
             <fa:FASettingsExpander Header="名单选择">
               <fa:FASettingsExpander.Footer>
-                <StackPanel Orientation="Horizontal" Spacing="6">
+                <StackPanel Orientation="Horizontal" Spacing="8">
                   <fa:FAComboBox x:Name="EditorRouteListCombo" Width="180" SelectionChanged="OnEditorRouteListChanged" />
                   <fa:FAComboBox x:Name="ListTypeCombo" Width="110" SelectionChanged="OnListTypeChanged" />
                 </StackPanel>
@@ -78,7 +79,7 @@
             </fa:FACommandBar>
             <fa:FASettingsExpander Header="区域选择">
               <fa:FASettingsExpander.Footer>
-                <StackPanel Orientation="Horizontal" Spacing="6">
+                <StackPanel Orientation="Horizontal" Spacing="8">
                   <fa:FAComboBox x:Name="EntryCombo" Width="150" SelectionChanged="OnEntryChanged" />
                   <fa:FAComboBox x:Name="AreaCombo" Width="180" SelectionChanged="OnAreaChanged" />
                 </StackPanel>
@@ -98,16 +99,16 @@
               </fa:FACommandBar.PrimaryCommands>
             </fa:FACommandBar>
           </StackPanel>
-          <Grid Grid.Column="1" RowDefinitions="Auto,*,Auto,*" RowSpacing="6">
-            <TextBlock Grid.Row="0" FontSize="16" FontWeight="SemiBold" Text="路线列表" />
+          <Grid Grid.Column="1" RowDefinitions="Auto,*,Auto,*" RowSpacing="8">
+            <TextBlock Grid.Row="0" FontSize="{DynamicResource ZzzFontSizeBodyLarge}" FontWeight="SemiBold" Text="路线列表" />
             <ListBox x:Name="ChosenRouteList" Grid.Row="1" SelectionChanged="OnRouteSelectionChanged" />
-            <TextBlock Grid.Row="2" FontSize="14" FontWeight="SemiBold" Text="当前区域可用路线" />
+            <TextBlock Grid.Row="2" FontSize="{DynamicResource ZzzFontSizeBody}" FontWeight="SemiBold" Text="当前区域可用路线" />
             <ListBox x:Name="AvailableRouteList" Grid.Row="3" SelectionChanged="OnAvailableRouteSelectionChanged" />
           </Grid>
         </Grid>
-      </fa:FATabViewItem>
+      </TabItem>
 
-      <fa:FATabViewItem Header="大地图录制" IsClosable="False">
+      <TabItem Classes="zzz-pivot-item" Header="大地图录制">
         <Grid Margin="{DynamicResource SampleAppPageMargin}" ColumnDefinitions="360,220,*" ColumnSpacing="12">
           <ScrollViewer Grid.Column="0"
                         HorizontalScrollBarVisibility="Disabled"
@@ -119,7 +120,7 @@
                           Severity="Error" />
               <fa:FASettingsExpander Header="区域">
                 <fa:FASettingsExpander.Footer>
-                  <StackPanel Orientation="Horizontal" Spacing="6">
+                  <StackPanel Orientation="Horizontal" Spacing="8">
                     <fa:FAComboBox x:Name="LargeMapEntryCombo"
                                    Width="145"
                                    SelectionChanged="OnLargeMapEntryChanged" />
@@ -179,7 +180,7 @@
               <fa:FASettingsExpander Header="图标匹配阈值"
                                        Description="调整图标识别的匹配阈值，默认0.7">
                 <fa:FASettingsExpander.Footer>
-                  <StackPanel Orientation="Horizontal" Spacing="6">
+                  <StackPanel Orientation="Horizontal" Spacing="8">
                     <fa:FANumberBox x:Name="LargeMapIconThresholdBox"
                                   Width="140"
                                   Minimum="0.1"
@@ -193,7 +194,7 @@
               <fa:FASettingsExpander Header="缩放"
                                        Description="调整大地图的，只有第一次需要">
                 <fa:FASettingsExpander.Footer>
-                  <StackPanel Orientation="Horizontal" Spacing="6">
+                  <StackPanel Orientation="Horizontal" Spacing="8">
                     <fa:FANumberBox x:Name="LargeMapScaleBox"
                                   Width="140"
                                   Minimum="0"
@@ -207,9 +208,9 @@
               <fa:FASettingsExpander Header="角色坐标"
                                        Description="点击大地图可更新坐标">
                 <fa:FASettingsExpander.Footer>
-                  <StackPanel Spacing="6">
+                  <StackPanel Spacing="8">
                     <TextBlock x:Name="LargeMapPositionText" />
-                    <StackPanel Orientation="Horizontal" Spacing="6">
+                    <StackPanel Orientation="Horizontal" Spacing="8">
                       <fa:FANumberBox x:Name="LargeMapHorizontalMoveBox"
                                     Width="115"
                                     Minimum="-9999"
@@ -217,7 +218,7 @@
                                     SmallChange="1" />
                       <Button Content="横移" Click="OnMoveLargeMapHorizontalClicked" />
                     </StackPanel>
-                    <StackPanel Orientation="Horizontal" Spacing="6">
+                    <StackPanel Orientation="Horizontal" Spacing="8">
                       <fa:FANumberBox x:Name="LargeMapVerticalMoveBox"
                                     Width="115"
                                     Minimum="-9999"
@@ -233,7 +234,9 @@
                           IsClosable="False"
                           Severity="Informational"
                           Title="大地图录制" />
-              <ContentControl x:Name="LargeMapLogHost" Height="160" />
+              <ContentControl x:Name="LargeMapLogHost"
+                              MinHeight="120"
+                              MaxHeight="160" />
             </StackPanel>
           </ScrollViewer>
 
@@ -255,16 +258,16 @@
                                           Grid.Column="2"
                                           PointClicked="OnLargeMapViewerPointClicked" />
         </Grid>
-      </fa:FATabViewItem>
+      </TabItem>
 
-      <fa:FATabViewItem Header="锄地路线录制" IsClosable="False">
+      <TabItem Classes="zzz-pivot-item" Header="锄地路线录制">
         <Grid Margin="{DynamicResource SampleAppPageMargin}" ColumnDefinitions="380,220,*" ColumnSpacing="12">
           <ScrollViewer Grid.Column="0" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
             <StackPanel Spacing="8">
               <fa:FAInfoBar x:Name="RouteEditorErrorBar" IsOpen="False" IsClosable="True" Severity="Error" />
               <fa:FASettingsExpander Header="路线">
                 <fa:FASettingsExpander.Footer>
-                  <StackPanel Spacing="6">
+                  <StackPanel Spacing="8">
                     <fa:FAComboBox x:Name="RouteEntryCombo" Width="330" SelectionChanged="OnRouteEntryChanged" />
                     <fa:FAComboBox x:Name="RouteAreaCombo" Width="330" SelectionChanged="OnRouteAreaChanged" />
                     <fa:FAComboBox x:Name="RouteCombo" Width="330" SelectionChanged="OnRouteChanged" />
@@ -287,7 +290,7 @@
               </fa:FASettingsExpander>
               <fa:FASettingsExpander Header="操作">
                 <fa:FASettingsExpander.Footer>
-                  <StackPanel Orientation="Horizontal" Spacing="6">
+                  <StackPanel Orientation="Horizontal" Spacing="8">
                     <Button x:Name="CapturePositionButton" Content="截图(1)" Click="OnCapturePositionClicked" />
                     <Button x:Name="AddMoveButton" Content="添加移动(4)" Click="OnAddMoveClicked" />
                     <Button x:Name="UndoMoveButton" Content="回退(5)" Click="OnUndoMoveClicked" />
@@ -296,7 +299,7 @@
               </fa:FASettingsExpander>
               <fa:FASettingsExpander Header="调试" Description="可选择从第几步开始, 0代表需要传送，1代表已完成第1步">
                 <fa:FASettingsExpander.Footer>
-                  <StackPanel Orientation="Horizontal" Spacing="6">
+                  <StackPanel Orientation="Horizontal" Spacing="8">
                     <fa:FANumberBox x:Name="DebugStartBox" Minimum="0" SmallChange="1" Width="100" />
                     <Button x:Name="DebugRouteButton" Content="调试" Click="OnDebugRouteClicked" />
                   </StackPanel>
@@ -307,7 +310,9 @@
                   <ToggleSwitch x:Name="AutoAddRouteClickSwitch" IsChecked="True" />
                 </fa:FASettingsExpander.Footer>
               </fa:FASettingsExpander>
-              <ContentControl x:Name="RouteRecorderLogHost" Height="160" />
+              <ContentControl x:Name="RouteRecorderLogHost"
+                              MinHeight="120"
+                              MaxHeight="160" />
             </StackPanel>
           </ScrollViewer>
 
@@ -319,8 +324,8 @@
                                           Grid.Column="2"
                                           PointClicked="OnRouteMapViewerPointClicked" />
         </Grid>
-      </fa:FATabViewItem>
-    </fa:FATabView>
+      </TabItem>
+    </TabControl>
 
     <fa:FAContentDialog x:Name="RouteOperationDialog"
                       Title="编辑路线操作"
