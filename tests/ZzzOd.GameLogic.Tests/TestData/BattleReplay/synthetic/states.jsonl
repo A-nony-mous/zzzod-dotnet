@@ -1,0 +1,3 @@
+{"Record":{"StateName":"窗口状态","IsClear":false,"TriggerTime":10.0,"TriggerTimeAdd":null,"Value":null,"ValueAdd":null},"SubmittedAtUtc":"2026-07-27T00:00:00Z"}
+{"Record":{"StateName":"冷却状态","IsClear":false,"TriggerTime":20.0,"TriggerTimeAdd":null,"Value":null,"ValueAdd":null},"SubmittedAtUtc":"2026-07-27T00:00:01Z"}
+{"Record":{"StateName":"高优先级状态","IsClear":false,"TriggerTime":30.0,"TriggerTimeAdd":null,"Value":null,"ValueAdd":null},"SubmittedAtUtc":"2026-07-27T00:00:02Z"}
