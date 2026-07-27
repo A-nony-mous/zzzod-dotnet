@@ -3,7 +3,6 @@
 每项格式为 `文件相对路径 | 当前直接调用数 | 理由`。调用数同时统计 `GetConfigScope(` 与 `SaveConfigScope(`。文件必须来自 2026-07-27 基线；新增文件和超过基线数量的调用不允许进入豁免。
 
 Controls/ZzzRunPanel.cs | 1 | 运行面板尚未迁移
-Views/FrontierPages/ApplicationSettings/FrontierIntelBoardSettingsFlyoutContent.axaml.cs | 3 | 应用设置批次尚未迁移
 Views/FrontierPages/ApplicationSettings/FrontierNotoriousHuntAppSettingPage.axaml.cs | 2 | 应用设置批次尚未迁移
 Views/FrontierPages/ApplicationSettings/FrontierShiyuDefenseAppSettingPage.axaml.cs | 3 | 应用设置批次尚未迁移
 Views/FrontierPages/ApplicationSettings/FrontierSuibianTempleAppSettingPage.axaml.cs | 2 | 应用设置批次尚未迁移
