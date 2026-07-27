@@ -1,6 +1,8 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:fa="using:FluentAvalonia.UI.Controls"
+             xmlns:local="using:ZzzOd.Gui.Views.FrontierPages.ApplicationSettings"
+             x:DataType="local:ZzzWitheredDomainAppSettingViewModel"
              x:Class="ZzzOd.Gui.Views.FrontierPages.ApplicationSettings.FrontierWitheredDomainAppSettingPage">
   <Grid>
     <TabControl Classes="zzz-pivot">
@@ -18,39 +20,50 @@
                 </fa:FASettingsExpander>
                 <fa:FASettingsExpander Header="挑战副本" Description="选择空洞及难度等级">
                   <fa:FASettingsExpander.Footer>
-                    <fa:FAComboBox x:Name="MissionCombo" Width="220" SelectionChanged="OnBaseComboChanged" Tag="mission_name" />
+                    <fa:FAComboBox x:Name="MissionCombo" Width="220"
+                                   ItemsSource="{Binding MissionOptions}"
+                                   SelectedItem="{Binding SelectedMission, Mode=TwoWay}" />
                   </fa:FASettingsExpander.Footer>
                 </fa:FASettingsExpander>
                 <fa:FASettingsExpander Header="每周基础次数" Description="完整通关，用于完成委托任务">
                   <fa:FASettingsExpander.Footer>
-                    <fa:FANumberBox x:Name="WeeklyTimesNumber" Minimum="0" Maximum="99" SmallChange="1" ValueChanged="OnBaseNumberChanged" Tag="weekly_plan_times" />
+                    <fa:FANumberBox x:Name="WeeklyTimesNumber" Minimum="0" Maximum="99" SmallChange="1"
+                                    Value="{Binding WeeklyPlanTimes, Mode=TwoWay}" />
                   </fa:FASettingsExpander.Footer>
                 </fa:FASettingsExpander>
                 <fa:FASettingsExpander Header="额外刷取" Description="完成基础次数后，继续刷取">
                   <fa:FASettingsExpander.Footer>
-                    <fa:FAComboBox x:Name="ExtraTaskCombo" Width="180" SelectionChanged="OnBaseComboChanged" Tag="extra_task" />
+                    <fa:FAComboBox x:Name="ExtraTaskCombo" Width="180"
+                                   ItemsSource="{Binding ExtraTaskOptions}"
+                                   SelectedItem="{Binding SelectedExtraTask, Mode=TwoWay}" />
                   </fa:FASettingsExpander.Footer>
                 </fa:FASettingsExpander>
               </StackPanel>
               <StackPanel Grid.Column="2" Spacing="8">
-                <fa:FASettingsExpander x:Name="RunRecordItem" Header="运行记录">
+                <fa:FASettingsExpander x:Name="RunRecordItem" Header="运行记录"
+                                       Description="{Binding RunRecordDescription}">
                   <fa:FASettingsExpander.Footer>
-                    <Button Content="重置记录" Click="OnResetRecordClicked" />
+                    <Button Content="重置记录" Command="{Binding ResetRunRecordCommand}" />
                   </fa:FASettingsExpander.Footer>
                 </fa:FASettingsExpander>
                 <fa:FASettingsExpander Header="挑战配置" Description="选择角色、鸣徽和事件">
                   <fa:FASettingsExpander.Footer>
-                    <fa:FAComboBox x:Name="BaseChallengeCombo" Width="220" SelectionChanged="OnBaseComboChanged" Tag="challenge_config" />
+                    <fa:FAComboBox x:Name="BaseChallengeCombo" Width="220"
+                                   ItemsSource="{Binding BaseChallengeOptions}"
+                                   SelectedItem="{Binding SelectedBaseChallenge, Mode=TwoWay}" />
                   </fa:FASettingsExpander.Footer>
                 </fa:FASettingsExpander>
                 <fa:FASettingsExpander Header="每天进入次数" Description="将空洞分摊到每天运行">
                   <fa:FASettingsExpander.Footer>
-                    <fa:FANumberBox x:Name="DailyTimesNumber" Minimum="0" Maximum="99" SmallChange="1" ValueChanged="OnBaseNumberChanged" Tag="daily_plan_times" />
+                    <fa:FANumberBox x:Name="DailyTimesNumber" Minimum="0" Maximum="99" SmallChange="1"
+                                    Value="{Binding DailyPlanTimes, Mode=TwoWay}" />
                   </fa:FASettingsExpander.Footer>
                 </fa:FASettingsExpander>
                 <fa:FASettingsExpander Header="额外刷取方式" Description="额外刷取时，选择何时退出">
                   <fa:FASettingsExpander.Footer>
-                    <fa:FAComboBox x:Name="ExtraExitCombo" Width="180" SelectionChanged="OnBaseComboChanged" Tag="extra_exit" />
+                    <fa:FAComboBox x:Name="ExtraExitCombo" Width="180"
+                                   ItemsSource="{Binding ExtraExitOptions}"
+                                   SelectedItem="{Binding SelectedExtraExit, Mode=TwoWay}" />
                   </fa:FASettingsExpander.Footer>
                 </fa:FASettingsExpander>
               </StackPanel>
