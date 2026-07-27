@@ -2,7 +2,8 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:fa="using:FluentAvalonia.UI.Controls"
              xmlns:local="using:ZzzOd.Gui.PageModels.OneDragon"
-             x:Class="ZzzOd.Gui.Views.FrontierPages.OneDragon.FrontierNotifySettingsPage">
+             x:Class="ZzzOd.Gui.Views.FrontierPages.OneDragon.FrontierNotifySettingsPage"
+             x:DataType="local:ZzzNotifySettingsViewModel">
   <ScrollViewer Padding="{DynamicResource SampleAppPageMargin}"
                 HorizontalScrollBarVisibility="Disabled"
                 VerticalScrollBarVisibility="Auto">
@@ -17,15 +18,17 @@
           <fa:FASymbolIconSource Symbol="Message" />
         </fa:FASettingsExpander.IconSource>
         <fa:FASettingsExpander.Footer>
-          <ToggleSwitch x:Name="MergeErrorToggle"
+      <ToggleSwitch x:Name="MergeErrorToggle"
                         OnContent="开启"
                         OffContent="关闭"
-                        Click="OnMergeErrorChanged" />
+                        IsChecked="{Binding MergeErrorImmediateNotify, Mode=TwoWay}"
+                        IsEnabled="{Binding ValuesAvailable}" />
         </fa:FASettingsExpander.Footer>
       </fa:FASettingsExpander>
 
       <fa:FASettingsExpander x:Name="AppNotifyList"
                              Header="应用通知"
+                             ItemsSource="{Binding Rows}"
                              IsExpanded="True">
         <fa:FASettingsExpander.ItemsPanel>
           <ItemsPanelTemplate>

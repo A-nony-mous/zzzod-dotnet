@@ -4,6 +4,5 @@
 
 Controls/ZzzRunPanel.cs | 1 | 运行面板尚未迁移
 Views/FrontierPages/Home/FrontierHomePage.axaml.cs | 4 | 首页混合迁移尚未完成
-Views/FrontierPages/OneDragon/FrontierNotifySettingsPage.cs | 3 | 一条龙设置批次尚未迁移
 Views/FrontierPages/OneDragon/FrontierPredefinedTeamPage.cs | 2 | 一条龙设置批次尚未迁移
 Views/FrontierPages/WorldPatrol/FrontierWorldPatrolPage.cs | 2 | 世界巡游混合迁移尚未完成
