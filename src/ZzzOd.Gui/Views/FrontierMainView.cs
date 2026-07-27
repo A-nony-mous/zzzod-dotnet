@@ -153,7 +153,7 @@ internal sealed partial class FrontierMainView : UserControl, IDisposable
 
             StackPanel itemBody = new()
             {
-                Width = 64,
+                Width = 56,
                 Height = 64,
                 Spacing = 4,
                 HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Center,

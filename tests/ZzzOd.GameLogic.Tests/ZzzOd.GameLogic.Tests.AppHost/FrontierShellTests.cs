@@ -300,7 +300,7 @@ public sealed class FrontierShellTests
                 Assert.Equal("test-home", view.ActiveRoute);
                 Assert.Equal(1, view.CreatedPageCount);
                 Assert.Equal(2, view.NavigationItems.Count);
-                Assert.Equal(108, view.NavigationView.OpenPaneLength);
+                Assert.Equal(88, view.NavigationView.OpenPaneLength);
                 Assert.Equal(48, view.NavigationView.CompactPaneLength);
                 Assert.Equal("测试实例 × 绝区零 一条龙", shellViewModel.FrontierWindowTitle);
                 Assert.Equal(1, home.Shown);

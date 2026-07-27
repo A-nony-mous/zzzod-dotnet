@@ -791,12 +791,17 @@ public sealed class GuiParityAndFacadeTests
 			Assert.Equal("TabControl", zzzGameAssistantPage.NavigationTargetKind);
 			Assert.Equal(new string[2] { "战斗助手", "委托助手" }, zzzGameAssistantPage.ItemHeaders);
 			Assert.Equal("战斗助手", zzzGameAssistantPage.SelectedHeader);
-			Assert.True(zzzGameAssistantPage.SelectByHeader("委托助手"));
-			Assert.Equal("委托助手", zzzGameAssistantPage.SelectedHeader);
-			Assert.False(zzzGameAssistantPage.SelectByHeader("不存在"));
-			Assert.False(zzzGameAssistantPage.CanGoBack);
 			zzzGameAssistantPage.OnPageShown();
 			Assert.True(zzzGameAssistantPage.ActiveChildIsShown);
+			for (int index = 0; index < 8; index++)
+			{
+				Assert.True(zzzGameAssistantPage.SelectByHeader("委托助手"));
+				Assert.Equal("委托助手", zzzGameAssistantPage.SelectedHeader);
+				Assert.True(zzzGameAssistantPage.SelectByHeader("战斗助手"));
+				Assert.Equal("战斗助手", zzzGameAssistantPage.SelectedHeader);
+			}
+			Assert.False(zzzGameAssistantPage.SelectByHeader("不存在"));
+			Assert.False(zzzGameAssistantPage.CanGoBack);
 			zzzGameAssistantPage.OnPageLeave();
 			zzzGameAssistantPage.OnPageHidden();
 			Assert.False(zzzGameAssistantPage.ActiveChildIsShown);
@@ -1458,8 +1463,11 @@ public sealed class GuiParityAndFacadeTests
 			buffer[0] = "charge_plan";
 			buffer[1] = "coffee";
 			Assert.Equal(buffer, settings.AppRows.Select((ZzzOneDragonAppRowModel row) => row.AppId).ToArray());
-			Assert.False(settings.AppRows.Single((ZzzOneDragonAppRowModel row) => row.AppId == "coffee").Enabled);
+			ZzzOneDragonAppRowModel coffeeRow = settings.AppRows.Single((ZzzOneDragonAppRowModel row) => row.AppId == "coffee");
+			Assert.False(coffeeRow.Enabled);
 			settings.SetAppEnabledForTest("coffee", enabled: true);
+			Assert.Same(coffeeRow, settings.AppRows.Single((ZzzOneDragonAppRowModel row) => row.AppId == "coffee"));
+			Assert.True(coffeeRow.Enabled);
 			settings.MoveAppForTest("coffee", -1);
 			settings.SetInstanceRunForTest("全部实例");
 			settings.SetAfterDoneForTest("关机");

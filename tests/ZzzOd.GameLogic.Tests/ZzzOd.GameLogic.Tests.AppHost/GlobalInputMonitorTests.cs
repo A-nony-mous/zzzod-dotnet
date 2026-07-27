@@ -65,6 +65,27 @@ public sealed class GlobalInputMonitorTests
 		Assert.True(zzzGlobalInputMonitor.EnsureStarted(), zzzGlobalInputMonitor.LastError);
 	}
 
+	/// <summary>
+	/// 连续创建和释放监听器后不应遗留仍在运行的消息线程。
+	/// </summary>
+	[Fact]
+	public void MonitorRepeatedStartupAndDisposalStopsEveryMessageThread()
+	{
+		if (!OperatingSystem.IsWindows())
+		{
+			return;
+		}
+
+		for (int index = 0; index < 8; index++)
+		{
+			ZzzGlobalInputMonitor monitor = new();
+			Assert.True(monitor.EnsureStarted(), monitor.LastError);
+			Assert.True(monitor.IsRunningForTest);
+			monitor.Dispose();
+			Assert.False(monitor.IsRunningForTest);
+		}
+	}
+
 	private static string FindRepositoryRoot()
 	{
 		for (DirectoryInfo directoryInfo = new DirectoryInfo(AppContext.BaseDirectory); directoryInfo != null; directoryInfo = directoryInfo.Parent)

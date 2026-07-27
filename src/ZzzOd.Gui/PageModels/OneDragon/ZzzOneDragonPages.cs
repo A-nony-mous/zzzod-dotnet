@@ -1,3 +1,4 @@
+using CommunityToolkit.Mvvm.ComponentModel;
 using ZzzOd.AppHost.Backend;
 using ZzzOd.GameLogic.Application;
 using ZzzOd.GameLogic.Application.OneDragonApp;
@@ -16,19 +17,49 @@ internal sealed record ZzzOneDragonPageModel(
     IReadOnlyList<string> ConfigKeys,
     int ItemCount = 0);
 
-internal sealed record ZzzOneDragonAppRowModel(
-    string AppId,
-    string Name,
-    bool Enabled,
-    bool NeedNotify,
-    bool NotifyVisible,
-    bool NotifyEnabled,
-    bool SettingVisible,
-    bool RunAvailable,
-    string? LastRunTime,
-    int? RunStatus,
-    bool IsMigrated = false)
+internal sealed class ZzzOneDragonAppRowModel : ObservableObject
 {
+    private bool _enabled;
+    private bool _notifyEnabled;
+
+    public ZzzOneDragonAppRowModel(
+        string appId,
+        string name,
+        bool enabled,
+        bool needNotify,
+        bool notifyVisible,
+        bool notifyEnabled,
+        bool settingVisible,
+        bool runAvailable,
+        string? lastRunTime,
+        int? runStatus,
+        bool isMigrated = false)
+    {
+        AppId = appId;
+        Name = name;
+        _enabled = enabled;
+        NeedNotify = needNotify;
+        NotifyVisible = notifyVisible;
+        _notifyEnabled = notifyEnabled;
+        SettingVisible = settingVisible;
+        RunAvailable = runAvailable;
+        LastRunTime = lastRunTime;
+        RunStatus = runStatus;
+        IsMigrated = isMigrated;
+    }
+
+    public string AppId { get; }
+    public string Name { get; }
+    public bool Enabled { get => _enabled; set => SetProperty(ref _enabled, value); }
+    public bool NeedNotify { get; }
+    public bool NotifyVisible { get; }
+    public bool NotifyEnabled { get => _notifyEnabled; set => SetProperty(ref _notifyEnabled, value); }
+    public bool SettingVisible { get; }
+    public bool RunAvailable { get; }
+    public string? LastRunTime { get; }
+    public int? RunStatus { get; }
+    public bool IsMigrated { get; }
+
     public string LastRunText => string.IsNullOrWhiteSpace(LastRunTime) ? string.Empty : $"上次运行 {LastRunTime}";
 
     public string StatusGlyph => RunStatus switch
@@ -73,9 +104,10 @@ internal sealed class ZzzOneDragonRunSettings : ZzzPageViewModel
             if (args.PropertyName is nameof(NotifySection.EnableNotify))
             {
                 OnPropertyChanged(nameof(NotifyEnabled));
-                SetAppRows(_appRows
-                    .Select(row => row with { NotifyEnabled = row.NotifyVisible && _notify.EnableNotify })
-                    .ToArray());
+                foreach (ZzzOneDragonAppRowModel row in _appRows)
+                {
+                    row.NotifyEnabled = row.NotifyVisible && _notify.EnableNotify;
+                }
             }
         };
     }
@@ -190,10 +222,15 @@ internal sealed class ZzzOneDragonRunSettings : ZzzPageViewModel
 
     public void SetAppEnabled(string appId, bool enabled)
     {
-        SetAppRows(_appRows
-            .Select(row => string.Equals(row.AppId, appId, StringComparison.Ordinal) ? row with { Enabled = enabled } : row)
-            .ToArray());
-        SaveAppRows();
+        ZzzOneDragonAppRowModel? row = _appRows.FirstOrDefault(candidate =>
+            string.Equals(candidate.AppId, appId, StringComparison.Ordinal));
+        if (row is null)
+        {
+            return;
+        }
+
+        row.Enabled = enabled;
+        SaveAppRows(refreshRows: row.IsMigrated && !enabled);
     }
 
     public void SetNotifyEnabled(bool enabled) => NotifyEnabled = enabled;
@@ -286,7 +323,7 @@ internal sealed class ZzzOneDragonRunSettings : ZzzPageViewModel
             app.IsMigrated)).ToArray();
     }
 
-    private void SaveAppRows()
+    private void SaveAppRows(bool refreshRows = true)
     {
         ZzzBackendResult<IReadOnlyList<ZzzOneDragonAppDto>> result = _backend.SaveOneDragonApps(new ZzzSaveOneDragonAppsRequest(
             _appRows.Select(row => new ZzzOneDragonAppUpdateDto(row.AppId, row.Enabled)).ToArray(),
@@ -299,18 +336,21 @@ internal sealed class ZzzOneDragonRunSettings : ZzzPageViewModel
             return;
         }
 
-        SetAppRows(result.Value.Select(app => new ZzzOneDragonAppRowModel(
-            app.AppId,
-            app.Name,
-            app.Enabled,
-            app.NeedNotify,
-            app.NotifyVisible,
-            app.NotifyVisible && NotifyEnabled,
-            app.SettingVisible,
-            app.RunAvailable,
-            app.LastRunTime,
-            app.RunStatus,
-            app.IsMigrated)).ToArray());
+        if (refreshRows)
+        {
+            SetAppRows(result.Value.Select(app => new ZzzOneDragonAppRowModel(
+                app.AppId,
+                app.Name,
+                app.Enabled,
+                app.NeedNotify,
+                app.NotifyVisible,
+                app.NotifyVisible && NotifyEnabled,
+                app.SettingVisible,
+                app.RunAvailable,
+                app.LastRunTime,
+                app.RunStatus,
+                app.IsMigrated)).ToArray());
+        }
     }
 
     protected override void DisposePageCore()

@@ -35,6 +35,11 @@ internal sealed class ZzzGlobalInputMonitor : IDisposable
 
     public string? LastError { get; private set; }
 
+    /// <summary>
+    /// 获取监听线程当前是否仍在运行，供生命周期回归测试使用。
+    /// </summary>
+    internal bool IsRunningForTest => _thread?.IsAlive == true;
+
     public bool EnsureStarted()
     {
         lock (_lock)
@@ -125,6 +130,9 @@ internal sealed class ZzzGlobalInputMonitor : IDisposable
     private void RunMessageLoop()
     {
         _threadId = GetCurrentThreadId();
+        // PostThreadMessage 只能投递到已经创建消息队列的线程。快速重启时，Dispose 可能在
+        // 首次 GetMessage 前运行；提前 PeekMessage 可确保 WM_QUIT 不会因队列不存在而丢失。
+        _ = PeekMessageW(out _, 0, 0, 0, 0);
         nint module = GetModuleHandleW(null);
         _keyboardHook = SetWindowsHookExW(WhKeyboardLl, _keyboardProc, module, 0);
         _mouseHook = SetWindowsHookExW(WhMouseLl, _mouseProc, module, 0);
@@ -245,6 +253,10 @@ internal sealed class ZzzGlobalInputMonitor : IDisposable
 
     [DllImport("user32.dll", EntryPoint = "GetMessageW")]
     private static extern int GetMessageW(out NativeMessage message, nint window, uint min, uint max);
+
+    [DllImport("user32.dll", EntryPoint = "PeekMessageW")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static extern bool PeekMessageW(out NativeMessage message, nint window, uint min, uint max, uint removeMessage);
 
     [DllImport("user32.dll")]
     [return: MarshalAs(UnmanagedType.Bool)]

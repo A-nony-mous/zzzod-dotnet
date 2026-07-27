@@ -34,13 +34,13 @@ public sealed class GuiStaticAuditTests
 		Assert.Contains("<fa:FAFrame", mainView, StringComparison.Ordinal);
 		Assert.Contains("<fa:FAInfoBar", mainView, StringComparison.Ordinal);
 		Assert.Contains("Grid.RowSpan=\"2\"", mainView, StringComparison.Ordinal);
-		Assert.Contains("OpenPaneLength=\"108\"", mainView, StringComparison.Ordinal);
+		Assert.Contains("OpenPaneLength=\"88\"", mainView, StringComparison.Ordinal);
 		Assert.DoesNotContain("frontier-selection-indicator", mainView, StringComparison.Ordinal);
 		Assert.Contains("uip|FANavigationViewItemPresenter", mainView, StringComparison.Ordinal);
 		Assert.DoesNotContain("<ControlTemplate>", mainView, StringComparison.Ordinal);
 		Assert.Contains("/template/ Border#LayoutRoot", mainView, StringComparison.Ordinal);
 		Assert.Contains("/template/ ContentPresenter#ContentPresenter", mainView, StringComparison.Ordinal);
-		Assert.Contains("Setter Property=\"Width\" Value=\"72\"", mainView, StringComparison.Ordinal);
+		Assert.Contains("Setter Property=\"Width\" Value=\"64\"", mainView, StringComparison.Ordinal);
 		Assert.Contains("NavigationViewSelectionIndicatorWidth", navigationResources, StringComparison.Ordinal);
 		Assert.Contains("Thickness x:Key=\"NavigationViewContentMargin\">0,48,0,0", mainView, StringComparison.Ordinal);
 		Assert.Contains("x:Name=\"PaneTitleSpacer\"", mainView, StringComparison.Ordinal);
@@ -216,6 +216,9 @@ public sealed class GuiStaticAuditTests
 		Assert.Contains("FACommandBar", worldPatrol, StringComparison.Ordinal);
 		Assert.Contains("BattleFrame", gameAssistant, StringComparison.Ordinal);
 		Assert.Contains("CommissionFrame", gameAssistant, StringComparison.Ordinal);
+		Assert.Contains("Header=\"战斗助手\"", gameAssistant, StringComparison.Ordinal);
+		Assert.Contains("Header=\"委托助手\"", gameAssistant, StringComparison.Ordinal);
+		Assert.Contains("MinWidth=\"88\"", gameAssistant, StringComparison.Ordinal);
 		Assert.Contains("FrontierBattleAssistantPage", gameAssistantPages, StringComparison.Ordinal);
 		Assert.Contains("FrontierCommissionAssistantPage", gameAssistantPages, StringComparison.Ordinal);
 		Assert.Contains("ContentHost", standalone, StringComparison.Ordinal);

@@ -8,8 +8,7 @@
               Padding="0">
     <TabItem x:Name="BattleTab"
                     Header="战斗助手"
-                    MinWidth="72"
-                    MaxWidth="72"
+                    MinWidth="88"
                     Classes="zzz-pivot-item"
                     Focusable="True"
                     AutomationProperties.Name="战斗助手 选项卡">
@@ -20,8 +19,7 @@
     </TabItem>
     <TabItem x:Name="CommissionTab"
                     Header="委托助手"
-                    MinWidth="72"
-                    MaxWidth="72"
+                    MinWidth="88"
                     Classes="zzz-pivot-item"
                     Focusable="True"
                     AutomationProperties.Name="委托助手 选项卡">

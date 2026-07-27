@@ -10,9 +10,9 @@
   </UserControl.Resources>
   <UserControl.Styles>
     <Style Selector="fa|FANavigationViewItem.frontier-navigation-item">
-      <Setter Property="Width" Value="72" />
-      <Setter Property="MinWidth" Value="72" />
-      <Setter Property="MaxWidth" Value="72" />
+      <Setter Property="Width" Value="64" />
+      <Setter Property="MinWidth" Value="64" />
+      <Setter Property="MaxWidth" Value="64" />
       <Setter Property="Height" Value="72" />
       <Setter Property="MinHeight" Value="72" />
       <Setter Property="MaxHeight" Value="72" />
@@ -28,9 +28,9 @@
       <Setter Property="Foreground" Value="{DynamicResource TextFillColorSecondaryBrush}" />
     </Style>
     <Style Selector="fa|FANavigationViewItem.frontier-navigation-item uip|FANavigationViewItemPresenter">
-      <Setter Property="Width" Value="72" />
-      <Setter Property="MinWidth" Value="72" />
-      <Setter Property="MaxWidth" Value="72" />
+      <Setter Property="Width" Value="64" />
+      <Setter Property="MinWidth" Value="64" />
+      <Setter Property="MaxWidth" Value="64" />
       <Setter Property="Height" Value="72" />
       <Setter Property="MinHeight" Value="72" />
       <Setter Property="MaxHeight" Value="72" />
@@ -43,7 +43,7 @@
       <Setter Property="VerticalContentAlignment" Value="Center" />
     </Style>
     <Style Selector="fa|FANavigationViewItem.frontier-navigation-item uip|FANavigationViewItemPresenter /template/ Border#LayoutRoot">
-      <Setter Property="Width" Value="72" />
+      <Setter Property="Width" Value="64" />
       <Setter Property="Height" Value="72" />
       <Setter Property="Margin" Value="0" />
     </Style>
@@ -154,7 +154,7 @@
                          Grid.RowSpan="2"
                          AlwaysShowHeader="False"
                          PaneDisplayMode="Left"
-                         OpenPaneLength="108"
+                         OpenPaneLength="88"
                          CompactPaneLength="48"
                          IsPaneOpen="True"
                          IsPaneToggleButtonVisible="False"

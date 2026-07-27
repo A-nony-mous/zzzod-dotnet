@@ -1,3 +1,4 @@
+using System.Collections.ObjectModel;
 using ZzzOd.AppHost.Backend;
 using ZzzOd.GameLogic.Application.BattleAssistant;
 using ZzzOd.GameLogic.Config;
@@ -17,8 +18,8 @@ internal sealed class ZzzBattleAssistantSettingsViewModel : ZzzPageViewModel
     private readonly BattleSection _battle;
     private readonly ModelSection _model;
     private readonly Action<string?>? _errorReporter;
-    private IReadOnlyList<string> _autoBattleOptions = [];
-    private IReadOnlyList<string> _dodgeOptions = [];
+    private readonly ObservableCollection<string> _autoBattleOptions = [];
+    private readonly ObservableCollection<string> _dodgeOptions = [];
     private string? _lastError;
     private string? _catalogError;
     private bool _loadingSections;
@@ -212,14 +213,26 @@ internal sealed class ZzzBattleAssistantSettingsViewModel : ZzzPageViewModel
 
     private void ApplyCatalog(ZzzBattleAssistantConfigCatalogDto catalog)
     {
-        _autoBattleOptions = catalog.AutoBattle.ToArray();
-        _dodgeOptions = catalog.Dodge.ToArray();
-        OnPropertyChanged(nameof(AutoBattleOptions));
-        OnPropertyChanged(nameof(DodgeOptions));
+        ReplaceOptions(_autoBattleOptions, catalog.AutoBattle);
+        ReplaceOptions(_dodgeOptions, catalog.Dodge);
         OnPropertyChanged(nameof(SelectedAutoBattleConfig));
         OnPropertyChanged(nameof(SelectedDodgeConfig));
         OnPropertyChanged(nameof(CanDeleteAutoBattleConfig));
         OnPropertyChanged(nameof(CanDeleteDodgeConfig));
+    }
+
+    private static void ReplaceOptions(ObservableCollection<string> target, IReadOnlyList<string> source)
+    {
+        if (target.SequenceEqual(source, StringComparer.Ordinal))
+        {
+            return;
+        }
+
+        target.Clear();
+        foreach (string item in source)
+        {
+            target.Add(item);
+        }
     }
 
     private void OnSectionError(string? error)
