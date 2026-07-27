@@ -19,13 +19,35 @@ internal sealed class ZzzOverlayVisionControl : Control
         ["cv"] = Color.Parse("#64d98b"),
     };
 
+    private const string PreviewCanvasLabel = "布局预览（未连接游戏窗口）";
+    private static readonly Color PreviewCanvasColor = Color.Parse("#60B0FF");
+
     private IReadOnlyList<ZzzOverlayDrawItemDto> _items = [];
     private ZzzOverlayGuiSettings _settings = new();
     private double _desktopScaling = 1d;
+    private bool _previewMode;
 
     public ZzzOverlayVisionControl()
     {
         IsHitTestVisible = false;
+    }
+
+    /// <summary>
+    /// 布局预览态：未连接游戏窗口时用虚拟画布替代游戏客户区。
+    /// </summary>
+    public bool PreviewMode
+    {
+        get => _previewMode;
+        set
+        {
+            if (_previewMode == value)
+            {
+                return;
+            }
+
+            _previewMode = value;
+            InvalidateVisual();
+        }
     }
 
     public void Update(IReadOnlyList<ZzzOverlayDrawItemDto> items, ZzzOverlayGuiSettings settings, double desktopScaling = 1d)
@@ -39,7 +61,17 @@ internal sealed class ZzzOverlayVisionControl : Control
     public override void Render(DrawingContext context)
     {
         base.Render(context);
-        if (!_settings.VisionLayerEnabled || Bounds.Width <= 0d || Bounds.Height <= 0d)
+        if (Bounds.Width <= 0d || Bounds.Height <= 0d)
+        {
+            return;
+        }
+
+        if (_previewMode)
+        {
+            RenderPreviewCanvas(context);
+        }
+
+        if (!_settings.VisionLayerEnabled)
         {
             return;
         }
@@ -81,6 +113,24 @@ internal sealed class ZzzOverlayVisionControl : Control
                 context.DrawText(text, bounds.TopLeft);
             }
         }
+    }
+
+    /// <summary>
+    /// 绘制布局预览画布的边框与标识文字。
+    /// </summary>
+    /// <param name="context">绘制上下文。</param>
+    private void RenderPreviewCanvas(DrawingContext context)
+    {
+        SolidColorBrush brush = new(PreviewCanvasColor);
+        context.DrawRectangle(null, new Pen(brush, 2d), new Rect(1d, 1d, Math.Max(0d, Bounds.Width - 2d), Math.Max(0d, Bounds.Height - 2d)));
+        FormattedText label = new(
+            PreviewCanvasLabel,
+            CultureInfo.CurrentCulture,
+            FlowDirection.LeftToRight,
+            Typeface.Default,
+            Math.Max(12d, _settings.FontSize + 2d),
+            brush);
+        context.DrawText(label, new Point(12d, 8d));
     }
 
     internal static bool IsEnabledSource(ZzzOverlayDrawItemDto item, ZzzOverlayGuiSettings settings)

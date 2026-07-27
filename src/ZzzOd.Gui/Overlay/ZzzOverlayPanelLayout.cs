@@ -21,7 +21,27 @@ internal static class ZzzOverlayPanelLayout
 {
     private const double Margin = 4d;
 
-    public static ZzzOverlayPhysicalRect ResolveLocked(ZzzOverlayPanelSettings panel, ZzzWindowStatusDto gameWindow)
+    /// <summary>
+    /// 出厂停靠布局与游戏客户区之间的逻辑边距。
+    /// </summary>
+    private const double DockMargin = 16d;
+
+    /// <summary>
+    /// 右列面板的出厂停靠顺序。log 面板停靠左上，不参与右列累计。
+    /// </summary>
+    private static readonly string[] RightColumnDockOrder = ["state", "battle", "decision", "timeline", "performance"];
+
+    /// <summary>
+    /// 解析锁定模式面板的物理矩形。
+    /// </summary>
+    /// <param name="panel">面板配置。</param>
+    /// <param name="gameWindow">游戏窗口状态。</param>
+    /// <param name="dockPanels">用于计算出厂停靠位的面板集合，通常直接传入全部面板配置；为空时视为没有前序面板。</param>
+    /// <returns>面板物理矩形。</returns>
+    public static ZzzOverlayPhysicalRect ResolveLocked(
+        ZzzOverlayPanelSettings panel,
+        ZzzWindowStatusDto gameWindow,
+        IReadOnlyList<ZzzOverlayPanelSettings>? dockPanels = null)
     {
         ArgumentNullException.ThrowIfNull(panel);
         ArgumentNullException.ThrowIfNull(gameWindow);
@@ -34,7 +54,7 @@ internal static class ZzzOverlayPanelLayout
                 game.Width * panel.LockedWidth!.Value,
                 game.Height * panel.LockedHeight!.Value)
             : IsFactoryGeometry(panel)
-                ? ResolveDefaultDock(panel, game, legacyScaling)
+                ? ResolveDefaultDock(panel, game, legacyScaling, dockPanels)
                 : panel.LayoutVersion < 2
                     ? ScaleLegacyBounds(panel, legacyScaling)
                     : new ZzzOverlayPhysicalRect(panel.X, panel.Y, panel.Width, panel.Height);
@@ -182,7 +202,8 @@ internal static class ZzzOverlayPanelLayout
         bool targetIsFreeMode,
         ZzzWindowStatusDto gameWindow,
         double desktopScaling,
-        uint displayDpi)
+        uint displayDpi,
+        IReadOnlyList<ZzzOverlayPanelSettings>? dockPanels = null)
     {
         ArgumentNullException.ThrowIfNull(panel);
         ArgumentNullException.ThrowIfNull(gameWindow);
@@ -200,7 +221,7 @@ internal static class ZzzOverlayPanelLayout
 
         ZzzOverlayPhysicalRect physicalBounds = sourceIsFreeMode
             ? ResolveFree(panel, desktopScaling)
-            : ResolveLocked(panel, gameWindow);
+            : ResolveLocked(panel, gameWindow, dockPanels);
         StoreMode(panel, targetIsFreeMode, physicalBounds, gameWindow, desktopScaling, displayDpi);
     }
 
@@ -392,37 +413,29 @@ internal static class ZzzOverlayPanelLayout
     private static bool IsFactoryGeometry(ZzzOverlayPanelSettings panel) => panel.Id switch
     {
         "log" => panel.X == 100d && panel.Y == 100d && panel.Width == 480d && panel.Height == 200d,
-        "state" or "decision" or "timeline" or "performance" => panel.X == 0d && panel.Y == 0d,
+        "state" or "battle" or "decision" or "timeline" or "performance" => panel.X == 0d && panel.Y == 0d,
         _ => false,
     };
 
     private static ZzzOverlayPhysicalRect ResolveDefaultDock(
         ZzzOverlayPanelSettings panel,
         ZzzOverlayPhysicalRect game,
-        double scaling)
+        double scaling,
+        IReadOnlyList<ZzzOverlayPanelSettings>? dockPanels)
     {
-        const double margin = 16d;
         double scale = Math.Max(0.5d, scaling);
         double gameWidth = Math.Max(100d, game.Width / scale);
         double gameHeight = Math.Max(100d, game.Height / scale);
-        double width = Math.Min(Math.Max(180d, panel.Width), Math.Max(180d, gameWidth - margin * 2d)) * scale;
-        double height = Math.Min(Math.Max(90d, panel.Height), Math.Max(90d, gameHeight - margin * 2d)) * scale;
-        double physicalMargin = margin * scale;
+        double width = Math.Min(Math.Max(180d, panel.Width), Math.Max(180d, gameWidth - DockMargin * 2d)) * scale;
+        double height = ResolveDockHeight(panel, gameHeight, scale);
+        double physicalMargin = DockMargin * scale;
         if (panel.Id == "log")
         {
             return new ZzzOverlayPhysicalRect(game.X + physicalMargin, game.Y + physicalMargin, width, height);
         }
 
-        int index = panel.Id switch
-        {
-            "state" => 0,
-            "decision" => 1,
-            "timeline" => 2,
-            "performance" => 3,
-            _ => 0,
-        };
         double x = game.Right - physicalMargin - width;
-        double y = game.Y + physicalMargin + index * (height + 8d * scale);
+        double y = game.Y + physicalMargin + ResolvePrecedingDockOffset(panel, dockPanels, gameHeight, scale);
         if (y + height > game.Bottom - physicalMargin)
         {
             y = Math.Max(game.Y + physicalMargin, game.Bottom - physicalMargin - height);
@@ -430,4 +443,52 @@ internal static class ZzzOverlayPanelLayout
 
         return new ZzzOverlayPhysicalRect(x, y, width, height);
     }
+
+    /// <summary>
+    /// 计算右列面板的纵向累计偏移。
+    /// 按"排在当前面板之前、已启用且仍使用出厂几何"的面板实际停靠高度累加，禁用面板不占位。
+    /// 出厂默认高度各面板不等，用序号乘本面板高度的写法会确定性重叠。
+    /// </summary>
+    /// <param name="panel">当前面板。</param>
+    /// <param name="dockPanels">参与计算的面板集合，可传入全部面板配置。</param>
+    /// <param name="gameHeight">逻辑游戏高度。</param>
+    /// <param name="scale">缩放系数。</param>
+    /// <returns>纵向偏移的物理像素。</returns>
+    private static double ResolvePrecedingDockOffset(
+        ZzzOverlayPanelSettings panel,
+        IReadOnlyList<ZzzOverlayPanelSettings>? dockPanels,
+        double gameHeight,
+        double scale)
+    {
+        int index = DockOrderIndex(panel.Id);
+        if (index <= 0 || dockPanels is null || dockPanels.Count == 0)
+        {
+            return 0d;
+        }
+
+        double offset = 0d;
+        foreach (ZzzOverlayPanelSettings candidate in dockPanels)
+        {
+            int candidateIndex = DockOrderIndex(candidate.Id);
+            if (candidateIndex < 0 || candidateIndex >= index || !candidate.Enabled || candidate.IsFreeMode)
+            {
+                continue;
+            }
+
+            // 只有仍在出厂停靠位上的面板才占位；已保存自定义几何的面板不在这一列里。
+            if (HasNormalizedBounds(candidate) || !IsFactoryGeometry(candidate))
+            {
+                continue;
+            }
+
+            offset += ResolveDockHeight(candidate, gameHeight, scale) + 8d * scale;
+        }
+
+        return offset;
+    }
+
+    private static double ResolveDockHeight(ZzzOverlayPanelSettings panel, double gameHeight, double scale) =>
+        Math.Min(Math.Max(90d, panel.Height), Math.Max(90d, gameHeight - DockMargin * 2d)) * scale;
+
+    private static int DockOrderIndex(string id) => Array.IndexOf(RightColumnDockOrder, id);
 }

@@ -17,6 +17,11 @@ public sealed record ZzzOverlaySnapshotDto(
 	ImmutableArray<ZzzOverlayLogEntryDto> Logs)
 {
 	/// <summary>
+	/// 未过期的业务键值状态，按 Key 排序。
+	/// </summary>
+	public ImmutableArray<ZzzOverlayBusinessStateDto> BusinessStates { get; init; } = ImmutableArray<ZzzOverlayBusinessStateDto>.Empty;
+
+	/// <summary>
 	/// 根据旧接口结果创建兼容快照。
 	/// </summary>
 	public static ZzzOverlaySnapshotDto FromLegacy(
@@ -68,7 +73,29 @@ public sealed record ZzzOverlayAutoBattleStateDto(
 	string? LatestDodgeState,
 	bool? ChainReady,
 	string? LatestQuickAssistAgent,
-	double? DistanceMeters);
+	double? DistanceMeters,
+	string? CurrentTrigger = null,
+	string? CurrentExpression = null,
+	double? CurrentDurationSeconds = null,
+	IReadOnlyList<ZzzOverlayBattleStateRowDto>? StateRows = null);
+
+/// <summary>
+/// 业务键值状态项。
+/// </summary>
+/// <param name="Key">状态键。</param>
+/// <param name="Value">状态值。</param>
+public sealed record ZzzOverlayBusinessStateDto(string Key, string Value);
+
+/// <summary>
+/// battle 面板的单条状态行。
+/// </summary>
+/// <param name="StateName">状态名。</param>
+/// <param name="SecondsSinceTrigger">距上次触发的秒数。</param>
+/// <param name="Value">状态值。</param>
+public sealed record ZzzOverlayBattleStateRowDto(
+	string StateName,
+	double SecondsSinceTrigger,
+	int? Value);
 
 /// <summary>
 /// Operation 轨迹的数据传输对象。

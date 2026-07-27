@@ -119,6 +119,16 @@
             <ToggleSwitch x:Name="StatePanelToggle" IsChecked="{Binding StatePanelEnabled, Mode=TwoWay}" />
           </fa:FASettingsExpanderItem.Footer>
         </fa:FASettingsExpanderItem>
+        <fa:FASettingsExpanderItem Content="显示战斗面板">
+          <fa:FASettingsExpanderItem.Footer>
+            <ToggleSwitch x:Name="BattlePanelToggle" IsChecked="{Binding BattlePanelEnabled, Mode=TwoWay}" />
+          </fa:FASettingsExpanderItem.Footer>
+        </fa:FASettingsExpanderItem>
+        <fa:FASettingsExpanderItem Content="战斗面板状态过滤词">
+          <fa:FASettingsExpanderItem.Footer>
+            <TextBox x:Name="BattleStateFilterTextBox" Width="180" MaxLength="120" Text="{Binding BattleStateFilter, Mode=TwoWay, UpdateSourceTrigger=LostFocus}" />
+          </fa:FASettingsExpanderItem.Footer>
+        </fa:FASettingsExpanderItem>
         <fa:FASettingsExpanderItem Content="显示决策链路面板">
           <fa:FASettingsExpanderItem.Footer>
             <ToggleSwitch x:Name="DecisionPanelToggle" IsChecked="{Binding DecisionPanelEnabled, Mode=TwoWay}" />
@@ -144,6 +154,14 @@
             <ToggleSwitch x:Name="PanelLockToGameWindowToggle" IsChecked="{Binding PanelLockToGameWindow, Mode=TwoWay}" />
           </fa:FASettingsExpanderItem.Footer>
         </fa:FASettingsExpanderItem>
+        <fa:FASettingsExpanderItem Content="面板字体">
+          <fa:FASettingsExpanderItem.Footer>
+            <ComboBox x:Name="FontFamilyCombo"
+                      Width="180"
+                      MaxDropDownHeight="320"
+                      SelectedItem="{Binding FontFamily, Mode=TwoWay}" />
+          </fa:FASettingsExpanderItem.Footer>
+        </fa:FASettingsExpanderItem>
         <fa:FASettingsExpanderItem Content="面板字体大小">
           <fa:FASettingsExpanderItem.Footer>
             <fa:FANumberBox x:Name="FontSizeNumber" Width="180" Minimum="10" Maximum="28" SmallChange="1" Value="{Binding FontSize, Mode=TwoWay}" />
@@ -151,7 +169,17 @@
         </fa:FASettingsExpanderItem>
         <fa:FASettingsExpanderItem Content="文字颜色">
           <fa:FASettingsExpanderItem.Footer>
-            <TextBox x:Name="PanelTextColorTextBox" Width="180" PlaceholderText="#f2f2f2" MaxLength="7" Text="{Binding PanelTextColor, Mode=TwoWay, UpdateSourceTrigger=LostFocus}" />
+            <StackPanel Orientation="Horizontal" Spacing="8">
+              <Border x:Name="PanelTextColorPreview"
+                      Width="24"
+                      Height="24"
+                      VerticalAlignment="Center"
+                      CornerRadius="{DynamicResource ControlCornerRadius}"
+                      BorderThickness="1"
+                      BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}"
+                      Background="{Binding PanelTextColorBrush}" />
+              <TextBox x:Name="PanelTextColorTextBox" Width="148" PlaceholderText="#f2f2f2" MaxLength="7" Text="{Binding PanelTextColor, Mode=TwoWay, UpdateSourceTrigger=LostFocus}" />
+            </StackPanel>
           </fa:FASettingsExpanderItem.Footer>
         </fa:FASettingsExpanderItem>
         <fa:FASettingsExpanderItem Content="日志最大行数">

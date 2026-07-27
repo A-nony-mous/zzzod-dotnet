@@ -55,10 +55,16 @@ internal sealed class ZzzOverlayGuiSettings
     {
         ["log_panel"] = false,
         ["state_panel"] = false,
+        ["battle_panel"] = false,
         ["decision_panel"] = false,
         ["timeline_panel"] = false,
         ["performance_panel"] = false,
     };
+
+    /// <summary>
+    /// battle 面板状态行的过滤关键词，空白分隔；为空表示不过滤。
+    /// </summary>
+    public string BattleStateFilter { get; set; } = string.Empty;
 
     public ZzzOverlayVisualSettings Visual { get; set; } = new();
 
@@ -66,6 +72,7 @@ internal sealed class ZzzOverlayGuiSettings
     [
         new("log", "日志面板", true, 100, 100, 480, 200),
         new("state", "状态面板", true, 0, 0, 300, 120),
+        new("battle", "战斗面板", true, 0, 0, 320, 220),
         new("decision", "决策面板", true, 0, 0, 300, 140),
         new("timeline", "时间轴面板", true, 0, 0, 300, 170),
         new("performance", "性能面板", true, 0, 0, 300, 110),

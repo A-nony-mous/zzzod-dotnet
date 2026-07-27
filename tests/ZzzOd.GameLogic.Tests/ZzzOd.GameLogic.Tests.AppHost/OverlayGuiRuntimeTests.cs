@@ -258,6 +258,170 @@ public sealed class OverlayGuiRuntimeTests
         }
     }
 
+    /// <summary>
+    /// 出厂默认几何下所有已启用面板的停靠矩形必须两两不相交，并落在游戏客户区边距内。
+    /// </summary>
+    [Fact]
+    public void DefaultDockLayoutKeepsEnabledPanelsDisjointInsideGameBounds()
+    {
+        ZzzOverlayGuiSettings settings = new();
+        ZzzWindowStatusDto game = Window(0, 0, 1920, 1080, 96);
+
+        Dictionary<string, ZzzOverlayPhysicalRect> docks = settings.Panels
+            .Where(panel => panel.Enabled)
+            .ToDictionary(
+                panel => panel.Id,
+                panel => ZzzOverlayPanelLayout.ResolveLocked(panel, game, settings.Panels),
+                StringComparer.Ordinal);
+
+        Assert.Equal(16d, docks["state"].Y, 4);
+        Assert.Equal(144d, docks["battle"].Y, 4);
+        Assert.Equal(372d, docks["decision"].Y, 4);
+        Assert.Equal(520d, docks["timeline"].Y, 4);
+        Assert.Equal(698d, docks["performance"].Y, 4);
+
+        foreach (KeyValuePair<string, ZzzOverlayPhysicalRect> entry in docks)
+        {
+            Assert.True(
+                entry.Value.X >= 16d && entry.Value.Y >= 16d &&
+                entry.Value.Right <= 1904d && entry.Value.Bottom <= 1064d,
+                $"面板 {entry.Key} 的停靠矩形超出了游戏客户区边距。");
+        }
+
+        string[] ids = [.. docks.Keys];
+        for (int i = 0; i < ids.Length; i++)
+        {
+            for (int j = i + 1; j < ids.Length; j++)
+            {
+                Assert.False(
+                    Intersects(docks[ids[i]], docks[ids[j]]),
+                    $"面板 {ids[i]} 与 {ids[j]} 的停靠矩形重叠。");
+            }
+        }
+    }
+
+    /// <summary>
+    /// 右列中被禁用的面板不占位，其后的面板向上递补。
+    /// </summary>
+    [Fact]
+    public void DisabledPanelDoesNotOccupyDefaultDockSlot()
+    {
+        ZzzOverlayGuiSettings settings = new();
+        settings.Panels.Single(panel => panel.Id == "decision").Enabled = false;
+        ZzzWindowStatusDto game = Window(0, 0, 1920, 1080, 96);
+
+        ZzzOverlayPhysicalRect timeline = ZzzOverlayPanelLayout.ResolveLocked(
+            settings.Panels.Single(panel => panel.Id == "timeline"),
+            game,
+            settings.Panels);
+        ZzzOverlayPhysicalRect performance = ZzzOverlayPanelLayout.ResolveLocked(
+            settings.Panels.Single(panel => panel.Id == "performance"),
+            game,
+            settings.Panels);
+
+        Assert.Equal(372d, timeline.Y, 4);
+        Assert.Equal(550d, performance.Y, 4);
+    }
+
+    /// <summary>
+    /// 战斗运行中，battle 面板输出三行现场加状态行。
+    /// </summary>
+    [Fact]
+    public void BattlePanelFormatsCurrentExecutionAndStateRows()
+    {
+        ZzzOverlayAutoBattleStateDto autoBattle = new(
+            IsRunning: true,
+            "安比",
+            true,
+            false,
+            null,
+            null,
+            null,
+            null,
+            "闪避识别-黄光",
+            "[前台-安比] and not [后台-妮可]",
+            2.46d,
+            [
+                new ZzzOverlayBattleStateRowDto("前台-安比", 0.42d, 3),
+                new ZzzOverlayBattleStateRowDto("连携技-准备", 1.5d, null),
+            ]);
+
+        string text = ZzzOverlayPanelTextFormatter.FormatBattle(autoBattle);
+
+        Assert.Equal(
+            string.Join(
+                Environment.NewLine,
+                "[触发器] 闪避识别-黄光",
+                "[条件集] [前台-安比] and not [后台-妮可]",
+                "[持续] 2.5s",
+                string.Empty,
+                "前台-安比 0.4 3",
+                "连携技-准备 1.5"),
+            text);
+    }
+
+    /// <summary>
+    /// 自动战斗未运行时三行现场为 `/`，状态区为空，且不输出任何说明文字。
+    /// </summary>
+    [Fact]
+    public void BattlePanelFormatsEmptyStateWithoutExplanatoryCopy()
+    {
+        string stopped = ZzzOverlayPanelTextFormatter.FormatBattle(
+            new ZzzOverlayAutoBattleStateDto(false, null, null, null, null, null, null, null));
+        string missing = ZzzOverlayPanelTextFormatter.FormatBattle(null);
+        string expected = string.Join(
+            Environment.NewLine,
+            "[触发器] /",
+            "[条件集] /",
+            "[持续] /");
+
+        Assert.Equal(expected, stopped);
+        Assert.Equal(expected, missing);
+    }
+
+    /// <summary>
+    /// 状态面板在既有内容之后按 Key 排序追加业务状态行；无业务状态时不输出任何多余内容。
+    /// </summary>
+    [Fact]
+    public void StatePanelAppendsBusinessStateRowsAfterExistingContent()
+    {
+        ZzzOverlayRunStateDto state = new(
+            "Running",
+            "lost_void",
+            "迷失之地",
+            null,
+            null,
+            null,
+            null,
+            null,
+            DateTimeOffset.UnixEpoch);
+
+        string withoutBusiness = ZzzOverlayPanelTextFormatter.FormatState(state);
+        string withBusiness = ZzzOverlayPanelTextFormatter.FormatState(
+            state,
+            [
+                new ZzzOverlayBusinessStateDto("下一步", "前往传送点"),
+                new ZzzOverlayBusinessStateDto("当前地区", "旧都失所"),
+            ]);
+
+        Assert.Equal(
+            string.Join(Environment.NewLine, "RunState: Running", "CurrentAppId: lost_void", "CurrentApp: 迷失之地"),
+            withoutBusiness);
+        Assert.Equal(
+            string.Join(
+                Environment.NewLine,
+                "RunState: Running",
+                "CurrentAppId: lost_void",
+                "CurrentApp: 迷失之地",
+                "下一步: 前往传送点",
+                "当前地区: 旧都失所"),
+            withBusiness);
+    }
+
+    private static bool Intersects(ZzzOverlayPhysicalRect left, ZzzOverlayPhysicalRect right) =>
+        left.X < right.Right && right.X < left.Right &&
+        left.Y < right.Bottom && right.Y < left.Bottom;
+
     private static ZzzWindowStatusDto Window(int x, int y, int width, int height, uint dpi) =>
         new(null, true, true, false, x, y, width, height, false, dpi);
 }

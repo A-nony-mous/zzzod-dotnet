@@ -144,15 +144,23 @@ public class AutoBattleContext : IRunParticipant
 	/// <summary>
 	/// 读取 Overlay 状态面板所需的自动战斗真实运行数据。
 	/// </summary>
-	public AutoBattleOverlayStatusSnapshot GetOverlayStatusSnapshot(DateTimeOffset? now = null)
+	/// <param name="now">当前时刻。</param>
+	/// <param name="stateFilter">battle 面板状态行的过滤关键词，空白分隔；为空表示不过滤。</param>
+	/// <returns>Overlay 运行快照。</returns>
+	public AutoBattleOverlayStatusSnapshot GetOverlayStatusSnapshot(DateTimeOffset? now = null, string? stateFilter = null)
 	{
 		AutoBattleOperator? autoOp = AutoOp;
+		DateTimeOffset timestamp = now ?? DateTimeOffset.UtcNow;
+		IReadOnlyDictionary<string, StateRecorderSnapshot> stateSnapshots = StateRecordService.GetSnapshot();
+		AutoBattleExecutionInfo executionInfo = AutoBattleExecutionInfoReader.Read(autoOp, stateSnapshots, timestamp);
 		return AutoBattleOverlayStatusSnapshotFactory.Create(
-			autoOp?.GetRuntimeSnapshot().IsRunning ?? false,
+			executionInfo.IsRunning,
 			AgentContext.Team.Snapshot(),
-			StateRecordService.GetSnapshot(),
+			stateSnapshots,
 			LastCheckDistance,
-			now ?? DateTimeOffset.UtcNow);
+			timestamp,
+			executionInfo,
+			stateFilter);
 	}
 
 	public string? LastCheckEndResult

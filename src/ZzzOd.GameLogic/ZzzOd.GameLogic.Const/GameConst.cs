@@ -13,6 +13,16 @@ public static class GameConst
 
 	public const string GlobalWindowTitle = "ZenlessZoneZero";
 
+	/// <summary>
+	/// 游戏进程名（国服与国际服可执行文件同名）。
+	/// </summary>
+	public const string ProcessName = "ZenlessZoneZero";
+
+	/// <summary>
+	/// 游戏窗口类名。绝区零为 Unity 引擎，主窗口类名固定为 UnityWndClass。
+	/// </summary>
+	public const string WindowClassName = "UnityWndClass";
+
 	public const string AssetsRootRelativePath = "assets";
 
 	public const string TemplateRootRelativePath = "assets/template";

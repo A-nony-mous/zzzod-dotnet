@@ -4,6 +4,7 @@ using System.Linq;
 using OneDragon.Core.Configuration;
 using OneDragon.Core.Runtime;
 using OneDragon.Core.Windows.Controller;
+using OneDragon.Core.Windows.Screening;
 using Serilog;
 using ZzzOd.GameLogic.Application;
 using ZzzOd.GameLogic.Application.Notify;
@@ -102,11 +103,11 @@ public class ZContext : OneDragonContext
 	/// <summary>
 	/// 获取已初始化自动战斗上下文的 Overlay 状态，不会触发上下文初始化。
 	/// </summary>
-	public AutoBattleOverlayStatusSnapshot? TryGetAutoBattleOverlayStatus()
+	public AutoBattleOverlayStatusSnapshot? TryGetAutoBattleOverlayStatus(string? battleStateFilter = null)
 	{
 		Lazy<AutoBattleContext> autoBattleContext = _autoBattleContext;
 		return autoBattleContext.IsValueCreated
-			? autoBattleContext.Value.GetOverlayStatusSnapshot()
+			? autoBattleContext.Value.GetOverlayStatusSnapshot(null, battleStateFilter)
 			: null;
 	}
 
@@ -301,6 +302,20 @@ public class ZContext : OneDragonContext
 	}
 
 	/// <summary>
+	/// 获取窗口匹配条件
+	/// </summary>
+	/// <returns>启用自定义窗口标题时返回 null（退回纯标题查找），否则返回进程名与类名条件</returns>
+	private WindowsGameWindowMatchOptions? GetWindowMatchOptions()
+	{
+		// 自定义标题是用户显式覆盖，可能指向云游戏等非 Unity 窗口，收紧会破坏该逃生通道。
+		if (GameAccountConfig.UseCustomWinTitle)
+		{
+			return null;
+		}
+		return new WindowsGameWindowMatchOptions([GameConst.ProcessName], GameConst.WindowClassName);
+	}
+
+	/// <summary>
 	/// 切换实例后更新控制器的窗口标题和账号配置
 	/// </summary>
 	public void OnSwitchInstance()
@@ -308,6 +323,7 @@ public class ZContext : OneDragonContext
 		if (base.Controller is ZPcController zPcController)
 		{
 			zPcController.SetWindowTitle(GetWindowTitle());
+			zPcController.SetMatchOptions(GetWindowMatchOptions());
 			zPcController.SyncGameConfig(GameConfig);
 		}
 	}
@@ -320,7 +336,7 @@ public class ZContext : OneDragonContext
 		base.Controller?.CleanupAfterAppShutdown();
 		// 必须传入上下文的日志器。省略时控制器会自建一个写向同一基路径的日志器，
 		// Serilog 会给后建者的文件名追加序号后缀，导致同一次运行的日志被劈成两个文件。
-		ZPcController zPcController = new ZPcController(GameConfig, EnvConfig.ScreenshotMethod, ProjectConfig.ScreenStandardWidth, ProjectConfig.ScreenStandardHeight, null, null, null, null, null, null, skipForegroundActivation: false, null, base.Logger);
+		ZPcController zPcController = new ZPcController(GameConfig, EnvConfig.ScreenshotMethod, ProjectConfig.ScreenStandardWidth, ProjectConfig.ScreenStandardHeight, null, null, null, null, null, null, skipForegroundActivation: false, null, base.Logger, GetWindowMatchOptions());
 		zPcController.SetWindowTitle(GetWindowTitle());
 		AttachController(zPcController);
 	}

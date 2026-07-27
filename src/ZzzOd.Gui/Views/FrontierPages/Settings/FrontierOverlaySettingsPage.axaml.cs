@@ -1,5 +1,6 @@
 using Avalonia.Controls;
 using Avalonia.Markup.Xaml;
+using Avalonia.Media;
 using FluentAvalonia.UI.Controls;
 using ZzzOd.AppHost.Backend;
 using ZzzOd.Gui.Overlay;
@@ -30,6 +31,12 @@ internal sealed partial class FrontierOverlaySettingsPage : UserControl, IZzzPag
         _errorBar = Required<FAInfoBar>("ErrorBar");
         _resultBar = Required<FAInfoBar>("ResultBar");
         _resetGeometryButton = Required<Button>("ResetGeometryButton");
+        Required<ComboBox>("FontFamilyCombo").ItemsSource = FontManager.Current.SystemFonts
+            .Select(font => font.Name)
+            .Append("Segoe UI")
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .OrderBy(name => name, StringComparer.CurrentCultureIgnoreCase)
+            .ToArray();
         _inputs =
         [
             Required<ToggleSwitch>("EnabledToggle"), Required<ToggleSwitch>("VisibleToggle"),
@@ -39,10 +46,12 @@ internal sealed partial class FrontierOverlaySettingsPage : UserControl, IZzzPag
             Required<ToggleSwitch>("VisionCvToggle"), Required<FANumberBox>("VisionOffsetXNumber"),
             Required<FANumberBox>("VisionOffsetYNumber"), Required<FANumberBox>("VisionScaleXNumber"),
             Required<FANumberBox>("VisionScaleYNumber"), Required<ToggleSwitch>("LogPanelToggle"),
-            Required<ToggleSwitch>("StatePanelToggle"), Required<ToggleSwitch>("DecisionPanelToggle"),
+            Required<ToggleSwitch>("StatePanelToggle"), Required<ToggleSwitch>("BattlePanelToggle"),
+            Required<TextBox>("BattleStateFilterTextBox"), Required<ToggleSwitch>("DecisionPanelToggle"),
             Required<ToggleSwitch>("TimelinePanelToggle"), Required<ToggleSwitch>("PerformancePanelToggle"),
             Required<ToggleSwitch>("PanelEditModeToggle"), Required<ToggleSwitch>("PanelLockToGameWindowToggle"),
-            Required<FANumberBox>("FontSizeNumber"), Required<TextBox>("PanelTextColorTextBox"),
+            Required<ComboBox>("FontFamilyCombo"), Required<FANumberBox>("FontSizeNumber"),
+            Required<TextBox>("PanelTextColorTextBox"),
             Required<FANumberBox>("LogMaxLinesNumber"), Required<FANumberBox>("LogFadeSecondsNumber"),
             Required<FANumberBox>("FollowIntervalNumber"), Required<FANumberBox>("InputPollIntervalNumber"),
             Required<FANumberBox>("StatePollIntervalNumber"), Required<FANumberBox>("PanelOpacityNumber"),

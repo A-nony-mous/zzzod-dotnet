@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.Text.Json;
+using Avalonia.Media;
 using CommunityToolkit.Mvvm.Input;
 using ZzzOd.AppHost.Backend;
 using ZzzOd.Gui.Overlay;
@@ -20,6 +21,7 @@ internal sealed partial class ZzzOverlaySettingsViewModel : ZzzConfigSectionView
     private static readonly ZzzConfigField VisionCvField = Bool("vision_cv_enabled", true);
     private static readonly ZzzConfigField LogPanelField = Bool("log_panel_enabled", true);
     private static readonly ZzzConfigField StatePanelField = Bool("state_panel_enabled", true);
+    private static readonly ZzzConfigField BattlePanelField = Bool("battle_panel_enabled", true);
     private static readonly ZzzConfigField DecisionPanelField = Bool("decision_panel_enabled", true);
     private static readonly ZzzConfigField TimelinePanelField = Bool("timeline_panel_enabled", true);
     private static readonly ZzzConfigField PerformancePanelField = Bool("performance_panel_enabled", true);
@@ -37,7 +39,9 @@ internal sealed partial class ZzzOverlaySettingsViewModel : ZzzConfigSectionView
     private static readonly ZzzConfigField InputPollIntervalField = Integer("input_poll_interval_ms", 50);
     private static readonly ZzzConfigField PanelOpacityField = Integer("panel_opacity", 70);
     private static readonly ZzzConfigField ToggleHotkeyField = Text("toggle_hotkey", "o");
+    private static readonly ZzzConfigField FontFamilyField = Text("font_family", "Segoe UI");
     private static readonly ZzzConfigField PanelTextColorField = Text("panel_text_color", "#f2f2f2");
+    private static readonly ZzzConfigField BattleStateFilterField = Text("battle_state_filter", string.Empty);
     private static readonly ZzzConfigField PatchedCaptureSuffixField = Text("patched_capture_suffix", "_patched");
     private static readonly ZzzConfigField PerformanceMetricsField = new(
         "performance_metric_enabled_map",
@@ -48,12 +52,13 @@ internal sealed partial class ZzzOverlaySettingsViewModel : ZzzConfigSectionView
     [
         EnabledField, VisibleField, AntiCaptureField, PanelLockField,
         VisionLayerField, VisionYoloField, VisionOcrField, VisionTemplateField, VisionCvField,
-        LogPanelField, StatePanelField, DecisionPanelField, TimelinePanelField, PerformancePanelField,
+        LogPanelField, StatePanelField, BattlePanelField, DecisionPanelField, TimelinePanelField, PerformancePanelField,
         PanelEditModeField, PatchedCaptureField,
         VisionOffsetXField, VisionOffsetYField, VisionScaleXField, VisionScaleYField,
         FontSizeField, LogMaxLinesField, LogFadeSecondsField, FollowIntervalField,
         StatePollIntervalField, InputPollIntervalField, PanelOpacityField,
-        ToggleHotkeyField, PanelTextColorField, PatchedCaptureSuffixField, PerformanceMetricsField,
+        ToggleHotkeyField, FontFamilyField, PanelTextColorField, BattleStateFilterField,
+        PatchedCaptureSuffixField, PerformanceMetricsField,
     ];
 
     private readonly ZzzOverlayController _overlayController;
@@ -84,6 +89,7 @@ internal sealed partial class ZzzOverlaySettingsViewModel : ZzzConfigSectionView
     public bool VisionCvEnabled { get => GetValue<bool>(VisionCvField); set => SetValue(VisionCvField, value); }
     public bool LogPanelEnabled { get => GetValue<bool>(LogPanelField); set => SetValue(LogPanelField, value); }
     public bool StatePanelEnabled { get => GetValue<bool>(StatePanelField); set => SetValue(StatePanelField, value); }
+    public bool BattlePanelEnabled { get => GetValue<bool>(BattlePanelField); set => SetValue(BattlePanelField, value); }
     public bool DecisionPanelEnabled { get => GetValue<bool>(DecisionPanelField); set => SetValue(DecisionPanelField, value); }
     public bool TimelinePanelEnabled { get => GetValue<bool>(TimelinePanelField); set => SetValue(TimelinePanelField, value); }
     public bool PerformancePanelEnabled { get => GetValue<bool>(PerformancePanelField); set => SetValue(PerformancePanelField, value); }
@@ -101,7 +107,28 @@ internal sealed partial class ZzzOverlaySettingsViewModel : ZzzConfigSectionView
     public int InputPollIntervalMs { get => GetValue<int>(InputPollIntervalField); set => SetValue(InputPollIntervalField, value); }
     public int PanelOpacity { get => GetValue<int>(PanelOpacityField); set => SetValue(PanelOpacityField, value); }
     public string ToggleHotkey { get => GetValue<string>(ToggleHotkeyField); set => SetValue(ToggleHotkeyField, value); }
-    public string PanelTextColor { get => GetValue<string>(PanelTextColorField); set => SetValue(PanelTextColorField, value); }
+    public string FontFamily { get => GetValue<string>(FontFamilyField); set => SetValue(FontFamilyField, value); }
+    public string PanelTextColor
+    {
+        get => GetValue<string>(PanelTextColorField);
+        set
+        {
+            if (!TryParseHexColor(value, out _))
+            {
+                ReportError("文字颜色需要 #RRGGBB 格式。");
+                OnPropertyChanged();
+                return;
+            }
+
+            if (SetValue(PanelTextColorField, value))
+            {
+                OnPropertyChanged(nameof(PanelTextColorBrush));
+            }
+        }
+    }
+    public IBrush PanelTextColorBrush =>
+        TryParseHexColor(PanelTextColor, out Color color) ? new SolidColorBrush(color) : Brushes.Transparent;
+    public string BattleStateFilter { get => GetValue<string>(BattleStateFilterField); set => SetValue(BattleStateFilterField, value); }
     public string PatchedCaptureSuffix { get => GetValue<string>(PatchedCaptureSuffixField); set => SetValue(PatchedCaptureSuffixField, value); }
 
     public bool OcrMetricEnabled { get => GetMetric("ocr_ms"); set => SetMetric("ocr_ms", value); }
@@ -142,6 +169,7 @@ internal sealed partial class ZzzOverlaySettingsViewModel : ZzzConfigSectionView
     protected override void OnScopeLoaded(ZzzConfigScopeValuesDto values)
     {
         NotifyMetricProperties();
+        OnPropertyChanged(nameof(PanelTextColorBrush));
         _overlayController.ReloadConfiguration(ZzzOverlaySettingsMapper.Create(values.Values));
     }
 
@@ -185,6 +213,25 @@ internal sealed partial class ZzzOverlaySettingsViewModel : ZzzConfigSectionView
     private static ZzzConfigField Integer(string key, int defaultValue) => new(key, typeof(int), defaultValue, ReadScalar);
     private static ZzzConfigField Double(string key, double defaultValue) => new(key, typeof(double), defaultValue, ReadScalar);
     private static ZzzConfigField Text(string key, string defaultValue) => new(key, typeof(string), defaultValue, ReadScalar);
+
+    private static bool TryParseHexColor(string? text, out Color color)
+    {
+        color = default;
+        if (text is null || text.Length != 7 || text[0] != '#')
+        {
+            return false;
+        }
+
+        if (!byte.TryParse(text.AsSpan(1, 2), NumberStyles.HexNumber, CultureInfo.InvariantCulture, out byte red) ||
+            !byte.TryParse(text.AsSpan(3, 2), NumberStyles.HexNumber, CultureInfo.InvariantCulture, out byte green) ||
+            !byte.TryParse(text.AsSpan(5, 2), NumberStyles.HexNumber, CultureInfo.InvariantCulture, out byte blue))
+        {
+            return false;
+        }
+
+        color = Color.FromRgb(red, green, blue);
+        return true;
+    }
 
     private static object? ReadBool(object? value) =>
         value is JsonElement element

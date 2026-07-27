@@ -73,7 +73,7 @@ internal sealed class ZzzConfigScopeService
 
 		private static readonly ISerializer Serializer = new SerializerBuilder().ConfigureDefaultValuesHandling(DefaultValuesHandling.Preserve).Build();
 
-		private static readonly string[] PanelNames = new string[5] { "log_panel", "state_panel", "decision_panel", "timeline_panel", "performance_panel" };
+		private static readonly string[] PanelNames = new string[6] { "log_panel", "state_panel", "battle_panel", "decision_panel", "timeline_panel", "performance_panel" };
 
 		private static readonly string[] PanelPhysicalGeometryKeys = new string[4] { "x", "y", "w", "h" };
 
@@ -110,11 +110,14 @@ internal sealed class ZzzConfigScopeService
 			["vision_scale_y"] = 1.0,
 			["patched_capture_enabled"] = false,
 			["patched_capture_suffix"] = "_patched",
+			["font_family"] = "Segoe UI",
 			["font_size"] = 12,
 			["panel_opacity"] = 70,
 			["panel_text_color"] = "#f2f2f2",
 			["log_panel_enabled"] = true,
 			["state_panel_enabled"] = true,
+			["battle_panel_enabled"] = true,
+			["battle_state_filter"] = "",
 			["decision_panel_enabled"] = true,
 			["timeline_panel_enabled"] = true,
 			["performance_panel_enabled"] = true,
@@ -251,6 +254,7 @@ internal sealed class ZzzConfigScopeService
 				case "patched_capture_enabled":
 				case "log_panel_enabled":
 				case "state_panel_enabled":
+				case "battle_panel_enabled":
 				case "decision_panel_enabled":
 				case "timeline_panel_enabled":
 				case "performance_panel_enabled":
@@ -266,6 +270,12 @@ internal sealed class ZzzConfigScopeService
 					break;
 				case "panel_text_color":
 					result = NormalizeColor(Convert.ToString(value, CultureInfo.InvariantCulture));
+					break;
+				case "font_family":
+					result = NormalizeFontFamily(Convert.ToString(value, CultureInfo.InvariantCulture));
+					break;
+				case "battle_state_filter":
+					result = (Convert.ToString(value, CultureInfo.InvariantCulture) ?? string.Empty).Trim();
 					break;
 				case "vision_offset_x":
 				case "vision_offset_y":
@@ -395,6 +405,16 @@ internal sealed class ZzzConfigScopeService
 			}
 			text = text.ToLowerInvariant();
 			return Regex.IsMatch(text, "^#[0-9a-f]{6}$", RegexOptions.CultureInvariant) ? text : "#f2f2f2";
+		}
+
+		private static string NormalizeFontFamily(string? value)
+		{
+			string text = (value ?? string.Empty).Trim();
+			if (text.Length == 0)
+			{
+				return "Segoe UI";
+			}
+			return text.Substring(0, Math.Min(64, text.Length));
 		}
 
 		private static string NormalizeSuffix(string? value)
@@ -705,6 +725,7 @@ internal sealed class ZzzConfigScopeService
 			{
 				["log_panel"] = CreatePanelGeometry(100d, 100d, 480d, 200d),
 				["state_panel"] = CreatePanelGeometry(0d, 0d, 300d, 120d),
+				["battle_panel"] = CreatePanelGeometry(0d, 0d, 320d, 220d),
 				["decision_panel"] = CreatePanelGeometry(0d, 0d, 300d, 140d),
 				["timeline_panel"] = CreatePanelGeometry(0d, 0d, 300d, 170d),
 				["performance_panel"] = CreatePanelGeometry(0d, 0d, 300d, 110d)

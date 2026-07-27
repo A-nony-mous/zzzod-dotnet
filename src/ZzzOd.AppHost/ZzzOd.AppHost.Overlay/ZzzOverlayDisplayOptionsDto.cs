@@ -46,6 +46,7 @@ public sealed record ZzzOverlayDisplayOptionsDto
 	{
 		["log"] = true,
 		["state"] = true,
+		["battle"] = true,
 		["decision"] = true,
 		["timeline"] = true,
 		["performance"] = true
@@ -65,4 +66,9 @@ public sealed record ZzzOverlayDisplayOptionsDto
 	/// 日志淡出后不再输出的秒数。
 	/// </summary>
 	public double LogFadeSeconds { get; init; } = 12d;
+
+	/// <summary>
+	/// battle 面板状态行的过滤关键词，空白分隔；为空表示不过滤。
+	/// </summary>
+	public string BattleStateFilter { get; init; } = string.Empty;
 }

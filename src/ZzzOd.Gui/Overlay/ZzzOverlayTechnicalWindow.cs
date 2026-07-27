@@ -42,6 +42,15 @@ internal sealed class ZzzOverlayTechnicalWindow : Window
         ZzzOverlayNativeWindow.Apply(this, clickThrough: true, preventCapture: settings.PreventCapture);
     }
 
+    /// <summary>
+    /// 布局预览态：无有效游戏窗口时按虚拟画布绘制边框与标识文字。
+    /// </summary>
+    public bool PreviewMode
+    {
+        get => _visionControl.PreviewMode;
+        set => _visionControl.PreviewMode = value;
+    }
+
     public void FollowGameWindow(ZzzWindowStatusDto window)
     {
         ArgumentNullException.ThrowIfNull(window);

@@ -475,8 +475,14 @@ public sealed class ZzzOverlayService : IZzzOverlayService, IDisposable
 			: ImmutableArray<ZzzOverlayDrawItemDto>.Empty;
 		ZzzOverlayFrameDto? visionFrame = visionItems.IsDefaultOrEmpty ? null : new ZzzOverlayFrameDto(now, visionItems);
 
-		ZzzOverlayRunStateDto? state = IsPanelEnabled(options, "state") && context is not null
-			? MapRunState(context, debugSnapshot.RunContext, debugSnapshot.OperationItems, runStateUpdatedAt == default ? now : runStateUpdatedAt)
+		// battle 面板与 state 面板共用这份运行状态，两者任一启用都要取数。
+		ZzzOverlayRunStateDto? state = (IsPanelEnabled(options, "state") || IsPanelEnabled(options, "battle")) && context is not null
+			? MapRunState(
+				context,
+				debugSnapshot.RunContext,
+				debugSnapshot.OperationItems,
+				runStateUpdatedAt == default ? now : runStateUpdatedAt,
+				options.BattleStateFilter)
 			: null;
 		ImmutableArray<ZzzOverlayOperationDto> operations = IsPanelEnabled(options, "state")
 			? debugSnapshot.OperationItems.Select(MapOperation).ToImmutableArray()
@@ -494,7 +500,14 @@ public sealed class ZzzOverlayService : IZzzOverlayService, IDisposable
 			? logs
 			: ImmutableArray<ZzzOverlayLogEntryDto>.Empty;
 
-		return new ZzzOverlaySnapshotDto(now, enabled, visionFrame, state, operations, decisions, timeline, performance, visibleLogs);
+		ImmutableArray<ZzzOverlayBusinessStateDto> businessStates = IsPanelEnabled(options, "state")
+			? [.. debugSnapshot.BusinessStateItems.Select(item => new ZzzOverlayBusinessStateDto(item.Key, item.Value))]
+			: ImmutableArray<ZzzOverlayBusinessStateDto>.Empty;
+
+		return new ZzzOverlaySnapshotDto(now, enabled, visionFrame, state, operations, decisions, timeline, performance, visibleLogs)
+		{
+			BusinessStates = businessStates,
+		};
 	}
 
 	private ImmutableArray<ZzzOverlayPerformanceSampleDto> CollectPerformance(
@@ -558,7 +571,8 @@ public sealed class ZzzOverlayService : IZzzOverlayService, IDisposable
 		ZContext context,
 		ApplicationRunContextSnapshot? runContextSnapshot,
 		IReadOnlyList<OperationTraceItem> operations,
-		DateTimeOffset updatedAt)
+		DateTimeOffset updatedAt,
+		string? battleStateFilter = null)
 	{
 		ApplicationRunContextSnapshot effectiveSnapshot = runContextSnapshot ?? new ApplicationRunContextSnapshot(
 			context.RunContext.State,
@@ -595,7 +609,7 @@ public sealed class ZzzOverlayService : IZzzOverlayService, IDisposable
 			effectiveSnapshot.GroupId,
 			effectiveSnapshot.InstanceIndex,
 			effectiveSnapshot.UpdatedAt == default ? updatedAt : effectiveSnapshot.UpdatedAt,
-			MapAutoBattleState(context.TryGetAutoBattleOverlayStatus()));
+			MapAutoBattleState(context.TryGetAutoBattleOverlayStatus(battleStateFilter)));
 	}
 
 	private static ZzzOverlayAutoBattleStateDto? MapAutoBattleState(AutoBattleOverlayStatusSnapshot? snapshot) =>
@@ -609,7 +623,11 @@ public sealed class ZzzOverlayService : IZzzOverlayService, IDisposable
 				snapshot.LatestDodgeState,
 				snapshot.ChainReady,
 				snapshot.LatestQuickAssistAgent,
-				snapshot.DistanceMeters);
+				snapshot.DistanceMeters,
+				snapshot.CurrentTrigger,
+				snapshot.CurrentExpression,
+				snapshot.CurrentDurationSeconds,
+				[.. snapshot.StateRows.Select(row => new ZzzOverlayBattleStateRowDto(row.StateName, row.SecondsSinceTrigger, row.Value))]);
 
 	private static ZzzOverlayDrawItemDto MapVision(VisionDrawItem item)
 	{
@@ -762,7 +780,8 @@ public sealed class ZzzOverlayService : IZzzOverlayService, IDisposable
 		PerformanceMetricEnabledMap = CopyBoolMap(options.PerformanceMetricEnabledMap),
 		LogMaxLines = Math.Clamp(options.LogMaxLines, 1, LogCapacity),
 		LogFadeSeconds = NormalizePositiveFinite(options.LogFadeSeconds, 12d),
-		YoloDedupIouThreshold = NormalizeYoloDedupIouThreshold(options.YoloDedupIouThreshold)
+		YoloDedupIouThreshold = NormalizeYoloDedupIouThreshold(options.YoloDedupIouThreshold),
+		BattleStateFilter = options.BattleStateFilter ?? string.Empty
 	};
 
 	private static double NormalizeYoloDedupIouThreshold(double value) =>

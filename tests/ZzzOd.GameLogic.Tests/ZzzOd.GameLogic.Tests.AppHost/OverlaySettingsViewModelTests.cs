@@ -98,11 +98,36 @@ public sealed class OverlaySettingsViewModelTests
             viewModel.OnPageShown();
             proxy.FailNextSave = true;
 
-            viewModel.PanelTextColor = "invalid";
+            viewModel.PanelTextColor = "#010203";
 
-            Assert.Equal("invalid", viewModel.PanelTextColor);
+            Assert.Equal("#010203", viewModel.PanelTextColor);
             Assert.Equal("Overlay 保存失败。", error);
             Assert.Equal("Overlay 保存失败。", viewModel.LastError);
+        }
+        finally
+        {
+            Directory.Delete(root, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void InvalidTextColorIsRejectedBeforeSaving()
+    {
+        string root = CreateTempRoot();
+        try
+        {
+            IZzzAppBackend backend = CreateBackend(new ZzzConfigScopeService(root), out OverlayBackendProxy proxy);
+            ZzzOverlayController controller = new(new ZzzOverlayService(), backend);
+            string? error = null;
+            ZzzOverlaySettingsViewModel viewModel = new(backend, controller, value => error = value);
+            viewModel.OnPageShown();
+
+            viewModel.PanelTextColor = "invalid";
+
+            Assert.Equal("#f2f2f2", viewModel.PanelTextColor);
+            Assert.Empty(proxy.SavedRequests);
+            Assert.Equal("文字颜色需要 #RRGGBB 格式。", error);
+            Assert.Equal("文字颜色需要 #RRGGBB 格式。", viewModel.LastError);
         }
         finally
         {

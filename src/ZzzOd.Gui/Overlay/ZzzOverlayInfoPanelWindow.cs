@@ -139,6 +139,11 @@ internal sealed class ZzzOverlayInfoPanelWindow : Window
 
     public ZzzOverlayPanelSettings? Panel => _panel;
 
+    /// <summary>
+    /// 停靠几何是否已成功应用。未生效前不得显示，否则 Avalonia 会按宿主窗口默认位置摆放面板。
+    /// </summary>
+    public bool GeometryApplied => _geometryApplied;
+
     internal bool ResourcesReleased =>
         _closed &&
         !_geometryCommitTimer.IsEnabled &&
@@ -215,7 +220,7 @@ internal sealed class ZzzOverlayInfoPanelWindow : Window
         {
             ZzzOverlayPhysicalRect bounds = panel.IsFreeMode
                 ? ResolveFreeBounds(panel)
-                : ZzzOverlayPanelLayout.ResolveLocked(panel, gameWindow);
+                : ZzzOverlayPanelLayout.ResolveLocked(panel, gameWindow, settings.Panels);
             ApplyPhysicalBounds(bounds);
             _geometryApplied = true;
         }
