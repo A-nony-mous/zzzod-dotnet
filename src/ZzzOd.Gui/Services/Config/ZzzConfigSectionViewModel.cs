@@ -28,6 +28,14 @@ internal abstract class ZzzConfigSectionViewModel : ZzzPageViewModel
 
     protected virtual string? GroupId => null;
 
+    protected virtual void OnScopeLoaded(ZzzConfigScopeValuesDto values)
+    {
+    }
+
+    protected virtual void OnFieldSaved(ZzzConfigField field, ZzzConfigScopeValuesDto values)
+    {
+    }
+
     public string? LastError
     {
         get => _lastError;
@@ -98,6 +106,7 @@ internal abstract class ZzzConfigSectionViewModel : ZzzPageViewModel
                 SetLoadedValue(field, field.Read(raw));
             }
 
+            OnScopeLoaded(result.Value);
             ReportError(null);
         }
         catch (Exception exception)
@@ -120,6 +129,11 @@ internal abstract class ZzzConfigSectionViewModel : ZzzPageViewModel
                     new Dictionary<string, object?> { [field.Key] = field.Write(value) },
                     InstanceIndex,
                     GroupId));
+            if (result.Success && result.Value is not null)
+            {
+                OnFieldSaved(field, result.Value);
+            }
+
             ReportError(result.Success ? null : result.Error ?? $"{field.Key} 保存失败。");
             return result.Success;
         }

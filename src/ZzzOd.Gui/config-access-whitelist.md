@@ -9,7 +9,6 @@ Views/FrontierPages/GameAssistant/FrontierGameAssistantPages.cs | 5 | 游戏助�
 Views/FrontierPages/Home/FrontierHomePage.axaml.cs | 4 | 首页混合迁移尚未完成
 Views/FrontierPages/OneDragon/FrontierNotifySettingsPage.cs | 3 | 一条龙设置批次尚未迁移
 Views/FrontierPages/OneDragon/FrontierPredefinedTeamPage.cs | 2 | 一条龙设置批次尚未迁移
-Views/FrontierPages/Settings/FrontierEnvironmentSettingsPage.axaml.cs | 3 | 设置页批次尚未迁移
 Views/FrontierPages/Settings/FrontierGameSettingsPage.axaml.cs | 1 | 设置页批次尚未迁移
 Views/FrontierPages/Settings/FrontierOverlaySettingsPage.axaml.cs | 1 | 设置页批次尚未迁移
 Views/FrontierPages/Settings/FrontierPushSettingsPage.axaml.cs | 4 | 设置页批次尚未迁移
