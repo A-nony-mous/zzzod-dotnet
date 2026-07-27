@@ -1,7 +1,7 @@
-using System.Globalization;
 using ZzzOd.AppHost.Backend;
 using ZzzOd.GameLogic.Application.RandomPlay;
 using ZzzOd.GameLogic.GameData;
+using ZzzOd.Gui.Services.Config;
 
 namespace ZzzOd.Gui.PageModels.ApplicationSettings;
 
@@ -10,20 +10,33 @@ internal sealed record ZzzRandomPlaySettingOption(string Label, string Value)
     public override string ToString() => Label;
 }
 
-internal sealed class ZzzRandomPlaySettingsFlyoutViewModel
+internal sealed class ZzzRandomPlaySettingsFlyoutViewModel : ZzzConfigSectionViewModel
 {
-    internal const string ScopeName = "random-play";
+    internal const string ScopeNameValue = "random-play";
 
-    private readonly IZzzAppBackend _backend;
+    private static readonly ZzzConfigField TransportPointField =
+        new("transport_point", typeof(string), RandomPlayTransportPoint.VideoStoreCounter.Value);
+    private static readonly ZzzConfigField AgentName1Field =
+        new("agent_name_1", typeof(string), RandomPlayConstants.RandomAgentName);
+    private static readonly ZzzConfigField AgentName2Field =
+        new("agent_name_2", typeof(string), RandomPlayConstants.RandomAgentName);
+    private static readonly IReadOnlyList<ZzzConfigField> FieldList =
+    [
+        TransportPointField,
+        AgentName1Field,
+        AgentName2Field,
+    ];
+
     private readonly int _instanceIndex;
     private readonly string _groupId;
 
     public ZzzRandomPlaySettingsFlyoutViewModel(
         IZzzAppBackend backend,
         int instanceIndex,
-        string groupId)
+        string groupId,
+        Action<string?>? errorReporter = null)
+        : base(backend, errorReporter)
     {
-        _backend = backend;
         _instanceIndex = instanceIndex;
         _groupId = groupId;
         TransportPointOptions = RandomPlayTransportPoint.All
@@ -33,80 +46,146 @@ internal sealed class ZzzRandomPlaySettingsFlyoutViewModel
             .ToArray();
         AgentOptions =
         [
-            new ZzzRandomPlaySettingOption(
-                RandomPlayConstants.RandomAgentName,
-                RandomPlayConstants.RandomAgentName),
+            new(RandomPlayConstants.RandomAgentName, RandomPlayConstants.RandomAgentName),
             .. AgentEnum.Values.Select(agent => new ZzzRandomPlaySettingOption(
                 agent.Value.AgentName,
                 agent.Value.AgentName)),
         ];
     }
 
+    protected override string ScopeName => ScopeNameValue;
+
+    protected override IReadOnlyList<ZzzConfigField> Fields => FieldList;
+
+    protected override int? InstanceIndex => _instanceIndex;
+
+    protected override string? GroupId => _groupId;
+
     public IReadOnlyList<ZzzRandomPlaySettingOption> TransportPointOptions { get; }
 
     public IReadOnlyList<ZzzRandomPlaySettingOption> AgentOptions { get; }
 
-    public string TransportPoint { get; private set; } = string.Empty;
-
-    public string AgentName1 { get; private set; } = string.Empty;
-
-    public string AgentName2 { get; private set; } = string.Empty;
-
-    public string? Error { get; private set; }
-
-    public bool Reload()
+    public string TransportPoint
     {
-        ZzzBackendResult<ZzzConfigScopeValuesDto> result = _backend.GetConfigScope(
-            ScopeName,
-            _instanceIndex,
-            _groupId);
-        if (!result.Success || result.Value is null)
+        get => GetValue<string>(TransportPointField);
+        set
         {
-            Error = result.Error ?? "录像店营业配置读取失败。";
-            return false;
-        }
-
-        try
-        {
-            IReadOnlyDictionary<string, object?> values = result.Value.Values;
-            TransportPoint = RequiredString(values, "transport_point");
-            AgentName1 = RequiredString(values, "agent_name_1");
-            AgentName2 = RequiredString(values, "agent_name_2");
-            Error = null;
-            return true;
-        }
-        catch (InvalidOperationException exception)
-        {
-            Error = exception.Message;
-            return false;
+            if (SetValue(TransportPointField, value))
+            {
+                OnPropertyChanged(nameof(SelectedTransportPoint));
+            }
         }
     }
 
-    public bool Save(string key, string value)
+    public string AgentName1
     {
-        ZzzBackendResult<ZzzConfigScopeValuesDto> result = _backend.SaveConfigScope(
-            new ZzzSaveConfigScopeRequest(
-                ScopeName,
-                new Dictionary<string, object?> { [key] = value },
-                _instanceIndex,
-                _groupId));
-        if (!result.Success)
+        get => GetValue<string>(AgentName1Field);
+        set
         {
-            Error = result.Error ?? $"{key} 保存失败。";
+            if (SetValue(AgentName1Field, value))
+            {
+                OnPropertyChanged(nameof(SelectedAgent1));
+            }
+        }
+    }
+
+    public string AgentName2
+    {
+        get => GetValue<string>(AgentName2Field);
+        set
+        {
+            if (SetValue(AgentName2Field, value))
+            {
+                OnPropertyChanged(nameof(SelectedAgent2));
+            }
+        }
+    }
+
+    public ZzzRandomPlaySettingOption? SelectedTransportPoint
+    {
+        get => Find(TransportPointOptions, TransportPoint);
+        set
+        {
+            if (value is not null)
+            {
+                TransportPoint = value.Value;
+            }
+        }
+    }
+
+    public ZzzRandomPlaySettingOption? SelectedAgent1
+    {
+        get => Find(AgentOptions, AgentName1);
+        set
+        {
+            if (value is not null)
+            {
+                AgentName1 = value.Value;
+            }
+        }
+    }
+
+    public ZzzRandomPlaySettingOption? SelectedAgent2
+    {
+        get => Find(AgentOptions, AgentName2);
+        set
+        {
+            if (value is not null)
+            {
+                AgentName2 = value.Value;
+            }
+        }
+    }
+
+    public override void OnPageShown()
+    {
+        base.OnPageShown();
+        OnPropertyChanged(nameof(SelectedTransportPoint));
+        OnPropertyChanged(nameof(SelectedAgent1));
+        OnPropertyChanged(nameof(SelectedAgent2));
+    }
+
+    internal bool TrySetAgentInput(int slot, string text)
+    {
+        ZzzRandomPlaySettingOption? option = AgentOptions.FirstOrDefault(item =>
+            string.Equals(item.Label, text.Trim(), StringComparison.Ordinal)
+            || string.Equals(item.Value, text.Trim(), StringComparison.Ordinal));
+        if (option is null)
+        {
             return false;
         }
 
-        Error = null;
-        return true;
-    }
-
-    private static string RequiredString(IReadOnlyDictionary<string, object?> values, string key)
-    {
-        if (!values.TryGetValue(key, out object? value))
+        if (slot == 1)
         {
-            throw new InvalidOperationException($"录像店营业配置缺少 {key}。");
+            AgentName1 = option.Value;
+        }
+        else if (slot == 2)
+        {
+            AgentName2 = option.Value;
+        }
+        else
+        {
+            throw new ArgumentOutOfRangeException(nameof(slot));
         }
 
-        return Convert.ToString(value, CultureInfo.InvariantCulture) ?? string.Empty;
+        return LastError is null;
     }
+
+    internal bool SaveForTest(string key, string value)
+    {
+        switch (key)
+        {
+            case "transport_point": TransportPoint = value; break;
+            case "agent_name_1": AgentName1 = value; break;
+            case "agent_name_2": AgentName2 = value; break;
+            default: throw new ArgumentOutOfRangeException(nameof(key), key, "未知的录像店营业配置字段。");
+        }
+
+        return LastError is null;
+    }
+
+    private static ZzzRandomPlaySettingOption? Find(
+        IReadOnlyList<ZzzRandomPlaySettingOption> options,
+        string value) => options.FirstOrDefault(option =>
+            string.Equals(option.Value, value, StringComparison.Ordinal));
 }
