@@ -66,7 +66,13 @@ if (-not ('ZzzOd.GuiEvidence.GuiParityImageProcessor' -as [type])) {
     $drawingAssembly = [System.Drawing.Bitmap].Assembly.Location
     $drawingPrimitivesAssembly = [System.Drawing.Rectangle].Assembly.Location
     $windowsCoreAssembly = Join-Path $PSHOME 'System.Private.Windows.Core.dll'
-    Add-Type -ReferencedAssemblies @($drawingAssembly, $drawingPrimitivesAssembly, $windowsCoreAssembly) -TypeDefinition @'
+    $windowsGdiPlusAssembly = Join-Path $PSHOME 'System.Private.Windows.GdiPlus.dll'
+    Add-Type -ReferencedAssemblies @(
+        $drawingAssembly,
+        $drawingPrimitivesAssembly,
+        $windowsCoreAssembly,
+        $windowsGdiPlusAssembly
+    ) -TypeDefinition @'
 using System;
 using System.Drawing;
 using System.Drawing.Drawing2D;
