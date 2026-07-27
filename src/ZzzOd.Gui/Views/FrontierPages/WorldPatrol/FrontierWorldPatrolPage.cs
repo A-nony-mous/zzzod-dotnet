@@ -30,7 +30,7 @@ internal sealed partial class FrontierWorldPatrolPage : UserControl, IZzzPageLif
     private readonly FAInfoBar _largeMapErrorBar;
     private readonly FAInfoBar _largeMapStatusBar;
     private readonly FAInfoBar _routeEditorErrorBar;
-    private readonly FATabView _settingsTabView;
+    private readonly TabControl _settingsTabView;
     private readonly FASettingsExpander _runRecordItem;
     private readonly FAComboBox _autoBattleCombo;
     private readonly FAComboBox _routeListConfigCombo;
@@ -110,7 +110,7 @@ internal sealed partial class FrontierWorldPatrolPage : UserControl, IZzzPageLif
         _largeMapErrorBar = Required<FAInfoBar>("LargeMapErrorBar");
         _largeMapStatusBar = Required<FAInfoBar>("LargeMapStatusBar");
         _routeEditorErrorBar = Required<FAInfoBar>("RouteEditorErrorBar");
-        _settingsTabView = Required<FATabView>("SettingsTabView");
+        _settingsTabView = Required<TabControl>("SettingsTabView");
         _runRecordItem = Required<FASettingsExpander>("RunRecordItem");
         _autoBattleCombo = Required<FAComboBox>("AutoBattleCombo");
         _routeListConfigCombo = Required<FAComboBox>("RouteListConfigCombo");

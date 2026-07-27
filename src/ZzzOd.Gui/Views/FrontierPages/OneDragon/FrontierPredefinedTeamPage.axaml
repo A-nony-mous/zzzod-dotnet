@@ -6,7 +6,7 @@
   <UserControl.Resources>
     <DataTemplate x:Key="PredefinedTeamTemplate"
                   x:DataType="local:ZzzPredefinedTeamRowModel">
-      <fa:FASettingsExpander Margin="0,0,0,6">
+      <fa:FASettingsExpander Margin="0,0,0,8">
         <fa:FASettingsExpander.IconSource>
           <fa:FASymbolIconSource Symbol="People" />
         </fa:FASettingsExpander.IconSource>
@@ -33,7 +33,7 @@
               </fa:FAComboBox>
             </Grid>
             <StackPanel Orientation="Horizontal"
-                        Spacing="10">
+                        Spacing="8">
               <fa:FAComboBox Width="130"
                              IsEditable="True"
                              ItemsSource="{Binding AgentOptions}"
@@ -75,7 +75,8 @@
   </UserControl.Resources>
   <UserControl.Styles>
     <Style Selector="ContentControl#LogHost">
-      <Setter Property="Height" Value="220" />
+      <Setter Property="MinHeight" Value="120" />
+      <Setter Property="MaxHeight" Value="220" />
     </Style>
   </UserControl.Styles>
 

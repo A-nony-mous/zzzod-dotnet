@@ -108,7 +108,7 @@
         <fa:FASettingsExpanderItem Content="微调">
           <fa:FASettingsExpanderItem.IconSource><fa:FASymbolIconSource Symbol="Home" /></fa:FASettingsExpanderItem.IconSource>
           <fa:FASettingsExpanderItem.Footer>
-            <StackPanel Orientation="Horizontal" Spacing="6">
+            <StackPanel Orientation="Horizontal" Spacing="8">
               <TextBox x:Name="HorizontalMoveBox" Width="72" PlaceholderText="横" />
               <TextBox x:Name="VerticalMoveBox" Width="72" PlaceholderText="纵" />
               <Button Content="移动" Click="OnMoveClicked" />
@@ -119,7 +119,7 @@
         <fa:FASettingsExpanderItem Content="形状">
           <fa:FASettingsExpanderItem.IconSource><fa:FASymbolIconSource Symbol="Home" /></fa:FASettingsExpanderItem.IconSource>
           <fa:FASettingsExpanderItem.Footer>
-            <StackPanel Orientation="Horizontal" Spacing="6">
+            <StackPanel Orientation="Horizontal" Spacing="8">
               <fa:FAComboBox x:Name="ShapeCombo" Width="150" SelectionChanged="OnShapeChanged" />
               <Button x:Name="ShapeHelpButton" ToolTip.Tip="点击查看形状使用说明" Click="OnShapeHelpClicked">
                 <fa:FASymbolIcon Symbol="Help" />
@@ -184,7 +184,7 @@
                              Description="图片左上角为(0, 0)">
         <fa:FASettingsExpander.IconSource><fa:FASymbolIconSource Symbol="Home" /></fa:FASettingsExpander.IconSource>
         <fa:FASettingsExpander.Footer>
-          <StackPanel Orientation="Horizontal" Spacing="6">
+          <StackPanel Orientation="Horizontal" Spacing="8">
             <TextBox x:Name="XPositionBox" Width="72" PlaceholderText="横" IsReadOnly="True" />
             <TextBox x:Name="YPositionBox" Width="72" PlaceholderText="纵" IsReadOnly="True" />
             <Button x:Name="ClearPointsButton" Content="清除点位" Click="OnClearPointsClicked" />
@@ -197,7 +197,7 @@
                              Description="Ctrl+Z 撤回，Ctrl+Shift+Z 恢复">
         <fa:FASettingsExpander.IconSource><fa:FASymbolIconSource Symbol="Home" /></fa:FASettingsExpander.IconSource>
         <fa:FASettingsExpander.Footer>
-          <StackPanel Orientation="Horizontal" Spacing="6">
+          <StackPanel Orientation="Horizontal" Spacing="8">
             <Button x:Name="UndoButton" Content="撤回" Click="OnUndoClicked" />
             <Button x:Name="RedoButton" Content="恢复" Click="OnRedoClicked" />
           </StackPanel>

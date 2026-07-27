@@ -35,10 +35,10 @@
         <fa:FASettingsExpander.ItemTemplate>
           <DataTemplate x:DataType="local:ZzzNotifyAppRowModel">
             <fa:FASettingsExpanderItem Content="{Binding Name}"
-                                       Margin="0,0,6,6">
+                                       Margin="0,0,8,8">
               <fa:FASettingsExpanderItem.Footer>
                 <StackPanel Orientation="Horizontal"
-                            Spacing="6">
+                            Spacing="8">
                   <TextBlock Text="应用"
                              VerticalAlignment="Center" />
                   <fa:FAComboBox Width="120"

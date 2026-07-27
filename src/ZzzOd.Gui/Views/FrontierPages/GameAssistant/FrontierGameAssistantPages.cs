@@ -270,25 +270,29 @@ internal sealed partial class FrontierBattleAssistantPage : UserControl, IZzzPag
 
     private IBrush[] CreateStatePalette()
     {
-        bool dark = ActualThemeVariant == Avalonia.Styling.ThemeVariant.Dark;
-        Color[] colors = dark
-            ?
-            [
-                Color.FromRgb(76, 175, 80),
-                Color.FromRgb(102, 187, 106),
-                Color.FromRgb(129, 199, 132),
-                Color.FromRgb(165, 214, 167),
-                Color.FromRgb(200, 230, 201),
-            ]
-            :
-            [
-                Color.FromRgb(56, 142, 60),
-                Color.FromRgb(76, 175, 80),
-                Color.FromRgb(129, 199, 132),
-                Color.FromRgb(165, 214, 167),
-                Color.FromRgb(200, 230, 201),
-            ];
-        return colors.Select(static color => (IBrush)new SolidColorBrush(color)).ToArray();
+        var theme = ActualThemeVariant == Avalonia.Styling.ThemeVariant.Default
+            && Avalonia.Application.Current is { } application
+                ? application.ActualThemeVariant
+                : ActualThemeVariant;
+        string[] keys =
+        [
+            "ZzzBattleStateRecentBrush1",
+            "ZzzBattleStateRecentBrush2",
+            "ZzzBattleStateRecentBrush3",
+            "ZzzBattleStateRecentBrush4",
+            "ZzzBattleStateRecentBrush5",
+        ];
+        return keys.Select(key =>
+        {
+            if ((TryGetResource(key, theme, out object? resource)
+                    || Avalonia.Application.Current?.TryGetResource(key, theme, out resource) == true)
+                && resource is IBrush brush)
+            {
+                return brush;
+            }
+
+            throw new InvalidOperationException($"缺少战斗状态画刷令牌: {key}");
+        }).ToArray();
     }
 
     private void ResetTaskDisplay()
@@ -397,7 +401,7 @@ internal sealed partial class FrontierBattleAssistantSettings : UserControl, IZz
     ];
 
     private readonly IZzzAppBackend _backend;
-    private readonly FATabView _modeTabs;
+    private readonly TabControl _modeTabs;
     private readonly FAContentDialog _helpDialog;
     private readonly FAInfoBar _settingsErrorBar;
     private readonly FAComboBox _autoBattleConfigCombo;
@@ -421,7 +425,7 @@ internal sealed partial class FrontierBattleAssistantSettings : UserControl, IZz
     {
         _backend = backend;
         AvaloniaXamlLoader.Load(this);
-        _modeTabs = this.FindControl<FATabView>("ModeTabs")
+        _modeTabs = this.FindControl<TabControl>("ModeTabs")
             ?? throw new InvalidOperationException("战斗助手缺少模式 TabView?");
         _helpDialog = this.FindControl<FAContentDialog>("BattleHelpDialog")
             ?? throw new InvalidOperationException("战斗助手缺少使用说明 ContentDialog?");

@@ -8,7 +8,7 @@
     <DataTemplate x:Key="ActionKeyTemplate" x:DataType="local:ZzzGameActionKeyRow">
       <fa:FASettingsExpanderItem Content="{Binding Label}">
         <fa:FASettingsExpanderItem.Footer>
-          <StackPanel Orientation="Horizontal" Spacing="6">
+          <StackPanel Orientation="Horizontal" Spacing="8">
             <fa:FAComboBox Width="150"
                            ItemsSource="{Binding ModifierOptions}"
                            SelectedItem="{Binding SelectedModifier, Mode=TwoWay}">
@@ -81,7 +81,7 @@
 
       <TextBlock Text="游戏基础"
                  Margin="0,8,0,0"
-                 FontSize="18"
+                 FontSize="{DynamicResource ZzzFontSizeSubtitle}"
                  FontWeight="SemiBold" />
 
       <fa:FASettingsExpander x:Name="InputWayItem" Header="输入方式">
@@ -196,7 +196,7 @@
 
       <TextBlock Text="按键设置"
                  Margin="0,8,0,0"
-                 FontSize="18"
+                 FontSize="{DynamicResource ZzzFontSizeSubtitle}"
                  FontWeight="SemiBold" />
 
       <fa:FASettingsExpander Header="操控方式"

@@ -191,17 +191,15 @@ public sealed partial class FrontierShellWindow : FAAppWindow
         if (TryGetResource("ZzzFrontierWindowBackgroundBrush", ActualThemeVariant, out object? resource)
             && resource is ISolidColorBrush brush)
         {
-            Color color = brush.Color;
-            if (color.A == byte.MaxValue && brush.Opacity == 1d)
-            {
-                return brush;
-            }
-
-            return new SolidColorBrush(Color.FromArgb(byte.MaxValue, color.R, color.G, color.B));
+            return brush;
         }
 
-        return ActualThemeVariant == ThemeVariant.Dark
-            ? new SolidColorBrush(Color.Parse("#202020"))
-            : new SolidColorBrush(Color.Parse("#F3F3F3"));
+        if (TryGetResource("SolidBackgroundFillColorBaseBrush", ActualThemeVariant, out resource)
+            && resource is IBrush fallback)
+        {
+            return fallback;
+        }
+
+        return Brushes.Black;
     }
 }

@@ -18,7 +18,7 @@
       <Setter Property="MaxHeight" Value="72" />
       <Setter Property="Margin" Value="0,4" />
       <Setter Property="Padding" Value="0" />
-      <Setter Property="CornerRadius" Value="6" />
+      <Setter Property="CornerRadius" Value="{DynamicResource ControlCornerRadius}" />
       <Setter Property="BorderBrush" Value="Transparent" />
       <Setter Property="BorderThickness" Value="0" />
       <Setter Property="FocusAdorner" Value="{x:Null}" />
@@ -114,7 +114,7 @@
       </Image>
       <TextBlock Grid.Column="1"
                  VerticalAlignment="Center"
-                 FontSize="12"
+                 FontSize="{DynamicResource ZzzFontSizeCaption}"
                  Foreground="{DynamicResource ZzzFrontierTitleBarForegroundBrush}"
                  IsHitTestVisible="False"
                  Text="{Binding FrontierWindowTitle}" />
@@ -137,7 +137,7 @@
         <Button Classes="zzz-titlebar-action"
                 IsVisible="{Binding HasIssueUrl}"
                 Click="OnIssueClicked">
-          <StackPanel Orientation="Horizontal" Spacing="5">
+          <StackPanel Orientation="Horizontal" Spacing="4">
             <fa:FAFontIcon Glyph="&#xE897;"
                            FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" />
             <TextBlock Text="问题反馈" />
@@ -145,7 +145,8 @@
         </Button>
       </StackPanel>
       <Border Grid.Column="4"
-              Width="140"
+              MinWidth="140"
+              MaxWidth="140"
               IsHitTestVisible="False" />
     </Grid>
 

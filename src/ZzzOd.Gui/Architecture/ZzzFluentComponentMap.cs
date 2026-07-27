@@ -1,3 +1,4 @@
+using Avalonia.Controls;
 using FluentAvalonia.UI.Controls;
 
 namespace ZzzOd.Gui.Architecture;
@@ -44,7 +45,7 @@ public static class ZzzFluentComponentMap
             [ZzzFluentComponentRole.Dialog] = typeof(FAContentDialog),
             [ZzzFluentComponentRole.FATeachingTip] = typeof(FATeachingTip),
             [ZzzFluentComponentRole.FAInfoBar] = typeof(FAInfoBar),
-            [ZzzFluentComponentRole.Tab] = typeof(FATabView),
+            [ZzzFluentComponentRole.Tab] = typeof(TabControl),
             [ZzzFluentComponentRole.FAFrame] = typeof(FAFrame),
             [ZzzFluentComponentRole.Navigation] = typeof(FANavigationView),
             [ZzzFluentComponentRole.FASymbolIcon] = typeof(FASymbolIcon),

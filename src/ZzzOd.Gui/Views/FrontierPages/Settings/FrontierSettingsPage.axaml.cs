@@ -21,8 +21,8 @@ internal sealed partial class FrontierSettingsPage : UserControl, IZzzPageLifecy
     private readonly ZzzGlobalInputMonitor _inputMonitor;
     private readonly ZzzGuiOperationTracker _operations;
     private readonly bool _ownsInputMonitor;
-    private readonly FATabViewItem[] _tabs;
-    private readonly FATabView _pivot;
+    private readonly TabItem[] _tabs;
+    private readonly TabControl _pivot;
     private Control? _activePage;
     private bool _activePageIsShown;
     private bool _isShown;
@@ -52,15 +52,15 @@ internal sealed partial class FrontierSettingsPage : UserControl, IZzzPageLifecy
         ];
 
         AvaloniaXamlLoader.Load(this);
-        _pivot = Required<FATabView>("SettingsPivot");
+        _pivot = Required<TabControl>("SettingsPivot");
         _tabs =
         [
-            Required<FATabViewItem>("GameTab"),
-            Required<FATabViewItem>("OverlayTab"),
-            Required<FATabViewItem>("ResourceDownloadTab"),
-            Required<FATabViewItem>("EnvironmentTab"),
-            Required<FATabViewItem>("PushTab"),
-            Required<FATabViewItem>("CustomTab"),
+            Required<TabItem>("GameTab"),
+            Required<TabItem>("OverlayTab"),
+            Required<TabItem>("ResourceDownloadTab"),
+            Required<TabItem>("EnvironmentTab"),
+            Required<TabItem>("PushTab"),
+            Required<TabItem>("CustomTab"),
         ];
 
         Required<FAFrame>("GameFrame").Content = _pages[0];
@@ -80,7 +80,7 @@ internal sealed partial class FrontierSettingsPage : UserControl, IZzzPageLifecy
 
     public string SelectedHeader => Headers[SelectedIndex];
 
-    public string NavigationTargetKind => nameof(FATabView);
+    public string NavigationTargetKind => nameof(TabControl);
 
     internal bool ActiveChildIsShown => _activePageIsShown;
 

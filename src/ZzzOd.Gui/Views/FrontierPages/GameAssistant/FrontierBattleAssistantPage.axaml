@@ -5,20 +5,21 @@
              x:Class="ZzzOd.Gui.Views.FrontierPages.GameAssistant.FrontierBattleAssistantPage">
   <UserControl.Styles>
     <Style Selector="TextBlock#StateText">
-      <Setter Property="FontSize" Value="20" />
+      <Setter Property="FontSize" Value="{DynamicResource ZzzFontSizeSection}" />
       <Setter Property="FontWeight" Value="Bold" />
       <Setter Property="HorizontalAlignment" Value="Center" />
       <Setter Property="TextAlignment" Value="Center" />
     </Style>
     <Style Selector="ContentControl#LogHost">
-      <Setter Property="Height" Value="160" />
+      <Setter Property="MinHeight" Value="120" />
+      <Setter Property="MaxHeight" Value="160" />
     </Style>
   </UserControl.Styles>
 
   <Grid Margin="{DynamicResource SampleAppPageMargin}"
         ColumnDefinitions="*,12,Auto">
     <Grid Grid.Column="0"
-          Margin="0,-10,0,0"
+          Margin="0,-8,0,0"
           RowDefinitions="*,Auto"
           RowSpacing="12">
       <ContentControl x:Name="SettingsHost"
@@ -32,9 +33,8 @@
 
     <Grid x:Name="StatusColumn"
           Grid.Column="2"
-          Margin="0,-10,0,0"
-          Width="350"
-          MinWidth="350"
+          Margin="0,-8,0,0"
+          MinWidth="300"
           MaxWidth="400"
           RowDefinitions="Auto,*">
       <Grid RowDefinitions="Auto,Auto">
@@ -44,8 +44,8 @@
                     Severity="Error" />
         <Grid x:Name="TaskDisplay"
               Grid.Row="1"
-              Height="116"
-              Margin="0,0,0,6"
+              MinHeight="116"
+              Margin="0,0,0,8"
               ColumnDefinitions="100,220"
               RowDefinitions="*,*,*">
           <TextBlock Grid.Row="0"
@@ -82,7 +82,7 @@
       <Grid x:Name="BattleStateDisplay"
             Grid.Row="1"
             RowDefinitions="Auto,34,*"
-            RowSpacing="6">
+            RowSpacing="8">
         <TextBox x:Name="BattleStateFilter"
                  PlaceholderText="输入状态关键词过滤..." />
         <Grid Grid.Row="1"

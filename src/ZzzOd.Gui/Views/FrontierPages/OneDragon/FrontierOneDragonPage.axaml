@@ -2,133 +2,41 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:fa="using:FluentAvalonia.UI.Controls"
              x:Class="ZzzOd.Gui.Views.FrontierPages.OneDragon.FrontierOneDragonPage">
-  <UserControl.Styles>
-    <!-- 内层 TabViewListView 的滚动区自带一份底部分隔线，/template/ 只能穿一层，需要单独关掉。 -->
-    <Style Selector="ScrollViewer /template/ Rectangle#LeftBottomBorderLine">
-      <Setter Property="IsVisible" Value="False" />
-    </Style>
-    <Style Selector="ScrollViewer /template/ Rectangle#RightBottomBorderLine">
-      <Setter Property="IsVisible" Value="False" />
-    </Style>
-    <Style Selector="fa|FATabView#OneDragonPivot /template/ Rectangle#LeftBottomBorderLine">
-      <Setter Property="IsVisible" Value="False" />
-    </Style>
-    <Style Selector="fa|FATabView#OneDragonPivot /template/ Rectangle#RightBottomBorderLine">
-      <Setter Property="IsVisible" Value="False" />
-    </Style>
-    <Style Selector="fa|FATabViewItem.one-dragon-pivot-item">
-      <Setter Property="Background" Value="Transparent" />
-      <Setter Property="BorderThickness" Value="0" />
-      <Setter Property="Padding" Value="0" />
-      <Setter Property="HorizontalContentAlignment" Value="Center" />
-      <Setter Property="VerticalContentAlignment" Value="Center" />
-    </Style>
-    <Style Selector="fa|FATabViewItem.one-dragon-pivot-item /template/ Border#BottomBorderLine">
-      <Setter Property="IsVisible" Value="False" />
-    </Style>
-    <Style Selector="fa|FATabViewItem.one-dragon-pivot-item /template/ Path#LeftRadiusRenderArc">
-      <Setter Property="IsVisible" Value="False" />
-    </Style>
-    <Style Selector="fa|FATabViewItem.one-dragon-pivot-item /template/ Path#RightRadiusRenderArc">
-      <Setter Property="IsVisible" Value="False" />
-    </Style>
-    <Style Selector="fa|FATabViewItem.one-dragon-pivot-item /template/ Path#SelectedBackgroundPath">
-      <Setter Property="IsVisible" Value="False" />
-    </Style>
-    <Style Selector="fa|FATabViewItem.one-dragon-pivot-item /template/ Border#TabSeparator">
-      <Setter Property="IsVisible" Value="False" />
-    </Style>
-    <Style Selector="fa|FATabViewItem.one-dragon-pivot-item /template/ Border#TabContainerBorder">
-      <Setter Property="Background" Value="Transparent" />
-      <Setter Property="BorderThickness" Value="0" />
-      <Setter Property="Margin" Value="0" />
-      <Setter Property="Padding" Value="0" />
-    </Style>
-    <Style Selector="fa|FATabViewItem.one-dragon-pivot-item /template/ ContentPresenter#ContentPresenter">
-      <Setter Property="FontSize" Value="16" />
-    </Style>
-    <Style Selector="fa|FATabViewItem.one-dragon-pivot-item Border.one-dragon-pivot-indicator">
-      <Setter Property="Opacity" Value="0" />
-    </Style>
-    <Style Selector="fa|FATabViewItem.one-dragon-pivot-item:selected Border.one-dragon-pivot-indicator">
-      <Setter Property="Opacity" Value="1" />
-    </Style>
-  </UserControl.Styles>
 
-  <fa:FATabView x:Name="OneDragonPivot"
-              IsAddTabButtonVisible="False"
-              CanDragTabs="False"
-              CanReorderTabs="False"
-              TabWidthMode="SizeToContent"
-              Margin="0,7,0,0"
+  <TabControl Classes="zzz-pivot" x:Name="OneDragonPivot"
+              Margin="0,8,0,0"
               Padding="0">
-    <fa:FATabViewItem x:Name="RunTab"
+    <TabItem x:Name="RunTab"
                     Header="一条龙运行"
-                    IsClosable="False"
-                    Classes="one-dragon-pivot-item"
+                    Classes="zzz-pivot-item"
                     Focusable="True">
-      <fa:FATabViewItem.HeaderTemplate>
-        <DataTemplate>
-          <Grid MinWidth="88" Height="32" RowDefinitions="*,3">
-            <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" Text="{Binding}" />
-            <Border Grid.Row="1" Classes="one-dragon-pivot-indicator" Width="16" Height="3" CornerRadius="2" HorizontalAlignment="Center" Background="{DynamicResource SystemAccentColor}" />
-          </Grid>
-        </DataTemplate>
-      </fa:FATabViewItem.HeaderTemplate>
       <Grid>
         <fa:FAFrame x:Name="RunFrame" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch" IsNavigationStackEnabled="False" />
       </Grid>
-    </fa:FATabViewItem>
-    <fa:FATabViewItem x:Name="ChargePlanTab"
+    </TabItem>
+    <TabItem x:Name="ChargePlanTab"
                     Header="体力计划"
-                    IsClosable="False"
-                    Classes="one-dragon-pivot-item"
+                    Classes="zzz-pivot-item"
                     Focusable="True">
-      <fa:FATabViewItem.HeaderTemplate>
-        <DataTemplate>
-          <Grid MinWidth="72" Height="32" RowDefinitions="*,3">
-            <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" Text="{Binding}" />
-            <Border Grid.Row="1" Classes="one-dragon-pivot-indicator" Width="16" Height="3" CornerRadius="2" HorizontalAlignment="Center" Background="{DynamicResource SystemAccentColor}" />
-          </Grid>
-        </DataTemplate>
-      </fa:FATabViewItem.HeaderTemplate>
       <Grid>
         <fa:FAFrame x:Name="ChargePlanFrame" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch" IsNavigationStackEnabled="False" />
       </Grid>
-    </fa:FATabViewItem>
-    <fa:FATabViewItem x:Name="PredefinedTeamTab"
+    </TabItem>
+    <TabItem x:Name="PredefinedTeamTab"
                     Header="预备编队"
-                    IsClosable="False"
-                    Classes="one-dragon-pivot-item"
+                    Classes="zzz-pivot-item"
                     Focusable="True">
-      <fa:FATabViewItem.HeaderTemplate>
-        <DataTemplate>
-          <Grid MinWidth="72" Height="32" RowDefinitions="*,3">
-            <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" Text="{Binding}" />
-            <Border Grid.Row="1" Classes="one-dragon-pivot-indicator" Width="16" Height="3" CornerRadius="2" HorizontalAlignment="Center" Background="{DynamicResource SystemAccentColor}" />
-          </Grid>
-        </DataTemplate>
-      </fa:FATabViewItem.HeaderTemplate>
       <Grid>
         <fa:FAFrame x:Name="PredefinedTeamFrame" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch" IsNavigationStackEnabled="False" />
       </Grid>
-    </fa:FATabViewItem>
-    <fa:FATabViewItem x:Name="SensitivityTab"
+    </TabItem>
+    <TabItem x:Name="SensitivityTab"
                     Header="灵敏度校准"
-                    IsClosable="False"
-                    Classes="one-dragon-pivot-item"
+                    Classes="zzz-pivot-item"
                     Focusable="True">
-      <fa:FATabViewItem.HeaderTemplate>
-        <DataTemplate>
-          <Grid MinWidth="88" Height="32" RowDefinitions="*,3">
-            <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" Text="{Binding}" />
-            <Border Grid.Row="1" Classes="one-dragon-pivot-indicator" Width="16" Height="3" CornerRadius="2" HorizontalAlignment="Center" Background="{DynamicResource SystemAccentColor}" />
-          </Grid>
-        </DataTemplate>
-      </fa:FATabViewItem.HeaderTemplate>
       <Grid>
         <fa:FAFrame x:Name="SensitivityFrame" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch" IsNavigationStackEnabled="False" />
       </Grid>
-    </fa:FATabViewItem>
-  </fa:FATabView>
+    </TabItem>
+  </TabControl>
 </UserControl>

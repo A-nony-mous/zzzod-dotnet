@@ -13,7 +13,7 @@
                   Severity="Error" />
 
       <TextBlock Text="资源下载"
-                 FontSize="18"
+                 FontSize="{DynamicResource ZzzFontSizeSubtitle}"
                  FontWeight="SemiBold" />
 
       <fa:FASettingsExpander Header="下载说明"
@@ -129,10 +129,11 @@
 
       <TextBlock Text="日志显示"
                  Margin="0,8,0,0"
-                 FontSize="20"
+                 FontSize="{DynamicResource ZzzFontSizeSection}"
                  FontWeight="SemiBold" />
       <ContentControl x:Name="LogHost"
-                      Height="220" />
+                      MinHeight="120"
+                      MaxHeight="220" />
     </StackPanel>
   </ScrollViewer>
 </UserControl>

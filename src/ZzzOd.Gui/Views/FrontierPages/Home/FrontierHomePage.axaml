@@ -32,10 +32,10 @@
            Stretch="UniformToFill" />
 
     <Border x:Name="MediaPlaceholder"
-            Background="#66000000"
+            Background="{DynamicResource ZzzMediaOverlaySubtleBrush}"
             IsHitTestVisible="False" />
 
-    <Grid Margin="32,64,0,32"
+    <Grid Margin="32,32,0,32"
           ColumnDefinitions="Auto,*,Auto,70">
       <home:ZzzNoticeCard x:Name="NoticeCard"
                           Grid.Column="0"
@@ -48,15 +48,15 @@
               Width="180"
               MinWidth="180"
               Height="48"
-              Margin="24,0,5,0"
+              Margin="24,0,4,0"
               VerticalAlignment="Bottom"
               Classes="zzz-home-start"
               Click="OnStartButtonClicked">
         <StackPanel Orientation="Horizontal"
-                    Spacing="10">
+                    Spacing="8">
           <fa:FASymbolIcon x:Name="StartButtonIcon"
                          Symbol="PlayFilled"
-                         FontSize="20" />
+                         FontSize="{DynamicResource ZzzFontSizeSection}" />
           <TextBlock x:Name="StartButtonText"
                      VerticalAlignment="Center"
                      Text="启动一条龙" />
@@ -64,8 +64,9 @@
       </Button>
 
       <StackPanel Grid.Column="3"
-                  Width="70"
-                  Height="250"
+                  MinWidth="64"
+                  MaxWidth="70"
+                  MinHeight="250"
                   Spacing="8"
                   VerticalAlignment="Center">
         <Button x:Name="HomeLinkButton"
@@ -77,7 +78,7 @@
                 PointerEntered="OnQuickLinkPointerEntered"
                 PointerExited="OnQuickLinkPointerExited">
           <fa:FASymbolIcon Symbol="Home"
-                         FontSize="30" />
+                         FontSize="{DynamicResource ZzzFontSizeIcon}" />
         </Button>
         <Button x:Name="GithubLinkButton"
                 Height="54"
@@ -101,7 +102,7 @@
                 PointerEntered="OnQuickLinkPointerEntered"
                 PointerExited="OnQuickLinkPointerExited">
           <fa:FASymbolIcon Symbol="Library"
-                         FontSize="30" />
+                         FontSize="{DynamicResource ZzzFontSizeIcon}" />
         </Button>
         <Button x:Name="ChannelLinkButton"
                 Height="54"
@@ -112,13 +113,13 @@
                 PointerEntered="OnQuickLinkPointerEntered"
                 PointerExited="OnQuickLinkPointerExited">
           <fa:FASymbolIcon Symbol="Message"
-                         FontSize="30" />
+                         FontSize="{DynamicResource ZzzFontSizeIcon}" />
         </Button>
       </StackPanel>
     </Grid>
 
     <TextBlock x:Name="MediaPageCountText"
-               Margin="0,0,18,18"
+               Margin="0,0,16,16"
                HorizontalAlignment="Right"
                VerticalAlignment="Bottom"
                Foreground="White"

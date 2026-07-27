@@ -4,7 +4,8 @@
              x:Class="ZzzOd.Gui.Views.FrontierPages.DevTools.FrontierScreenshotHelperPage">
   <UserControl.Styles>
     <Style Selector="ContentControl#LogHost">
-      <Setter Property="Height" Value="220" />
+      <Setter Property="MinHeight" Value="120" />
+      <Setter Property="MaxHeight" Value="220" />
     </Style>
   </UserControl.Styles>
   <ScrollViewer HorizontalScrollBarVisibility="Disabled"

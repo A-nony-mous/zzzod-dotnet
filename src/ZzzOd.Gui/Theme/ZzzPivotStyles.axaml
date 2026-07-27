@@ -1,0 +1,18 @@
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <!--
+    FluentAvalonia 3.0.2:
+    Styling/ControlThemes/BasicControls/TabControlStyles.axaml 的 TabItem ControlTheme
+    使用 PART_SelectedPipe 与 PivotHeaderItemSelectedPipeFill 呈现 Fluent pivot 指示条。
+  -->
+  <Style Selector="TabControl.zzz-pivot">
+    <Setter Property="Padding" Value="{DynamicResource ZzzPivotContentMargin}" />
+    <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+    <Setter Property="VerticalContentAlignment" Value="Stretch" />
+  </Style>
+  <Style Selector="TabItem.zzz-pivot-item">
+    <Setter Property="FontSize" Value="{DynamicResource ZzzPivotHeaderFontSize}" />
+    <Setter Property="MinHeight" Value="{DynamicResource ZzzPivotHeaderMinHeight}" />
+    <Setter Property="Padding" Value="{DynamicResource ZzzPivotHeaderPadding}" />
+  </Style>
+</Styles>

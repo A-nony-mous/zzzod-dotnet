@@ -15,8 +15,8 @@ internal sealed partial class FrontierDevtoolsPage : UserControl, IZzzPageLifecy
 {
     private static readonly string[] Headers = ["图像分析", "模板管理", "画面管理", "代理人模板生成", "截图助手", "指令调试"];
     private readonly Control[] _pages;
-    private readonly FATabViewItem[] _tabs;
-    private readonly FATabView _pivot;
+    private readonly TabItem[] _tabs;
+    private readonly TabControl _pivot;
     private Control? _activePage;
     private bool _activePageIsShown;
     private bool _isShown;
@@ -34,15 +34,15 @@ internal sealed partial class FrontierDevtoolsPage : UserControl, IZzzPageLifecy
         ];
 
         AvaloniaXamlLoader.Load(this);
-        _pivot = Required<FATabView>("DevtoolsPivot");
+        _pivot = Required<TabControl>("DevtoolsPivot");
         _tabs =
         [
-            Required<FATabViewItem>("ImageAnalysisTab"),
-            Required<FATabViewItem>("TemplateHelperTab"),
-            Required<FATabViewItem>("ScreenManageTab"),
-            Required<FATabViewItem>("AgentTemplateTab"),
-            Required<FATabViewItem>("ScreenshotHelperTab"),
-            Required<FATabViewItem>("OperationDebugTab"),
+            Required<TabItem>("ImageAnalysisTab"),
+            Required<TabItem>("TemplateHelperTab"),
+            Required<TabItem>("ScreenManageTab"),
+            Required<TabItem>("AgentTemplateTab"),
+            Required<TabItem>("ScreenshotHelperTab"),
+            Required<TabItem>("OperationDebugTab"),
         ];
 
         Required<FAFrame>("ImageAnalysisFrame").Content = _pages[0];
@@ -62,7 +62,7 @@ internal sealed partial class FrontierDevtoolsPage : UserControl, IZzzPageLifecy
 
     public string SelectedHeader => Headers[SelectedIndex];
 
-    public string NavigationTargetKind => nameof(FATabView);
+    public string NavigationTargetKind => nameof(TabControl);
 
     internal bool ActiveChildIsShown => _activePageIsShown;
 

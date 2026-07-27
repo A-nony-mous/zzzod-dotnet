@@ -3,14 +3,14 @@
              xmlns:fa="using:FluentAvalonia.UI.Controls"
              x:Class="ZzzOd.Gui.Views.FrontierPages.ApplicationSettings.FrontierWitheredDomainAppSettingPage">
   <Grid>
-    <fa:FATabView TabWidthMode="SizeToContent">
-      <fa:FATabViewItem Header="枯萎之都配置" IsClosable="False">
+    <TabControl Classes="zzz-pivot">
+      <TabItem Classes="zzz-pivot-item" Header="枯萎之都配置">
         <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
           <StackPanel Margin="{DynamicResource SampleAppPageMargin}"
                       Spacing="{DynamicResource SampleAppSectionSpacing}">
             <fa:FAInfoBar x:Name="BaseErrorBar" IsOpen="False" IsClosable="True" Severity="Error" />
             <Grid ColumnDefinitions="*,6,*">
-              <StackPanel Spacing="6">
+              <StackPanel Spacing="8">
                 <fa:FASettingsExpander Header="使用说明">
                   <fa:FASettingsExpander.Footer>
                     <Button Content="打开说明" Click="OnHelpClicked" />
@@ -32,7 +32,7 @@
                   </fa:FASettingsExpander.Footer>
                 </fa:FASettingsExpander>
               </StackPanel>
-              <StackPanel Grid.Column="2" Spacing="6">
+              <StackPanel Grid.Column="2" Spacing="8">
                 <fa:FASettingsExpander x:Name="RunRecordItem" Header="运行记录">
                   <fa:FASettingsExpander.Footer>
                     <Button Content="重置记录" Click="OnResetRecordClicked" />
@@ -57,9 +57,9 @@
             </Grid>
           </StackPanel>
         </ScrollViewer>
-      </fa:FATabViewItem>
+      </TabItem>
 
-      <fa:FATabViewItem Header="挑战配置-枯" IsClosable="False">
+      <TabItem Classes="zzz-pivot-item" Header="挑战配置-枯">
         <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto">
           <StackPanel Margin="{DynamicResource SampleAppPageMargin}"
                       Spacing="{DynamicResource SampleAppSectionSpacing}">
@@ -79,7 +79,7 @@
               </fa:FACommandBar.PrimaryCommands>
             </fa:FACommandBar>
             <Grid ColumnDefinitions="*,8,*">
-              <StackPanel Spacing="6">
+              <StackPanel Spacing="8">
                 <fa:FASettingsExpander Header="配置名称" Description="默认配置复制后可修改">
                   <fa:FASettingsExpander.Footer>
                     <TextBox x:Name="ChallengeNameText" Width="220" LostFocus="OnChallengeEditorLostFocus" />
@@ -87,7 +87,7 @@
                 </fa:FASettingsExpander>
                 <fa:FASettingsExpander Header="目标配队" Description="按照自动战斗配置 选择角色位置">
                   <fa:FASettingsExpander.Footer>
-                    <StackPanel Orientation="Horizontal" Spacing="6">
+                    <StackPanel Orientation="Horizontal" Spacing="8">
                       <fa:FAComboBox x:Name="Agent1Combo" Width="150" IsEditable="True" LostFocus="OnChallengeEditorLostFocus" />
                       <fa:FAComboBox x:Name="Agent2Combo" Width="150" IsEditable="True" LostFocus="OnChallengeEditorLostFocus" />
                       <fa:FAComboBox x:Name="Agent3Combo" Width="150" IsEditable="True" LostFocus="OnChallengeEditorLostFocus" />
@@ -111,28 +111,28 @@
                 </fa:FASettingsExpander>
                 <Grid x:Name="CustomPathGrid" ColumnDefinitions="*,6,*,6,*">
                   <StackPanel>
-                    <TextBlock Text="一步可达时前往" FontSize="16" FontWeight="SemiBold" />
+                    <TextBlock Text="一步可达时前往" FontSize="{DynamicResource ZzzFontSizeBodyLarge}" FontWeight="SemiBold" />
                     <TextBox x:Name="GoInOneStepText" AcceptsReturn="True" MinHeight="130" TextWrapping="Wrap" LostFocus="OnChallengeEditorLostFocus" />
                   </StackPanel>
                   <StackPanel Grid.Column="2">
-                    <TextBlock Text="优先途经点" FontSize="16" FontWeight="SemiBold" />
+                    <TextBlock Text="优先途经点" FontSize="{DynamicResource ZzzFontSizeBodyLarge}" FontWeight="SemiBold" />
                     <TextBox x:Name="WaypointText" AcceptsReturn="True" MinHeight="130" TextWrapping="Wrap" LostFocus="OnChallengeEditorLostFocus" />
                   </StackPanel>
                   <StackPanel Grid.Column="4">
-                    <TextBlock Text="避免途经点" FontSize="16" FontWeight="SemiBold" />
+                    <TextBlock Text="避免途经点" FontSize="{DynamicResource ZzzFontSizeBodyLarge}" FontWeight="SemiBold" />
                     <TextBox x:Name="AvoidText" AcceptsReturn="True" MinHeight="130" TextWrapping="Wrap" LostFocus="OnChallengeEditorLostFocus" />
                   </StackPanel>
                 </Grid>
               </StackPanel>
-              <StackPanel Grid.Column="2" Spacing="6">
-                <TextBlock Text="奖励优先级" FontSize="24" FontWeight="SemiBold" />
+              <StackPanel Grid.Column="2" Spacing="8">
+                <TextBlock Text="奖励优先级" FontSize="{DynamicResource ZzzFontSizeTitle}" FontWeight="SemiBold" />
                 <TextBox x:Name="ResoniumPriorityText" AcceptsReturn="True" MinHeight="480" TextWrapping="Wrap" LostFocus="OnChallengeEditorLostFocus" />
               </StackPanel>
             </Grid>
           </StackPanel>
         </ScrollViewer>
-      </fa:FATabViewItem>
-    </fa:FATabView>
+      </TabItem>
+    </TabControl>
 
     <fa:FAContentDialog x:Name="DeleteDialog"
                       Title="删除确认"

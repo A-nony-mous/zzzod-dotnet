@@ -5,13 +5,14 @@
              x:Class="ZzzOd.Gui.Views.FrontierPages.DevTools.FrontierOperationDebugPage">
   <UserControl.Styles>
     <Style Selector="ContentControl#LogHost">
-      <Setter Property="Height" Value="220" />
+      <Setter Property="MinHeight" Value="120" />
+      <Setter Property="MaxHeight" Value="220" />
     </Style>
   </UserControl.Styles>
   <ScrollViewer HorizontalScrollBarVisibility="Disabled"
                 VerticalScrollBarVisibility="Auto">
     <StackPanel Margin="{DynamicResource SampleAppPageMargin}"
-                Spacing="10">
+                Spacing="8">
       <fa:FAInfoBar x:Name="ActionBar"
                   IsOpen="False"
                   IsClosable="False"
@@ -20,7 +21,7 @@
       <fa:FASettingsExpander>
         <fa:FASettingsExpander.Header>
           <TextBlock Text="指令调试"
-                     FontSize="20"
+                     FontSize="{DynamicResource ZzzFontSizeSection}"
                      FontWeight="SemiBold" />
         </fa:FASettingsExpander.Header>
 

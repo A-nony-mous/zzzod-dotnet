@@ -17,9 +17,4 @@
   <x:Double x:Key="ZzzListRowHeight">40</x:Double>
   <Thickness x:Key="ZzzShellContentMargin">11,32,11,0</Thickness>
   <Thickness x:Key="ZzzPagePadding">24</Thickness>
-  <!-- Shared pages keep their classic defaults; FrontierShellWindow overrides these keys. -->
-  <Thickness x:Key="SampleAppPageMargin">11</Thickness>
-  <x:Double x:Key="SampleAppSectionSpacing">8</x:Double>
-  <Thickness x:Key="SampleAppHeaderMargin">0,0,0,10</Thickness>
-  <x:Double x:Key="SampleAppScrollBarSize">10</x:Double>
 </ResourceDictionary>

@@ -23,7 +23,7 @@
       </fa:FASettingsExpander>
       <fa:FASettingsExpander x:Name="AdventureMissionItem" Header="派遣-副本优先级" Description="按优先级将剩余小队派遣">
         <fa:FASettingsExpander.Footer>
-          <StackPanel Orientation="Horizontal" Spacing="6">
+          <StackPanel Orientation="Horizontal" Spacing="8">
             <fa:FAComboBox x:Name="AdventureMission1Combo" Tag="adventure_mission_1" Width="150" SelectionChanged="OnComboChanged" />
             <fa:FAComboBox x:Name="AdventureMission2Combo" Tag="adventure_mission_2" Width="150" SelectionChanged="OnComboChanged" />
             <fa:FAComboBox x:Name="AdventureMission3Combo" Tag="adventure_mission_3" Width="150" SelectionChanged="OnComboChanged" />
@@ -42,7 +42,7 @@
       </fa:FASettingsExpander>
       <fa:FASettingsExpander Header="邦巢-最低购买价格">
         <fa:FASettingsExpander.Footer>
-          <StackPanel Orientation="Horizontal" Spacing="6">
+          <StackPanel Orientation="Horizontal" Spacing="8">
             <TextBlock VerticalAlignment="Center" Text="游历" />
             <fa:FAComboBox x:Name="BooBoxAdventureCombo" Tag="boo_box_adventure_price" Width="110" SelectionChanged="OnComboChanged" />
             <TextBlock VerticalAlignment="Center" Text="制造" />

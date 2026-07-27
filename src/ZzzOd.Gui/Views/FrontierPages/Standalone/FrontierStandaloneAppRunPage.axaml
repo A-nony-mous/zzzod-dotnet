@@ -114,7 +114,7 @@
       </fa:FASettingsExpander>
       <ContentControl x:Name="RunHost"
                       Grid.Row="1"
-                      Margin="0,8,0,11"
+                      Margin="0,8,0,12"
                       HorizontalContentAlignment="Stretch"
                       VerticalContentAlignment="Stretch" />
     </Grid>

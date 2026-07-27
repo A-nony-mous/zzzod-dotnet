@@ -9,8 +9,8 @@
                 IsOpen="False"
                 IsClosable="True" />
 
-    <fa:FATabView Grid.Row="1" TabWidthMode="SizeToContent">
-      <fa:FATabViewItem Header="迷失之地配置">
+    <TabControl Classes="zzz-pivot" Grid.Row="1">
+      <TabItem Classes="zzz-pivot-item" Header="迷失之地配置">
         <ScrollViewer HorizontalScrollBarVisibility="Disabled">
           <Grid Margin="{DynamicResource SampleAppPageMargin}" ColumnDefinitions="*,16,*">
             <StackPanel Grid.Column="0" Spacing="1">
@@ -64,9 +64,9 @@
             </StackPanel>
           </Grid>
         </ScrollViewer>
-      </fa:FATabViewItem>
+      </TabItem>
 
-      <fa:FATabViewItem Header="挑战配置-迷">
+      <TabItem Classes="zzz-pivot-item" Header="挑战配置-迷">
         <ScrollViewer HorizontalScrollBarVisibility="Disabled">
           <Grid Margin="{DynamicResource SampleAppPageMargin}" ColumnDefinitions="*,16,*">
             <StackPanel Grid.Column="0" Spacing="1">
@@ -106,7 +106,7 @@
 
               <fa:FASettingsExpander x:Name="AgentTeamItem" Header="" IsEnabled="False">
                 <fa:FASettingsExpander.Footer>
-                  <StackPanel Orientation="Horizontal" Spacing="10">
+                  <StackPanel Orientation="Horizontal" Spacing="8">
                     <fa:FAComboBox x:Name="Agent1Combo" Width="130" Tag="0" IsEditable="True" SelectionChanged="OnAgentChanged" />
                     <fa:FAComboBox x:Name="Agent2Combo" Width="130" Tag="1" IsEditable="True" SelectionChanged="OnAgentChanged" />
                     <fa:FAComboBox x:Name="Agent3Combo" Width="130" Tag="2" IsEditable="True" SelectionChanged="OnAgentChanged" />
@@ -156,17 +156,17 @@
             </StackPanel>
 
             <StackPanel Grid.Column="2" Spacing="12">
-              <TextBlock Text="藏品第一优先级" FontSize="20" />
+              <TextBlock Text="藏品第一优先级" FontSize="{DynamicResource ZzzFontSizeSection}" />
               <TextBox x:Name="ArtifactPriorityText" MinHeight="180" AcceptsReturn="True" TextWrapping="Wrap" TextChanged="OnArtifactPriorityChanged" IsEnabled="False" />
-              <TextBlock Text="藏品第二优先级 (无刷新时考虑)" FontSize="20" />
+              <TextBlock Text="藏品第二优先级 (无刷新时考虑)" FontSize="{DynamicResource ZzzFontSizeSection}" />
               <TextBox x:Name="ArtifactPriority2Text" MinHeight="180" AcceptsReturn="True" TextWrapping="Wrap" TextChanged="OnArtifactPriority2Changed" IsEnabled="False" />
-              <TextBlock Text="区域类型优先级" FontSize="20" />
+              <TextBlock Text="区域类型优先级" FontSize="{DynamicResource ZzzFontSizeSection}" />
               <TextBox x:Name="RegionPriorityText" MinHeight="180" AcceptsReturn="True" TextWrapping="Wrap" TextChanged="OnRegionPriorityChanged" IsEnabled="False" />
             </StackPanel>
           </Grid>
         </ScrollViewer>
-      </fa:FATabViewItem>
-    </fa:FATabView>
+      </TabItem>
+    </TabControl>
 
     <fa:FAContentDialog x:Name="DeleteDialog"
                       Title="删除确认"

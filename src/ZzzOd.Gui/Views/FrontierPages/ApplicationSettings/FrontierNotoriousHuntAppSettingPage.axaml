@@ -6,7 +6,7 @@
   <UserControl.Resources>
     <DataTemplate x:Key="NotoriousHuntPlanTemplate"
                   x:DataType="local:ZzzNotoriousHuntPlanRowModel">
-      <fa:FASettingsExpander Margin="0,0,0,6"
+      <fa:FASettingsExpander Margin="0,0,0,8"
                                DragDrop.AllowDrop="True"
                                PointerPressed="OnPlanPointerPressed"
                                PointerMoved="OnPlanPointerMoved"
@@ -16,8 +16,8 @@
           <fa:FAFontIconSource Glyph="&#xE787;" />
         </fa:FASettingsExpander.IconSource>
         <fa:FASettingsExpander.Footer>
-          <StackPanel Spacing="6">
-            <StackPanel Orientation="Horizontal" Spacing="6">
+          <StackPanel Spacing="8">
+            <StackPanel Orientation="Horizontal" Spacing="8">
               <fa:FAComboBox Width="180"
                              ItemsSource="{Binding MissionTypeOptions}"
                              SelectedItem="{Binding SelectedMissionType, Mode=TwoWay}"
@@ -72,7 +72,7 @@
             </StackPanel>
             <StackPanel Orientation="Horizontal"
                         HorizontalAlignment="Right"
-                        Spacing="6">
+                        Spacing="8">
               <TextBlock Text="已运行次数" VerticalAlignment="Center" />
               <TextBox Width="64"
                        Text="{Binding RunTimesText, Mode=TwoWay}"

@@ -6,32 +6,18 @@
              Width="589"
              Height="150">
   <UserControl.Resources>
-    <SolidColorBrush x:Key="TabViewBackground" Color="Transparent" />
-    <SolidColorBrush x:Key="TabViewItemHeaderBackground" Color="Transparent" />
-    <SolidColorBrush x:Key="TabViewItemHeaderBackgroundPointerOver" Color="#20FFFFFF" />
-    <SolidColorBrush x:Key="TabViewItemHeaderBackgroundPressed" Color="#30FFFFFF" />
-    <SolidColorBrush x:Key="TabViewItemHeaderBackgroundSelected" Color="Transparent" />
-    <SolidColorBrush x:Key="TabViewItemHeaderForeground" Color="#DDDDDD" />
-    <SolidColorBrush x:Key="TabViewItemHeaderForegroundPointerOver" Color="White" />
-    <SolidColorBrush x:Key="TabViewItemHeaderForegroundPressed" Color="White" />
-    <SolidColorBrush x:Key="TabViewItemHeaderForegroundSelected" Color="White" />
-    <SolidColorBrush x:Key="TabViewBorderBrush" Color="Transparent" />
-    <SolidColorBrush x:Key="TabViewSelectedItemBorderBrush"
-                     Color="{DynamicResource SystemAccentColor}" />
-    <Thickness x:Key="TabViewSelectedItemBorderThickness">0,0,0,2</Thickness>
-    <SolidColorBrush x:Key="TabViewItemSeparator" Color="Transparent" />
     <DataTemplate x:Key="NoticePostTemplate"
                   x:DataType="notices:ZzzNoticePost">
       <Grid Height="26"
             Margin="12,0"
             ColumnDefinitions="*,64">
         <TextBlock VerticalAlignment="Center"
-                   Foreground="White"
+                   Foreground="{DynamicResource TextOnAccentFillColorPrimaryBrush}"
                    Text="{Binding Title}" />
         <TextBlock Grid.Column="1"
                    HorizontalAlignment="Right"
                    VerticalAlignment="Center"
-                   Foreground="#DDDDDD"
+                   Foreground="{DynamicResource TextOnAccentFillColorSecondaryBrush}"
                    Text="{Binding Date}" />
       </Grid>
     </DataTemplate>
@@ -48,38 +34,34 @@
              Stretch="UniformToFill" />
 
       <Grid Grid.Column="1">
-        <fa:FATabView Background="Transparent"
-                    Foreground="White"
-                    SelectedIndex="2"
-                    IsAddTabButtonVisible="False">
-          <fa:FATabViewItem Header="游戏攻略"
-                          Background="Transparent"
-                          IsClosable="False">
+        <TabControl Classes="zzz-pivot" Background="Transparent"
+                    Foreground="{DynamicResource TextOnAccentFillColorPrimaryBrush}"
+                    SelectedIndex="2">
+          <TabItem Classes="zzz-pivot-item" Header="游戏攻略"
+                          Background="Transparent">
             <ListBox x:Name="GameGuidesList"
                      Background="Transparent"
                      BorderThickness="0"
                      ItemTemplate="{StaticResource NoticePostTemplate}"
                      SelectionChanged="OnPostSelectionChanged" />
-          </fa:FATabViewItem>
-          <fa:FATabViewItem Header="软件科研"
-                          Background="Transparent"
-                          IsClosable="False">
+          </TabItem>
+          <TabItem Classes="zzz-pivot-item" Header="软件科研"
+                          Background="Transparent">
             <ListBox x:Name="SoftwareResearchList"
                      Background="Transparent"
                      BorderThickness="0"
                      ItemTemplate="{StaticResource NoticePostTemplate}"
                      SelectionChanged="OnPostSelectionChanged" />
-          </fa:FATabViewItem>
-          <fa:FATabViewItem Header="公告要闻"
-                          Background="Transparent"
-                          IsClosable="False">
+          </TabItem>
+          <TabItem Classes="zzz-pivot-item" Header="公告要闻"
+                          Background="Transparent">
             <ListBox x:Name="AnnouncementsList"
                      Background="Transparent"
                      BorderThickness="0"
                      ItemTemplate="{StaticResource NoticePostTemplate}"
                      SelectionChanged="OnPostSelectionChanged" />
-          </fa:FATabViewItem>
-        </fa:FATabView>
+          </TabItem>
+        </TabControl>
 
         <fa:FAInfoBar x:Name="FailureInfoBar"
                     Margin="8"
