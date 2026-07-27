@@ -38,6 +38,8 @@ public class AutoBattleOperator : IStateRecordUpdateListener
 
 	private readonly bool _readFromMerged;
 
+	private readonly ICondOpClock _clock;
+
 	private readonly object _taskLock = new object();
 
 	private readonly List<AutoBattleExecutionRecord> _executionRecords = new List<AutoBattleExecutionRecord>();
@@ -145,12 +147,18 @@ public class AutoBattleOperator : IStateRecordUpdateListener
 		}
 	}
 
-	public AutoBattleOperator(AutoBattleContext ctx, string subDir, string templateName, bool readFromMerged = true)
+	public AutoBattleOperator(
+		AutoBattleContext ctx,
+		string subDir,
+		string templateName,
+		bool readFromMerged = true,
+		ICondOpClock? clock = null)
 	{
 		_ctx = ctx;
 		_subDir = subDir;
 		_templateName = templateName;
 		_readFromMerged = readFromMerged;
+		_clock = clock ?? new SystemCondOpClock();
 	}
 
 	public (bool Success, string Message) InitBeforeRunning()
@@ -385,7 +393,7 @@ public class AutoBattleOperator : IStateRecordUpdateListener
 				}
 				continue;
 			}
-			double now = (double)DateTimeOffset.Now.ToUnixTimeMilliseconds() / 1000.0;
+			double now = _clock.NowSeconds();
 			if (!_ctx.LastCheckInBattle)
 			{
 				try
@@ -1011,9 +1019,9 @@ public class AutoBattleOperator : IStateRecordUpdateListener
 		return metadata;
 	}
 
-	private static double Now()
+	private double Now()
 	{
-		return (double)DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() / 1000.0;
+		return _clock.NowSeconds();
 	}
 
 	private static void ObserveBackgroundTask(Task task, string taskName)

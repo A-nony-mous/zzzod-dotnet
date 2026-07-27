@@ -398,6 +398,36 @@ public sealed class AutoBattleOperatorTests
 	}
 
 	[Fact]
+	public async Task BatchUpdateStates_UsesInjectedClockForWindowEvaluation()
+	{
+		string rootDirectory = CreateTempRoot();
+		try
+		{
+			WriteCondOpConfig(rootDirectory);
+			using ZContext zctx = new ZContext(new OneDragonEnvironment(rootDirectory));
+			var clock = new FixedCondOpClock(1000d);
+			AutoBattleOperator op = new AutoBattleOperator(
+				zctx.AutoBattleContext,
+				"auto_battle",
+				"测试配置",
+				readFromMerged: false,
+				clock: clock);
+			Assert.True(op.InitBeforeRunning().Success);
+			Assert.True(op.StartRunningAsync());
+
+			zctx.AutoBattleContext.StateRecordService.UpdateState(new StateRecord("自定义-触发", clock.NowSeconds()));
+			await WaitUntilStateAsync(zctx, "自定义-命中");
+			op.StopRunning();
+
+			Assert.Contains(op.ExecutionRecords, record => record.Event == "started" && record.Trigger == "自定义-触发");
+		}
+		finally
+		{
+			Directory.Delete(rootDirectory, recursive: true);
+		}
+	}
+
+	[Fact]
 	public async Task TriggerScene_LogsPositionStateAgesForFreshnessDiagnosis()
 	{
 		string rootDirectory = CreateTempRoot();
@@ -717,6 +747,13 @@ public sealed class AutoBattleOperatorTests
 				Events.Add(logEvent);
 			}
 		}
+	}
+
+	private sealed class FixedCondOpClock(double nowSeconds) : ICondOpClock
+	{
+		public double NowSeconds() => nowSeconds;
+
+		public DateTimeOffset UtcNow => DateTimeOffset.FromUnixTimeMilliseconds((long)(nowSeconds * 1000d));
 	}
 
 	private static void WriteDelayedCaptureConfig(string rootDirectory)
