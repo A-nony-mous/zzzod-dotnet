@@ -1,6 +1,8 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:fa="using:FluentAvalonia.UI.Controls"
+             xmlns:viewModels="using:ZzzOd.Gui.PageModels.ApplicationSettings"
+             x:DataType="viewModels:ZzzLostVoidAppSettingViewModel"
              x:Class="ZzzOd.Gui.Views.FrontierPages.ApplicationSettings.FrontierLostVoidAppSettingPage">
   <Grid RowDefinitions="Auto,*">
     <fa:FAInfoBar x:Name="ActionBar"
@@ -24,27 +26,36 @@
 
               <fa:FASettingsExpander Header="挑战副本" Description="选择副本">
                 <fa:FASettingsExpander.Footer>
-                  <fa:FAComboBox x:Name="MissionCombo" Width="220" Tag="mission_name" SelectionChanged="OnBaseComboChanged" />
+                  <fa:FAComboBox x:Name="MissionCombo" Width="220"
+                                 ItemsSource="{Binding Missions}"
+                                 SelectedItem="{Binding MissionName, Mode=TwoWay}" />
                 </fa:FASettingsExpander.Footer>
               </fa:FASettingsExpander>
 
-              <fa:FASettingsExpander x:Name="TaskItem" Header="刷取目标">
+              <fa:FASettingsExpander x:Name="TaskItem" Header="刷取目标"
+                                     Description="{Binding SelectedTask.Description}">
                 <fa:FASettingsExpander.Footer>
-                  <fa:FAComboBox x:Name="TaskCombo" Width="220" Tag="extra_task" SelectionChanged="OnBaseComboChanged" />
+                  <fa:FAComboBox x:Name="TaskCombo" Width="220"
+                                 ItemsSource="{Binding TaskOptions}"
+                                 SelectedItem="{Binding SelectedTask, Mode=TwoWay}" />
                 </fa:FASettingsExpander.Footer>
               </fa:FASettingsExpander>
 
-              <fa:FASettingsExpander x:Name="WeeklyPlanItem" Header="每周进入次数" IsVisible="False">
+              <fa:FASettingsExpander x:Name="WeeklyPlanItem" Header="每周进入次数"
+                                     IsVisible="{Binding WeeklyPlanTimesVisible}">
                 <fa:FASettingsExpander.Footer>
-                  <fa:FANumberBox x:Name="WeeklyPlanNumber" Width="160" Minimum="0" Maximum="99" SpinButtonPlacementMode="Compact" ValueChanged="OnWeeklyPlanChanged" />
+                  <fa:FANumberBox x:Name="WeeklyPlanNumber" Width="160" Minimum="0" Maximum="99"
+                                  SpinButtonPlacementMode="Compact"
+                                  Value="{Binding WeeklyPlanTimes, Mode=TwoWay}" />
                 </fa:FASettingsExpander.Footer>
               </fa:FASettingsExpander>
             </StackPanel>
 
             <StackPanel Grid.Column="2" Spacing="1">
-              <fa:FASettingsExpander x:Name="RunRecordItem" Header="运行记录">
+              <fa:FASettingsExpander x:Name="RunRecordItem" Header="运行记录"
+                                     Description="{Binding RunRecordText}">
                 <fa:FASettingsExpander.Footer>
-                  <fa:FACommandBarButton Label="重置记录" Click="OnResetRunRecordClicked">
+                  <fa:FACommandBarButton Label="重置记录" Command="{Binding ResetRunRecordActionCommand}">
                     <fa:FACommandBarButton.IconSource><fa:FASymbolIconSource Symbol="Sync" /></fa:FACommandBarButton.IconSource>
                   </fa:FACommandBarButton>
                 </fa:FASettingsExpander.Footer>
@@ -52,13 +63,17 @@
 
               <fa:FASettingsExpander Header="挑战配置" Description="选择角色、鸣徽和事件">
                 <fa:FASettingsExpander.Footer>
-                  <fa:FAComboBox x:Name="BaseChallengeConfigCombo" Width="220" Tag="challenge_config" SelectionChanged="OnBaseComboChanged" />
+                  <fa:FAComboBox x:Name="BaseChallengeConfigCombo" Width="220"
+                                 ItemsSource="{Binding ChallengeConfigNames}"
+                                 SelectedItem="{Binding ChallengeConfigName, Mode=TwoWay}" />
                 </fa:FASettingsExpander.Footer>
               </fa:FASettingsExpander>
 
               <fa:FASettingsExpander Header="每天进入次数" Description="分摊到每天运行">
                 <fa:FASettingsExpander.Footer>
-                  <fa:FANumberBox x:Name="DailyPlanNumber" Width="160" Minimum="0" Maximum="99" SpinButtonPlacementMode="Compact" ValueChanged="OnDailyPlanChanged" />
+                  <fa:FANumberBox x:Name="DailyPlanNumber" Width="160" Minimum="0" Maximum="99"
+                                  SpinButtonPlacementMode="Compact"
+                                  Value="{Binding DailyPlanTimes, Mode=TwoWay}" />
                 </fa:FASettingsExpander.Footer>
               </fa:FASettingsExpander>
             </StackPanel>

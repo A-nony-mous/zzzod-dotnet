@@ -1,6 +1,8 @@
 using System.Globalization;
+using CommunityToolkit.Mvvm.Input;
 using ZzzOd.AppHost.Backend;
 using ZzzOd.GameLogic.Application.HollowZero.LostVoid;
+using ZzzOd.Gui.Services.Config;
 
 namespace ZzzOd.Gui.PageModels.ApplicationSettings;
 
@@ -9,11 +11,29 @@ internal sealed record ZzzLostVoidUiOption(string Label, object Value, string De
     public override string ToString() => Label;
 }
 
-internal sealed class ZzzLostVoidAppSettingViewModel
+internal sealed partial class ZzzLostVoidAppSettingViewModel : ZzzConfigSectionViewModel
 {
-    internal const string ScopeName = "lost-void";
+    internal const string ScopeNameValue = "lost-void";
 
-    private readonly IZzzAppBackend _backend;
+    private static readonly ZzzConfigField DailyPlanTimesField =
+        new("daily_plan_times", typeof(int), 5);
+    private static readonly ZzzConfigField WeeklyPlanTimesField =
+        new("weekly_plan_times", typeof(int), 2);
+    private static readonly ZzzConfigField ExtraTaskField =
+        new("extra_task", typeof(string), LostVoidTask.BountyCommission);
+    private static readonly ZzzConfigField MissionNameField =
+        new("mission_name", typeof(string), "战线肃清");
+    private static readonly ZzzConfigField ChallengeConfigNameField =
+        new("challenge_config", typeof(string), "默认-成就模式");
+    private static readonly IReadOnlyList<ZzzConfigField> FieldList =
+    [
+        DailyPlanTimesField,
+        WeeklyPlanTimesField,
+        ExtraTaskField,
+        MissionNameField,
+        ChallengeConfigNameField,
+    ];
+
     private readonly IZzzLostVoidSettingsBackend _lostVoidBackend;
     private readonly int _instanceIndex;
     private readonly string _groupId;
@@ -23,23 +43,59 @@ internal sealed class ZzzLostVoidAppSettingViewModel
         IZzzAppBackend backend,
         IZzzLostVoidSettingsBackend lostVoidBackend,
         int instanceIndex,
-        string groupId)
+        string groupId,
+        Action<string?>? errorReporter = null)
+        : base(backend, errorReporter)
     {
-        _backend = backend;
         _lostVoidBackend = lostVoidBackend;
         _instanceIndex = instanceIndex;
         _groupId = groupId;
     }
 
-    public int DailyPlanTimes { get; private set; }
+    protected override string ScopeName => ScopeNameValue;
 
-    public int WeeklyPlanTimes { get; private set; }
+    protected override IReadOnlyList<ZzzConfigField> Fields => FieldList;
 
-    public string ExtraTask { get; private set; } = string.Empty;
+    protected override int? InstanceIndex => _instanceIndex;
 
-    public string MissionName { get; private set; } = string.Empty;
+    protected override string? GroupId => _groupId;
 
-    public string ChallengeConfigName { get; private set; } = string.Empty;
+    public double DailyPlanTimes
+    {
+        get => GetValue<int>(DailyPlanTimesField);
+        set => SetValue(DailyPlanTimesField, Convert.ToInt32(value, CultureInfo.InvariantCulture));
+    }
+
+    public double WeeklyPlanTimes
+    {
+        get => GetValue<int>(WeeklyPlanTimesField);
+        set => SetValue(WeeklyPlanTimesField, Convert.ToInt32(value, CultureInfo.InvariantCulture));
+    }
+
+    public string ExtraTask
+    {
+        get => GetValue<string>(ExtraTaskField);
+        set
+        {
+            if (SetValue(ExtraTaskField, value))
+            {
+                OnPropertyChanged(nameof(SelectedTask));
+                OnPropertyChanged(nameof(WeeklyPlanTimesVisible));
+            }
+        }
+    }
+
+    public string MissionName
+    {
+        get => GetValue<string>(MissionNameField);
+        set => SetValue(MissionNameField, value);
+    }
+
+    public string ChallengeConfigName
+    {
+        get => GetValue<string>(ChallengeConfigNameField);
+        set => SetValue(ChallengeConfigNameField, value);
+    }
 
     public ZzzLostVoidRunRecordDto? RunRecord { get; private set; }
 
@@ -51,7 +107,7 @@ internal sealed class ZzzLostVoidAppSettingViewModel
 
     public ZzzLostVoidChallengeConfigDto? ChosenConfig { get; private set; }
 
-    public string? Error { get; private set; }
+    public string? Error => LastError;
 
     public IReadOnlyList<ZzzLostVoidUiOption> TaskOptions { get; } = LostVoidTask.Options
         .Select(option => new ZzzLostVoidUiOption(option.Label, option.Value ?? option.Label, option.Description))
@@ -88,42 +144,50 @@ internal sealed class ZzzLostVoidAppSettingViewModel
         LostVoidTask.WeeklyPlanTimes,
         StringComparison.Ordinal);
 
-    public bool ReloadBase()
+    public ZzzLostVoidUiOption? SelectedTask
     {
-        ZzzBackendResult<ZzzConfigScopeValuesDto> config = _backend.GetConfigScope(
-            ScopeName,
-            _instanceIndex,
-            _groupId);
-        if (!config.Success || config.Value is null)
+        get => TaskOptions.FirstOrDefault(option => Equals(option.Value, ExtraTask));
+        set
         {
-            return Fail(config.Error ?? "迷失之地配置读取失败。");
+            if (value is not null)
+            {
+                ExtraTask = Convert.ToString(value.Value, CultureInfo.InvariantCulture) ?? string.Empty;
+            }
+        }
+    }
+
+    public override void OnPageShown()
+    {
+        base.OnPageShown();
+        if (LastError is not null)
+        {
+            return;
         }
 
         ZzzBackendResult<ZzzLostVoidSettingsCatalogDto> catalog =
             _lostVoidBackend.GetLostVoidSettingsCatalog(_instanceIndex);
         if (!catalog.Success || catalog.Value is null)
         {
-            return Fail(catalog.Error ?? "迷失之地目录读取失败。");
+            ReportError(catalog.Error ?? "迷失之地目录读取失败。");
+            return;
         }
 
-        try
-        {
-            IReadOnlyDictionary<string, object?> values = config.Value.Values;
-            DailyPlanTimes = RequiredInt(values, "daily_plan_times");
-            WeeklyPlanTimes = RequiredInt(values, "weekly_plan_times");
-            ExtraTask = RequiredString(values, "extra_task");
-            MissionName = RequiredString(values, "mission_name");
-            ChallengeConfigName = RequiredString(values, "challenge_config");
-            Missions = catalog.Value.Missions;
-            ChallengeConfigNames = catalog.Value.ChallengeConfigs;
-            RunRecord = catalog.Value.RunRecord;
-            Error = null;
-            return true;
-        }
-        catch (InvalidOperationException exception)
-        {
-            return Fail(exception.Message);
-        }
+        Missions = catalog.Value.Missions;
+        ChallengeConfigNames = catalog.Value.ChallengeConfigs;
+        RunRecord = catalog.Value.RunRecord;
+        OnPropertyChanged(nameof(Missions));
+        OnPropertyChanged(nameof(ChallengeConfigNames));
+        OnPropertyChanged(nameof(RunRecord));
+        OnPropertyChanged(nameof(RunRecordText));
+        OnPropertyChanged(nameof(SelectedTask));
+        OnPropertyChanged(nameof(WeeklyPlanTimesVisible));
+        ReportError(null);
+    }
+
+    public bool ReloadBase()
+    {
+        OnPageShown();
+        return LastError is null;
     }
 
     public bool ReloadChallengeCatalog()
@@ -136,29 +200,23 @@ internal sealed class ZzzLostVoidAppSettingViewModel
         }
 
         ChallengeCatalog = result.Value;
-        Error = null;
+        ReportError(null);
         return true;
     }
 
     public bool SaveBase(string key, object value)
     {
-        ZzzBackendResult<ZzzConfigScopeValuesDto> result = _backend.SaveConfigScope(new(
-            ScopeName,
-            new Dictionary<string, object?> { [key] = value },
-            _instanceIndex,
-            _groupId));
-        if (!result.Success)
+        switch (key)
         {
-            return Fail(result.Error ?? $"{key} 保存失败。");
+            case "daily_plan_times": DailyPlanTimes = Convert.ToDouble(value, CultureInfo.InvariantCulture); break;
+            case "weekly_plan_times": WeeklyPlanTimes = Convert.ToDouble(value, CultureInfo.InvariantCulture); break;
+            case "extra_task": ExtraTask = Convert.ToString(value, CultureInfo.InvariantCulture) ?? string.Empty; break;
+            case "mission_name": MissionName = Convert.ToString(value, CultureInfo.InvariantCulture) ?? string.Empty; break;
+            case "challenge_config": ChallengeConfigName = Convert.ToString(value, CultureInfo.InvariantCulture) ?? string.Empty; break;
+            default: throw new ArgumentOutOfRangeException(nameof(key), key, "未知的迷失之地配置字段。");
         }
 
-        if (key == "extra_task")
-        {
-            ExtraTask = Convert.ToString(value, CultureInfo.InvariantCulture) ?? string.Empty;
-        }
-
-        Error = null;
-        return true;
+        return LastError is null;
     }
 
     public bool ResetRunRecord()
@@ -171,7 +229,8 @@ internal sealed class ZzzLostVoidAppSettingViewModel
         }
 
         RunRecord = result.Value;
-        Error = null;
+        ReportError(null);
+        OnPropertyChanged(nameof(RunRecordText));
         return true;
     }
 
@@ -186,7 +245,7 @@ internal sealed class ZzzLostVoidAppSettingViewModel
 
         ChosenConfig = result.Value;
         _persistedModuleName = result.Value.ModuleName;
-        Error = null;
+        ReportError(null);
         return true;
     }
 
@@ -203,7 +262,7 @@ internal sealed class ZzzLostVoidAppSettingViewModel
         {
             ChosenConfig = ChosenConfig with { ModuleName = $"{ChosenConfig.ModuleName}_copy" };
             _persistedModuleName = null;
-            Error = null;
+            ReportError(null);
             return true;
         }
 
@@ -214,7 +273,7 @@ internal sealed class ZzzLostVoidAppSettingViewModel
     {
         ChosenConfig = null;
         _persistedModuleName = null;
-        Error = null;
+        ReportError(null);
     }
 
     public bool DeleteConfig()
@@ -251,7 +310,7 @@ internal sealed class ZzzLostVoidAppSettingViewModel
 
         ChosenConfig = result.Value;
         _persistedModuleName = result.Value.ModuleName;
-        Error = null;
+        ReportError(null);
         ReloadChallengeCatalog();
         return true;
     }
@@ -274,7 +333,7 @@ internal sealed class ZzzLostVoidAppSettingViewModel
         });
         if (saved && !string.IsNullOrWhiteSpace(validationError))
         {
-            Error = validationError;
+            ReportError(validationError);
         }
 
         return saved;
@@ -289,33 +348,16 @@ internal sealed class ZzzLostVoidAppSettingViewModel
 
         ChosenConfig = result.Value;
         _persistedModuleName = null;
-        Error = null;
+        ReportError(null);
         return true;
     }
 
     private bool Fail(string message)
     {
-        Error = message;
+        ReportError(message);
         return false;
     }
 
-    private static int RequiredInt(IReadOnlyDictionary<string, object?> values, string key)
-    {
-        if (!values.TryGetValue(key, out object? value))
-        {
-            throw new InvalidOperationException($"迷失之地配置缺少 {key}。");
-        }
-
-        return Convert.ToInt32(value, CultureInfo.InvariantCulture);
-    }
-
-    private static string RequiredString(IReadOnlyDictionary<string, object?> values, string key)
-    {
-        if (!values.TryGetValue(key, out object? value))
-        {
-            throw new InvalidOperationException($"迷失之地配置缺少 {key}。");
-        }
-
-        return Convert.ToString(value, CultureInfo.InvariantCulture) ?? string.Empty;
-    }
+    [RelayCommand]
+    private void ResetRunRecordAction() => ResetRunRecord();
 }

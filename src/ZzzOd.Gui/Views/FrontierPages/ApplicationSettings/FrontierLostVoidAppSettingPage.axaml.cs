@@ -20,14 +20,6 @@ internal sealed partial class FrontierLostVoidAppSettingPage : UserControl, IZzz
 {
     private readonly ZzzLostVoidAppSettingViewModel _viewModel;
     private readonly FAInfoBar _actionBar;
-    private readonly FAComboBox _missionCombo;
-    private readonly FAComboBox _taskCombo;
-    private readonly FASettingsExpander _taskItem;
-    private readonly FASettingsExpander _weeklyPlanItem;
-    private readonly FANumberBox _weeklyPlanNumber;
-    private readonly FASettingsExpander _runRecordItem;
-    private readonly FAComboBox _baseChallengeConfigCombo;
-    private readonly FANumberBox _dailyPlanNumber;
     private readonly FAComboBox _existingConfigCombo;
     private readonly FACommandBarButton _createButton;
     private readonly FACommandBarButton _copyButton;
@@ -75,17 +67,15 @@ internal sealed partial class FrontierLostVoidAppSettingPage : UserControl, IZzz
         int instanceIndex,
         string groupId)
     {
-        _viewModel = new ZzzLostVoidAppSettingViewModel(backend, lostVoidBackend, instanceIndex, groupId);
         AvaloniaXamlLoader.Load(this);
         _actionBar = Required<FAInfoBar>("ActionBar");
-        _missionCombo = Required<FAComboBox>("MissionCombo");
-        _taskCombo = Required<FAComboBox>("TaskCombo");
-        _taskItem = Required<FASettingsExpander>("TaskItem");
-        _weeklyPlanItem = Required<FASettingsExpander>("WeeklyPlanItem");
-        _weeklyPlanNumber = Required<FANumberBox>("WeeklyPlanNumber");
-        _runRecordItem = Required<FASettingsExpander>("RunRecordItem");
-        _baseChallengeConfigCombo = Required<FAComboBox>("BaseChallengeConfigCombo");
-        _dailyPlanNumber = Required<FANumberBox>("DailyPlanNumber");
+        _viewModel = new ZzzLostVoidAppSettingViewModel(
+            backend,
+            lostVoidBackend,
+            instanceIndex,
+            groupId,
+            ShowStatus);
+        DataContext = _viewModel;
         _existingConfigCombo = Required<FAComboBox>("ExistingConfigCombo");
         _createButton = Required<FACommandBarButton>("CreateButton");
         _copyButton = Required<FACommandBarButton>("CopyButton");
@@ -140,32 +130,17 @@ internal sealed partial class FrontierLostVoidAppSettingPage : UserControl, IZzz
     {
     }
 
-    public void DisposePage()
-    {
-    }
+    public void DisposePage() => _viewModel.DisposePage();
 
     private void Reload()
     {
         _loading = true;
-        _viewModel.ReloadBase();
+        _viewModel.OnPageShown();
         _viewModel.ReloadChallengeCatalog();
-        RefreshBase();
         RefreshChallengeChoices();
         RefreshEditor();
         _loading = false;
         ShowStatus();
-    }
-
-    private void RefreshBase()
-    {
-        SetStringOptions(_missionCombo, _viewModel.Missions, _viewModel.MissionName);
-        SetUiOptions(_taskCombo, _viewModel.TaskOptions, _viewModel.ExtraTask);
-        SetStringOptions(_baseChallengeConfigCombo, _viewModel.ChallengeConfigNames, _viewModel.ChallengeConfigName);
-        _weeklyPlanNumber.Value = _viewModel.WeeklyPlanTimes;
-        _dailyPlanNumber.Value = _viewModel.DailyPlanTimes;
-        _runRecordItem.Description = _viewModel.RunRecordText;
-        _weeklyPlanItem.IsVisible = _viewModel.WeeklyPlanTimesVisible;
-        _taskItem.Description = (_taskCombo.SelectedItem as ZzzLostVoidUiOption)?.Description ?? string.Empty;
     }
 
     private void RefreshChallengeChoices()
@@ -254,59 +229,6 @@ internal sealed partial class FrontierLostVoidAppSettingPage : UserControl, IZzz
         {
             _nameTextBox.Text = string.Empty;
         }
-    }
-
-    private void OnBaseComboChanged(object? sender, SelectionChangedEventArgs args)
-    {
-        if (_loading || sender is not FAComboBox { Tag: string key } combo)
-        {
-            return;
-        }
-
-        object? value = combo.SelectedItem switch
-        {
-            ZzzLostVoidUiOption option => option.Value,
-            string text => text,
-            _ => null,
-        };
-        if (value is null)
-        {
-            return;
-        }
-
-        _viewModel.SaveBase(key, value);
-        if (key == "extra_task")
-        {
-            _weeklyPlanItem.IsVisible = _viewModel.WeeklyPlanTimesVisible;
-            _taskItem.Description = (combo.SelectedItem as ZzzLostVoidUiOption)?.Description ?? string.Empty;
-        }
-
-        ShowStatus();
-    }
-
-    private void OnWeeklyPlanChanged(FANumberBox sender, FANumberBoxValueChangedEventArgs args)
-    {
-        if (!_loading && !double.IsNaN(args.NewValue))
-        {
-            _viewModel.SaveBase("weekly_plan_times", Convert.ToInt32(args.NewValue));
-            ShowStatus();
-        }
-    }
-
-    private void OnDailyPlanChanged(FANumberBox sender, FANumberBoxValueChangedEventArgs args)
-    {
-        if (!_loading && !double.IsNaN(args.NewValue))
-        {
-            _viewModel.SaveBase("daily_plan_times", Convert.ToInt32(args.NewValue));
-            ShowStatus();
-        }
-    }
-
-    private void OnResetRunRecordClicked(object? sender, RoutedEventArgs args)
-    {
-        _viewModel.ResetRunRecord();
-        _runRecordItem.Description = _viewModel.RunRecordText;
-        ShowStatus();
     }
 
     private void OnExistingConfigChanged(object? sender, SelectionChangedEventArgs args)
@@ -471,7 +393,7 @@ internal sealed partial class FrontierLostVoidAppSettingPage : UserControl, IZzz
         ShowStatus();
     }
 
-    private void ShowStatus()
+    private void ShowStatus(string? _ = null)
     {
         string? error = _viewModel.Error;
         bool sample = _viewModel.ChosenConfig?.IsSample == true;
