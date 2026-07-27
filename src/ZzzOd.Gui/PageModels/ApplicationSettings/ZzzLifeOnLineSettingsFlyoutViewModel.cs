@@ -1,6 +1,8 @@
 using System.Globalization;
 using ZzzOd.AppHost.Backend;
+using ZzzOd.GameLogic.Application.LifeOnLine;
 using ZzzOd.GameLogic.Config;
+using ZzzOd.Gui.Services.Config;
 
 namespace ZzzOd.Gui.PageModels.ApplicationSettings;
 
@@ -9,114 +11,157 @@ internal sealed record ZzzLifeOnLineTeamOption(string Label, int Value)
     public override string ToString() => Label;
 }
 
-internal sealed class ZzzLifeOnLineSettingsFlyoutViewModel
+internal sealed class ZzzLifeOnLineSettingsFlyoutViewModel : ZzzConfigSectionViewModel
 {
-    internal const string ScopeName = "life-on-line";
+    internal const string ScopeNameValue = "life-on-line";
+
+    private static readonly ZzzConfigField DailyPlanTimesField =
+        new("daily_plan_times", typeof(int), 20);
+    private static readonly ZzzConfigField PredefinedTeamIndexField =
+        new("predefined_team_idx", typeof(int), -1);
+    private static readonly IReadOnlyList<ZzzConfigField> FieldList =
+    [
+        DailyPlanTimesField,
+        PredefinedTeamIndexField,
+    ];
 
     private readonly IZzzAppBackend _backend;
     private readonly int _instanceIndex;
     private readonly string _groupId;
+    private int _dailyRunTimes;
+    private IReadOnlyList<ZzzLifeOnLineTeamOption> _teamOptions = [];
 
     public ZzzLifeOnLineSettingsFlyoutViewModel(
         IZzzAppBackend backend,
         int instanceIndex,
-        string groupId)
+        string groupId,
+        Action<string?>? errorReporter = null)
+        : base(backend, errorReporter)
     {
         _backend = backend;
         _instanceIndex = instanceIndex;
         _groupId = groupId;
     }
 
-    public int DailyPlanTimes { get; private set; }
+    protected override string ScopeName => ScopeNameValue;
 
-    public int DailyRunTimes { get; private set; }
+    protected override IReadOnlyList<ZzzConfigField> Fields => FieldList;
 
-    public int PredefinedTeamIndex { get; private set; }
+    protected override int? InstanceIndex => _instanceIndex;
 
-    public IReadOnlyList<ZzzLifeOnLineTeamOption> TeamOptions { get; private set; } = [];
+    protected override string? GroupId => _groupId;
 
-    public string? Error { get; private set; }
-
-    public bool Reload()
+    public double DailyPlanTimes
     {
-        ZzzBackendResult<ZzzConfigScopeValuesDto> config = _backend.GetConfigScope(
-            ScopeName,
-            _instanceIndex,
-            _groupId);
-        if (!config.Success || config.Value is null)
+        get => GetValue<int>(DailyPlanTimesField);
+        set => SetValue(DailyPlanTimesField, Convert.ToInt32(value, CultureInfo.InvariantCulture));
+    }
+
+    public int PredefinedTeamIndex
+    {
+        get => GetValue<int>(PredefinedTeamIndexField);
+        set
         {
-            Error = config.Error ?? "生命热线配置读取失败。";
-            return false;
+            if (SetValue(PredefinedTeamIndexField, value))
+            {
+                OnPropertyChanged(nameof(SelectedTeam));
+            }
+        }
+    }
+
+    public int DailyRunTimes
+    {
+        get => _dailyRunTimes;
+        private set
+        {
+            if (SetProperty(ref _dailyRunTimes, value))
+            {
+                OnPropertyChanged(nameof(DoneText));
+            }
+        }
+    }
+
+    public string DoneText => $"当日: {DailyRunTimes}";
+
+    public IReadOnlyList<ZzzLifeOnLineTeamOption> TeamOptions
+    {
+        get => _teamOptions;
+        private set
+        {
+            if (SetProperty(ref _teamOptions, value))
+            {
+                OnPropertyChanged(nameof(SelectedTeam));
+            }
+        }
+    }
+
+    public ZzzLifeOnLineTeamOption? SelectedTeam
+    {
+        get => TeamOptions.FirstOrDefault(option => option.Value == PredefinedTeamIndex);
+        set
+        {
+            if (value is not null)
+            {
+                PredefinedTeamIndex = value.Value;
+            }
+        }
+    }
+
+    public override void OnPageShown()
+    {
+        base.OnPageShown();
+        if (LastError is not null)
+        {
+            return;
         }
 
-        ZzzBackendResult<ZzzConfigScopeValuesDto> teamConfig = _backend.GetConfigScope(
-            "team",
-            _instanceIndex);
+        ZzzBackendResult<ZzzConfigScopeValuesDto> teamConfig = _backend.GetConfigScope("team", _instanceIndex);
         if (!teamConfig.Success || teamConfig.Value is null)
         {
-            Error = teamConfig.Error ?? "预备编队配置读取失败。";
-            return false;
+            ReportError(teamConfig.Error ?? "预备编队配置读取失败。");
+            return;
         }
 
         ZzzBackendResult<ZzzLifeOnLineRunRecordDto> runRecord =
             _backend.GetLifeOnLineRunRecord(_instanceIndex);
         if (!runRecord.Success || runRecord.Value is null)
         {
-            Error = runRecord.Error ?? "生命热线运行记录读取失败。";
-            return false;
+            ReportError(runRecord.Error ?? "生命热线运行记录读取失败。");
+            return;
         }
 
-        try
+        if (!teamConfig.Value.Values.TryGetValue("team_list", out object? rawTeams)
+            || rawTeams is not List<PredefinedTeamInfo> teams)
         {
-            if (!teamConfig.Value.Values.TryGetValue("team_list", out object? rawTeams)
-                || rawTeams is not List<PredefinedTeamInfo> teams)
-            {
-                throw new InvalidOperationException("预备编队配置缺少 team_list?");
-            }
+            ReportError("预备编队配置缺少 team_list?");
+            return;
+        }
 
-            DailyPlanTimes = RequiredInt(config.Value.Values, "daily_plan_times");
-            PredefinedTeamIndex = RequiredInt(config.Value.Values, "predefined_team_idx");
-            DailyRunTimes = runRecord.Value.DailyRunTimes;
-            TeamOptions =
-            [
-                new ZzzLifeOnLineTeamOption("游戏内配队", -1),
-                .. teams.Select(team => new ZzzLifeOnLineTeamOption(team.Name, team.Idx)),
-            ];
-            Error = null;
-            return true;
-        }
-        catch (InvalidOperationException exception)
-        {
-            Error = exception.Message;
-            return false;
-        }
+        TeamOptions =
+        [
+            new("游戏内配队", -1),
+            .. teams.Select(team => new ZzzLifeOnLineTeamOption(team.Name, team.Idx)),
+        ];
+        DailyRunTimes = runRecord.Value.DailyRunTimes;
+        OnPropertyChanged(nameof(DailyPlanTimes));
+        OnPropertyChanged(nameof(SelectedTeam));
+        ReportError(null);
     }
 
-    public bool Save(string key, object value)
+    internal bool SaveForTest(string key, object value)
     {
-        ZzzBackendResult<ZzzConfigScopeValuesDto> result = _backend.SaveConfigScope(
-            new ZzzSaveConfigScopeRequest(
-                ScopeName,
-                new Dictionary<string, object?> { [key] = value },
-                _instanceIndex,
-                _groupId));
-        if (!result.Success)
+        switch (key)
         {
-            Error = result.Error ?? $"{key} 保存失败。";
-            return false;
+            case "daily_plan_times":
+                DailyPlanTimes = Convert.ToDouble(value, CultureInfo.InvariantCulture);
+                break;
+            case "predefined_team_idx":
+                PredefinedTeamIndex = Convert.ToInt32(value, CultureInfo.InvariantCulture);
+                break;
+            default:
+                throw new ArgumentOutOfRangeException(nameof(key), key, "未知的生命热线配置字段。");
         }
 
-        Error = null;
-        return true;
-    }
-
-    private static int RequiredInt(IReadOnlyDictionary<string, object?> values, string key)
-    {
-        if (!values.TryGetValue(key, out object? value))
-        {
-            throw new InvalidOperationException($"生命热线配置缺少 {key}。");
-        }
-
-        return Convert.ToInt32(value, CultureInfo.InvariantCulture);
+        return LastError is null;
     }
 }

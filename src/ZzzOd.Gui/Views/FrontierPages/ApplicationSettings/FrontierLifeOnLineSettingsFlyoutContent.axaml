@@ -1,6 +1,8 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:fa="using:FluentAvalonia.UI.Controls"
+             xmlns:viewModels="using:ZzzOd.Gui.PageModels.ApplicationSettings"
+             x:DataType="viewModels:ZzzLifeOnLineSettingsFlyoutViewModel"
              x:Class="ZzzOd.Gui.Views.FrontierPages.ApplicationSettings.FrontierLifeOnLineSettingsFlyoutContent"
              MinWidth="420">
   <StackPanel Margin="8" Spacing="1">
@@ -16,7 +18,7 @@
                       Minimum="0"
                       Maximum="20000"
                       SpinButtonPlacementMode="Compact"
-                      ValueChanged="OnDailyPlanTimesChanged" />
+                      Value="{Binding DailyPlanTimes, Mode=TwoWay}" />
       </fa:FASettingsExpander.Footer>
     </fa:FASettingsExpander>
 
@@ -24,7 +26,7 @@
       <fa:FASettingsExpander Grid.Column="0" Header="完成次数" />
       <fa:FASettingsExpander Grid.Column="2">
         <fa:FASettingsExpander.Header>
-          <TextBlock x:Name="DoneValueText" />
+          <TextBlock x:Name="DoneValueText" Text="{Binding DoneText}" />
         </fa:FASettingsExpander.Header>
       </fa:FASettingsExpander>
     </Grid>
@@ -33,7 +35,8 @@
       <fa:FASettingsExpander.Footer>
         <fa:FAComboBox x:Name="PredefinedTeamCombo"
                        Width="220"
-                       SelectionChanged="OnPredefinedTeamChanged" />
+                       ItemsSource="{Binding TeamOptions}"
+                       SelectedItem="{Binding SelectedTeam, Mode=TwoWay}" />
       </fa:FASettingsExpander.Footer>
     </fa:FASettingsExpander>
   </StackPanel>
