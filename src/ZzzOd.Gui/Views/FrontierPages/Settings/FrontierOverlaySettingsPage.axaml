@@ -175,7 +175,7 @@
                       Height="24"
                       VerticalAlignment="Center"
                       CornerRadius="{DynamicResource ControlCornerRadius}"
-                      BorderThickness="1"
+                      BorderThickness="{DynamicResource ExpanderHeaderBorderThickness}"
                       BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}"
                       Background="{Binding PanelTextColorBrush}" />
               <TextBox x:Name="PanelTextColorTextBox" Width="148" PlaceholderText="#f2f2f2" MaxLength="7" Text="{Binding PanelTextColor, Mode=TwoWay, UpdateSourceTrigger=LostFocus}" />
