@@ -36,6 +36,16 @@ internal abstract class ZzzConfigSectionViewModel : ZzzPageViewModel
     {
     }
 
+    protected virtual ZzzBackendResult<ZzzConfigScopeValuesDto> SaveFieldCore(
+        ZzzConfigField field,
+        object? value) =>
+        _backend.SaveConfigScope(
+            new ZzzSaveConfigScopeRequest(
+                ScopeName,
+                new Dictionary<string, object?> { [field.Key] = field.Write(value) },
+                InstanceIndex,
+                GroupId));
+
     public string? LastError
     {
         get => _lastError;
@@ -84,38 +94,63 @@ internal abstract class ZzzConfigSectionViewModel : ZzzPageViewModel
 
     protected bool SaveValue(ZzzConfigField field, object? value) => SaveField(field, value);
 
-    private void LoadScope()
+    protected bool ApplyScopeResult(
+        ZzzBackendResult<ZzzConfigScopeValuesDto> result,
+        string fallbackError)
     {
+        if (!result.Success || result.Value is null)
+        {
+            ReportError(result.Error ?? fallbackError);
+            return false;
+        }
+
+        try
+        {
+            ApplyScopeValues(result.Value);
+            ReportError(null);
+            return true;
+        }
+        catch (Exception exception)
+        {
+            ReportError(exception.Message);
+            return false;
+        }
+    }
+
+    protected void ApplyScopeValues(ZzzConfigScopeValuesDto values)
+    {
+        bool wasLoading = _loading;
         _loading = true;
         try
         {
-            ValidateFields();
-            ZzzBackendResult<ZzzConfigScopeValuesDto> result =
-                _backend.GetConfigScope(ScopeName, InstanceIndex, GroupId);
-            if (!result.Success || result.Value is null)
-            {
-                ReportError(result.Error ?? $"{ScopeName} 配置读取失败。");
-                return;
-            }
-
             foreach (ZzzConfigField field in Fields)
             {
-                object? raw = result.Value.Values.TryGetValue(field.Key, out object? value)
+                object? raw = values.Values.TryGetValue(field.Key, out object? value)
                     ? value
                     : field.DefaultValue;
                 SetLoadedValue(field, field.Read(raw));
             }
 
-            OnScopeLoaded(result.Value);
-            ReportError(null);
+            OnScopeLoaded(values);
+        }
+        finally
+        {
+            _loading = wasLoading;
+        }
+    }
+
+    private void LoadScope()
+    {
+        try
+        {
+            ValidateFields();
+            ZzzBackendResult<ZzzConfigScopeValuesDto> result =
+                _backend.GetConfigScope(ScopeName, InstanceIndex, GroupId);
+            ApplyScopeResult(result, $"{ScopeName} 配置读取失败。");
         }
         catch (Exception exception)
         {
             ReportError(exception.Message);
-        }
-        finally
-        {
-            _loading = false;
         }
     }
 
@@ -123,12 +158,7 @@ internal abstract class ZzzConfigSectionViewModel : ZzzPageViewModel
     {
         try
         {
-            ZzzBackendResult<ZzzConfigScopeValuesDto> result = _backend.SaveConfigScope(
-                new ZzzSaveConfigScopeRequest(
-                    ScopeName,
-                    new Dictionary<string, object?> { [field.Key] = field.Write(value) },
-                    InstanceIndex,
-                    GroupId));
+            ZzzBackendResult<ZzzConfigScopeValuesDto> result = SaveFieldCore(field, value);
             if (result.Success && result.Value is not null)
             {
                 OnFieldSaved(field, result.Value);
