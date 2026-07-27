@@ -1,0 +1,9 @@
+schemaVersion: 1
+startedAtUtc: 2026-07-27T00:00:00.0000000+00:00
+endedAtUtc: 2026-07-27T00:00:03.0000000+00:00
+configurationName: "synthetic"
+configurationHash: SYNTHETIC
+frameWidth: 0
+frameHeight: 0
+droppedFrameCount: 0
+truncated: false

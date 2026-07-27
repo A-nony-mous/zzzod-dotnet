@@ -48,6 +48,9 @@ public sealed class BattleAssistantConfig : IApplicationConfig
 	[YamlMember(Alias = "auto_ultimate_enabled", ApplyNamingConventions = false)]
 	public bool AutoUltimateEnabled { get; set; }
 
+	[YamlMember(Alias = "battle_replay_enabled", ApplyNamingConventions = false)]
+	public bool BattleReplayEnabled { get; set; }
+
 	public static BattleAssistantConfig Load(OneDragonEnvironment environment, int instanceIndex)
 	{
 		YamlConfig<BattleAssistantConfig> yamlConfig = new YamlConfig<BattleAssistantConfig>(environment, "battle_assistant", null, instanceIndex);

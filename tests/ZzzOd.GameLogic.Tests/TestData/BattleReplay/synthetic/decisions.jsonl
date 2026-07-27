@@ -1,0 +1,3 @@
+{"Event":"started","Trigger":"窗口状态","OperationSummary":"窗口命中","Completed":true,"ErrorMessage":null,"Timestamp":"2026-07-27T00:00:00Z","TriggerTime":10.5,"Expression":"[窗口状态, 0, 1]","StartedAt":null,"EndedAt":null}
+{"Event":"started","Trigger":"冷却状态","OperationSummary":"冷却放行","Completed":true,"ErrorMessage":null,"Timestamp":"2026-07-27T00:00:01Z","TriggerTime":20.5,"Expression":"[冷却状态, 0, 1]","StartedAt":null,"EndedAt":null}
+{"Event":"interrupted","Trigger":"高优先级状态","OperationSummary":"优先级打断","Completed":true,"ErrorMessage":null,"Timestamp":"2026-07-27T00:00:02Z","TriggerTime":30.5,"Expression":"[高优先级状态, 0, 1]","StartedAt":null,"EndedAt":null}

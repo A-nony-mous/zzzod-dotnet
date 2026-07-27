@@ -18,6 +18,7 @@ namespace ZzzOd.GameLogic.AutoBattle;
 
 public class AutoBattleOperator : IStateRecordUpdateListener
 {
+	public event Action<AutoBattleExecutionRecord>? ExecutionRecordAdded;
 	private const string FallbackTemplateName = "全配队通用";
 
 	// 调度器为进程内共享：容量需覆盖并发运行的 operator 数量（主循环 + 周期动作各占一条），
@@ -37,6 +38,8 @@ public class AutoBattleOperator : IStateRecordUpdateListener
 	private readonly string _templateName;
 
 	private readonly bool _readFromMerged;
+
+	private readonly ICondOpClock _clock;
 
 	private readonly object _taskLock = new object();
 
@@ -145,12 +148,18 @@ public class AutoBattleOperator : IStateRecordUpdateListener
 		}
 	}
 
-	public AutoBattleOperator(AutoBattleContext ctx, string subDir, string templateName, bool readFromMerged = true)
+	public AutoBattleOperator(
+		AutoBattleContext ctx,
+		string subDir,
+		string templateName,
+		bool readFromMerged = true,
+		ICondOpClock? clock = null)
 	{
 		_ctx = ctx;
 		_subDir = subDir;
 		_templateName = templateName;
 		_readFromMerged = readFromMerged;
+		_clock = clock ?? new SystemCondOpClock();
 	}
 
 	public (bool Success, string Message) InitBeforeRunning()
@@ -207,7 +216,7 @@ public class AutoBattleOperator : IStateRecordUpdateListener
 			OperationExecutor runningExecutor = RunningExecutor;
 			if (runningExecutor != null && runningExecutor.Running && !CanInterrupt(CurrentExecutionInfo, executionInfo))
 			{
-				AddExecutionRecordLocked("rejected", trigger ?? executionInfo.TriggerDisplay, executionInfo, completed: false, "priority-blocked");
+				AddExecutionRecordLocked("rejected", trigger ?? executionInfo.TriggerDisplay, executionInfo, completed: false, "priority-blocked", triggerTime);
 				PublishExecutionDecision(
 					executionInfo,
 					trigger ?? executionInfo.TriggerDisplay,
@@ -230,7 +239,7 @@ public class AutoBattleOperator : IStateRecordUpdateListener
 			RunningExecutor = new OperationExecutor(executionInfo.OpList, triggerTime ?? Now());
 			_runningExecutionTask = RunningExecutor.RunAsync();
 			OperationExecutor executor = RunningExecutor;
-			AddExecutionRecordLocked("started", executionInfo.TriggerDisplay, executionInfo, completed: false);
+			AddExecutionRecordLocked("started", executionInfo.TriggerDisplay, executionInfo, completed: false, triggerTime: triggerTime ?? executor.TriggerTime);
 			PublishExecutionDecision(
 				executionInfo,
 				executionInfo.TriggerDisplay,
@@ -385,7 +394,7 @@ public class AutoBattleOperator : IStateRecordUpdateListener
 				}
 				continue;
 			}
-			double now = (double)DateTimeOffset.Now.ToUnixTimeMilliseconds() / 1000.0;
+			double now = _clock.NowSeconds();
 			if (!_ctx.LastCheckInBattle)
 			{
 				try
@@ -933,7 +942,7 @@ public class AutoBattleOperator : IStateRecordUpdateListener
 		}
 	}
 
-	private void AddExecutionRecordLocked(string @event, string trigger, ExecutionInfo executionInfo, bool completed, string? errorMessage = null)
+	private void AddExecutionRecordLocked(string @event, string trigger, ExecutionInfo executionInfo, bool completed, string? errorMessage = null, double? triggerTime = null)
 	{
 		string text = ((executionInfo.OpList.Count == 0) ? "-" : string.Join(" | ", from op in executionInfo.OpList.Take(3)
 			select op.OpName));
@@ -941,7 +950,16 @@ public class AutoBattleOperator : IStateRecordUpdateListener
 		{
 			text += " | ...";
 		}
-		_executionRecords.Add(new AutoBattleExecutionRecord(@event, trigger, text, completed, errorMessage, DateTimeOffset.UtcNow));
+		AutoBattleExecutionRecord record = new(@event, trigger, text, completed, errorMessage, DateTimeOffset.UtcNow, executionInfo.ExprDisplay, triggerTime);
+		_executionRecords.Add(record);
+		try
+		{
+			ExecutionRecordAdded?.Invoke(record);
+		}
+		catch (Exception ex)
+		{
+			Log.Error(ex, "自动战斗回放决策记录失败");
+		}
 	}
 
 	private void PublishExecutionDecision(
@@ -1011,9 +1029,9 @@ public class AutoBattleOperator : IStateRecordUpdateListener
 		return metadata;
 	}
 
-	private static double Now()
+	private double Now()
 	{
-		return (double)DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() / 1000.0;
+		return _clock.NowSeconds();
 	}
 
 	private static void ObserveBackgroundTask(Task task, string taskName)
