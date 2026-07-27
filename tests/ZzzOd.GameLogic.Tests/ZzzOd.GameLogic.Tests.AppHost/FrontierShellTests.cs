@@ -9,6 +9,7 @@ using Avalonia.Threading;
 using Avalonia.VisualTree;
 using FluentAvalonia.Styling;
 using FluentAvalonia.UI.Controls;
+using FluentAvalonia.UI.Media.Animation;
 using FluentAvalonia.UI.Windowing;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit;
@@ -289,10 +290,13 @@ public sealed class FrontierShellTests
             try
             {
                 WireTestPages(view, home, settings);
+                FANavigationTransitionInfo? transition = null;
+                view.NavigationFrame.Navigated += (_, args) => transition = args.NavigationTransitionInfo;
                 Assert.Null(view.ActiveRoute);
                 Assert.Equal(0, view.CreatedPageCount);
                 Assert.Equal(0, home.Shown);
                 view.StartInitialNavigation();
+                Assert.IsType<FAEntranceNavigationTransitionInfo>(transition);
                 Assert.Equal("test-home", view.ActiveRoute);
                 Assert.Equal(1, view.CreatedPageCount);
                 Assert.Equal(2, view.NavigationItems.Count);
@@ -319,6 +323,7 @@ public sealed class FrontierShellTests
                 Assert.True(homeLabel.IsVisible);
 
                 Assert.True(view.NavigateForTesting("test-settings"));
+                Assert.IsType<FAEntranceNavigationTransitionInfo>(transition);
                 Assert.Equal("test-settings", view.ActiveRoute);
                 Assert.Equal(2, view.CreatedPageCount);
                 Assert.True(view.CanGoBack);

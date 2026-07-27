@@ -6,7 +6,7 @@ namespace ZzzOd.GameLogic.Tests.AppHost;
 
 /// <summary>
 /// 前卫容器 pivot 的 BaselineParity 顺序与排除页边界(承接被删 classic 容器 parity 测试的产品事实)。
-/// 页签元素同时匹配 FATabViewItem 与原生 TabItem,pivot 控件选型由设计体系审计约束,本测试只锚定顺序。
+/// 页签元素使用原生 TabItem,pivot 控件选型由设计体系审计约束,本测试只锚定顺序。
 /// </summary>
 public sealed class FrontierContainerPivotParityTests
 {
@@ -46,10 +46,9 @@ public sealed class FrontierContainerPivotParityTests
     private static string[] ReadPivotHeaders(string axamlPath)
     {
         XDocument document = XDocument.Load(axamlPath);
-        XNamespace fa = "using:FluentAvalonia.UI.Controls";
         XNamespace avalonia = "https://github.com/avaloniaui";
         return document.Descendants()
-            .Where(element => element.Name == fa + "FATabViewItem" || element.Name == avalonia + "TabItem")
+            .Where(element => element.Name == avalonia + "TabItem")
             .Select(element => (string?)element.Attribute("Header"))
             .Where(header => header is not null)
             .Cast<string>()

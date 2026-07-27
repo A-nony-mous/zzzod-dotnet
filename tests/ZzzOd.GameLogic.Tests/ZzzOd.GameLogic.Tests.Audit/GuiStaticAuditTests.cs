@@ -202,16 +202,16 @@ public sealed class GuiStaticAuditTests
 		Assert.DoesNotContain("_videoTimer", homeCode, StringComparison.Ordinal);
 		Assert.DoesNotContain("RenderNextVideoFrame", homeCode, StringComparison.Ordinal);
 		Assert.DoesNotContain("BackgroundVideoHost", home + homeCode, StringComparison.Ordinal);
-		Assert.Contains("FATabView", oneDragon, StringComparison.Ordinal);
+		Assert.Contains("TabControl", oneDragon, StringComparison.Ordinal);
 		Assert.Contains("FAFrame", oneDragonChildren, StringComparison.Ordinal);
 		Assert.Contains("ScrollViewer", oneDragonChildren, StringComparison.Ordinal);
 		Assert.Contains("FACommandBar", oneDragonChildren, StringComparison.Ordinal);
-		Assert.Contains("FATabView", devtools, StringComparison.Ordinal);
+		Assert.Contains("TabControl", devtools, StringComparison.Ordinal);
 		Assert.Contains("FAFrame", devtools, StringComparison.Ordinal);
 		Assert.Contains("FACommandBar", string.Join(Environment.NewLine,
 			Directory.EnumerateFiles(Path.Combine(path, "Views", "FrontierPages", "DevTools"), "*.axaml")
 				.Select(File.ReadAllText)), StringComparison.Ordinal);
-		Assert.Contains("FATabView", worldPatrol, StringComparison.Ordinal);
+		Assert.Contains("TabControl", worldPatrol, StringComparison.Ordinal);
 		Assert.Contains("FASettingsExpander", worldPatrol, StringComparison.Ordinal);
 		Assert.Contains("FACommandBar", worldPatrol, StringComparison.Ordinal);
 		Assert.Contains("BattleFrame", gameAssistant, StringComparison.Ordinal);
@@ -409,16 +409,16 @@ public sealed class GuiStaticAuditTests
 	}
 
 	/// <summary>
-	/// Fluent Pivot 必须复用官方 TabView 主题，并让两层 Frame 拉伸实际页面。
+	/// Fluent Pivot 必须复用原生 TabControl 主题，并让两层 Frame 拉伸实际页面。
 	/// </summary>
 	[Fact]
-	public void FluentPivotUsesBaseTabViewThemeAndStretchFrames()
+	public void FluentPivotUsesNativeTabControlThemeAndStretchFrames()
 	{
 		string path = FindGuiRoot();
 		string actualString = File.ReadAllText(Path.Combine(path, "Controls", "ZzzPivotPage.cs"));
 		string actualString2 = File.ReadAllText(Path.Combine(path, "Controls", "ZzzPageStackHost.axaml"));
-		Assert.Contains("StyleKeyOverride => typeof(FATabView)", actualString, StringComparison.Ordinal);
-		Assert.Contains("((IList)TabItems).Add(tabItem)", actualString, StringComparison.Ordinal);
+		Assert.Contains("StyleKeyOverride => typeof(TabControl)", actualString, StringComparison.Ordinal);
+		Assert.Contains("ItemsSource = _tabItems", actualString, StringComparison.Ordinal);
 		Assert.DoesNotContain("_compatibilityFrame", actualString, StringComparison.Ordinal);
 		Assert.Contains("HorizontalContentAlignment=\"Stretch\"", actualString2, StringComparison.Ordinal);
 		Assert.Contains("VerticalContentAlignment=\"Stretch\"", actualString2, StringComparison.Ordinal);

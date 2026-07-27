@@ -788,7 +788,7 @@ public sealed class GuiParityAndFacadeTests
 		RunOnUiThread(delegate
 		{
 			ZzzOd.Gui.Views.FrontierPages.GameAssistant.FrontierGameAssistantPage zzzGameAssistantPage = new ZzzOd.Gui.Views.FrontierPages.GameAssistant.FrontierGameAssistantPage(new FakeBackend(), new ZzzGuiRunIntentService());
-			Assert.Equal("FATabView", zzzGameAssistantPage.NavigationTargetKind);
+			Assert.Equal("TabControl", zzzGameAssistantPage.NavigationTargetKind);
 			Assert.Equal(new string[2] { "战斗助手", "委托助手" }, zzzGameAssistantPage.ItemHeaders);
 			Assert.Equal("战斗助手", zzzGameAssistantPage.SelectedHeader);
 			Assert.True(zzzGameAssistantPage.SelectByHeader("委托助手"));
@@ -816,7 +816,7 @@ public sealed class GuiParityAndFacadeTests
 		RunOnUiThread(delegate
 		{
 			FrontierOneDragonPage zzzOneDragonPage = new FrontierOneDragonPage(new FakeBackend(), new ZzzGuiRunIntentService());
-			Assert.Equal("FATabView", zzzOneDragonPage.NavigationTargetKind);
+			Assert.Equal("TabControl", zzzOneDragonPage.NavigationTargetKind);
 			Assert.Equal(new string[4] { "一条龙运行", "体力计划", "预备编队", "灵敏度校准" }, zzzOneDragonPage.ItemHeaders);
 			Assert.Equal("一条龙运行", zzzOneDragonPage.SelectedHeader);
 			Assert.True(zzzOneDragonPage.SelectByHeader("体力计划"));
@@ -1284,6 +1284,7 @@ public sealed class GuiParityAndFacadeTests
 		EnsureAvaloniaServices();
 		RunOnUiThread(delegate
 		{
+			EnsureFluentTheme();
 			FakeBackend fakeBackend = new FakeBackend
 			{
 				BattleAssistantRuntime = new ZzzBattleAssistantRuntimeDto(IsRunning: true, "闪避识别-红光", "红光 ← 前台-安比", 0.123456, new ZzzBattleAssistantStateDto[3]
@@ -1327,6 +1328,7 @@ public sealed class GuiParityAndFacadeTests
 		EnsureAvaloniaServices();
 		RunOnUiThread(delegate
 		{
+			EnsureFluentTheme();
 			FakeBackend fakeBackend = new FakeBackend();
 			FrontierBattleAssistantPage zzzBattleAssistantPage = new FrontierBattleAssistantPage(fakeBackend, new ZzzGuiRunIntentService());
 			zzzBattleAssistantPage.OnPageShown();
@@ -2105,7 +2107,7 @@ public sealed class GuiParityAndFacadeTests
 					new ZzzPivotPageItem("第一页", lifecycleControl),
 					new ZzzPivotPageItem("第二页", lifecycleControl2)
 				});
-				Assert.Equal("FATabView", zzzPivotPage.NavigationTargetKind);
+				Assert.Equal("TabControl", zzzPivotPage.NavigationTargetKind);
 				Assert.Equal(new string[2] { "第一页", "第二页" }, zzzPivotPage.ItemHeaders);
 				Assert.Equal(new string[2] { "第一页 选项卡", "第二页 选项卡" }, zzzPivotPage.ItemAutomationNames);
 				Assert.All(zzzPivotPage.ItemFocusableStates, Assert.True);
@@ -3352,6 +3354,21 @@ public sealed class GuiParityAndFacadeTests
 		{
 			Avalonia.Application.Current.Styles.Add(new FluentAvaloniaTheme());
 		}
+
+		if (Avalonia.Application.Current is { } application
+			&& !application.TryGetResource("ZzzBattleStateRecentBrush1", ThemeVariant.Light, out _))
+		{
+			ResourceDictionary resources = (ResourceDictionary)AvaloniaXamlLoader.Load(
+				new Uri("avares://ZzzOd.Gui/Theme/ZzzFluentTheme.axaml"),
+				new Uri("avares://ZzzOd.Gui/"));
+			application.Resources.MergedDictionaries.Add(resources);
+		}
+
+		if (Avalonia.Application.Current is { } current
+			&& current.ActualThemeVariant == ThemeVariant.Default)
+		{
+			current.RequestedThemeVariant = ThemeVariant.Light;
+		}
 	}
 
 	internal static void RunOnUiThread(Action action)
@@ -3506,7 +3523,7 @@ public sealed class GuiParityAndFacadeTests
 		{
 			if (!(control is FASettingsExpander { Footer: var footer } settingsExpander))
 			{
-				if (!(control is FATabView tabView))
+				if (!(control is TabControl tabControl))
 				{
 					if (control is Border border)
 					{
@@ -3543,7 +3560,7 @@ public sealed class GuiParityAndFacadeTests
 					}
 					yield break;
 				}
-				foreach (object item in tabView.TabItems)
+			foreach (object item in tabControl.Items)
 				{
 					if (item is Control child3)
 					{
