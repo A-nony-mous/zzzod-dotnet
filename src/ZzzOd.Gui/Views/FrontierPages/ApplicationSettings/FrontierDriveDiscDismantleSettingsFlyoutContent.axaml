@@ -1,7 +1,9 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:fa="using:FluentAvalonia.UI.Controls"
+             xmlns:model="using:ZzzOd.Gui.PageModels.ApplicationSettings"
              x:Class="ZzzOd.Gui.Views.FrontierPages.ApplicationSettings.FrontierDriveDiscDismantleSettingsFlyoutContent"
+             x:DataType="model:ZzzDriveDiscDismantleSettingsViewModel"
              MinWidth="420">
   <StackPanel Margin="8" Spacing="1">
     <fa:FAInfoBar x:Name="ErrorBar" IsOpen="False" IsClosable="True" Severity="Error" />
@@ -9,13 +11,14 @@
       <fa:FASettingsExpander.Footer>
         <fa:FAComboBox x:Name="LevelCombo"
                        Width="180"
-                       SelectionChanged="OnLevelChanged" />
+                       ItemsSource="{Binding LevelOptions}"
+                       SelectedItem="{Binding SelectedLevel, Mode=TwoWay}" />
       </fa:FASettingsExpander.Footer>
     </fa:FASettingsExpander>
     <fa:FASettingsExpander Header="全部已弃置">
       <fa:FASettingsExpander.Footer>
         <ToggleSwitch x:Name="AbandonToggle"
-                      Click="OnAbandonChanged" />
+                      IsChecked="{Binding DismantleAbandon, Mode=TwoWay}" />
       </fa:FASettingsExpander.Footer>
     </fa:FASettingsExpander>
   </StackPanel>

@@ -74,7 +74,7 @@ internal abstract class ZzzConfigSectionViewModel : ZzzPageViewModel
         return true;
     }
 
-    protected void SaveValue(ZzzConfigField field, object? value) => SaveField(field, value);
+    protected bool SaveValue(ZzzConfigField field, object? value) => SaveField(field, value);
 
     private void LoadScope()
     {
@@ -110,7 +110,7 @@ internal abstract class ZzzConfigSectionViewModel : ZzzPageViewModel
         }
     }
 
-    private void SaveField(ZzzConfigField field, object? value)
+    private bool SaveField(ZzzConfigField field, object? value)
     {
         try
         {
@@ -121,10 +121,12 @@ internal abstract class ZzzConfigSectionViewModel : ZzzPageViewModel
                     InstanceIndex,
                     GroupId));
             ReportError(result.Success ? null : result.Error ?? $"{field.Key} 保存失败。");
+            return result.Success;
         }
         catch (Exception exception)
         {
             ReportError(exception.Message);
+            return false;
         }
     }
 
