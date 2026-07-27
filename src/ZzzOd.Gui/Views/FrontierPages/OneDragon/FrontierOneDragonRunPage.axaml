@@ -2,7 +2,8 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:fa="using:FluentAvalonia.UI.Controls"
              xmlns:local="using:ZzzOd.Gui.PageModels.OneDragon"
-             x:Class="ZzzOd.Gui.Views.FrontierPages.OneDragon.FrontierOneDragonRunPage">
+             x:Class="ZzzOd.Gui.Views.FrontierPages.OneDragon.FrontierOneDragonRunPage"
+             x:DataType="local:ZzzOneDragonRunSettings">
   <UserControl.Styles>
     <Style Selector="ItemsControl#AppList">
       <Setter Property="Cursor" Value="Hand" />
@@ -33,7 +34,8 @@
                 BorderThickness="{DynamicResource ExpanderHeaderBorderThickness}"
                 CornerRadius="{DynamicResource ControlCornerRadius}"
                 ClipToBounds="True">
-        <ItemsControl x:Name="AppList">
+        <ItemsControl x:Name="AppList"
+                      ItemsSource="{Binding AppRows}">
             <ItemsControl.ItemsPanel>
               <ItemsPanelTemplate>
                 <StackPanel Spacing="1" />
@@ -154,7 +156,7 @@
               <ToggleSwitch x:Name="NotifyToggle"
                             OnContent=""
                             OffContent=""
-                            Click="OnNotifyToggleClicked" />
+                            IsChecked="{Binding NotifyEnabled, Mode=TwoWay}" />
             </StackPanel>
           </fa:FASettingsExpanderItem.Footer>
         </fa:FASettingsExpanderItem>
@@ -165,7 +167,8 @@
           <fa:FASettingsExpanderItem.Footer>
             <fa:FAComboBox x:Name="InstanceRunCombo"
                            Width="140"
-                           SelectionChanged="OnInstanceRunChanged" />
+                           ItemsSource="{Binding InstanceRunOptions}"
+                           SelectedItem="{Binding InstanceRun, Mode=TwoWay}" />
           </fa:FASettingsExpanderItem.Footer>
         </fa:FASettingsExpanderItem>
         <fa:FASettingsExpanderItem Content="结束后">
@@ -175,7 +178,8 @@
           <fa:FASettingsExpanderItem.Footer>
             <fa:FAComboBox x:Name="AfterDoneCombo"
                            Width="140"
-                           SelectionChanged="OnAfterDoneChanged" />
+                           ItemsSource="{Binding AfterDoneOptions}"
+                           SelectedItem="{Binding AfterDone, Mode=TwoWay}" />
           </fa:FASettingsExpanderItem.Footer>
         </fa:FASettingsExpanderItem>
         </fa:FASettingsExpander>
