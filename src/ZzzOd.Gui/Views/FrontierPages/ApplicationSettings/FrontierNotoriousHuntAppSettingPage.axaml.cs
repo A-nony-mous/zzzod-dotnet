@@ -10,8 +10,7 @@ using ZzzOd.AppHost.Backend;
 using ZzzOd.GameLogic.Application.ChargePlan;
 using ZzzOd.GameLogic.Application.NotoriousHunt;
 using ZzzOd.Gui.Shell;
-
-using ZzzOd.Gui.PageModels.ApplicationSettings;
+using ZzzOd.Gui.Services.Config;
 
 namespace ZzzOd.Gui.Views.FrontierPages.ApplicationSettings;
 
@@ -55,9 +54,21 @@ internal sealed class ZzzNotoriousHuntPlanRowModel
     public bool IsAutoBattleVisible => Plan.PredefinedTeamIndex == -1;
 }
 
-internal sealed class ZzzNotoriousHuntAppSettingState
+internal sealed class ZzzNotoriousHuntAppSettingViewModel : ZzzConfigSectionViewModel
 {
-    private const string ScopeName = "notorious-hunt";
+    private static readonly ZzzConfigField PlanListField = new(
+        "plan_list",
+        typeof(List<ChargePlanItem>),
+        new List<ChargePlanItem>(),
+        FromConfig,
+        ToConfig);
+    private static readonly ZzzConfigField WeeklyChallengeStartWeekdayField =
+        new("weekly_challenge_start_weekday", typeof(int), 1);
+    private static readonly ZzzConfigField LoopField =
+        new("loop", typeof(bool), false);
+    private static readonly IReadOnlyList<ZzzConfigField> FieldList =
+    [PlanListField, WeeklyChallengeStartWeekdayField, LoopField];
+
     private readonly IZzzAppBackend _backend;
     private readonly int _instanceIndex;
     private readonly string _groupId;
@@ -66,74 +77,119 @@ internal sealed class ZzzNotoriousHuntAppSettingState
     private IReadOnlyList<ZzzNotoriousHuntOption> _teams = [];
     private IReadOnlyList<ZzzNotoriousHuntOption> _autoBattle = [];
 
-    public ZzzNotoriousHuntAppSettingState(IZzzAppBackend backend, int instanceIndex, string groupId)
+    public ZzzNotoriousHuntAppSettingViewModel(
+        IZzzAppBackend backend,
+        int instanceIndex,
+        string groupId,
+        Action<string?>? errorReporter = null)
+        : base(backend, errorReporter)
     {
         _backend = backend;
         _instanceIndex = instanceIndex;
         _groupId = groupId;
     }
 
-    public int WeeklyChallengeStartWeekday { get; private set; }
+    protected override string ScopeName => "notorious-hunt";
 
-    public bool Loop { get; private set; }
+    protected override IReadOnlyList<ZzzConfigField> Fields => FieldList;
 
-    public string? LastError { get; private set; }
+    protected override int? InstanceIndex => _instanceIndex;
+
+    protected override string? GroupId => _groupId;
+
+    public int WeeklyChallengeStartWeekday
+    {
+        get => GetValue<int>(WeeklyChallengeStartWeekdayField);
+        set => SetValue(WeeklyChallengeStartWeekdayField, value);
+    }
+
+    public bool Loop
+    {
+        get => GetValue<bool>(LoopField);
+        set => SetValue(LoopField, value);
+    }
 
     public IReadOnlyList<ChargePlanItem> Plans => _plans;
 
     public IReadOnlyList<ZzzNotoriousHuntOption> WeekdayOptions { get; } = Options(NotoriousHuntWeekday.Options);
 
-    public void Reload()
+    public ZzzNotoriousHuntOption? SelectedWeekday
     {
-        LastError = null;
-        ZzzBackendResult<ZzzChargePlanCatalogDto> catalogResult = _backend.GetChargePlanCatalog();
-        if (!catalogResult.Success || catalogResult.Value is null)
+        get => Find(WeekdayOptions, WeeklyChallengeStartWeekday.ToString(CultureInfo.InvariantCulture));
+        set
         {
-            Fail(catalogResult.Error ?? "恶名狩猎目录读取失败。");
+            if (value is not null
+                && int.TryParse(value.Value, CultureInfo.InvariantCulture, out int weekday))
+            {
+                WeeklyChallengeStartWeekday = weekday;
+            }
+        }
+    }
+
+    public override void OnPageShown()
+    {
+        base.OnPageShown();
+        if (LastError is not null)
+        {
+            _plans = [];
             return;
         }
 
-        ZzzChargePlanCategoryDto? category = catalogResult.Value.Categories.FirstOrDefault(item =>
-            string.Equals(item.Value, "恶名狩猎", StringComparison.Ordinal));
-        if (category is null)
+        LoadCatalog();
+        if (LastError is not null)
         {
-            Fail("真实手册中缺少恶名狩猎目录。");
+            _plans = [];
             return;
         }
 
-        _missionTypes = category.MissionTypes
-            .Select(item => new ZzzNotoriousHuntOption(item.Label, item.Value))
-            .ToArray();
-        _teams =
-        [
-            new ZzzNotoriousHuntOption("游戏内配队", "-1"),
-            .. catalogResult.Value.Teams.Select(team => new ZzzNotoriousHuntOption(team.Name, team.Index.ToString(CultureInfo.InvariantCulture))),
-        ];
-        _autoBattle = catalogResult.Value.AutoBattleConfigs
-            .Select(value => new ZzzNotoriousHuntOption(value, value))
-            .ToArray();
+        _plans = ConfigPlans.Select(plan => plan.Clone()).ToList();
+        OnPropertyChanged(nameof(SelectedWeekday));
+        OnPropertyChanged(nameof(Loop));
+    }
 
-        ZzzBackendResult<ZzzConfigScopeValuesDto> configResult = _backend.GetConfigScope(
-            ScopeName,
-            _instanceIndex,
-            _groupId);
-        if (!configResult.Success || configResult.Value is null)
-        {
-            Fail(configResult.Error ?? "恶名狩猎配置读取失败。");
-            return;
-        }
-
+    private void LoadCatalog()
+    {
         try
         {
-            IReadOnlyDictionary<string, object?> values = configResult.Value.Values;
-            _plans = RequiredPlans(values, "plan_list");
-            WeeklyChallengeStartWeekday = RequiredInt(values, "weekly_challenge_start_weekday");
-            Loop = RequiredBool(values, "loop");
+            ZzzBackendResult<ZzzChargePlanCatalogDto> catalogResult = _backend.GetChargePlanCatalog();
+            if (!catalogResult.Success || catalogResult.Value is null)
+            {
+                ReportError(catalogResult.Error ?? "恶名狩猎目录读取失败。");
+                return;
+            }
+
+            ZzzChargePlanCategoryDto? category = catalogResult.Value.Categories.FirstOrDefault(item =>
+                string.Equals(item.Value, "恶名狩猎", StringComparison.Ordinal));
+            if (category is null)
+            {
+                ReportError("真实手册中缺少恶名狩猎目录。");
+                return;
+            }
+
+            _missionTypes = category.MissionTypes
+                .Select(item => new ZzzNotoriousHuntOption(item.Label, item.Value))
+                .ToArray();
+            _teams =
+            [
+                new ZzzNotoriousHuntOption("游戏内配队", "-1"),
+                .. catalogResult.Value.Teams.Select(team => new ZzzNotoriousHuntOption(team.Name, team.Index.ToString(CultureInfo.InvariantCulture))),
+            ];
+            _autoBattle = catalogResult.Value.AutoBattleConfigs
+                .Select(value => new ZzzNotoriousHuntOption(value, value))
+                .ToArray();
+
+            ReportError(null);
         }
         catch (Exception exception)
         {
-            Fail(exception.Message);
+            ReportError(exception.Message);
         }
+    }
+
+    private List<ChargePlanItem> ConfigPlans
+    {
+        get => GetValue<List<ChargePlanItem>>(PlanListField);
+        set => SetValue(PlanListField, value);
     }
 
     public IReadOnlyList<ZzzNotoriousHuntPlanRowModel> CreateRows() =>
@@ -166,9 +222,9 @@ internal sealed class ZzzNotoriousHuntAppSettingState
         };
     }
 
-    public void SetWeekday(int value) => SaveScalar("weekly_challenge_start_weekday", value, () => WeeklyChallengeStartWeekday = value);
+    public void SetWeekday(int value) => WeeklyChallengeStartWeekday = value;
 
-    public void SetLoop(bool value) => SaveScalar("loop", value, () => Loop = value);
+    public void SetLoop(bool value) => Loop = value;
 
     public void UpdatePlan(int index, Action<ChargePlanItem> update)
     {
@@ -177,14 +233,18 @@ internal sealed class ZzzNotoriousHuntAppSettingState
             return;
         }
 
-        update(_plans[index]);
-        SavePlans();
+        List<ChargePlanItem> plans = _plans.Select(plan => plan.Clone()).ToList();
+        update(plans[index]);
+        ConfigPlans = plans;
+        _plans = plans;
     }
 
     public void AddPlan(ChargePlanItem plan)
     {
-        _plans.Add(plan.Clone());
-        SavePlans();
+        List<ChargePlanItem> plans = _plans.Select(item => item.Clone()).ToList();
+        plans.Add(plan.Clone());
+        ConfigPlans = plans;
+        _plans = plans;
     }
 
     public void DeletePlan(int index)
@@ -194,8 +254,10 @@ internal sealed class ZzzNotoriousHuntAppSettingState
             return;
         }
 
-        _plans.RemoveAt(index);
-        SavePlans();
+        List<ChargePlanItem> plans = _plans.Select(item => item.Clone()).ToList();
+        plans.RemoveAt(index);
+        ConfigPlans = plans;
+        _plans = plans;
     }
 
     public void MoveTop(int index)
@@ -205,10 +267,12 @@ internal sealed class ZzzNotoriousHuntAppSettingState
             return;
         }
 
-        ChargePlanItem plan = _plans[index];
-        _plans.RemoveAt(index);
-        _plans.Insert(0, plan);
-        SavePlans();
+        List<ChargePlanItem> plans = _plans.Select(item => item.Clone()).ToList();
+        ChargePlanItem plan = plans[index];
+        plans.RemoveAt(index);
+        plans.Insert(0, plan);
+        ConfigPlans = plans;
+        _plans = plans;
     }
 
     public void MoveTo(int sourceIndex, int insertionIndex)
@@ -218,44 +282,13 @@ internal sealed class ZzzNotoriousHuntAppSettingState
             return;
         }
 
-        ChargePlanItem plan = _plans[sourceIndex];
-        _plans.RemoveAt(sourceIndex);
+        List<ChargePlanItem> plans = _plans.Select(item => item.Clone()).ToList();
+        ChargePlanItem plan = plans[sourceIndex];
+        plans.RemoveAt(sourceIndex);
         int adjusted = insertionIndex > sourceIndex ? insertionIndex - 1 : insertionIndex;
-        _plans.Insert(Math.Clamp(adjusted, 0, _plans.Count), plan);
-        SavePlans();
-    }
-
-    private void SavePlans() => SaveScalar(
-        "plan_list",
-        _plans.Select(plan => plan.Clone()).ToList(),
-        () => { });
-
-    private void SaveScalar(string key, object? value, Action committed)
-    {
-        ZzzBackendResult<ZzzConfigScopeValuesDto> result = _backend.SaveConfigScope(new ZzzSaveConfigScopeRequest(
-            ScopeName,
-            new Dictionary<string, object?> { [key] = value },
-            _instanceIndex,
-            _groupId));
-        if (result.Success)
-        {
-            LastError = null;
-            committed();
-            return;
-        }
-
-        string error = result.Error ?? "恶名狩猎配置保存失败。";
-        Reload();
-        LastError = error;
-    }
-
-    private void Fail(string message)
-    {
-        LastError = message;
-        _plans = [];
-        _missionTypes = [];
-        _teams = [];
-        _autoBattle = [];
+        plans.Insert(Math.Clamp(adjusted, 0, plans.Count), plan);
+        ConfigPlans = plans;
+        _plans = plans;
     }
 
     private static ChargePlanItem CreateNewPlan() => new()
@@ -281,35 +314,14 @@ internal sealed class ZzzNotoriousHuntAppSettingState
     private static ZzzNotoriousHuntOption? Find(IReadOnlyList<ZzzNotoriousHuntOption> options, string? value) =>
         options.FirstOrDefault(option => string.Equals(option.Value, value, StringComparison.Ordinal));
 
-    private static List<ChargePlanItem> RequiredPlans(IReadOnlyDictionary<string, object?> values, string key)
+    private static List<ChargePlanItem> FromConfig(object? value)
     {
-        if (!values.TryGetValue(key, out object? value) || value is not IEnumerable<ChargePlanItem> plans)
-        {
-            throw new InvalidOperationException($"恶名狩猎配置缺少 {key}。");
-        }
-
-        return plans.Select(plan => plan.Clone()).ToList();
+        return value is IEnumerable<ChargePlanItem> plans
+            ? plans.Select(plan => plan.Clone()).ToList()
+            : [];
     }
 
-    private static int RequiredInt(IReadOnlyDictionary<string, object?> values, string key)
-    {
-        if (!values.TryGetValue(key, out object? value))
-        {
-            throw new InvalidOperationException($"恶名狩猎配置缺少 {key}。");
-        }
-
-        return Convert.ToInt32(value, CultureInfo.InvariantCulture);
-    }
-
-    private static bool RequiredBool(IReadOnlyDictionary<string, object?> values, string key)
-    {
-        if (!values.TryGetValue(key, out object? value))
-        {
-            throw new InvalidOperationException($"恶名狩猎配置缺少 {key}。");
-        }
-
-        return Convert.ToBoolean(value, CultureInfo.InvariantCulture);
-    }
+    private static List<ChargePlanItem> ToConfig(object? value) => FromConfig(value);
 }
 
 internal sealed partial class FrontierNotoriousHuntAppSettingPage : UserControl, IZzzPageLifecycle
@@ -317,10 +329,8 @@ internal sealed partial class FrontierNotoriousHuntAppSettingPage : UserControl,
     private static readonly DataFormat<string> PlanIndexFormat =
         DataFormat.CreateStringApplicationFormat("zzzod.notorious-hunt-plan-index");
 
-    private readonly ZzzNotoriousHuntAppSettingState _state;
+    private readonly ZzzNotoriousHuntAppSettingViewModel _viewModel;
     private readonly FAInfoBar _errorBar;
-    private readonly FAComboBox _weekdayCombo;
-    private readonly ToggleSwitch _loopToggle;
     private readonly ItemsControl _planList;
     private readonly FAContentDialog _addPlanDialog;
     private readonly ContentControl _dialogPlanHost;
@@ -331,18 +341,17 @@ internal sealed partial class FrontierNotoriousHuntAppSettingPage : UserControl,
 
     public FrontierNotoriousHuntAppSettingPage(IZzzAppBackend backend, int instanceIndex, string groupId)
     {
-        _state = new ZzzNotoriousHuntAppSettingState(backend, instanceIndex, groupId);
         AvaloniaXamlLoader.Load(this);
         _errorBar = Required<FAInfoBar>("ErrorBar");
-        _weekdayCombo = Required<FAComboBox>("WeekdayCombo");
-        _loopToggle = Required<ToggleSwitch>("LoopToggle");
+        _viewModel = new ZzzNotoriousHuntAppSettingViewModel(backend, instanceIndex, groupId, ShowError);
+        DataContext = _viewModel;
         _planList = Required<ItemsControl>("PlanList");
         _addPlanDialog = Required<FAContentDialog>("AddPlanDialog");
         _dialogPlanHost = Required<ContentControl>("DialogPlanHost");
         Reload();
     }
 
-    internal ZzzNotoriousHuntAppSettingState State => _state;
+    internal ZzzNotoriousHuntAppSettingViewModel State => _viewModel;
 
     public void OnPageShown() => Reload();
 
@@ -354,47 +363,21 @@ internal sealed partial class FrontierNotoriousHuntAppSettingPage : UserControl,
     {
     }
 
-    public void DisposePage()
-    {
-    }
+    public void DisposePage() => _viewModel.DisposePage();
 
     private void Reload()
     {
-        _state.Reload();
+        _viewModel.OnPageShown();
         _loading = true;
-        _weekdayCombo.ItemsSource = _state.WeekdayOptions;
-        _weekdayCombo.SelectedItem = Find(
-            _state.WeekdayOptions,
-            _state.WeeklyChallengeStartWeekday.ToString(CultureInfo.InvariantCulture));
-        _loopToggle.IsChecked = _state.Loop;
         RefreshPlans();
         _loading = false;
-        ShowError();
+        ShowError(_viewModel.LastError);
     }
 
     private void RefreshPlans()
     {
         _planList.ItemsSource = null;
-        _planList.ItemsSource = _state.CreateRows();
-    }
-
-    private void OnWeekdayChanged(object? sender, SelectionChangedEventArgs args)
-    {
-        if (!_loading && _weekdayCombo.SelectedItem is ZzzNotoriousHuntOption option
-            && int.TryParse(option.Value, CultureInfo.InvariantCulture, out int value))
-        {
-            _state.SetWeekday(value);
-            ShowError();
-        }
-    }
-
-    private void OnLoopChanged(object? sender, RoutedEventArgs args)
-    {
-        if (!_loading)
-        {
-            _state.SetLoop(_loopToggle.IsChecked == true);
-            ShowError();
-        }
+        _planList.ItemsSource = _viewModel.CreateRows();
     }
 
     private void OnMissionTypeChanged(object? sender, SelectionChangedEventArgs args)
@@ -469,28 +452,28 @@ internal sealed partial class FrontierNotoriousHuntAppSettingPage : UserControl,
             update(row.Plan);
             if (refresh)
             {
-                _dialogPlanHost.Content = _state.CreateRow(row.Plan, -1, showCommands: false);
+                _dialogPlanHost.Content = _viewModel.CreateRow(row.Plan, -1, showCommands: false);
             }
             return;
         }
 
-        _state.UpdatePlan(row.Index, update);
+            _viewModel.UpdatePlan(row.Index, update);
         if (refresh)
         {
             _loading = true;
             RefreshPlans();
             _loading = false;
         }
-        ShowError();
+        ShowError(_viewModel.LastError);
     }
 
     private void OnMoveTopClicked(object? sender, RoutedEventArgs args)
     {
         if (Row(sender) is { Index: >= 0 } row)
         {
-            _state.MoveTop(row.Index);
+            _viewModel.MoveTop(row.Index);
             RefreshPlans();
-            ShowError();
+            ShowError(_viewModel.LastError);
         }
     }
 
@@ -498,15 +481,15 @@ internal sealed partial class FrontierNotoriousHuntAppSettingPage : UserControl,
     {
         if (Row(sender) is { Index: >= 0 } row)
         {
-            _state.DeletePlan(row.Index);
+            _viewModel.DeletePlan(row.Index);
             RefreshPlans();
-            ShowError();
+            ShowError(_viewModel.LastError);
         }
     }
 
     private async void OnAddClicked(object? sender, RoutedEventArgs args)
     {
-        ZzzNotoriousHuntPlanRowModel row = _state.CreateDialogRow();
+        ZzzNotoriousHuntPlanRowModel row = _viewModel.CreateDialogRow();
         _dialogPlanHost.Content = row;
         if (TopLevel.GetTopLevel(this) is not Window owner)
         {
@@ -517,9 +500,9 @@ internal sealed partial class FrontierNotoriousHuntAppSettingPage : UserControl,
         FAContentDialogResult result = await _addPlanDialog.ShowAsync(owner).ConfigureAwait(true);
         if (result == FAContentDialogResult.Primary)
         {
-            _state.AddPlan(row.Plan);
+            _viewModel.AddPlan(row.Plan);
             RefreshPlans();
-            ShowError();
+            ShowError(_viewModel.LastError);
         }
     }
 
@@ -574,9 +557,9 @@ internal sealed partial class FrontierNotoriousHuntAppSettingPage : UserControl,
         }
 
         int insertionIndex = target.Index + (args.GetPosition(control).Y >= control.Bounds.Height / 2 ? 1 : 0);
-        _state.MoveTo(sourceIndex, insertionIndex);
+        _viewModel.MoveTo(sourceIndex, insertionIndex);
         RefreshPlans();
-        ShowError();
+        ShowError(_viewModel.LastError);
         args.DragEffects = DragDropEffects.Move;
         args.Handled = true;
     }
@@ -612,19 +595,14 @@ internal sealed partial class FrontierNotoriousHuntAppSettingPage : UserControl,
     private static ZzzNotoriousHuntOption? Find(IReadOnlyList<ZzzNotoriousHuntOption> options, string? value) =>
         options.FirstOrDefault(option => string.Equals(option.Value, value, StringComparison.Ordinal));
 
-    private void ShowError()
+    private void ShowError(string? message)
     {
-        if (string.IsNullOrWhiteSpace(_state.LastError))
+        if (string.IsNullOrWhiteSpace(message))
         {
             _errorBar.IsOpen = false;
             return;
         }
 
-        ShowError(_state.LastError);
-    }
-
-    private void ShowError(string message)
-    {
         _errorBar.Title = "错误";
         _errorBar.Message = message;
         _errorBar.Severity = FAInfoBarSeverity.Error;

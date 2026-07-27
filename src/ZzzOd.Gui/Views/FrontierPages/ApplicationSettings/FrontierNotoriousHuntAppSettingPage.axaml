@@ -2,7 +2,8 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:fa="using:FluentAvalonia.UI.Controls"
              xmlns:local="using:ZzzOd.Gui.Views.FrontierPages.ApplicationSettings"
-             x:Class="ZzzOd.Gui.Views.FrontierPages.ApplicationSettings.FrontierNotoriousHuntAppSettingPage">
+             x:Class="ZzzOd.Gui.Views.FrontierPages.ApplicationSettings.FrontierNotoriousHuntAppSettingPage"
+             x:DataType="local:ZzzNotoriousHuntAppSettingViewModel">
   <UserControl.Resources>
     <DataTemplate x:Key="NotoriousHuntPlanTemplate"
                   x:DataType="local:ZzzNotoriousHuntPlanRowModel">
@@ -122,7 +123,8 @@
             <fa:FASettingsExpander.Footer>
               <fa:FAComboBox x:Name="WeekdayCombo"
                              Width="132"
-                             SelectionChanged="OnWeekdayChanged" />
+                             ItemsSource="{Binding WeekdayOptions}"
+                             SelectedItem="{Binding SelectedWeekday, Mode=TwoWay}" />
             </fa:FASettingsExpander.Footer>
           </fa:FASettingsExpander>
           <fa:FASettingsExpander Grid.Column="2"
@@ -135,7 +137,7 @@
               <ToggleSwitch x:Name="LoopToggle"
                             OnContent=""
                             OffContent=""
-                            Click="OnLoopChanged" />
+                            IsChecked="{Binding Loop, Mode=TwoWay}" />
             </fa:FASettingsExpander.Footer>
           </fa:FASettingsExpander>
         </Grid>
