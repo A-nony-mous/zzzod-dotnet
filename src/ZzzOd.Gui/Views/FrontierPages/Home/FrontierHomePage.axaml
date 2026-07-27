@@ -2,7 +2,9 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:fa="using:FluentAvalonia.UI.Controls"
              xmlns:home="using:ZzzOd.Gui.Controls.Home"
+             xmlns:model="using:ZzzOd.Gui.PageModels.Home"
              x:Class="ZzzOd.Gui.Views.FrontierPages.Home.FrontierHomePage"
+             x:DataType="model:ZzzHomeProjectSettingsViewModel"
              ClipToBounds="True">
   <UserControl.Resources>
     <fa:FAContentDialog x:Key="PreFlightDialog"
