@@ -57,6 +57,19 @@ public sealed class ScreenshotHelperTests
 		}
 	}
 
+	private sealed class CountingCaptureSource : IScreenshotHelperCaptureSource
+	{
+		private int _captureCount;
+
+		public int CaptureCount => Volatile.Read(ref _captureCount);
+
+		public ScreenshotHelperFrame Capture()
+		{
+			Interlocked.Increment(ref _captureCount);
+			return CreateFrame(DateTimeOffset.UtcNow, 16);
+		}
+	}
+
 	private sealed class BlockingReadyController : ControllerBase
 	{
 		public TaskCompletionSource ScreenshotCaptured { get; } = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -250,6 +263,69 @@ public sealed class ScreenshotHelperTests
 	}
 
 	[Fact]
+	public void Service_DropsSaveKeyWhilePausedWithoutDeferringIt()
+	{
+		string rootDirectory = CreateTempRoot();
+		try
+		{
+			DateTimeOffset now = new DateTimeOffset(2026, 7, 27, 1, 0, 0, TimeSpan.Zero);
+			bool paused = true;
+			ScreenshotHelperConfig config = new ScreenshotHelperConfig
+			{
+				FrequencySecond = 0.1,
+				LengthSecond = 1.0,
+				KeySave = "p",
+				DodgeDetect = false,
+				ScreenshotBeforeKey = true
+			};
+			SequenceCaptureSource captureSource = new SequenceCaptureSource(CreateFrame(now, 10), CreateFrame(now.AddMilliseconds(100.0), 20));
+			using ScreenshotHelperService service = new ScreenshotHelperService(config, captureSource, new DebugScreenshotHelperImageStore(new OneDragonEnvironment(rootDirectory)), new StaticDodgeDetector(checkFlash: false), new StaticMiniMapAngleDetector(shouldSave: false), () => now.AddSeconds(10.0), () => !paused);
+			service.CaptureAndProcess();
+			Assert.False(service.HandleKeyPress("p"));
+			paused = false;
+			ScreenshotHelperTickResult result = service.CaptureAndProcess();
+			Assert.False(result.IsSavePending);
+			Assert.Empty(result.SavedImages);
+			Assert.Equal(2, service.CachedFrameCount);
+		}
+		finally
+		{
+			Directory.Delete(rootDirectory, recursive: true);
+		}
+	}
+
+	[Fact]
+	public void Service_PreservesSaveKeyMatchingAndThrottleRules()
+	{
+		string rootDirectory = CreateTempRoot();
+		try
+		{
+			DateTimeOffset now = new DateTimeOffset(2026, 7, 27, 1, 0, 0, TimeSpan.Zero);
+			ScreenshotHelperConfig config = new ScreenshotHelperConfig
+			{
+				FrequencySecond = 0.1,
+				LengthSecond = 1.0,
+				KeySave = "p",
+				DodgeDetect = false,
+				ScreenshotBeforeKey = true
+			};
+			SequenceCaptureSource captureSource = new SequenceCaptureSource(CreateFrame(now, 10));
+			using ScreenshotHelperService service = new ScreenshotHelperService(config, captureSource, new DebugScreenshotHelperImageStore(new OneDragonEnvironment(rootDirectory)), new StaticDodgeDetector(checkFlash: false), new StaticMiniMapAngleDetector(shouldSave: false), () => now);
+			Assert.False(service.HandleKeyPress("x"));
+			Assert.True(service.HandleKeyPress("p"));
+			service.CaptureAndProcess();
+			Assert.False(service.HandleKeyPress("p"));
+			now = now.AddSeconds(2.0);
+			Assert.False(service.HandleKeyPress("x"));
+			Assert.True(service.HandleKeyPress("p"));
+		}
+		finally
+		{
+			Directory.Delete(rootDirectory, recursive: true);
+		}
+	}
+
+	[Fact]
 	public void Factory_ExposesPythonMetadataAndCreatesApplication()
 	{
 		string text = CreateTempRoot();
@@ -395,6 +471,55 @@ public sealed class ScreenshotHelperTests
 		}
 	}
 
+	[Fact]
+	public async Task ScreenshotHelperApp_PausesAndResumesCaptureWithoutClearingCache()
+	{
+		string rootDirectory = CreateTempRoot();
+		try
+		{
+			using ZContext context = new ZContext(new OneDragonEnvironment(rootDirectory));
+			context.AttachController(new ReadyController());
+			ScreenshotHelperConfig config = new ScreenshotHelperConfig
+			{
+				FrequencySecond = 0.01,
+				LengthSecond = 1.0,
+				DodgeDetect = false,
+				MiniMapAngleDetect = false
+			};
+			CountingCaptureSource captureSource = new CountingCaptureSource();
+			ScreenshotHelperService service = new ScreenshotHelperService(config, captureSource, new DebugScreenshotHelperImageStore(context.Environment), new StaticDodgeDetector(checkFlash: false), new StaticMiniMapAngleDetector(shouldSave: false), canAcceptKey: () => !context.RunContext.IsContextPause);
+			ScreenshotHelperApp app = new ScreenshotHelperApp(context, config, new ZApplicationRunRecord("screenshot_helper"), service);
+			using CancellationTokenSource cts = new CancellationTokenSource();
+			Assert.True(context.RunContext.StartRunning());
+			Task<OperationResult> execution = app.ExecuteAsync(cts.Token);
+			try
+			{
+				await WaitForAsync(() => captureSource.CaptureCount >= 3, TimeSpan.FromSeconds(2.0));
+
+				context.RunContext.SwitchContextPauseAndRun();
+				await Task.Delay(50);
+				int pausedCaptureCount = captureSource.CaptureCount;
+				int pausedCacheCount = service.CachedFrameCount;
+				await Task.Delay(50);
+				Assert.Equal(pausedCaptureCount, captureSource.CaptureCount);
+				Assert.Equal(pausedCacheCount, service.CachedFrameCount);
+				Assert.True(pausedCacheCount > 0);
+
+				context.RunContext.SwitchContextPauseAndRun();
+				await WaitForAsync(() => captureSource.CaptureCount > pausedCaptureCount, TimeSpan.FromSeconds(1.0));
+			}
+			finally
+			{
+				cts.Cancel();
+			}
+			await Assert.ThrowsAnyAsync<OperationCanceledException>(() => execution);
+		}
+		finally
+		{
+			Directory.Delete(rootDirectory, recursive: true);
+		}
+	}
+
 	private static string CreateTempRoot()
 	{
 		string text = Path.Combine(Path.GetTempPath(), "zzzod-dotnet-tests", Guid.NewGuid().ToString("N"));
@@ -406,5 +531,18 @@ public sealed class ScreenshotHelperTests
 	{
 		Mat image = new Mat(4, 4, MatType.CV_8UC3, new Scalar((int)value, (int)value, (int)value));
 		return new ScreenshotHelperFrame(captureTimeUtc, image);
+	}
+
+	private static async Task WaitForAsync(Func<bool> condition, TimeSpan timeout)
+	{
+		DateTimeOffset deadline = DateTimeOffset.UtcNow + timeout;
+		while (!condition())
+		{
+			if (DateTimeOffset.UtcNow >= deadline)
+			{
+				throw new TimeoutException("等待截图助手状态超时。");
+			}
+			await Task.Delay(10);
+		}
 	}
 }

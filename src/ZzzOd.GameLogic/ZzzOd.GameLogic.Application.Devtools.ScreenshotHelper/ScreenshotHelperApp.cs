@@ -31,7 +31,21 @@ public sealed class ScreenshotHelperApp : ZApplication
 	{
 		Config = config;
 		_ownsService = service == null;
-		_service = service ?? new ScreenshotHelperService(config, new ZContextScreenshotHelperCaptureSource(context), new DebugScreenshotHelperImageStore(context.Environment), new ZContextScreenshotHelperDodgeDetector(context), new ZContextScreenshotHelperMiniMapAngleDetector(context));
+		_service = service ?? new ScreenshotHelperService(config, new ZContextScreenshotHelperCaptureSource(context), new DebugScreenshotHelperImageStore(context.Environment), new ZContextScreenshotHelperDodgeDetector(context), new ZContextScreenshotHelperMiniMapAngleDetector(context), canAcceptKey: () => !context.RunContext.IsContextPause);
+	}
+
+	/// <inheritdoc />
+	public override Task OnPauseAsync(CancellationToken cancellationToken)
+	{
+		base.Context.Logger.Information("截图助手已暂停采集");
+		return Task.CompletedTask;
+	}
+
+	/// <inheritdoc />
+	public override Task OnResumeAsync(CancellationToken cancellationToken)
+	{
+		base.Context.Logger.Information("截图助手已恢复采集");
+		return Task.CompletedTask;
 	}
 
 	/// <inheritdoc />
@@ -57,6 +71,7 @@ public sealed class ScreenshotHelperApp : ZApplication
 				while (true)
 				{
 					cancellationToken.ThrowIfCancellationRequested();
+					await WaitWhilePausedAsync(cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
 					ScreenshotHelperTickResult result = _service.CaptureAndProcess();
 					await Task.Delay(result.NextDelay, cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
 				}
@@ -66,6 +81,15 @@ public sealed class ScreenshotHelperApp : ZApplication
 		{
 			_service.Dispose();
 			ClearControllerScreenshotCache();
+		}
+	}
+
+	private async Task WaitWhilePausedAsync(CancellationToken cancellationToken)
+	{
+		while (base.Context.RunContext.IsContextPause)
+		{
+			cancellationToken.ThrowIfCancellationRequested();
+			await Task.Delay(10, cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
 		}
 	}
 

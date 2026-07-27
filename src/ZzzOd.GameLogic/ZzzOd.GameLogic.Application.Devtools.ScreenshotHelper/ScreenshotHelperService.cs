@@ -20,6 +20,8 @@ public sealed class ScreenshotHelperService : IDisposable
 
 	private readonly Func<DateTimeOffset> _clock;
 
+	private readonly Func<bool> _canAcceptKey;
+
 	private readonly Queue<ScreenshotHelperFrame> _screenshotCache = new Queue<ScreenshotHelperFrame>();
 
 	private bool _toSaveScreenshot;
@@ -38,7 +40,7 @@ public sealed class ScreenshotHelperService : IDisposable
 	/// <summary>
 	/// 初始化截图助手服务。
 	/// </summary>
-	public ScreenshotHelperService(ScreenshotHelperConfig config, IScreenshotHelperCaptureSource captureSource, IScreenshotHelperImageStore imageStore, IScreenshotHelperDodgeDetector dodgeDetector, IScreenshotHelperMiniMapAngleDetector miniMapAngleDetector, Func<DateTimeOffset>? clock = null)
+	public ScreenshotHelperService(ScreenshotHelperConfig config, IScreenshotHelperCaptureSource captureSource, IScreenshotHelperImageStore imageStore, IScreenshotHelperDodgeDetector dodgeDetector, IScreenshotHelperMiniMapAngleDetector miniMapAngleDetector, Func<DateTimeOffset>? clock = null, Func<bool>? canAcceptKey = null)
 	{
 		_config = config;
 		_captureSource = captureSource;
@@ -46,6 +48,7 @@ public sealed class ScreenshotHelperService : IDisposable
 		_dodgeDetector = dodgeDetector;
 		_miniMapAngleDetector = miniMapAngleDetector;
 		_clock = clock ?? ((Func<DateTimeOffset>)(() => DateTimeOffset.UtcNow));
+		_canAcceptKey = canAcceptKey ?? (() => true);
 	}
 
 	/// <summary>
@@ -53,6 +56,10 @@ public sealed class ScreenshotHelperService : IDisposable
 	/// </summary>
 	public bool HandleKeyPress(string? key)
 	{
+		if (!_canAcceptKey())
+		{
+			return false;
+		}
 		if (_toSaveScreenshot)
 		{
 			return false;
