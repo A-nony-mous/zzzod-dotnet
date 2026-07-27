@@ -12,6 +12,7 @@ using ZzzOd.GameLogic.Application.CommissionAssistant;
 using ZzzOd.GameLogic.Const;
 using ZzzOd.GameLogic.Config;
 using ZzzOd.Gui.Controls;
+using ZzzOd.Gui.PageModels.GameAssistant;
 using ZzzOd.Gui.Services.Config;
 using ZzzOd.Gui.Services.RunIntent;
 using ZzzOd.Gui.Shell;
@@ -392,72 +393,19 @@ internal sealed partial class FrontierCommissionAssistantPage : UserControl, IZz
 
 internal sealed partial class FrontierBattleAssistantSettings : UserControl, IZzzPageLifecycle
 {
-    private static readonly string[] ControlMethodLabels = ["键鼠", "Xbox", "DS4"];
-    private static readonly string[] ControlMethodValues =
-    [
-        BattleAssistantConfig.ControlMethodKeyboard,
-        BattleAssistantConfig.ControlMethodXbox,
-        BattleAssistantConfig.ControlMethodDs4,
-    ];
-
-    private readonly IZzzAppBackend _backend;
     private readonly TabControl _modeTabs;
     private readonly FAContentDialog _helpDialog;
-    private readonly FAInfoBar _settingsErrorBar;
-    private readonly FAComboBox _autoBattleConfigCombo;
-    private readonly FAComboBox _dodgeConfigCombo;
-    private readonly ToggleSwitch _autoUltimateToggle;
-    private readonly ToggleSwitch _mergedFileToggle;
-    private readonly ToggleSwitch _gpuToggle;
-    private readonly FANumberBox _screenshotIntervalNumber;
-    private readonly FAComboBox _controlMethodCombo;
-    private readonly FACommandBarButton _deleteAutoBattleConfigButton;
-    private readonly FACommandBarButton _deleteDodgeConfigButton;
-    private IReadOnlyList<string> _autoBattleOptions = [];
-    private IReadOnlyList<string> _dodgeOptions = [];
-    private IReadOnlyList<string> _loadErrors = [];
-    private string? _operationError;
-    private string? _configuredAutoBattleName;
-    private string? _configuredDodgeName;
-    private bool _loading;
+    private readonly ZzzBattleAssistantSettingsViewModel _viewModel;
 
     public FrontierBattleAssistantSettings(IZzzAppBackend backend)
     {
-        _backend = backend;
+        _viewModel = new ZzzBattleAssistantSettingsViewModel(backend);
         AvaloniaXamlLoader.Load(this);
         _modeTabs = this.FindControl<TabControl>("ModeTabs")
             ?? throw new InvalidOperationException("战斗助手缺少模式 TabView?");
         _helpDialog = this.FindControl<FAContentDialog>("BattleHelpDialog")
             ?? throw new InvalidOperationException("战斗助手缺少使用说明 ContentDialog?");
-        _settingsErrorBar = this.FindControl<FAInfoBar>("SettingsErrorBar")
-            ?? throw new InvalidOperationException("战斗助手缺少配置错误 InfoBar?");
-        _autoBattleConfigCombo = this.FindControl<FAComboBox>("AutoBattleConfigCombo")
-            ?? throw new InvalidOperationException("战斗助手缺少战斗配置下拉框。");
-        _dodgeConfigCombo = this.FindControl<FAComboBox>("DodgeConfigCombo")
-            ?? throw new InvalidOperationException("战斗助手缺少闪避配置下拉框。");
-        _autoUltimateToggle = this.FindControl<ToggleSwitch>("AutoUltimateToggle")
-            ?? throw new InvalidOperationException("战斗助手缺少终结技开关。");
-        _mergedFileToggle = this.FindControl<ToggleSwitch>("MergedFileToggle")
-            ?? throw new InvalidOperationException("战斗助手缺少合并配置开关。");
-        _gpuToggle = this.FindControl<ToggleSwitch>("GpuToggle")
-            ?? throw new InvalidOperationException("战斗助手缺少 GPU 开关。");
-        _screenshotIntervalNumber = this.FindControl<FANumberBox>("ScreenshotIntervalNumber")
-            ?? throw new InvalidOperationException("战斗助手缺少截图间隔输入框。");
-        _controlMethodCombo = this.FindControl<FAComboBox>("ControlMethodCombo")
-            ?? throw new InvalidOperationException("战斗助手缺少操作方式下拉框。");
-        _deleteAutoBattleConfigButton = this.FindControl<FACommandBarButton>("DeleteAutoBattleConfigButton")
-            ?? throw new InvalidOperationException("战斗助手缺少战斗配置删除按钮。");
-        _deleteDodgeConfigButton = this.FindControl<FACommandBarButton>("DeleteDodgeConfigButton")
-            ?? throw new InvalidOperationException("战斗助手缺少闪避配置删除按钮。");
-
-        _controlMethodCombo.ItemsSource = ControlMethodLabels;
-        _autoBattleConfigCombo.SelectionChanged += OnConfigSelectionChanged;
-        _dodgeConfigCombo.SelectionChanged += OnConfigSelectionChanged;
-        _controlMethodCombo.SelectionChanged += OnControlMethodSelectionChanged;
-        _autoUltimateToggle.IsCheckedChanged += OnToggleChanged;
-        _mergedFileToggle.IsCheckedChanged += OnToggleChanged;
-        _gpuToggle.IsCheckedChanged += OnToggleChanged;
-        _screenshotIntervalNumber.ValueChanged += OnScreenshotIntervalChanged;
+        DataContext = _viewModel;
         _modeTabs.SelectionChanged += OnModeSelectionChanged;
         string? evidenceTab = ZzzGuiEvidenceSelection.FromEnvironment().Tab;
         _modeTabs.SelectedIndex = string.Equals(evidenceTab, "闪避助手", StringComparison.Ordinal) ? 1 : 0;
@@ -503,28 +451,22 @@ internal sealed partial class FrontierBattleAssistantSettings : UserControl, IZz
     public void DisposePage()
     {
         _modeTabs.SelectionChanged -= OnModeSelectionChanged;
-        _autoBattleConfigCombo.SelectionChanged -= OnConfigSelectionChanged;
-        _dodgeConfigCombo.SelectionChanged -= OnConfigSelectionChanged;
-        _controlMethodCombo.SelectionChanged -= OnControlMethodSelectionChanged;
-        _autoUltimateToggle.IsCheckedChanged -= OnToggleChanged;
-        _mergedFileToggle.IsCheckedChanged -= OnToggleChanged;
-        _gpuToggle.IsCheckedChanged -= OnToggleChanged;
-        _screenshotIntervalNumber.ValueChanged -= OnScreenshotIntervalChanged;
+        _viewModel.DisposePage();
     }
 
-    public IReadOnlyList<string> AutoBattleOptions => _autoBattleOptions;
+    public IReadOnlyList<string> AutoBattleOptions => _viewModel.AutoBattleOptions;
 
-    public IReadOnlyList<string> DodgeOptions => _dodgeOptions;
+    public IReadOnlyList<string> DodgeOptions => _viewModel.DodgeOptions;
 
-    public string? SelectedAutoBattleConfig => _autoBattleConfigCombo.SelectedItem as string;
+    public string? SelectedAutoBattleConfig => _viewModel.SelectedAutoBattleConfig;
 
-    public string? SelectedDodgeConfig => _dodgeConfigCombo.SelectedItem as string;
+    public string? SelectedDodgeConfig => _viewModel.SelectedDodgeConfig;
 
     public void DeleteSelectedAutoBattleConfig() =>
-        DeleteSelectedConfig(ZzzBattleAssistantConfigKind.AutoBattle, SelectedAutoBattleConfig);
+        _viewModel.DeleteSelectedAutoBattleConfig();
 
     public void DeleteSelectedDodgeConfig() =>
-        DeleteSelectedConfig(ZzzBattleAssistantConfigKind.Dodge, SelectedDodgeConfig);
+        _viewModel.DeleteSelectedDodgeConfig();
 
     private static void OpenUrl(string url)
     {
@@ -561,300 +503,7 @@ internal sealed partial class FrontierBattleAssistantSettings : UserControl, IZz
     private void OnDeleteDodgeConfigClicked(object? sender, Avalonia.Interactivity.RoutedEventArgs args) =>
         DeleteSelectedDodgeConfig();
 
-    private void DeleteSelectedConfig(ZzzBattleAssistantConfigKind kind, string? name)
-    {
-        if (string.IsNullOrWhiteSpace(name))
-        {
-            return;
-        }
-
-        ZzzBackendResult<ZzzBattleAssistantConfigCatalogDto> result = _backend.DeleteBattleAssistantConfig(new ZzzDeleteBattleAssistantConfigRequest(kind, name));
-        if (!result.Success || result.Value is null)
-        {
-            SetOperationError(result.Error ?? "配置删除失败。");
-            return;
-        }
-
-        SetOperationError(null);
-        ApplyConfigCatalog(result.Value);
-    }
-
-    private void ReloadSettings()
-    {
-        _loading = true;
-        try
-        {
-            List<string> errors = [];
-            LoadBattleAssistantValues(errors);
-            LoadModelValues(errors);
-
-            ZzzBackendResult<ZzzBattleAssistantConfigCatalogDto> catalog = _backend.GetBattleAssistantConfigCatalog();
-            if (catalog.Success && catalog.Value is not null)
-            {
-                ApplyConfigCatalog(catalog.Value);
-            }
-            else
-            {
-                ApplyConfigCatalog(new ZzzBattleAssistantConfigCatalogDto([], []));
-                errors.Add(catalog.Error ?? "配置目录读取失败。");
-            }
-
-            _loadErrors = errors;
-            _operationError = null;
-            RefreshErrorBar();
-        }
-        finally
-        {
-            _loading = false;
-            UpdateDeleteButtons();
-        }
-    }
-
-    private void ApplyConfigCatalog(ZzzBattleAssistantConfigCatalogDto catalog)
-    {
-        bool wasLoading = _loading;
-        _loading = true;
-        _autoBattleOptions = catalog.AutoBattle.ToArray();
-        _dodgeOptions = catalog.Dodge.ToArray();
-        _autoBattleConfigCombo.ItemsSource = _autoBattleOptions;
-        _dodgeConfigCombo.ItemsSource = _dodgeOptions;
-        _autoBattleConfigCombo.SelectedItem = Contains(_autoBattleOptions, _configuredAutoBattleName) ? _configuredAutoBattleName : null;
-        _dodgeConfigCombo.SelectedItem = Contains(_dodgeOptions, _configuredDodgeName) ? _configuredDodgeName : null;
-        _autoBattleConfigCombo.IsEnabled = _autoBattleOptions.Count > 0;
-        _dodgeConfigCombo.IsEnabled = _dodgeOptions.Count > 0;
-        _loading = wasLoading;
-        UpdateDeleteButtons();
-    }
-
-    private void LoadBattleAssistantValues(List<string> errors)
-    {
-        ZzzBackendResult<ZzzConfigScopeValuesDto> result = _backend.GetConfigScope("battle-assistant");
-        if (!result.Success || result.Value is null)
-        {
-            DisableBattleAssistantValues();
-            errors.Add(result.Error ?? "战斗助手配置读取失败。");
-            return;
-        }
-
-        IReadOnlyDictionary<string, object?> values = result.Value.Values;
-        if (TryReadString(values, "auto_battle_config", out string? autoBattleName))
-        {
-            _configuredAutoBattleName = autoBattleName;
-        }
-        else
-        {
-            _configuredAutoBattleName = null;
-            errors.Add("战斗助手配置缺少 auto_battle_config?");
-        }
-
-        if (TryReadString(values, "dodge_assistant_config", out string? dodgeName))
-        {
-            _configuredDodgeName = dodgeName;
-        }
-        else
-        {
-            _configuredDodgeName = null;
-            errors.Add("战斗助手配置缺少 dodge_assistant_config?");
-        }
-
-        ApplyBoolean(values, "auto_ultimate_enabled", _autoUltimateToggle, errors);
-        ApplyBoolean(values, "use_merged_file", _mergedFileToggle, errors);
-
-        if (TryReadDouble(values, "screenshot_interval", out double screenshotInterval))
-        {
-            _screenshotIntervalNumber.Value = screenshotInterval;
-            _screenshotIntervalNumber.IsEnabled = true;
-        }
-        else
-        {
-            _screenshotIntervalNumber.Value = double.NaN;
-            _screenshotIntervalNumber.IsEnabled = false;
-            errors.Add("战斗助手配置缺少 screenshot_interval?");
-        }
-
-        if (TryReadString(values, "control_method", out string? controlMethod))
-        {
-            int index = Array.IndexOf(ControlMethodValues, controlMethod);
-            _controlMethodCombo.SelectedIndex = index;
-            _controlMethodCombo.IsEnabled = index >= 0;
-            if (index < 0)
-            {
-                errors.Add($"战斗助手配置包含未知 control_method：{controlMethod}。");
-            }
-        }
-        else
-        {
-            _controlMethodCombo.SelectedIndex = -1;
-            _controlMethodCombo.IsEnabled = false;
-            errors.Add("战斗助手配置缺少 control_method?");
-        }
-    }
-
-    private void LoadModelValues(List<string> errors)
-    {
-        ZzzBackendResult<ZzzConfigScopeValuesDto> result = _backend.GetConfigScope("model");
-        if (!result.Success || result.Value is null)
-        {
-            _gpuToggle.IsEnabled = false;
-            errors.Add(result.Error ?? "模型配置读取失败。");
-            return;
-        }
-
-        ApplyBoolean(result.Value.Values, "flash_classifier_gpu", _gpuToggle, errors, "模型配置");
-    }
-
-    private void DisableBattleAssistantValues()
-    {
-        _configuredAutoBattleName = null;
-        _configuredDodgeName = null;
-        _autoUltimateToggle.IsEnabled = false;
-        _mergedFileToggle.IsEnabled = false;
-        _screenshotIntervalNumber.Value = double.NaN;
-        _screenshotIntervalNumber.IsEnabled = false;
-        _controlMethodCombo.SelectedIndex = -1;
-        _controlMethodCombo.IsEnabled = false;
-    }
-
-    private static void ApplyBoolean(
-        IReadOnlyDictionary<string, object?> values,
-        string key,
-        ToggleSwitch control,
-        List<string> errors,
-        string scopeName = "战斗助手配置")
-    {
-        if (values.TryGetValue(key, out object? raw) && raw is bool value)
-        {
-            control.IsChecked = value;
-            control.IsEnabled = true;
-            return;
-        }
-
-        control.IsEnabled = false;
-        errors.Add($"{scopeName}缺少 {key}。");
-    }
-
-    private static bool TryReadString(IReadOnlyDictionary<string, object?> values, string key, out string? value)
-    {
-        if (values.TryGetValue(key, out object? raw) && raw is string text)
-        {
-            value = text;
-            return true;
-        }
-
-        value = null;
-        return false;
-    }
-
-    private static bool TryReadDouble(IReadOnlyDictionary<string, object?> values, string key, out double value)
-    {
-        if (values.TryGetValue(key, out object? raw) && raw is not null)
-        {
-            try
-            {
-                value = Convert.ToDouble(raw, CultureInfo.InvariantCulture);
-                return true;
-            }
-            catch (Exception exception) when (exception is FormatException or InvalidCastException or OverflowException)
-            {
-            }
-        }
-
-        value = double.NaN;
-        return false;
-    }
-
-    private static bool Contains(IReadOnlyList<string> values, string? target) =>
-        target is not null && values.Contains(target, StringComparer.Ordinal);
-
-    private void OnConfigSelectionChanged(object? sender, SelectionChangedEventArgs args)
-    {
-        UpdateDeleteButtons();
-        if (_loading || sender is not FAComboBox combo || combo.SelectedItem is not string selected)
-        {
-            return;
-        }
-
-        if (ReferenceEquals(combo, _autoBattleConfigCombo))
-        {
-            _configuredAutoBattleName = selected;
-            SaveSetting("battle-assistant", "auto_battle_config", selected);
-        }
-        else if (ReferenceEquals(combo, _dodgeConfigCombo))
-        {
-            _configuredDodgeName = selected;
-            SaveSetting("battle-assistant", "dodge_assistant_config", selected);
-        }
-    }
-
-    private void OnControlMethodSelectionChanged(object? sender, SelectionChangedEventArgs args)
-    {
-        if (_loading || _controlMethodCombo.SelectedIndex is < 0 or >= 3)
-        {
-            return;
-        }
-
-        SaveSetting("battle-assistant", "control_method", ControlMethodValues[_controlMethodCombo.SelectedIndex]);
-    }
-
-    private void OnToggleChanged(object? sender, Avalonia.Interactivity.RoutedEventArgs args)
-    {
-        if (_loading || sender is not ToggleSwitch toggle || toggle.IsChecked is not bool value)
-        {
-            return;
-        }
-
-        if (ReferenceEquals(toggle, _autoUltimateToggle))
-        {
-            SaveSetting("battle-assistant", "auto_ultimate_enabled", value);
-        }
-        else if (ReferenceEquals(toggle, _mergedFileToggle))
-        {
-            SaveSetting("battle-assistant", "use_merged_file", value);
-        }
-        else if (ReferenceEquals(toggle, _gpuToggle))
-        {
-            SaveSetting("model", "flash_classifier_gpu", value);
-        }
-    }
-
-    private void OnScreenshotIntervalChanged(object? sender, FANumberBoxValueChangedEventArgs args)
-    {
-        if (!_loading && !double.IsNaN(args.NewValue))
-        {
-            SaveSetting("battle-assistant", "screenshot_interval", args.NewValue);
-        }
-    }
-
-    private void SaveSetting(string scope, string key, object value)
-    {
-        ZzzBackendResult<ZzzConfigScopeValuesDto> result = _backend.SaveConfigScope(new ZzzSaveConfigScopeRequest(
-            scope,
-            new Dictionary<string, object?> { [key] = value }));
-        SetOperationError(result.Success ? null : result.Error ?? $"{key} 保存失败。");
-    }
-
-    private void SetOperationError(string? error)
-    {
-        _operationError = error;
-        RefreshErrorBar();
-    }
-
-    private void RefreshErrorBar()
-    {
-        string[] messages = _loadErrors
-            .Concat(string.IsNullOrWhiteSpace(_operationError) ? [] : [_operationError])
-            .Where(message => !string.IsNullOrWhiteSpace(message))
-            .Distinct(StringComparer.Ordinal)
-            .ToArray();
-        _settingsErrorBar.Message = string.Join(Environment.NewLine, messages);
-        _settingsErrorBar.IsOpen = messages.Length > 0;
-    }
-
-    private void UpdateDeleteButtons()
-    {
-        _deleteAutoBattleConfigButton.IsEnabled = !string.IsNullOrWhiteSpace(SelectedAutoBattleConfig);
-        _deleteDodgeConfigButton.IsEnabled = !string.IsNullOrWhiteSpace(SelectedDodgeConfig);
-    }
+    private void ReloadSettings() => _viewModel.OnPageShown();
 
     private void OnModeSelectionChanged(object? sender, SelectionChangedEventArgs args) => ApplySelectedMode();
 

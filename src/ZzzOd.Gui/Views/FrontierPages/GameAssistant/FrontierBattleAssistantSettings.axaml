@@ -1,14 +1,17 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:fa="using:FluentAvalonia.UI.Controls"
-             x:Class="ZzzOd.Gui.Views.FrontierPages.GameAssistant.FrontierBattleAssistantSettings">
+             xmlns:local="using:ZzzOd.Gui.PageModels.GameAssistant"
+             x:Class="ZzzOd.Gui.Views.FrontierPages.GameAssistant.FrontierBattleAssistantSettings"
+             x:DataType="local:ZzzBattleAssistantSettingsViewModel">
 
   <Grid>
     <ScrollViewer HorizontalScrollBarVisibility="Disabled"
                   VerticalScrollBarVisibility="Auto">
       <StackPanel Spacing="8" MaxWidth="720" HorizontalAlignment="Left" Margin="16,0,0,0">
         <fa:FAInfoBar x:Name="SettingsErrorBar"
-                    IsOpen="False"
+                    IsOpen="{Binding HasError}"
+                    Message="{Binding LastError}"
                     IsClosable="False"
                     Severity="Error" />
         <TabControl Classes="zzz-pivot" x:Name="ModeTabs">
@@ -53,11 +56,15 @@
                   <StackPanel Orientation="Horizontal"
                               Spacing="8">
                     <fa:FAComboBox x:Name="AutoBattleConfigCombo"
-                                   Width="120" />
+                                   Width="120"
+                                   ItemsSource="{Binding AutoBattleOptions}"
+                                   SelectedItem="{Binding SelectedAutoBattleConfig, Mode=TwoWay}"
+                                   IsEnabled="{Binding BattleValuesAvailable}" />
                     <fa:FACommandBarButton x:Name="DeleteAutoBattleConfigButton"
                                          Width="40"
                                          Label=""
                                          AutomationProperties.Name="删除战斗配置"
+                                         IsEnabled="{Binding CanDeleteAutoBattleConfig}"
                                          Click="OnDeleteAutoBattleConfigClicked">
                       <fa:FACommandBarButton.IconSource>
                         <fa:FASymbolIconSource Symbol="Delete" />
@@ -74,7 +81,9 @@
                 <fa:FASettingsExpander.Footer>
                   <ToggleSwitch x:Name="AutoUltimateToggle"
                                 OnContent="开"
-                                OffContent="关" />
+                                OffContent="关"
+                                IsChecked="{Binding AutoUltimateEnabled, Mode=TwoWay}"
+                                IsEnabled="{Binding BattleValuesAvailable}" />
                 </fa:FASettingsExpander.Footer>
               </fa:FASettingsExpander>
               <fa:FASettingsExpander Header="使用合并配置文件"
@@ -85,7 +94,9 @@
                 <fa:FASettingsExpander.Footer>
                   <ToggleSwitch x:Name="MergedFileToggle"
                                 OnContent="开"
-                                OffContent="关" />
+                                OffContent="关"
+                                IsChecked="{Binding UseMergedFile, Mode=TwoWay}"
+                                IsEnabled="{Binding BattleValuesAvailable}" />
                 </fa:FASettingsExpander.Footer>
               </fa:FASettingsExpander>
             </StackPanel>
@@ -104,11 +115,15 @@
                 <StackPanel Orientation="Horizontal"
                             Spacing="8">
                   <fa:FAComboBox x:Name="DodgeConfigCombo"
-                                 Width="120" />
+                                 Width="120"
+                                 ItemsSource="{Binding DodgeOptions}"
+                                 SelectedItem="{Binding SelectedDodgeConfig, Mode=TwoWay}"
+                                 IsEnabled="{Binding BattleValuesAvailable}" />
                   <fa:FACommandBarButton x:Name="DeleteDodgeConfigButton"
                                        Width="40"
                                        Label=""
-                                       AutomationProperties.Name="删除闪避配置"
+                                        AutomationProperties.Name="删除闪避配置"
+                                       IsEnabled="{Binding CanDeleteDodgeConfig}"
                                        Click="OnDeleteDodgeConfigClicked">
                     <fa:FACommandBarButton.IconSource>
                       <fa:FASymbolIconSource Symbol="Delete" />
@@ -127,7 +142,9 @@
           <fa:FASettingsExpander.Footer>
             <ToggleSwitch x:Name="GpuToggle"
                           OnContent="开"
-                          OffContent="关" />
+                          OffContent="关"
+                          IsChecked="{Binding FlashClassifierGpu, Mode=TwoWay}"
+                          IsEnabled="{Binding ModelValuesAvailable}" />
           </fa:FASettingsExpander.Footer>
         </fa:FASettingsExpander>
         <fa:FASettingsExpander Header="截图间隔 (秒)"
@@ -141,7 +158,9 @@
                           Maximum="0.1"
                           SmallChange="0.01"
                           SpinButtonPlacementMode="Inline"
-                          Width="140" />
+                          Width="140"
+                          Value="{Binding ScreenshotInterval, Mode=TwoWay}"
+                          IsEnabled="{Binding BattleValuesAvailable}" />
           </fa:FASettingsExpander.Footer>
         </fa:FASettingsExpander>
         <fa:FASettingsExpander Header="操作方式"
@@ -151,7 +170,10 @@
           </fa:FASettingsExpander.IconSource>
           <fa:FASettingsExpander.Footer>
             <fa:FAComboBox x:Name="ControlMethodCombo"
-                           Width="72" />
+                           Width="72"
+                           ItemsSource="{Binding ControlMethodOptions}"
+                           SelectedItem="{Binding SelectedControlMethod, Mode=TwoWay}"
+                           IsEnabled="{Binding BattleValuesAvailable}" />
           </fa:FASettingsExpander.Footer>
         </fa:FASettingsExpander>
       </StackPanel>
