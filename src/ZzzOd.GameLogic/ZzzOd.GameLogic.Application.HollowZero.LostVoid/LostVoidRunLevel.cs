@@ -452,10 +452,10 @@ public sealed class LostVoidRunLevel : ZOperation
 		}
 		OperationRoundResult result2 = kind switch
 		{
-			LostVoidInteractResultKind.Wait => RoundWait(result.Status, null, result.Delay), 
-			LostVoidInteractResultKind.Success => RoundSuccess(result.Status, result.Data, result.Delay), 
-			LostVoidInteractResultKind.Fail => RoundFail(result.Status, result.Data, result.Delay), 
-			_ => RoundRetry(result.Status ?? "未知画面", null, result.Delay), 
+			LostVoidInteractResultKind.Wait => RoundWait(result.Status, null, result.Delay, result.DelayUntilRoundTime),
+			LostVoidInteractResultKind.Success => RoundSuccess(result.Status, result.Data, result.Delay, result.DelayUntilRoundTime),
+			LostVoidInteractResultKind.Fail => RoundFail(result.Status, result.Data, result.Delay, result.DelayUntilRoundTime),
+			_ => RoundRetry(result.Status ?? "未知画面", null, result.Delay, result.DelayUntilRoundTime),
 		};
 		if (1 == 0)
 		{

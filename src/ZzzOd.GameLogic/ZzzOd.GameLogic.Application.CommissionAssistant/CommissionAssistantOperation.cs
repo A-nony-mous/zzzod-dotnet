@@ -200,7 +200,15 @@ public sealed class CommissionAssistantOperation : ZOperation
 		{
 			return RoundSuccess(operationResult.Status, null, TimeSpan.FromMilliseconds(100L));
 		}
-		return operationResult.IsSuccess ? RoundWait(operationResult.Status, null, (operationResult.Data as TimeSpan?) ?? TimeSpan.FromMilliseconds(100L)) : RoundRetry(operationResult.Status ?? "未识别到指令", null, TimeSpan.FromMilliseconds(100L));
+		if (!operationResult.IsSuccess)
+		{
+			// 对应 commission_assistant_app.py:588 的 wait=0.1（固定）。
+			return RoundRetry(operationResult.Status ?? "未识别到指令", null, TimeSpan.FromMilliseconds(100L));
+		}
+		// 带 FishingRoundPacing 的分支对应 Python 的 wait_round_time=0.1（补足制），其余分支是 wait=0.1（固定）。
+		return operationResult.Data is FishingRoundPacing pacing
+			? RoundWait(operationResult.Status, null, null, pacing.Duration)
+			: RoundWait(operationResult.Status, null, TimeSpan.FromMilliseconds(100L));
 	}
 
 	private void LoadAutoOp()

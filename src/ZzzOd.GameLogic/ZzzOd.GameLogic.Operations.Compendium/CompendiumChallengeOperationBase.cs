@@ -192,9 +192,8 @@ public abstract class CompendiumChallengeOperationBase : ZOperation
 	[OperationNode("等待战斗画面加载", NodeMaxRetryTimes = 60)]
 	protected virtual OperationRoundResult WaitBattleScreen()
 	{
-		Mat? lastScreenshot = base.LastScreenshot;
-		TimeSpan? retryDelay = _retryDelay;
-		return RoundByFindArea(lastScreenshot, "战斗画面", "按键-普通攻击", null, retryDelay);
+		// 对应 Python operation/battle/base.py:88 的 retry_wait_round=1（补足制，非固定延时）。
+		return RoundByFindArea(base.LastScreenshot, "战斗画面", "按键-普通攻击", null, null, cropFirst: true, null, _retryDelay);
 	}
 
 	/// <summary>进入战斗前向前移动。</summary>

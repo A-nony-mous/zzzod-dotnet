@@ -161,7 +161,8 @@ public sealed class NotoriousHunt : CompendiumChallengeOperationBase
 			}
 		}
 		DragMissionList(area);
-		return RoundRetry("未能识别" + base.Plan.MissionTypeName, null, TimeSpan.FromSeconds(2L));
+		// 对应 notorious_hunt.py:175 的 wait_round_time=2（补足制，非固定延时）。
+		return RoundRetry("未能识别" + base.Plan.MissionTypeName, null, null, TimeSpan.FromSeconds(2L));
 	}
 
 	[NodeFrom("判断副本名称")]
@@ -268,7 +269,8 @@ public sealed class NotoriousHunt : CompendiumChallengeOperationBase
 	[OperationNode("出战")]
 	protected override Task<OperationRoundResult> Deploy()
 	{
-		OperationRoundResult result = RoundByFindAndClickArea(base.LastScreenshot, "实战模拟室", "出战", _preClickDelay, _retryDelay, _retryDelay);
+		// 对应 notorious_hunt.py:312-315 的 success_wait=1（固定）+ retry_wait_round=1（补足制）。
+		OperationRoundResult result = RoundByFindAndClickArea(base.LastScreenshot, "实战模拟室", "出战", _preClickDelay, _retryDelay, null, retryDelayUntilRoundTime: _retryDelay);
 		return Task.FromResult(result);
 	}
 
@@ -401,7 +403,8 @@ public sealed class NotoriousHunt : CompendiumChallengeOperationBase
 		{
 			return RoundSuccess();
 		}
-		return RoundByFindAndClickArea(base.LastScreenshot, "恶名狩猎", "重新开始-确认", _preClickDelay, _retryDelay, _retryDelay);
+		// 对应 notorious_hunt.py:448-449 的 success_wait=1（固定）+ retry_wait_round=1（补足制）。
+		return RoundByFindAndClickArea(base.LastScreenshot, "恶名狩猎", "重新开始-确认", _preClickDelay, _retryDelay, null, retryDelayUntilRoundTime: _retryDelay);
 	}
 
 	[NodeFrom("判断下一次", Status = "战斗结果-完成")]

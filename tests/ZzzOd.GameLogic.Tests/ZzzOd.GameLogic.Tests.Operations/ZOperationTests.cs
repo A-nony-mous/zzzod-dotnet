@@ -344,8 +344,32 @@ public sealed class ZOperationTests : IDisposable
 		Assert.Null(operation.ExposedLastScreenshotTimeUtc);
 	}
 
+	/// <summary>
+	/// 补足制不再由业务层按截图时刻自行计算，而是交给框架轮循环（锚点在循环顶部）。
+	/// 这里只验收通道：填的是 DelayUntilRoundTime 而不是固定 Delay；
+	/// 补足量本身由 OneDragon.Core.Tests 的 OperationRoundPacingTests 覆盖。
+	/// </summary>
 	[Fact]
-	public void RoundWaitForScreenshotRound_DoesNotAddDelayAfterSlowCapture()
+	public void RoundWaitForScreenshotRound_UsesFrameworkRoundTimeChannel()
+	{
+		if (!CanUseOpenCv())
+		{
+			return;
+		}
+		using ZContext zContext = new ZContext(new OneDragonEnvironment(_rootDirectory, _rootDirectory));
+		using Mat mat = new Mat(8, 9, MatType.CV_8UC3, Scalar.All(11.0));
+		zContext.AttachController(new RecordingController(mat.Clone(), TimeSpan.FromMilliseconds(40L)));
+		ScreenshotRoundWaitProbeOperation screenshotRoundWaitProbeOperation = new ScreenshotRoundWaitProbeOperation(zContext);
+		OperationRoundResult operationRoundResult = screenshotRoundWaitProbeOperation.CaptureAndWait(TimeSpan.FromMilliseconds(100L));
+		Assert.Null(operationRoundResult.Delay);
+		Assert.Equal(TimeSpan.FromMilliseconds(100L), operationRoundResult.DelayUntilRoundTime);
+	}
+
+	/// <summary>
+	/// 业务层不得再自行扣减截图耗时：目标时长必须原样进入补足制通道。
+	/// </summary>
+	[Fact]
+	public void RoundWaitForScreenshotRound_DoesNotSubtractCaptureCostItself()
 	{
 		if (!CanUseOpenCv())
 		{
@@ -356,23 +380,8 @@ public sealed class ZOperationTests : IDisposable
 		zContext.AttachController(new RecordingController(mat.Clone(), TimeSpan.FromMilliseconds(40L)));
 		ScreenshotRoundWaitProbeOperation screenshotRoundWaitProbeOperation = new ScreenshotRoundWaitProbeOperation(zContext);
 		OperationRoundResult operationRoundResult = screenshotRoundWaitProbeOperation.CaptureAndWait(TimeSpan.FromMilliseconds(20L));
-		Assert.Equal(TimeSpan.Zero, operationRoundResult.Delay);
-	}
-
-	[Fact]
-	public void RoundWaitForScreenshotRound_OnlyReturnsRemainingRoundTime()
-	{
-		if (!CanUseOpenCv())
-		{
-			return;
-		}
-		using ZContext zContext = new ZContext(new OneDragonEnvironment(_rootDirectory, _rootDirectory));
-		using Mat mat = new Mat(8, 9, MatType.CV_8UC3, Scalar.All(11.0));
-		zContext.AttachController(new RecordingController(mat.Clone()));
-		ScreenshotRoundWaitProbeOperation screenshotRoundWaitProbeOperation = new ScreenshotRoundWaitProbeOperation(zContext);
-		OperationRoundResult operationRoundResult = screenshotRoundWaitProbeOperation.CaptureAndWait(TimeSpan.FromMilliseconds(100L));
-		Assert.NotNull(operationRoundResult.Delay);
-		Assert.InRange(operationRoundResult.Delay.Value, TimeSpan.FromMilliseconds(1L), TimeSpan.FromMilliseconds(100L));
+		Assert.Null(operationRoundResult.Delay);
+		Assert.Equal(TimeSpan.FromMilliseconds(20L), operationRoundResult.DelayUntilRoundTime);
 	}
 
 	[Fact]
