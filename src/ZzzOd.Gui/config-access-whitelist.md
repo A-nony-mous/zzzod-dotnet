@@ -13,6 +13,5 @@ Views/FrontierPages/Settings/FrontierEnvironmentSettingsPage.axaml.cs | 3 | 设�
 Views/FrontierPages/Settings/FrontierGameSettingsPage.axaml.cs | 1 | 设置页批次尚未迁移
 Views/FrontierPages/Settings/FrontierOverlaySettingsPage.axaml.cs | 1 | 设置页批次尚未迁移
 Views/FrontierPages/Settings/FrontierPushSettingsPage.axaml.cs | 4 | 设置页批次尚未迁移
-Views/FrontierPages/Settings/FrontierResourceDownloadPage.axaml.cs | 2 | 设置页批次尚未迁移
 Views/FrontierPages/Standalone/FrontierStandaloneAppRunPage.axaml.cs | 3 | 独立运行页尚未迁移
 Views/FrontierPages/WorldPatrol/FrontierWorldPatrolPage.cs | 2 | 世界巡游混合迁移尚未完成

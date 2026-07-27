@@ -1,3 +1,3 @@
-namespace ZzzOd.Gui.PageModels.Settings;
+namespace ZzzOd.Gui.Views.FrontierPages.Settings;
 
 internal sealed record ZzzResourceModelOption(string Label, string Value);
