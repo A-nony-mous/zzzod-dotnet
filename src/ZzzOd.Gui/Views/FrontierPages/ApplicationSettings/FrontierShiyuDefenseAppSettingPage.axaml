@@ -2,7 +2,8 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:fa="using:FluentAvalonia.UI.Controls"
              xmlns:local="using:ZzzOd.Gui.Views.FrontierPages.ApplicationSettings"
-             x:Class="ZzzOd.Gui.Views.FrontierPages.ApplicationSettings.FrontierShiyuDefenseAppSettingPage">
+             x:Class="ZzzOd.Gui.Views.FrontierPages.ApplicationSettings.FrontierShiyuDefenseAppSettingPage"
+             x:DataType="local:ZzzShiyuDefenseAppSettingViewModel">
   <Grid>
     <ScrollViewer HorizontalScrollBarVisibility="Auto"
                   VerticalScrollBarVisibility="Auto">
@@ -17,7 +18,7 @@
             <fa:FAFontIconSource Glyph="&#xE72C;" />
           </fa:FASettingsExpander.IconSource>
           <fa:FASettingsExpander.Footer>
-            <Button Content="重置" Click="OnCriticalResetClicked" />
+            <Button Content="重置" Command="{Binding ResetRunRecordCommand}" />
           </fa:FASettingsExpander.Footer>
         </fa:FASettingsExpander>
 
@@ -32,7 +33,9 @@
           <TextBlock Grid.Column="6" Text="冰属性" FontWeight="SemiBold" HorizontalAlignment="Center" />
           <TextBlock Grid.Column="7" Text="风属性" FontWeight="SemiBold" HorizontalAlignment="Center" />
         </Grid>
-        <ListBox x:Name="TeamList" MinHeight="500">
+        <ListBox x:Name="TeamList"
+                 MinHeight="500"
+                 ItemsSource="{Binding Rows}">
           <ListBox.ItemTemplate>
             <DataTemplate x:DataType="local:ZzzShiyuDefenseTeamRowModel">
               <Grid ColumnDefinitions="192,70,70,70,70,70,70,70"
@@ -43,44 +46,37 @@
                 <CheckBox Grid.Column="1"
                           IsChecked="{Binding ForCritical, Mode=TwoWay}"
                           HorizontalAlignment="Center"
-                          VerticalAlignment="Center"
-                          Click="OnCriticalChanged" />
+                          VerticalAlignment="Center" />
                 <CheckBox Grid.Column="2"
                           Tag="ELECTRIC"
                           IsChecked="{Binding Electric, Mode=TwoWay}"
                           HorizontalAlignment="Center"
-                          VerticalAlignment="Center"
-                          Click="OnWeaknessChanged" />
+                          VerticalAlignment="Center" />
                 <CheckBox Grid.Column="3"
                           Tag="ETHER"
                           IsChecked="{Binding Ether, Mode=TwoWay}"
                           HorizontalAlignment="Center"
-                          VerticalAlignment="Center"
-                          Click="OnWeaknessChanged" />
+                          VerticalAlignment="Center" />
                 <CheckBox Grid.Column="4"
                           Tag="PHYSICAL"
                           IsChecked="{Binding Physical, Mode=TwoWay}"
                           HorizontalAlignment="Center"
-                          VerticalAlignment="Center"
-                          Click="OnWeaknessChanged" />
+                          VerticalAlignment="Center" />
                 <CheckBox Grid.Column="5"
                           Tag="FIRE"
                           IsChecked="{Binding Fire, Mode=TwoWay}"
                           HorizontalAlignment="Center"
-                          VerticalAlignment="Center"
-                          Click="OnWeaknessChanged" />
+                          VerticalAlignment="Center" />
                 <CheckBox Grid.Column="6"
                           Tag="ICE"
                           IsChecked="{Binding Ice, Mode=TwoWay}"
                           HorizontalAlignment="Center"
-                          VerticalAlignment="Center"
-                          Click="OnWeaknessChanged" />
+                          VerticalAlignment="Center" />
                 <CheckBox Grid.Column="7"
                           Tag="WIND"
                           IsChecked="{Binding Wind, Mode=TwoWay}"
                           HorizontalAlignment="Center"
-                          VerticalAlignment="Center"
-                          Click="OnWeaknessChanged" />
+                          VerticalAlignment="Center" />
               </Grid>
             </DataTemplate>
           </ListBox.ItemTemplate>

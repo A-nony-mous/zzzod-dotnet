@@ -4,7 +4,6 @@
 
 Controls/ZzzRunPanel.cs | 1 | 运行面板尚未迁移
 Views/FrontierPages/ApplicationSettings/FrontierNotoriousHuntAppSettingPage.axaml.cs | 2 | 应用设置批次尚未迁移
-Views/FrontierPages/ApplicationSettings/FrontierShiyuDefenseAppSettingPage.axaml.cs | 3 | 应用设置批次尚未迁移
 Views/FrontierPages/ApplicationSettings/FrontierSuibianTempleAppSettingPage.axaml.cs | 2 | 应用设置批次尚未迁移
 Views/FrontierPages/ApplicationSettings/FrontierWitheredDomainAppSettingPage.axaml.cs | 2 | 应用设置批次尚未迁移
 Views/FrontierPages/DevTools/FrontierOperationDebugPage.cs | 3 | 开发工具批次尚未迁移
