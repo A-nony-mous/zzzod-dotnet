@@ -18,6 +18,7 @@ namespace ZzzOd.GameLogic.AutoBattle;
 
 public class AutoBattleOperator : IStateRecordUpdateListener
 {
+	public event Action<AutoBattleExecutionRecord>? ExecutionRecordAdded;
 	private const string FallbackTemplateName = "全配队通用";
 
 	// 调度器为进程内共享：容量需覆盖并发运行的 operator 数量（主循环 + 周期动作各占一条），
@@ -215,7 +216,7 @@ public class AutoBattleOperator : IStateRecordUpdateListener
 			OperationExecutor runningExecutor = RunningExecutor;
 			if (runningExecutor != null && runningExecutor.Running && !CanInterrupt(CurrentExecutionInfo, executionInfo))
 			{
-				AddExecutionRecordLocked("rejected", trigger ?? executionInfo.TriggerDisplay, executionInfo, completed: false, "priority-blocked");
+				AddExecutionRecordLocked("rejected", trigger ?? executionInfo.TriggerDisplay, executionInfo, completed: false, "priority-blocked", triggerTime);
 				PublishExecutionDecision(
 					executionInfo,
 					trigger ?? executionInfo.TriggerDisplay,
@@ -238,7 +239,7 @@ public class AutoBattleOperator : IStateRecordUpdateListener
 			RunningExecutor = new OperationExecutor(executionInfo.OpList, triggerTime ?? Now());
 			_runningExecutionTask = RunningExecutor.RunAsync();
 			OperationExecutor executor = RunningExecutor;
-			AddExecutionRecordLocked("started", executionInfo.TriggerDisplay, executionInfo, completed: false);
+			AddExecutionRecordLocked("started", executionInfo.TriggerDisplay, executionInfo, completed: false, triggerTime: triggerTime ?? executor.TriggerTime);
 			PublishExecutionDecision(
 				executionInfo,
 				executionInfo.TriggerDisplay,
@@ -941,7 +942,7 @@ public class AutoBattleOperator : IStateRecordUpdateListener
 		}
 	}
 
-	private void AddExecutionRecordLocked(string @event, string trigger, ExecutionInfo executionInfo, bool completed, string? errorMessage = null)
+	private void AddExecutionRecordLocked(string @event, string trigger, ExecutionInfo executionInfo, bool completed, string? errorMessage = null, double? triggerTime = null)
 	{
 		string text = ((executionInfo.OpList.Count == 0) ? "-" : string.Join(" | ", from op in executionInfo.OpList.Take(3)
 			select op.OpName));
@@ -949,7 +950,16 @@ public class AutoBattleOperator : IStateRecordUpdateListener
 		{
 			text += " | ...";
 		}
-		_executionRecords.Add(new AutoBattleExecutionRecord(@event, trigger, text, completed, errorMessage, DateTimeOffset.UtcNow));
+		AutoBattleExecutionRecord record = new(@event, trigger, text, completed, errorMessage, DateTimeOffset.UtcNow, executionInfo.ExprDisplay, triggerTime);
+		_executionRecords.Add(record);
+		try
+		{
+			ExecutionRecordAdded?.Invoke(record);
+		}
+		catch (Exception ex)
+		{
+			Log.Error(ex, "自动战斗回放决策记录失败");
+		}
 	}
 
 	private void PublishExecutionDecision(

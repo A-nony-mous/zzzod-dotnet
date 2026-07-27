@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 using System.Linq;
+using System.IO;
+using System.Security.Cryptography;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
@@ -30,6 +32,10 @@ public class AutoBattleContext : IRunParticipant
 	private static readonly DedicatedTaskScheduler BattleStateCheckScheduler = new DedicatedTaskScheduler("zzz-battle-state", 16);
 
 	private static readonly TaskFactory BattleStateCheckTaskFactory = new TaskFactory(BattleStateCheckScheduler);
+
+	private string? _replayOpName;
+
+	private string _replaySubDir = "auto_battle";
 
 	private readonly ZContext _ctx;
 
@@ -131,6 +137,8 @@ public class AutoBattleContext : IRunParticipant
 
 	public AutoBattleOperator? AutoOp { get; set; }
 
+	public BattleReplayRecorder? ReplayRecorder { get; private set; }
+
 	public bool AutoUltimateEnabled { get; set; }
 
 	/// <summary>
@@ -231,7 +239,15 @@ public class AutoBattleContext : IRunParticipant
 
 	public AutoBattleOperator InitAutoOp(string opName, string subDir = "auto_battle")
 	{
+		if (ReplayRecorder != null)
+		{
+			StateRecordService.UnregisterOperator(ReplayRecorder);
+			ReplayRecorder.Dispose();
+			ReplayRecorder = null;
+		}
 		AutoOp = null;
+		_replayOpName = opName;
+		_replaySubDir = subDir;
 		string key = subDir + "-" + opName;
 		bool useMergedFile = _ctx.BattleAssistantConfig.UseMergedFile;
 		if (useMergedFile && _opCache.TryGetValue(key, out AutoBattleOperator value))
@@ -252,6 +268,7 @@ public class AutoBattleContext : IRunParticipant
 				_opCache[key] = autoBattleOperator;
 			}
 		}
+		ConfigureReplayRecorder(AutoOp, opName, subDir);
 		_checkChainInterval = AutoOp.CheckChainInterval;
 		_checkQuickInterval = AutoOp.CheckQuickInterval;
 		_checkSwitchBackupInterval = 1f;
@@ -267,6 +284,7 @@ public class AutoBattleContext : IRunParticipant
 	{
 		if (AutoOp != null && TryRegisterCurrentRunSession())
 		{
+			EnsureReplayRecorder();
 			AutoUltimateEnabled = true;
 			InitBattleContext();
 			AutoOp.StartRunningAsync();
@@ -279,6 +297,7 @@ public class AutoBattleContext : IRunParticipant
 	{
 		if (AutoOp != null && TryRegisterCurrentRunSession())
 		{
+			EnsureReplayRecorder();
 			AutoOp.StartRunningAsync();
 			StartContextAsync(startOperator: false);
 			ClearAllStates();
@@ -289,6 +308,7 @@ public class AutoBattleContext : IRunParticipant
 	{
 		AutoOp?.StopRunning();
 		StopContext(stopOperator: false);
+		StopReplayRecorder();
 	}
 
 	public void InitBattleContext()
@@ -426,8 +446,65 @@ public class AutoBattleContext : IRunParticipant
 
 	public bool CheckBattleState(Mat? screen, DateTimeOffset? screenshotTimeUtc = null, bool checkBattleEndNormalResult = false, bool checkBattleEndHollowResult = false, bool checkBattleEndDefenseResult = false, bool checkDistance = false, bool sync = false, string source = "unknown")
 	{
+		DateTimeOffset screenshotAt = screenshotTimeUtc ?? DateTimeOffset.UtcNow;
 		double screenshotTime = (screenshotTimeUtc.HasValue ? ((double)screenshotTimeUtc.Value.ToUnixTimeMilliseconds() / 1000.0) : Now());
+		if (screen != null && !screen.Empty())
+		{
+			ReplayRecorder?.RecordFrame(screen, screenshotAt);
+		}
 		return CheckBattleState(screen, screenshotTime, checkBattleEndNormalResult, checkBattleEndHollowResult, checkBattleEndDefenseResult, checkDistance, sync, source);
+	}
+
+	private void ConfigureReplayRecorder(AutoBattleOperator autoOp, string opName, string subDir)
+	{
+		if (!_ctx.BattleAssistantConfig.BattleReplayEnabled)
+		{
+			return;
+		}
+
+		string mergedPath = _ctx.Environment.GetPathUnderWorkDir("config", subDir, opName + ".merged.yml");
+		string hash = File.Exists(mergedPath)
+			? Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(mergedPath)))
+			: string.Empty;
+		BattleReplayRecorder recorder = new(
+			_ctx.Environment.GetPathUnderWorkDir(".replay"),
+			opName,
+			opName,
+			hash);
+		recorder.Start();
+		ReplayRecorder = recorder;
+		_ctx.RegisterShutdownParticipant(recorder);
+		StateRecordService.RegisterOperator(recorder);
+		autoOp.ExecutionRecordAdded += record => recorder.RecordDecision(new BattleReplayDecision(
+			record.Event,
+			record.Trigger,
+			record.OperationSummary,
+			record.Completed,
+			record.ErrorMessage,
+			record.Timestamp,
+			record.TriggerTime,
+			record.Expression));
+	}
+
+	private void EnsureReplayRecorder()
+	{
+		if (ReplayRecorder == null && AutoOp != null && _replayOpName != null)
+		{
+			ConfigureReplayRecorder(AutoOp, _replayOpName, _replaySubDir);
+		}
+	}
+
+	private void StopReplayRecorder()
+	{
+		BattleReplayRecorder? recorder = ReplayRecorder;
+		if (recorder == null)
+		{
+			return;
+		}
+
+		StateRecordService.UnregisterOperator(recorder);
+		recorder.Dispose();
+		ReplayRecorder = null;
 	}
 
 	public bool CheckBattleState(Mat? screen, double screenshotTime, bool checkBattleEndNormalResult = false, bool checkBattleEndHollowResult = false, bool checkBattleEndDefenseResult = false, bool checkDistance = false, bool sync = false, string source = "unknown")
