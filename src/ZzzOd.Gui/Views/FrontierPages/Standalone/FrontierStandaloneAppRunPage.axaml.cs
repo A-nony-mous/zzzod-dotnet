@@ -22,13 +22,13 @@ namespace ZzzOd.Gui.Views.FrontierPages.Standalone;
 
 internal sealed partial class FrontierStandaloneAppRunPage : UserControl, IZzzPageLifecycle
 {
-    private const string ScopeName = "standalone-app";
     private static readonly DataFormat<string> AppIdFormat =
         DataFormat.CreateStringApplicationFormat("zzzod.standalone-app-id");
 
     private readonly IZzzAppBackend _backend;
     private readonly ZzzGuiOperationTracker _operations;
     private readonly ZzzAppSettingNavigator _appSettingNavigator;
+    private readonly ZzzStandaloneRunSettingsViewModel _settings;
     private readonly ItemsControl _appList;
     private readonly FAInfoBar _actionInfoBar;
     private readonly Button _addAppButton;
@@ -48,6 +48,13 @@ internal sealed partial class FrontierStandaloneAppRunPage : UserControl, IZzzPa
     {
         _backend = backend;
         _operations = operations ?? new ZzzGuiOperationTracker();
+        _settings = new ZzzStandaloneRunSettingsViewModel(backend, error =>
+        {
+            if (!string.IsNullOrWhiteSpace(error))
+            {
+                ShowError(error);
+            }
+        });
         _appSettingNavigator = new ZzzAppSettingNavigator(
             backend,
             appSettingFactory ?? new FrontierAppSettingPageFactory(backend).Create);
@@ -63,11 +70,12 @@ internal sealed partial class FrontierStandaloneAppRunPage : UserControl, IZzzPa
         _actionInfoBar = Required<FAInfoBar>("ActionInfoBar");
         _addAppButton = Required<Button>("AddAppButton");
         Required<ContentControl>("RunHost").Content = RunPanel;
+        DataContext = _settings;
     }
 
     public IReadOnlyList<ZzzStandaloneAppRowModel> AppRows => _appRows;
 
-    public string? SelectedAppId { get; private set; }
+    public string? SelectedAppId => _settings.SelectedAppId;
 
     public ZzzRunPanel RunPanel { get; }
 
@@ -127,7 +135,6 @@ internal sealed partial class FrontierStandaloneAppRunPage : UserControl, IZzzPa
         {
             _availableApps.Clear();
             _appRows.Clear();
-            SelectedAppId = null;
             RefreshRows();
             ShowError(appsResult.Error ?? "应用列表读取失败。");
             _operations.Complete(operationId, ZzzGuiOperationState.Failed);
@@ -139,22 +146,19 @@ internal sealed partial class FrontierStandaloneAppRunPage : UserControl, IZzzPa
             .Where(app => app.DefaultGroup)
             .Where(app => !string.Equals(app.AppId, ZzzApplicationIds.OneDragon, StringComparison.Ordinal)));
 
-        ZzzBackendResult<ZzzConfigScopeValuesDto> configResult = _backend.GetConfigScope(ScopeName);
-        if (!configResult.Success || configResult.Value is null)
+        _settings.OnPageShown();
+        if (_settings.LastError is not null)
         {
             _appRows.Clear();
-            SelectedAppId = null;
             RefreshRows();
-            ShowError(configResult.Error ?? "独立运行配置读取失败。");
             _operations.Complete(operationId, ZzzGuiOperationState.Failed);
             return;
         }
 
         Dictionary<string, ZzzAppDto> appMap = _availableApps.ToDictionary(app => app.AppId, StringComparer.Ordinal);
-        List<string> configuredIds = ReadAppList(configResult.Value.Values);
         HashSet<string> seen = new(StringComparer.Ordinal);
         _appRows.Clear();
-        foreach (string appId in configuredIds)
+        foreach (string appId in _settings.AppIds)
         {
             if (seen.Add(appId) && appMap.TryGetValue(appId, out ZzzAppDto? app))
             {
@@ -162,16 +166,8 @@ internal sealed partial class FrontierStandaloneAppRunPage : UserControl, IZzzPa
             }
         }
 
-        string configuredActiveId = ReadString(configResult.Value.Values, "active_app_id");
-        SelectedAppId = _appRows.Any(row => string.Equals(row.AppId, configuredActiveId, StringComparison.Ordinal))
-            ? configuredActiveId
-            : _appRows.FirstOrDefault()?.AppId;
+        _settings.NormalizeSelection(_appRows.Select(row => row.AppId));
         ApplySelection();
-        if (!configResult.Value.Values.ContainsKey("active_app_id")
-            || !string.Equals(configuredActiveId, SelectedAppId ?? string.Empty, StringComparison.Ordinal))
-        {
-            SaveActiveSelection();
-        }
 
         RefreshRows();
         _operations.Complete(operationId, ZzzGuiOperationState.Succeeded);
@@ -228,9 +224,9 @@ internal sealed partial class FrontierStandaloneAppRunPage : UserControl, IZzzPa
             }
         }
 
-        SelectedAppId ??= _appRows.FirstOrDefault()?.AppId;
+        string? selectedAppId = SelectedAppId ?? _appRows.FirstOrDefault()?.AppId;
+        _settings.SaveConfiguration(_appRows.Select(row => row.AppId).ToArray(), selectedAppId);
         ApplySelection();
-        SaveConfig();
         RefreshRows();
     }
 
@@ -268,11 +264,16 @@ internal sealed partial class FrontierStandaloneAppRunPage : UserControl, IZzzPa
 
         if (string.Equals(SelectedAppId, appId, StringComparison.Ordinal))
         {
-            SelectedAppId = _appRows.FirstOrDefault()?.AppId;
+            _settings.SaveConfiguration(
+                _appRows.Select(row => row.AppId).ToArray(),
+                _appRows.FirstOrDefault()?.AppId);
+        }
+        else
+        {
+            _settings.SaveConfiguration(_appRows.Select(row => row.AppId).ToArray(), SelectedAppId);
         }
 
         ApplySelection();
-        SaveConfig();
         RefreshRows();
     }
 
@@ -359,7 +360,7 @@ internal sealed partial class FrontierStandaloneAppRunPage : UserControl, IZzzPa
         ZzzStandaloneAppRowModel row = _appRows[sourceIndex];
         _appRows.RemoveAt(sourceIndex);
         _appRows.Insert(targetIndex, row);
-        SaveConfig();
+        _settings.SaveConfiguration(_appRows.Select(item => item.AppId).ToArray(), SelectedAppId);
         RefreshRows();
     }
 
@@ -370,9 +371,8 @@ internal sealed partial class FrontierStandaloneAppRunPage : UserControl, IZzzPa
             return;
         }
 
-        SelectedAppId = appId;
+        _settings.SaveActiveSelection(appId);
         ApplySelection();
-        SaveActiveSelection();
         RefreshRows();
     }
 
@@ -388,36 +388,6 @@ internal sealed partial class FrontierStandaloneAppRunPage : UserControl, IZzzPa
         }
 
         RunPanel.RefreshRunTargetForCurrentSelection();
-    }
-
-    private void SaveConfig()
-    {
-        List<string> appIds = _appRows.Select(row => row.AppId).ToList();
-        ZzzBackendResult<ZzzConfigScopeValuesDto> result = _backend.SaveConfigScope(new ZzzSaveConfigScopeRequest(
-            ScopeName,
-            new Dictionary<string, object?>
-            {
-                ["app_list"] = appIds,
-                ["active_app_id"] = SelectedAppId ?? string.Empty,
-            }));
-        if (!result.Success)
-        {
-            ShowError(result.Error ?? "独立运行配置保存失败。");
-        }
-    }
-
-    private void SaveActiveSelection()
-    {
-        ZzzBackendResult<ZzzConfigScopeValuesDto> result = _backend.SaveConfigScope(new ZzzSaveConfigScopeRequest(
-            ScopeName,
-            new Dictionary<string, object?>
-            {
-                ["active_app_id"] = SelectedAppId ?? string.Empty,
-            }));
-        if (!result.Success)
-        {
-            ShowError(result.Error ?? "独立运行配置保存失败。");
-        }
     }
 
     private void RefreshRows()
@@ -477,25 +447,6 @@ internal sealed partial class FrontierStandaloneAppRunPage : UserControl, IZzzPa
         _actionInfoBar.Severity = FAInfoBarSeverity.Error;
         _actionInfoBar.IsOpen = true;
     }
-
-    private static List<string> ReadAppList(IReadOnlyDictionary<string, object?> values)
-    {
-        if (!values.TryGetValue("app_list", out object? value))
-        {
-            return [];
-        }
-
-        return value switch
-        {
-            IEnumerable<string> strings => strings.Where(item => !string.IsNullOrWhiteSpace(item)).ToList(),
-            IEnumerable<object?> objects => objects.Select(item => item?.ToString() ?? string.Empty)
-                .Where(item => !string.IsNullOrWhiteSpace(item)).ToList(),
-            _ => [],
-        };
-    }
-
-    private static string ReadString(IReadOnlyDictionary<string, object?> values, string key) =>
-        values.TryGetValue(key, out object? value) ? value?.ToString() ?? string.Empty : string.Empty;
 
     internal static IReadOnlyList<ZzzAppDto> OrderRequestedApps(
         IEnumerable<ZzzAppDto> availableApps,
