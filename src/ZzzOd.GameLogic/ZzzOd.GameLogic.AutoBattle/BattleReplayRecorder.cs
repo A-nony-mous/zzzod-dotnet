@@ -44,13 +44,14 @@ public sealed class BattleReplayRecorder : IStateRecordUpdateListener, IShutdown
     {
         Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
     };
-    private readonly Channel<ReplayItem> _queue;
+    private readonly Channel<ReplayItem> _requiredQueue;
+    private readonly Channel<FrameItem> _frameQueue;
     private readonly string _packageDirectory;
     private readonly string _configurationName;
     private readonly string _configurationHash;
     private readonly int _maxFrames;
     private readonly long _maxBytes;
-    private readonly CancellationTokenSource _shutdown = new();
+    private readonly Task _writerStartGate;
     private readonly object _stateLock = new();
     private Task? _writerTask;
     private DateTimeOffset _startedAtUtc;
@@ -62,6 +63,7 @@ public sealed class BattleReplayRecorder : IStateRecordUpdateListener, IShutdown
     private long _droppedFrameCount;
     private bool _truncated;
     private bool _stopped;
+    private bool _finalized;
 
     public BattleReplayRecorder(
         string replayRoot,
@@ -71,6 +73,19 @@ public sealed class BattleReplayRecorder : IStateRecordUpdateListener, IShutdown
         int maxFrames = 10_000,
         long maxBytes = 512L * 1024 * 1024,
         int queueCapacity = 64)
+        : this(replayRoot, label, configurationName, configurationHash, maxFrames, maxBytes, queueCapacity, Task.CompletedTask)
+    {
+    }
+
+    internal BattleReplayRecorder(
+        string replayRoot,
+        string label,
+        string configurationName,
+        string configurationHash,
+        int maxFrames,
+        long maxBytes,
+        int queueCapacity,
+        Task writerStartGate)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(replayRoot);
         ArgumentException.ThrowIfNullOrWhiteSpace(label);
@@ -78,9 +93,16 @@ public sealed class BattleReplayRecorder : IStateRecordUpdateListener, IShutdown
         _configurationHash = configurationHash;
         _maxFrames = maxFrames;
         _maxBytes = maxBytes;
+        _writerStartGate = writerStartGate ?? throw new ArgumentNullException(nameof(writerStartGate));
         string folder = $"{DateTimeOffset.UtcNow:yyyyMMdd_HHmmss}_{Sanitize(label)}";
         _packageDirectory = Path.Combine(replayRoot, folder);
-        _queue = Channel.CreateBounded<ReplayItem>(new BoundedChannelOptions(queueCapacity)
+        _requiredQueue = Channel.CreateUnbounded<ReplayItem>(new UnboundedChannelOptions
+        {
+            SingleReader = true,
+            SingleWriter = false,
+            AllowSynchronousContinuations = false,
+        });
+        _frameQueue = Channel.CreateBounded<FrameItem>(new BoundedChannelOptions(queueCapacity)
         {
             FullMode = BoundedChannelFullMode.Wait,
             SingleReader = true,
@@ -92,13 +114,22 @@ public sealed class BattleReplayRecorder : IStateRecordUpdateListener, IShutdown
 
     public long DroppedFrameCount => Interlocked.Read(ref _droppedFrameCount);
 
-    public bool IsRecording => _writerTask != null && !_stopped;
+    public bool IsRecording
+    {
+        get
+        {
+            lock (_stateLock)
+            {
+                return IsRecordingLocked;
+            }
+        }
+    }
 
     public void Start()
     {
         lock (_stateLock)
         {
-            if (_writerTask != null)
+            if (_writerTask != null || _stopped)
             {
                 return;
             }
@@ -122,41 +153,58 @@ public sealed class BattleReplayRecorder : IStateRecordUpdateListener, IShutdown
 
     public bool RecordFrame(Mat frame, DateTimeOffset screenshotTimeUtc)
     {
-        if (!CanAcceptFrame())
+        lock (_stateLock)
         {
+            if (!CanAcceptFrameLocked())
+            {
+                return false;
+            }
+        }
+
+        Mat clonedFrame = frame.Clone();
+        lock (_stateLock)
+        {
+            if (!CanAcceptFrameLocked())
+            {
+                clonedFrame.Dispose();
+                return false;
+            }
+
+            if (_frameQueue.Writer.TryWrite(new FrameItem(clonedFrame, screenshotTimeUtc)))
+            {
+                return true;
+            }
+
+            clonedFrame.Dispose();
             Interlocked.Increment(ref _droppedFrameCount);
             return false;
         }
-
-        if (!_queue.Writer.TryWrite(new FrameItem(frame.Clone(), screenshotTimeUtc)))
-        {
-            Interlocked.Increment(ref _droppedFrameCount);
-            return false;
-        }
-
-        return true;
     }
 
     public async Task ShutdownAsync(CancellationToken cancellationToken)
     {
+        // 收尾一旦开始就必须排空已接收的状态、决策和帧，避免取消信号截断场景包尾部。
+        _ = cancellationToken;
+        Task? writerTask;
         lock (_stateLock)
         {
-            if (_stopped)
+            if (!_stopped)
             {
-                return;
+                _stopped = true;
+                _endedAtUtc = DateTimeOffset.UtcNow;
+                _requiredQueue.Writer.TryComplete();
+                _frameQueue.Writer.TryComplete();
             }
 
-            _stopped = true;
-            _endedAtUtc = DateTimeOffset.UtcNow;
-            _queue.Writer.TryComplete();
+            writerTask = _writerTask;
         }
 
-        if (_writerTask != null)
+        if (writerTask != null)
         {
-            await _writerTask.WaitAsync(cancellationToken).ConfigureAwait(false);
+            await writerTask.ConfigureAwait(false);
         }
 
-        WriteManifest();
+        FinalizeManifest();
     }
 
     public void Dispose()
@@ -169,72 +217,129 @@ public sealed class BattleReplayRecorder : IStateRecordUpdateListener, IShutdown
         {
             Log.Error(ex, "战斗回放录制收尾失败");
         }
-        finally
-        {
-            _shutdown.Dispose();
-        }
     }
 
     private void EnqueueRequired(ReplayItem item)
     {
-        if (!IsRecording)
+        Exception? failure = null;
+        lock (_stateLock)
         {
-            return;
+            if (!IsRecordingLocked)
+            {
+                return;
+            }
+
+            if (!_requiredQueue.Writer.TryWrite(item))
+            {
+                failure = new InvalidOperationException("战斗回放必达队列已停止接收记录");
+            }
         }
 
-        try
+        if (failure != null)
         {
-            _queue.Writer.WriteAsync(item, _shutdown.Token).AsTask().GetAwaiter().GetResult();
-        }
-        catch (Exception ex)
-        {
-            StopAfterFailure(ex);
+            StopAfterFailure(failure);
         }
     }
 
-    private bool CanAcceptFrame()
+    private bool CanAcceptFrameLocked()
     {
-        lock (_stateLock)
+        if (!IsRecordingLocked)
         {
-            if (!IsRecording || _frameCount >= _maxFrames || _frameBytes >= _maxBytes)
-            {
-                _truncated = true;
-                return false;
-            }
-
-            return true;
+            return false;
         }
+
+        if (_frameCount >= _maxFrames || _frameBytes >= _maxBytes)
+        {
+            _truncated = true;
+            Interlocked.Increment(ref _droppedFrameCount);
+            return false;
+        }
+
+        return true;
     }
 
     private async Task WriteLoopAsync()
     {
         try
         {
+            await _writerStartGate.ConfigureAwait(false);
             await using FileStream states = File.Create(Path.Combine(_packageDirectory, "states.jsonl"));
             await using FileStream decisions = File.Create(Path.Combine(_packageDirectory, "decisions.jsonl"));
-            await foreach (ReplayItem item in _queue.Reader.ReadAllAsync(_shutdown.Token).ConfigureAwait(false))
+            while (true)
             {
-                switch (item)
+                bool wroteItem = false;
+                int requiredBatchCount = 0;
+                while (requiredBatchCount < 256 && _requiredQueue.Reader.TryRead(out ReplayItem? item))
                 {
-                    case StateItem state:
-                        await WriteJsonLineAsync(states, state).ConfigureAwait(false);
-                        break;
-                    case DecisionItem decision:
-                        await WriteJsonLineAsync(decisions, decision.Value).ConfigureAwait(false);
-                        break;
-                    case FrameItem frame:
-                        WriteFrame(frame);
-                        break;
+                    await WriteRequiredItemAsync(states, decisions, item).ConfigureAwait(false);
+                    requiredBatchCount++;
+                    wroteItem = true;
                 }
+
+                if (_frameQueue.Reader.TryRead(out FrameItem? frame))
+                {
+                    WriteFrame(frame);
+                    wroteItem = true;
+                }
+
+                if (wroteItem)
+                {
+                    continue;
+                }
+
+                bool requiredCompleted = _requiredQueue.Reader.Completion.IsCompleted;
+                bool framesCompleted = _frameQueue.Reader.Completion.IsCompleted;
+                if (requiredCompleted && framesCompleted)
+                {
+                    break;
+                }
+
+                await WaitForDataAsync(requiredCompleted, framesCompleted).ConfigureAwait(false);
             }
-        }
-        catch (OperationCanceledException) when (_shutdown.IsCancellationRequested)
-        {
+
+            await states.FlushAsync().ConfigureAwait(false);
+            await decisions.FlushAsync().ConfigureAwait(false);
         }
         catch (Exception ex)
         {
             StopAfterFailure(ex);
         }
+        finally
+        {
+            DisposePendingFrames();
+        }
+    }
+
+    private static async Task WriteRequiredItemAsync(Stream states, Stream decisions, ReplayItem item)
+    {
+        switch (item)
+        {
+            case StateItem state:
+                await WriteJsonLineAsync(states, state).ConfigureAwait(false);
+                break;
+            case DecisionItem decision:
+                await WriteJsonLineAsync(decisions, decision.Value).ConfigureAwait(false);
+                break;
+        }
+    }
+
+    private async Task WaitForDataAsync(bool requiredCompleted, bool framesCompleted)
+    {
+        if (requiredCompleted)
+        {
+            await _frameQueue.Reader.WaitToReadAsync().ConfigureAwait(false);
+            return;
+        }
+
+        if (framesCompleted)
+        {
+            await _requiredQueue.Reader.WaitToReadAsync().ConfigureAwait(false);
+            return;
+        }
+
+        Task<bool> requiredWait = _requiredQueue.Reader.WaitToReadAsync().AsTask();
+        Task<bool> frameWait = _frameQueue.Reader.WaitToReadAsync().AsTask();
+        await Task.WhenAny(requiredWait, frameWait).ConfigureAwait(false);
     }
 
     private void WriteFrame(FrameItem frame)
@@ -272,8 +377,33 @@ public sealed class BattleReplayRecorder : IStateRecordUpdateListener, IShutdown
         lock (_stateLock)
         {
             _stopped = true;
-            _queue.Writer.TryComplete(exception);
+            _endedAtUtc ??= DateTimeOffset.UtcNow;
+            _requiredQueue.Writer.TryComplete(exception);
+            _frameQueue.Writer.TryComplete(exception);
         }
+    }
+
+    private void DisposePendingFrames()
+    {
+        while (_frameQueue.Reader.TryRead(out FrameItem? frame))
+        {
+            frame.Image.Dispose();
+        }
+    }
+
+    private void FinalizeManifest()
+    {
+        lock (_stateLock)
+        {
+            if (_finalized)
+            {
+                return;
+            }
+
+            _finalized = true;
+        }
+
+        WriteManifest();
     }
 
     private void WriteManifest()
@@ -301,8 +431,9 @@ public sealed class BattleReplayRecorder : IStateRecordUpdateListener, IShutdown
     {
         await JsonSerializer.SerializeAsync(stream, value, JsonOptions).ConfigureAwait(false);
         await stream.WriteAsync("\n"u8.ToArray()).ConfigureAwait(false);
-        await stream.FlushAsync().ConfigureAwait(false);
     }
+
+    private bool IsRecordingLocked => _writerTask != null && !_stopped;
 
     private static string Sanitize(string value)
     {
