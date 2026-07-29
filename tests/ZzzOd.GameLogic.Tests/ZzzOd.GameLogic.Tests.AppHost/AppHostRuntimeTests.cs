@@ -188,6 +188,30 @@ public sealed class AppHostRuntimeTests
 		Assert.Contains("迷失之地战斗结束", Encoding.UTF8.GetString(array), StringComparison.Ordinal);
 	}
 
+	[Fact]
+	public async Task RuntimeManagerForwardsOneDragonSerilogToBackendEvents()
+	{
+		string runRoot = Path.Combine(Path.GetTempPath(), "zzzod-apphost-tests", Guid.NewGuid().ToString("N"));
+		CreateRequiredAssets(runRoot, seedInstances: true);
+		ZzzBackendEventBus eventBus = new ZzzBackendEventBus();
+		using ZzzLogFanOutLoggerProvider logProvider = new ZzzLogFanOutLoggerProvider(new ZzzRunRoot(runRoot), eventBus);
+		using ZzzRuntimeManager runtime = new ZzzRuntimeManager(
+			runRoot,
+			NullLogger<ZzzRuntimeManager>.Instance,
+			logProvider);
+		ChannelReader<ZzzBackendEvent> reader = eventBus.Subscribe("log.appended", 32);
+
+		runtime.EnsureContext().Logger.Information("迷失之地识别结果 {Result}", "入口");
+
+		ZzzBackendEvent backendEvent = await reader.ReadAsync().AsTask().WaitAsync(TimeSpan.FromSeconds(3));
+		ZzzLogEntryDto entry = Assert.IsType<ZzzLogEntryDto>(backendEvent.Data);
+		Assert.Equal("log.appended", backendEvent.Type);
+		Assert.Equal("Information", entry.Level);
+		Assert.Equal("迷失之地识别结果 入口", entry.Message);
+		Assert.Equal(TimeSpan.Zero, entry.Timestamp.Offset);
+		eventBus.Unsubscribe(reader);
+	}
+
 	/// <summary>
 	/// 显式参数优先于环境变量和应用目录。
 	/// </summary>

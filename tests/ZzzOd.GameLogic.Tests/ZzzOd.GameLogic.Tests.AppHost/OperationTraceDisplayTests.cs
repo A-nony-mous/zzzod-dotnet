@@ -53,4 +53,27 @@ public sealed class OperationTraceDisplayTests
 		Assert.Contains("重试 2", line, StringComparison.Ordinal);
 		Assert.Contains("异常 InvalidOperationException: 识别失败", line, StringComparison.Ordinal);
 	}
+
+	[Fact]
+	public void FormatOperationTraceUsesLocalTime()
+	{
+		DateTimeOffset timestamp = new DateTimeOffset(2026, 7, 30, 9, 12, 34, TimeSpan.Zero);
+		ZzzOperationTraceDto trace = new ZzzOperationTraceDto(
+			"lost_void", 0, "迷失之地", "战斗中", null, null, 0, "Wait", null, null, null, timestamp);
+
+		string line = ZzzLogDisplayCard.FormatOperationTrace(trace);
+
+		Assert.StartsWith($"[{timestamp.ToLocalTime():HH:mm:ss}]", line, StringComparison.Ordinal);
+	}
+
+	[Fact]
+	public void FormatLogEntryUsesLocalTime()
+	{
+		DateTimeOffset timestamp = new DateTimeOffset(2026, 7, 30, 9, 12, 34, TimeSpan.Zero);
+		ZzzLogEntryDto entry = new ZzzLogEntryDto(timestamp, "Information", "OneDragon", "迷失之地战斗结束", null);
+
+		string line = ZzzLogDisplayCard.FormatLogEntry(entry);
+
+		Assert.Equal($"[{timestamp.ToLocalTime():HH:mm:ss}] [Information] 迷失之地战斗结束", line);
+	}
 }

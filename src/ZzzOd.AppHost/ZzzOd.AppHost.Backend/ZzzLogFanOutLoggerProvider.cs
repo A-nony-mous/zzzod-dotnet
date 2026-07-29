@@ -2,10 +2,13 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
+using System.Globalization;
 using System.Linq;
 using System.Text;
 using System.Threading;
 using Microsoft.Extensions.Logging;
+using Serilog.Events;
+using Serilog.Formatting.Display;
 
 namespace ZzzOd.AppHost.Backend;
 
@@ -54,6 +57,8 @@ public sealed class ZzzLogFanOutLoggerProvider : ILoggerProvider, IDisposable
 
 	private static readonly UTF8Encoding Utf8WithoutBom = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false);
 
+	private static readonly MessageTemplateTextFormatter SerilogMessageFormatter = new MessageTemplateTextFormatter("{Message:lj}", CultureInfo.CurrentCulture);
+
 	private readonly ConcurrentDictionary<string, ZzzLogFanOutLogger> _loggers = new ConcurrentDictionary<string, ZzzLogFanOutLogger>(StringComparer.Ordinal);
 
 	private readonly Lock _fileLock = new Lock();
@@ -100,6 +105,30 @@ public sealed class ZzzLogFanOutLoggerProvider : ILoggerProvider, IDisposable
 		}
 	}
 
+	/// <summary>
+	/// 将 OneDragon Serilog 事件写入宿主统一日志流。
+	/// </summary>
+	internal void WriteSerilogEvent(LogEvent logEvent)
+	{
+		ArgumentNullException.ThrowIfNull(logEvent);
+		string category = "OneDragon";
+		if (logEvent.Properties.TryGetValue("SourceContext", out LogEventPropertyValue? sourceContext) &&
+			sourceContext is ScalarValue { Value: string source } &&
+			!string.IsNullOrWhiteSpace(source))
+		{
+			category = source;
+		}
+
+		using StringWriter messageWriter = new StringWriter(CultureInfo.CurrentCulture);
+		SerilogMessageFormatter.Format(logEvent, messageWriter);
+		Write(new ZzzLogEntryDto(
+			logEvent.Timestamp.ToUniversalTime(),
+			logEvent.Level.ToString(),
+			category,
+			messageWriter.ToString(),
+			logEvent.Exception?.ToString()));
+	}
+
 	/// <inheritdoc />
 	public void Dispose()
 	{
@@ -132,6 +161,6 @@ public sealed class ZzzLogFanOutLoggerProvider : ILoggerProvider, IDisposable
 	private static string FormatLine(ZzzLogEntryDto entry)
 	{
 		string value = (string.IsNullOrWhiteSpace(entry.Exception) ? string.Empty : (" " + entry.Exception));
-		return $"[{entry.Timestamp:HH:mm:ss.fff}] [{entry.Level}] [{entry.Category}] {entry.Message}{value}";
+		return $"[{entry.Timestamp.ToLocalTime():HH:mm:ss.fff}] [{entry.Level}] [{entry.Category}] {entry.Message}{value}";
 	}
 }

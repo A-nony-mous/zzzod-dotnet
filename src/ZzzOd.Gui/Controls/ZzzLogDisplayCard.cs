@@ -117,7 +117,7 @@ internal sealed partial class ZzzLogDisplayCard : UserControl, IZzzPageLifecycle
         string exception = string.IsNullOrWhiteSpace(trace.ExceptionType)
             ? string.Empty
             : $"，异常 {trace.ExceptionType}: {trace.ExceptionMessage ?? status}";
-        return $"[{trace.Timestamp:HH:mm:ss}] [Operation] {trace.Operation} 节点 {path} 返回状态 {status}{retry}{exception}";
+        return $"[{trace.Timestamp.ToLocalTime():HH:mm:ss}] [Operation] {trace.Operation} 节点 {path} 返回状态 {status}{retry}{exception}";
     }
 
     public void OnPageShown() => Start();
@@ -177,7 +177,7 @@ internal sealed partial class ZzzLogDisplayCard : UserControl, IZzzPageLifecycle
 
                         if (item.Type == "log.appended" && item.Data is ZzzLogEntryDto log)
                         {
-                            batch.Add($"[{log.Timestamp:HH:mm:ss}] [{log.Level}] {log.Message}");
+                            batch.Add(FormatLogEntry(log));
                         }
                         else if (item.Type == "run.operationTrace" && item.Data is ZzzOperationTraceDto trace)
                         {
@@ -199,6 +199,12 @@ internal sealed partial class ZzzLogDisplayCard : UserControl, IZzzPageLifecycle
             {
             }
         });
+    }
+
+    internal static string FormatLogEntry(ZzzLogEntryDto log)
+    {
+        ArgumentNullException.ThrowIfNull(log);
+        return $"[{log.Timestamp.ToLocalTime():HH:mm:ss}] [{log.Level}] {log.Message}";
     }
 
     private void Unsubscribe()

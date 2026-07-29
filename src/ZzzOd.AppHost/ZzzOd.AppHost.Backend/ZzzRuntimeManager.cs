@@ -5,6 +5,7 @@ using System.Linq;
 using System.Threading;
 using Microsoft.Extensions.Logging;
 using OneDragon.Core.Configuration;
+using OneDragon.Core.Logging;
 using OneDragon.Core.Runtime;
 using OpenCvSharp;
 using ZzzOd.AppHost.Notifications;
@@ -27,6 +28,8 @@ public sealed class ZzzRuntimeManager : IDisposable
 	private readonly Func<int, ZContext>? _contextFactory;
 
 	private readonly IPushNotificationService? _pushNotificationService;
+
+	private readonly Action<Serilog.Events.LogEvent>? _coreLogSink;
 
 	private ZContext? _context;
 
@@ -74,7 +77,16 @@ public sealed class ZzzRuntimeManager : IDisposable
 	/// <param name="logger">日志。</param>
 	/// <param name="pushNotificationService">生产推送服务。</param>
 	public ZzzRuntimeManager(string runRoot, ILogger<ZzzRuntimeManager> logger, IZzzPushNotificationService? pushNotificationService = null)
-		: this(runRoot, logger, null, pushNotificationService)
+		: this(runRoot, logger, null, pushNotificationService, null)
+	{
+	}
+
+	internal ZzzRuntimeManager(
+		string runRoot,
+		ILogger<ZzzRuntimeManager> logger,
+		ZzzLogFanOutLoggerProvider logProvider,
+		IZzzPushNotificationService? pushNotificationService = null)
+		: this(runRoot, logger, null, pushNotificationService, logProvider.WriteSerilogEvent)
 	{
 	}
 
@@ -86,11 +98,22 @@ public sealed class ZzzRuntimeManager : IDisposable
 	/// <param name="contextFactory">上下文工厂。</param>
 	/// <param name="pushNotificationService">生产推送服务。</param>
 	internal ZzzRuntimeManager(string runRoot, ILogger<ZzzRuntimeManager> logger, Func<int, ZContext>? contextFactory, IZzzPushNotificationService? pushNotificationService = null)
+		: this(runRoot, logger, contextFactory, pushNotificationService, null)
+	{
+	}
+
+	private ZzzRuntimeManager(
+		string runRoot,
+		ILogger<ZzzRuntimeManager> logger,
+		Func<int, ZContext>? contextFactory,
+		IZzzPushNotificationService? pushNotificationService,
+		Action<Serilog.Events.LogEvent>? coreLogSink)
 	{
 		RunRoot = Path.GetFullPath(runRoot);
 		_logger = logger;
 		_contextFactory = contextFactory;
 		_pushNotificationService = ((pushNotificationService == null) ? null : new AppHostPushNotificationAdapter(pushNotificationService));
+		_coreLogSink = coreLogSink;
 		ActiveInstanceIndex = InitializeActiveInstance();
 	}
 
@@ -424,7 +447,11 @@ public sealed class ZzzRuntimeManager : IDisposable
 		}
 		_logger.LogInformation("初始化 ZContext，实例 {InstanceIndex}", instanceIndex);
 		OneDragonEnvironment environment = new OneDragonEnvironment(RunRoot);
-		ZApplicationLauncher zApplicationLauncher = new ZApplicationLauncher(() => new ZContext(environment, null, instanceIndex));
+		Serilog.ILogger coreLogger = OneDragonLoggerFactory.CreateLogger(new OneDragonLogOptions
+		{
+			OnLogEvent = _coreLogSink,
+		});
+		ZApplicationLauncher zApplicationLauncher = new ZApplicationLauncher(() => new ZContext(environment, coreLogger, instanceIndex));
 		ZContext zContext2 = zApplicationLauncher.CreateContext();
 		AttachPushNotificationService(zContext2);
 		return zContext2;

@@ -38,7 +38,11 @@ public static class ZzzAppHostServiceCollectionExtensions
 		services.AddSingleton<IZzzImageAnalysisService, ZzzImageAnalysisService>();
 		services.AddSingleton<ZzzLogFanOutLoggerProvider>();
 		services.AddSingleton((Func<IServiceProvider, ILoggerProvider>)((IServiceProvider sp) => sp.GetRequiredService<ZzzLogFanOutLoggerProvider>()));
-		services.AddSingleton((IServiceProvider sp) => new ZzzRuntimeManager(fullRoot, sp.GetRequiredService<ILogger<ZzzRuntimeManager>>(), sp.GetRequiredService<IZzzPushNotificationService>()));
+		services.AddSingleton((IServiceProvider sp) => new ZzzRuntimeManager(
+			fullRoot,
+			sp.GetRequiredService<ILogger<ZzzRuntimeManager>>(),
+			sp.GetRequiredService<ZzzLogFanOutLoggerProvider>(),
+			sp.GetRequiredService<IZzzPushNotificationService>()));
 		services.AddSingleton<IZzzAppBackend, ZzzAppBackend>();
 		services.AddHostedService<ZzzOperationTraceBridge>();
 		services.AddHostedService<ZzzAppHostLifetimeService>();
