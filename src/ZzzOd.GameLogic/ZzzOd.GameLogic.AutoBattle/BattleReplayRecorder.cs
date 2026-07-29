@@ -161,7 +161,17 @@ public sealed class BattleReplayRecorder : IStateRecordUpdateListener, IShutdown
             }
         }
 
-        Mat clonedFrame = frame.Clone();
+        Mat clonedFrame;
+        try
+        {
+            clonedFrame = frame.Clone();
+        }
+        catch (Exception ex)
+        {
+            StopAfterFailure(ex);
+            return false;
+        }
+
         lock (_stateLock)
         {
             if (!CanAcceptFrameLocked())
