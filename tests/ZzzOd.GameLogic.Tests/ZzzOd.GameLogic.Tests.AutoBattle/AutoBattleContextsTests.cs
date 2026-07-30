@@ -114,7 +114,7 @@ public class AutoBattleContextsTests
 		public AutoBattleFlashClassification Classify(object? screen)
 		{
 			RunCount++;
-			return new AutoBattleFlashClassification(_classIndex, 0.0, 0.0, 0.0, 0.0, 0.0);
+			return new AutoBattleFlashClassification(_classIndex, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0);
 		}
 	}
 
@@ -899,4 +899,22 @@ public class AutoBattleContextsTests
 		Assert.Equal(-1.0, zContext.AutoBattleContext.StateRecordService.GetStateRecorder("闪避识别-红光").LastRecordTime);
 		autoBattleDodgeContext.CompleteDodgeFlashCheck();
 	}
+
+	[Fact]
+	public void Test_LatestValueSlot_ReplacesOnlyPendingValue()
+	{
+		LatestValueSlot<string> slot = new LatestValueSlot<string>();
+
+		Assert.True(slot.Submit("running", out string? replaced));
+		Assert.Null(replaced);
+		Assert.False(slot.Submit("pending-1", out replaced));
+		Assert.Null(replaced);
+		Assert.False(slot.Submit("pending-2", out replaced));
+		Assert.Equal("pending-1", replaced);
+		Assert.Equal("pending-2", slot.CompleteActive());
+		Assert.Null(slot.CompleteActive());
+		Assert.True(slot.Submit("next-running", out replaced));
+		Assert.Null(replaced);
+	}
+
 }

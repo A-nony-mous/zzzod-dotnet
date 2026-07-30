@@ -70,6 +70,35 @@ public class AutoBattleDodgeContext
 	/// </summary>
 	public long AcceptedAudioChecks => Interlocked.Read(in _acceptedAudioChecks);
 
+	internal long CaptureRunGeneration()
+	{
+		return CurrentRunGeneration;
+	}
+
+	internal void RecordAcceptedFlashCheck()
+	{
+		Interlocked.Increment(ref _acceptedFlashChecks);
+	}
+
+	internal void RecordReplacedFlashFrame()
+	{
+		long replacedTotal = Interlocked.Increment(ref _droppedFlashBecauseBusy);
+		long now = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+		long previousDiagnosticAt = Interlocked.Read(in _lastFlashBusyDiagnosticAtMilliseconds);
+		if (now - previousDiagnosticAt < 500 || Interlocked.CompareExchange(ref _lastFlashBusyDiagnosticAtMilliseconds, now, previousDiagnosticAt) != previousDiagnosticAt)
+		{
+			return;
+		}
+
+		long previousReported = Interlocked.Exchange(ref _reportedDroppedFlashBecauseBusy, replacedTotal);
+		_ctx.Logger.Information(
+			"自动战斗闪光待处理帧替换: ReplacedInWindow={ReplacedInWindow}, WindowMilliseconds={WindowMilliseconds}, AcceptedTotal={AcceptedTotal}, ReplacedTotal={ReplacedTotal}",
+			replacedTotal - previousReported,
+			previousDiagnosticAt == 0L ? 500 : now - previousDiagnosticAt,
+			AcceptedFlashChecks,
+			replacedTotal);
+	}
+
 	private long CurrentRunGeneration
 	{
 		get
@@ -146,9 +175,9 @@ public class AutoBattleDodgeContext
 		AdvanceRunGeneration();
 	}
 
-	public bool CheckDodgeFlash(object? screen, double screenshotTime, Task<bool>? audioTask = null, long? runGeneration = null, double queueDelayMilliseconds = 0.0)
+	public bool CheckDodgeFlash(object? screen, double screenshotTime, Task<bool>? audioTask = null, long? runGeneration = null, double queueDelayMilliseconds = 0.0, string source = "unknown")
 	{
-		AutoBattleFlashCheckResult autoBattleFlashCheckResult = CheckDodgeFlashVisual(screen, screenshotTime, runGeneration, queueDelayMilliseconds);
+		AutoBattleFlashCheckResult autoBattleFlashCheckResult = CheckDodgeFlashVisual(screen, screenshotTime, runGeneration, queueDelayMilliseconds, source);
 		if (autoBattleFlashCheckResult.VisualDetected)
 		{
 			return true;
@@ -359,7 +388,7 @@ public class AutoBattleDodgeContext
 		if (flag || (num - num2 >= 1000 && Interlocked.CompareExchange(ref _lastFlashDiagnosticAtMilliseconds, num, num2) == num2))
 		{
 			Interlocked.Exchange(ref _lastFlashDiagnosticAtMilliseconds, num);
-			_ctx.Logger.Information("自动战斗闪光检测: ClassIndex={ClassIndex}, CaptureAgeMilliseconds={CaptureAgeMilliseconds}, QueueDelayMilliseconds={QueueDelayMilliseconds}, ColorConversionElapsedMilliseconds={ColorConversionElapsedMilliseconds:F2}, PreprocessElapsedMilliseconds={PreprocessElapsedMilliseconds:F2}, InferenceElapsedMilliseconds={InferenceElapsedMilliseconds:F2}, PostprocessElapsedMilliseconds={PostprocessElapsedMilliseconds:F2}, TotalElapsedMilliseconds={TotalElapsedMilliseconds:F2}, DroppedBecauseBusy={DroppedBecauseBusy}", classification.ClassIndex, num - (long)(screenshotTime * 1000.0), queueDelayMilliseconds, classification.ColorConversionElapsedMilliseconds, classification.PreprocessElapsedMilliseconds, classification.InferenceElapsedMilliseconds, classification.PostprocessElapsedMilliseconds, classification.TotalElapsedMilliseconds, DroppedFlashBecauseBusy);
+			_ctx.Logger.Information("自动战斗闪光检测: ClassIndex={ClassIndex}, Confidence={Confidence:F4}, CaptureAgeMilliseconds={CaptureAgeMilliseconds}, QueueDelayMilliseconds={QueueDelayMilliseconds}, ColorConversionElapsedMilliseconds={ColorConversionElapsedMilliseconds:F2}, PreprocessElapsedMilliseconds={PreprocessElapsedMilliseconds:F2}, InferenceElapsedMilliseconds={InferenceElapsedMilliseconds:F2}, PostprocessElapsedMilliseconds={PostprocessElapsedMilliseconds:F2}, TotalElapsedMilliseconds={TotalElapsedMilliseconds:F2}, ReplacedPendingFrames={ReplacedPendingFrames}", classification.ClassIndex, classification.Confidence, num - (long)(screenshotTime * 1000.0), queueDelayMilliseconds, classification.ColorConversionElapsedMilliseconds, classification.PreprocessElapsedMilliseconds, classification.InferenceElapsedMilliseconds, classification.PostprocessElapsedMilliseconds, classification.TotalElapsedMilliseconds, DroppedFlashBecauseBusy);
 		}
 	}
 

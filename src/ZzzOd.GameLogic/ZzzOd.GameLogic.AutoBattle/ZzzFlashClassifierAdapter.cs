@@ -17,10 +17,10 @@ public sealed class ZzzFlashClassifierAdapter : IAutoBattleFlashClassifier
 	{
 		if (!(screen is Mat image))
 		{
-			return new AutoBattleFlashClassification(-1, 0.0, 0.0, 0.0, 0.0, 0.0);
+			return new AutoBattleFlashClassification(-1, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0);
 		}
 		YoloClassificationRunDiagnostics yoloClassificationRunDiagnostics = _ctx.FlashClassifier.CoreClassifier.RunWithDiagnostics(image);
-		return new AutoBattleFlashClassification(yoloClassificationRunDiagnostics.Result.ClassIndex, 0.0, yoloClassificationRunDiagnostics.PreprocessElapsedMilliseconds, yoloClassificationRunDiagnostics.InferenceElapsedMilliseconds, yoloClassificationRunDiagnostics.PostprocessElapsedMilliseconds, yoloClassificationRunDiagnostics.TotalElapsedMilliseconds);
+		return new AutoBattleFlashClassification(yoloClassificationRunDiagnostics.Result.ClassIndex, yoloClassificationRunDiagnostics.Result.Confidence, 0.0, yoloClassificationRunDiagnostics.PreprocessElapsedMilliseconds, yoloClassificationRunDiagnostics.InferenceElapsedMilliseconds, yoloClassificationRunDiagnostics.PostprocessElapsedMilliseconds, yoloClassificationRunDiagnostics.TotalElapsedMilliseconds);
 	}
 
 	public bool InitModel()

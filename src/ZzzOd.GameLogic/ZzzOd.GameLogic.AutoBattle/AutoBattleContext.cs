@@ -67,6 +67,8 @@ public class AutoBattleContext : IRunParticipant
 
 	private readonly AutoBattleSubmissionGate _battleEndSubmissionGate = new AutoBattleSubmissionGate();
 
+	private readonly LatestValueSlot<DodgeFlashWorkItem> _dodgeFlashLatestFrame = new LatestValueSlot<DodgeFlashWorkItem>();
+
 	private readonly Dictionary<string, AutoBattleOperator> _opCache = new Dictionary<string, AutoBattleOperator>(StringComparer.Ordinal);
 
 	private OneDragon.Core.Screen.ScreenArea? _checkDistanceArea;
@@ -321,6 +323,7 @@ public class AutoBattleContext : IRunParticipant
 
 	public void InitBattleContext()
 	{
+		ClearPendingDodgeFlashFrame();
 		AgentContext.InitBattleAgentContext();
 		DodgeContext.InitBattleDodgeContext();
 		ResetSecondarySubmissionDrops();
@@ -401,6 +404,7 @@ public class AutoBattleContext : IRunParticipant
 			IsRuntimeRunning = false;
 		}
 		DodgeContext.StopContext();
+		ClearPendingDodgeFlashFrame();
 		if (stopOperator)
 		{
 			AutoOp?.StopRunning();
@@ -541,13 +545,17 @@ public class AutoBattleContext : IRunParticipant
 				task = QueueBattleStateCheck(() => RunDodgeAudioCheck(screenshotTime, audioRunGeneration, Stopwatch.GetElapsedTime(audioQueuedAt).TotalMilliseconds, source));
 				list.Add(task);
 			}
-			if (DodgeContext.TryScheduleDodgeFlashCheck(out var flashRunGeneration))
+			if (sync && DodgeContext.TryScheduleDodgeFlashCheck(out var flashRunGeneration))
 			{
 				long flashQueuedAt = Stopwatch.GetTimestamp();
 				Mat flashScreen = GetTaskScreen();
 				Task<AutoBattleFlashCheckResult> task2 = (_ctx.ModelConfig.FlashClassifierGpu ? SubmitGpuDetection(() => RunDodgeFlashCheck(flashScreen, screenshotTime, flashRunGeneration, Stopwatch.GetElapsedTime(flashQueuedAt).TotalMilliseconds, source)) : QueueBattleStateCheck(() => RunDodgeFlashCheck(flashScreen, screenshotTime, flashRunGeneration, Stopwatch.GetElapsedTime(flashQueuedAt).TotalMilliseconds, source)));
 				list.Add(task2);
 				list.Add(ArbitrateDodgeAudioAsync(task2, task, screenshotTime, flashRunGeneration, source));
+			}
+			else if (!sync)
+			{
+				QueueLatestDodgeFlashFrame(screen, screenshotTime, task, source);
 			}
 			TryQueueSecondaryCheck(_agentSubmissionGate, "Agent", source, screenshotTime, GetTaskScreen, delegate(Mat screen2, double queueDelayMilliseconds)
 			{
@@ -1451,6 +1459,84 @@ public class AutoBattleContext : IRunParticipant
 		}
 	}
 
+	private void QueueLatestDodgeFlashFrame(Mat screen, double screenshotTime, Task<bool> audioTask, string source)
+	{
+		DodgeFlashWorkItem workItem = new DodgeFlashWorkItem(
+			CreateFrameLease(screen),
+			screenshotTime,
+			audioTask,
+			DodgeContext.CaptureRunGeneration(),
+			Stopwatch.GetTimestamp(),
+			source);
+		bool shouldStart = _dodgeFlashLatestFrame.Submit(workItem, out DodgeFlashWorkItem? replaced);
+		if (replaced != null)
+		{
+			replaced.Dispose();
+			DodgeContext.RecordReplacedFlashFrame();
+		}
+		if (shouldStart)
+		{
+			StartDodgeFlashWorkItem(workItem);
+		}
+	}
+
+	private void StartDodgeFlashWorkItem(DodgeFlashWorkItem workItem)
+	{
+		Task task;
+		try
+		{
+			task = _ctx.ModelConfig.FlashClassifierGpu
+				? SubmitGpuDetection(() => ProcessDodgeFlashWorkItem(workItem))
+				: QueueBattleStateCheck(() => ProcessDodgeFlashWorkItem(workItem));
+		}
+		catch
+		{
+			workItem.Dispose();
+			ScheduleNextDodgeFlashWorkItem();
+			throw;
+		}
+
+		ObserveDetectionTask(task);
+		_ = task.ContinueWith(
+			_ => ScheduleNextDodgeFlashWorkItem(),
+			CancellationToken.None,
+			TaskContinuationOptions.None,
+			TaskScheduler.Default);
+	}
+
+	private void ProcessDodgeFlashWorkItem(DodgeFlashWorkItem workItem)
+	{
+		try
+		{
+			DodgeContext.RecordAcceptedFlashCheck();
+			DodgeContext.CheckDodgeFlash(
+				workItem.Screen,
+				workItem.ScreenshotTime,
+				workItem.AudioTask,
+				workItem.RunGeneration,
+				Stopwatch.GetElapsedTime(workItem.QueuedAt).TotalMilliseconds,
+				workItem.Source);
+		}
+		finally
+		{
+			workItem.Dispose();
+		}
+	}
+
+	private void ScheduleNextDodgeFlashWorkItem()
+	{
+		DodgeFlashWorkItem? next = _dodgeFlashLatestFrame.CompleteActive();
+		if (next != null)
+		{
+			StartDodgeFlashWorkItem(next);
+		}
+	}
+
+	private void ClearPendingDodgeFlashFrame()
+	{
+		_dodgeFlashLatestFrame.ClearPending()?.Dispose();
+	}
+
 	private async Task ArbitrateDodgeAudioAsync(Task<AutoBattleFlashCheckResult> flashTask, Task<bool> audioTask, double screenshotTime, long runGeneration, string source)
 	{
 		try
@@ -1465,6 +1551,36 @@ public class AutoBattleContext : IRunParticipant
 		{
 			Exception ex2 = ex;
 			AutoBattleDiagnosticLogger.LogFailure(_ctx.Logger, ex2, "自动战斗闪避结果仲裁失败", "DodgeArbitration", source, screenshotTime, runGeneration);
+		}
+	}
+
+	private sealed class DodgeFlashWorkItem : IDisposable
+	{
+		public DodgeFlashWorkItem(Mat screen, double screenshotTime, Task<bool> audioTask, long runGeneration, long queuedAt, string source)
+		{
+			Screen = screen;
+			ScreenshotTime = screenshotTime;
+			AudioTask = audioTask;
+			RunGeneration = runGeneration;
+			QueuedAt = queuedAt;
+			Source = source;
+		}
+
+		public Mat Screen { get; }
+
+		public double ScreenshotTime { get; }
+
+		public Task<bool> AudioTask { get; }
+
+		public long RunGeneration { get; }
+
+		public long QueuedAt { get; }
+
+		public string Source { get; }
+
+		public void Dispose()
+		{
+			Screen.Dispose();
 		}
 	}
 
