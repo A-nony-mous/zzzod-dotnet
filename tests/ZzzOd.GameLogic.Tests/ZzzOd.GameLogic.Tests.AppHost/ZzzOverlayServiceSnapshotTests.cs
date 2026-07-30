@@ -298,6 +298,77 @@ public sealed class ZzzOverlayServiceSnapshotTests
 		}
 	}
 
+	[Fact]
+	public async Task SnapshotBridgesCompleteVisionFramesByStreamAndKeepsSourcesIndependent()
+	{
+		string runRoot = CreateTempRoot();
+		try
+		{
+			ZContext context = new(new OneDragonEnvironment(runRoot));
+			using ZzzRuntimeManager runtime = new(runRoot, NullLogger<ZzzRuntimeManager>.Instance, _ => context);
+			using ZzzOverlayService service = new(runtime);
+			runtime.EnsureContext();
+			_ = service.GetSnapshot();
+			DateTimeOffset firstCapture = DateTimeOffset.UtcNow.AddSeconds(-1d);
+			DateTimeOffset secondCapture = firstCapture.AddMilliseconds(100);
+			const string pathfinding = "yolo:lost_void:pathfinding";
+			const string battle = "yolo:lost_void:battle";
+
+			context.EventBus.Publish("Overlay.Vision", new VisionDrawEventPayload(
+			[
+				new VisionDrawItem(pathfinding, "target", 10, 20, 60, 80)
+			],
+				stream: pathfinding,
+				frameTime: firstCapture.ToUnixTimeMilliseconds() / 1000d,
+				replaceFrame: true));
+			await WaitForAsync(() => service.GetSnapshot().VisionFrame?.Items.Any(item => item.Id.StartsWith(pathfinding + ":", StringComparison.Ordinal)) == true);
+
+			context.EventBus.Publish("Overlay.Vision", new VisionDrawEventPayload(
+				[],
+				stream: pathfinding,
+				frameTime: secondCapture.ToUnixTimeMilliseconds() / 1000d,
+				replaceFrame: true));
+			await WaitForAsync(() => service.GetSnapshot().VisionFrame is null || service.GetSnapshot().VisionFrame.Items.All(item => !item.Id.StartsWith(pathfinding + ":", StringComparison.Ordinal)));
+
+			context.EventBus.Publish("Overlay.Vision", new VisionDrawEventPayload(
+			[
+				new VisionDrawItem(pathfinding, "stale", 10, 20, 60, 80)
+			],
+				stream: pathfinding,
+				frameTime: firstCapture.ToUnixTimeMilliseconds() / 1000d,
+				replaceFrame: true));
+			await Task.Delay(50);
+			Assert.DoesNotContain(service.GetSnapshot().VisionFrame?.Items ?? [], item => item.Id.StartsWith(pathfinding + ":", StringComparison.Ordinal));
+
+			context.EventBus.Publish("Overlay.Vision", new VisionDrawEventPayload(
+			[
+				new VisionDrawItem(battle, "target", 10, 20, 60, 80)
+			],
+				stream: battle,
+				frameTime: secondCapture.ToUnixTimeMilliseconds() / 1000d,
+				replaceFrame: true));
+			await WaitForAsync(() => service.GetSnapshot().VisionFrame?.Items.Any(item => item.Id.StartsWith(battle + ":", StringComparison.Ordinal)) == true);
+
+			ZzzOverlaySnapshotDto snapshot = service.GetSnapshot();
+			Assert.Single(snapshot.VisionFrame!.Items);
+			Assert.StartsWith(battle + ":", snapshot.VisionFrame.Items[0].Id);
+
+			context.EventBus.Publish("Overlay.Vision", new VisionDrawEventPayload(
+			[
+				new VisionDrawItem(pathfinding, "target", 10, 20, 60, 80)
+			],
+				stream: pathfinding,
+				frameTime: secondCapture.AddMilliseconds(100).ToUnixTimeMilliseconds() / 1000d,
+				replaceFrame: true));
+			await WaitForAsync(() => service.GetSnapshot().VisionFrame?.Items.Count == 2);
+			Assert.Equal(2, service.GetSnapshot().VisionFrame!.Items.Count);
+		}
+		finally
+		{
+			Directory.Delete(runRoot, recursive: true);
+		}
+	}
+
 	/// <summary>
 	/// 自动战斗上下文未初始化时状态快照保持为空，初始化后映射真实运行状态。
 	/// </summary>

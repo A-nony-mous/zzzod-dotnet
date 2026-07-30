@@ -345,6 +345,16 @@ public sealed class ZzzOverlayService : IZzzOverlayService, IDisposable
 		{
 			return;
 		}
+		if (envelope.Payload.ReplaceFrame &&
+			!string.IsNullOrWhiteSpace(envelope.Payload.Stream) &&
+			envelope.Payload.FrameTime is double frameTime)
+		{
+			sourceContext.OverlayDebugBus.PublishVisionFrame(
+				envelope.Payload.Stream,
+				frameTime,
+				envelope.Payload.Items);
+			return;
+		}
 
 		foreach (VisionDrawItem item in envelope.Payload.Items)
 		{

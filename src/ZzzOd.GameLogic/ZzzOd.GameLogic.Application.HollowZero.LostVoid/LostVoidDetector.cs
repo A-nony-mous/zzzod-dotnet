@@ -23,6 +23,12 @@ public sealed class LostVoidDetector : IDisposable
 
 	public const string ClassEntry = "xxxx-入口";
 
+	public const string OverlaySourceNavigation = "yolo:lost_void:navigation";
+
+	public const string OverlaySourcePathfinding = "yolo:lost_void:pathfinding";
+
+	public const string OverlaySourceBattle = "yolo:lost_void:battle";
+
 	public const double DefaultKeepResultSeconds = 2.0;
 
 	public static readonly Point BattleAvatarMaskTopLeft = new(104, 40);
@@ -86,10 +92,11 @@ public sealed class LostVoidDetector : IDisposable
 		double? runTime = null,
 		IReadOnlyList<string>? labelList = null,
 		IReadOnlyList<string>? categoryList = null,
-		YoloOverlayCoordinateContext? overlayCoordinateContext = null)
+		YoloOverlayCoordinateContext? overlayCoordinateContext = null,
+		string? overlaySource = null)
 	{
 		using Mat maskedImage = MaskBattleAvatars(image);
-		return CoreDetector.Run(maskedImage, conf, iou, runTime, labelList, categoryList, overlayCoordinateContext);
+		return CoreDetector.Run(maskedImage, conf, iou, runTime, labelList, categoryList, overlayCoordinateContext, overlaySource);
 	}
 
 	public (bool WithInteract, bool WithDistance, bool WithEntry) IsFrameWithAll(YoloDetectFrameResult? frameResult = null)

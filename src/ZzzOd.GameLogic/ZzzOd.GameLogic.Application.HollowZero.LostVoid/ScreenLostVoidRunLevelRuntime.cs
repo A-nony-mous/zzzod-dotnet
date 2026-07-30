@@ -93,7 +93,21 @@ public sealed class ScreenLostVoidRunLevelRuntime : ILostVoidRunLevelRuntime
 		if (screen != null && operation.GameContext.LostVoid.Detector != null)
 		{
 			IReadOnlyList<string> labelList = BuildLabelList(operation.GameContext.LostVoid.Detector, ignoreList);
-			detectResult = operation.GameContext.LostVoid.Detector.Run(screen, 0.6f, 0.5f, (double?)screenshotTimeUtc?.ToUnixTimeMilliseconds() / 1000.0, labelList);
+				detectResult = operation.GameContext.LostVoid.Detector.Run(
+					screen,
+				0.6f,
+				0.5f,
+				(double?)screenshotTimeUtc?.ToUnixTimeMilliseconds() / 1000.0,
+				labelList,
+				null,
+					null,
+					LostVoidDetector.OverlaySourceNavigation);
+			operation.GameContext.Logger.Information(
+				"迷失之地非战斗检测: FrameTimeUtc={FrameTimeUtc}, FrameId={FrameId}, OverlaySource={OverlaySource}, Detect={Detect}",
+				screenshotTimeUtc ?? DateTimeOffset.UtcNow,
+				detectResult.FrameId,
+				detectResult.OverlaySource,
+				LostVoidDetectorResultHelper.DescribeDetectedClasses(detectResult));
 		}
 		return Task.FromResult(new LostVoidRunLevelFrame(InNormalWorld: true, ChallengeConfirmAvailable: false, flag2, flag, detectResult));
 	}
@@ -405,7 +419,15 @@ public sealed class ScreenLostVoidRunLevelRuntime : ILostVoidRunLevelRuntime
 			{
 				detectorRan = true;
 				long timestamp = Stopwatch.GetTimestamp();
-				YoloDetectFrameResult frameResult = _inBattleDetectorOverride?.Invoke(screen, (double)frameTimeUtc.ToUnixTimeMilliseconds() / 1000.0) ?? operation.GameContext.LostVoid.Detector.Run(screen, 0.9f, 0.5f, (double)frameTimeUtc.ToUnixTimeMilliseconds() / 1000.0);
+				YoloDetectFrameResult frameResult = _inBattleDetectorOverride?.Invoke(screen, (double)frameTimeUtc.ToUnixTimeMilliseconds() / 1000.0) ?? operation.GameContext.LostVoid.Detector.Run(
+					screen,
+					0.9f,
+					0.5f,
+					(double)frameTimeUtc.ToUnixTimeMilliseconds() / 1000.0,
+					null,
+					null,
+					null,
+					LostVoidDetector.OverlaySourceBattle);
 				elapsedMilliseconds = Stopwatch.GetElapsedTime(timestamp).TotalMilliseconds;
 				(bool WithInteract, bool WithDistance, bool WithEntry) tuple = LostVoidDetectorResultHelper.IsFrameWithAll(frameResult);
 				bool item = tuple.WithInteract;
@@ -413,7 +435,7 @@ public sealed class ScreenLostVoidRunLevelRuntime : ILostVoidRunLevelRuntime
 				bool item3 = tuple.WithEntry;
 				noLongerInBattleByDetection = item || item2 || item3;
 				detect = LostVoidDetectorResultHelper.DescribeDetectedClasses(frameResult);
-				operation.GameContext.Logger.Information("迷失之地战斗检测: Region={Region}, FrameTimeUtc={FrameTimeUtc}, Detect={Detect}, Interact={Interact}, Distance={Distance}, Entry={Entry}, ElapsedMilliseconds={ElapsedMilliseconds:F2}", operation.RegionType, frameTimeUtc, detect, item, item2, item3, elapsedMilliseconds);
+				operation.GameContext.Logger.Information("迷失之地战斗检测: Region={Region}, FrameTimeUtc={FrameTimeUtc}, FrameId={FrameId}, OverlaySource={OverlaySource}, Detect={Detect}, Interact={Interact}, Distance={Distance}, Entry={Entry}, ElapsedMilliseconds={ElapsedMilliseconds:F2}", operation.RegionType, frameTimeUtc, frameResult.FrameId, frameResult.OverlaySource, detect, item, item2, item3, elapsedMilliseconds);
 			}
 			bool nextRegionHint = !noLongerInBattleByDetection && ScreenUtils.FindByOcr(operation.GameContext, screen, "前往下一个区域", operation.GameContext.ScreenContext.GetArea("迷失之地-大世界", "区域-文本提示"), 0.5);
 			return new LostVoidInBattleProbeResult(frameTimeUtc, noLongerInBattleByDetection, nextRegionHint, detect, elapsedMilliseconds, detectorRan);

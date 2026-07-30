@@ -305,7 +305,15 @@ public sealed class LostVoidMoveByDetectionOperation : ZOperation
 		}
 		if (base.LastScreenshot != null)
 		{
-			YoloDetectFrameResult frameResult = base.ZContext.LostVoid.Detector?.Run(base.LastScreenshot, 0.6f, 0.5f, (double?)base.LastScreenshotTimeUtc?.ToUnixTimeMilliseconds() / 1000.0, _service.BuildLabelList(base.ZContext.LostVoid.Detector, _ignoreEntryList)) ?? new YoloDetectFrameResult(Array.Empty<YoloDetectObjectResult>(), 0.0);
+			YoloDetectFrameResult frameResult = base.ZContext.LostVoid.Detector?.Run(
+				base.LastScreenshot,
+				0.6f,
+				0.5f,
+				(double?)base.LastScreenshotTimeUtc?.ToUnixTimeMilliseconds() / 1000.0,
+				_service.BuildLabelList(base.ZContext.LostVoid.Detector, _ignoreEntryList),
+				null,
+				null,
+				LostVoidDetector.OverlaySourcePathfinding) ?? new YoloDetectFrameResult(Array.Empty<YoloDetectObjectResult>(), 0.0);
 			WriteTargetedNoTargetEvidence("脱困后重新识别", frameResult, afterEscape: true);
 			if (base.ZContext.LostVoid.Detector?.GetResultByX(frameResult, "0001-距离") != null)
 			{
@@ -373,12 +381,20 @@ public sealed class LostVoidMoveByDetectionOperation : ZOperation
 
 	private YoloDetectFrameResult RunDetection(Mat screen)
 	{
-		return DetectFrameOverride?.Invoke() ?? base.ZContext.LostVoid.Detector?.Run(screen, 0.6f, 0.5f, (double?)base.LastScreenshotTimeUtc?.ToUnixTimeMilliseconds() / 1000.0, _service.BuildLabelList(base.ZContext.LostVoid.Detector, _ignoreEntryList)) ?? new YoloDetectFrameResult(Array.Empty<YoloDetectObjectResult>(), 0.0);
+		return DetectFrameOverride?.Invoke() ?? base.ZContext.LostVoid.Detector?.Run(
+			screen,
+			0.6f,
+			0.5f,
+			(double?)base.LastScreenshotTimeUtc?.ToUnixTimeMilliseconds() / 1000.0,
+			_service.BuildLabelList(base.ZContext.LostVoid.Detector, _ignoreEntryList),
+			null,
+			null,
+			LostVoidDetector.OverlaySourcePathfinding) ?? new YoloDetectFrameResult(Array.Empty<YoloDetectObjectResult>(), 0.0);
 	}
 
 	private void LogDetectionSummary(string nodeName, YoloDetectFrameResult frameResult)
 	{
-		base.ZContext.Logger.Information("迷失之地寻路节点[" + nodeName + "]: Target={Target}, Detect={Detect}", _targetType, DescribeDetectedClasses(frameResult));
+		base.ZContext.Logger.Information("迷失之地寻路节点[" + nodeName + "]: Target={Target}, FrameTimeUtc={FrameTimeUtc}, FrameId={FrameId}, OverlaySource={OverlaySource}, Detect={Detect}", _targetType, ToFrameTimeUtc(frameResult.RunTime), frameResult.FrameId, frameResult.OverlaySource, DescribeDetectedClasses(frameResult));
 	}
 
 	private void LogHigherPriorityFallback(string nodeName, string higherPriorityTarget)
@@ -388,8 +404,10 @@ public sealed class LostVoidMoveByDetectionOperation : ZOperation
 
 	private void LogNoTrackableTarget(string nodeName, YoloDetectFrameResult frameResult)
 	{
-		base.ZContext.Logger.Information("迷失之地寻路节点[" + nodeName + "]: Target={Target}, 未识别到可追踪目标，Detect={Detect}", _targetType, DescribeDetectedClasses(frameResult));
+		base.ZContext.Logger.Information("迷失之地寻路节点[" + nodeName + "]: Target={Target}, 未识别到可追踪目标，FrameTimeUtc={FrameTimeUtc}, FrameId={FrameId}, OverlaySource={OverlaySource}, Detect={Detect}", _targetType, ToFrameTimeUtc(frameResult.RunTime), frameResult.FrameId, frameResult.OverlaySource, DescribeDetectedClasses(frameResult));
 	}
+
+	private static DateTimeOffset ToFrameTimeUtc(double runTime) => DateTimeOffset.FromUnixTimeMilliseconds((long)Math.Round(runTime * 1000.0));
 
 	private void WriteTargetedNoTargetEvidence(string reason, YoloDetectFrameResult frameResult, bool afterEscape = false)
 	{

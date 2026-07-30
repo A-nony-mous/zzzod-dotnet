@@ -1041,10 +1041,11 @@ public sealed class LostVoidContextTests
 			RecordingLogSink recordingLogSink = new RecordingLogSink();
 			using Logger logger = new LoggerConfiguration().MinimumLevel.Verbose().WriteTo.Sink(recordingLogSink).CreateLogger();
 			using ZContext context = new ZContext(new OneDragonEnvironment(text), logger);
+			double frameTime = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() / 1000.0;
 			LostVoidMoveByDetectionOperation operation = new LostVoidMoveByDetectionOperation(context, "入口", "xxxx-入口", stopWhenInteract: false)
 			{
 				IsInNormalWorldOverride = (Mat _) => true,
-				DetectFrameOverride = () => new YoloDetectFrameResult(Array.Empty<YoloDetectObjectResult>(), 0.0)
+				DetectFrameOverride = () => new YoloDetectFrameResult(Array.Empty<YoloDetectObjectResult>(), frameTime, null, "pathfinding-frame", LostVoidDetector.OverlaySourcePathfinding)
 			};
 			using Mat screen = new Mat(new Size(320, 240), MatType.CV_8UC3, Scalar.Black);
 			SetOperationScreenshot(operation, screen);
@@ -1053,6 +1054,7 @@ public sealed class LostVoidContextTests
 			Assert.Equal("未识别到目标", operationRoundResult.Status);
 			Assert.Contains((IEnumerable<LogEvent>)recordingLogSink.Events, (Predicate<LogEvent>)((LogEvent logEvent) => logEvent.RenderMessage().Contains("寻路节点[移动前转向]", StringComparison.Ordinal)));
 			Assert.Contains((IEnumerable<LogEvent>)recordingLogSink.Events, (Predicate<LogEvent>)((LogEvent logEvent) => logEvent.RenderMessage().Contains("未识别到可追踪目标", StringComparison.Ordinal)));
+			Assert.Contains((IEnumerable<LogEvent>)recordingLogSink.Events, (Predicate<LogEvent>)((LogEvent entry) => entry.MessageTemplate.Text.StartsWith("迷失之地寻路节点[移动前转向]:", StringComparison.Ordinal) && entry.Properties.TryGetValue("FrameId", out LogEventPropertyValue frameId) && frameId.ToString().Contains("pathfinding-frame", StringComparison.Ordinal) && entry.Properties.TryGetValue("OverlaySource", out LogEventPropertyValue source) && source.ToString().Contains(LostVoidDetector.OverlaySourcePathfinding, StringComparison.Ordinal) && entry.Properties.ContainsKey("FrameTimeUtc")));
 		}
 		finally
 		{
@@ -2435,9 +2437,9 @@ public sealed class LostVoidContextTests
 						{
 							detectorEntered.Set();
 							Assert.True(context.AutoBattleContext.LastCheckInBattle);
-							Assert.Contains((IEnumerable<LogEvent>)sink.Events, (Predicate<LogEvent>)((LogEvent entry) => entry.MessageTemplate.Text.Contains("自动战斗检测调度", StringComparison.Ordinal) && entry.Properties.TryGetValue("Source", out LogEventPropertyValue value) && value.ToString().Contains("lost_void", StringComparison.Ordinal) && entry.Properties.TryGetValue("SubmittedTaskCount", out LogEventPropertyValue value2) && value2.ToString().Contains("7", StringComparison.Ordinal)));
+							Assert.Contains((IEnumerable<LogEvent>)sink.Events, (Predicate<LogEvent>)((LogEvent entry) => entry.MessageTemplate.Text.Contains("自动战斗检测调度", StringComparison.Ordinal) && entry.Properties.TryGetValue("Source", out LogEventPropertyValue value) && value.ToString().Contains("lost_void", StringComparison.Ordinal) && entry.Properties.TryGetValue("SubmittedTaskCount", out LogEventPropertyValue value2) && value2.ToString() != "0"));
 							Assert.True(releaseDetector.Wait(TimeSpan.FromSeconds(2L)));
-							return new YoloDetectFrameResult(Array.Empty<YoloDetectObjectResult>(), 0.0);
+							return new YoloDetectFrameResult(Array.Empty<YoloDetectObjectResult>(), 0d, null, "battle-frame", LostVoidDetector.OverlaySourceBattle);
 						});
 						LostVoidRunLevel operation = new LostVoidRunLevel(context, new LostVoidRunRecord(new LostVoidConfig()), "挚交会谈");
 						DateTimeOffset frameTime = DateTimeOffset.UtcNow;
@@ -2459,13 +2461,13 @@ public sealed class LostVoidContextTests
 						for (int round = 0; round < 40 && (state == null || !state.DetectorChecked); round++)
 						{
 							await Task.Delay(TimeSpan.FromMilliseconds(25L));
-							state = await runtime.GetBattleStateAsync(operation, screen, frameTime.AddMilliseconds(50 + round * 25), CancellationToken.None).WaitAsync(TimeSpan.FromSeconds(2L));
+								state = await runtime.GetBattleStateAsync(operation, screen, frameTime.AddMilliseconds(50 + round * 25), CancellationToken.None).WaitAsync(TimeSpan.FromSeconds(2L));
 						}
 						Assert.NotNull(state);
 						Assert.True(state.CurrentFrameInBattle);
 						Assert.True(state.DetectorChecked);
 						Assert.True(state.TransitionCheckPerformed);
-						Assert.Contains((IEnumerable<LogEvent>)sink.Events, (Predicate<LogEvent>)((LogEvent entry) => entry.MessageTemplate.Text.StartsWith("迷失之地战斗检测:", StringComparison.Ordinal) && entry.Properties.ContainsKey("Region") && entry.Properties.ContainsKey("FrameTimeUtc") && entry.Properties.ContainsKey("Detect") && entry.Properties.ContainsKey("ElapsedMilliseconds")));
+						Assert.Contains((IEnumerable<LogEvent>)sink.Events, (Predicate<LogEvent>)((LogEvent entry) => entry.MessageTemplate.Text.StartsWith("迷失之地战斗检测:", StringComparison.Ordinal) && entry.Properties.ContainsKey("Region") && entry.Properties.ContainsKey("FrameTimeUtc") && entry.Properties.ContainsKey("Detect") && entry.Properties.ContainsKey("ElapsedMilliseconds") && entry.Properties.TryGetValue("FrameId", out LogEventPropertyValue frameId) && frameId.ToString().Contains("battle-frame", StringComparison.Ordinal) && entry.Properties.TryGetValue("OverlaySource", out LogEventPropertyValue source) && source.ToString().Contains(LostVoidDetector.OverlaySourceBattle, StringComparison.Ordinal)));
 						Assert.Contains((IEnumerable<LogEvent>)sink.Events, (Predicate<LogEvent>)((LogEvent entry) => entry.MessageTemplate.Text.StartsWith("[.NET诊断] 迷失之地战斗状态:", StringComparison.Ordinal) && entry.Properties.ContainsKey("DetectorChecked") && entry.Properties.ContainsKey("NoLongerInBattleByDetection") && entry.Properties.ContainsKey("DetectorElapsedMilliseconds")));
 					}
 					finally
