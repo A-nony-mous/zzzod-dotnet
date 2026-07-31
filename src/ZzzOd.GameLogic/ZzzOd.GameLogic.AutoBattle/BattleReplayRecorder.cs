@@ -51,7 +51,8 @@ public sealed class BattleReplayRecorder : IStateRecordUpdateListener, IShutdown
     private readonly string _configurationHash;
     private readonly int _maxFrames;
     private readonly long _maxBytes;
-    private readonly Task _writerStartGate;
+    private readonly Task _requiredWriterStartGate;
+    private readonly Task _frameWriterStartGate;
     private readonly object _stateLock = new();
     private Task? _writerTask;
     private DateTimeOffset _startedAtUtc;
@@ -86,6 +87,29 @@ public sealed class BattleReplayRecorder : IStateRecordUpdateListener, IShutdown
         long maxBytes,
         int queueCapacity,
         Task writerStartGate)
+        : this(
+            replayRoot,
+            label,
+            configurationName,
+            configurationHash,
+            maxFrames,
+            maxBytes,
+            queueCapacity,
+            writerStartGate,
+            writerStartGate)
+    {
+    }
+
+    internal BattleReplayRecorder(
+        string replayRoot,
+        string label,
+        string configurationName,
+        string configurationHash,
+        int maxFrames,
+        long maxBytes,
+        int queueCapacity,
+        Task requiredWriterStartGate,
+        Task frameWriterStartGate)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(replayRoot);
         ArgumentException.ThrowIfNullOrWhiteSpace(label);
@@ -93,7 +117,8 @@ public sealed class BattleReplayRecorder : IStateRecordUpdateListener, IShutdown
         _configurationHash = configurationHash;
         _maxFrames = maxFrames;
         _maxBytes = maxBytes;
-        _writerStartGate = writerStartGate ?? throw new ArgumentNullException(nameof(writerStartGate));
+        _requiredWriterStartGate = requiredWriterStartGate ?? throw new ArgumentNullException(nameof(requiredWriterStartGate));
+        _frameWriterStartGate = frameWriterStartGate ?? throw new ArgumentNullException(nameof(frameWriterStartGate));
         string folder = $"{DateTimeOffset.UtcNow:yyyyMMdd_HHmmss}_{Sanitize(label)}";
         _packageDirectory = Path.Combine(replayRoot, folder);
         _requiredQueue = Channel.CreateUnbounded<ReplayItem>(new UnboundedChannelOptions
@@ -137,7 +162,9 @@ public sealed class BattleReplayRecorder : IStateRecordUpdateListener, IShutdown
             Directory.CreateDirectory(Path.Combine(_packageDirectory, "frames"));
             _startedAtUtc = DateTimeOffset.UtcNow;
             WriteManifest();
-            _writerTask = Task.Run(WriteLoopAsync);
+            Task requiredWriter = Task.Run(WriteRequiredLoopAsync);
+            Task frameWriter = Task.Run(WriteFrameLoopAsync);
+            _writerTask = Task.WhenAll(requiredWriter, frameWriter);
         }
     }
 
@@ -268,47 +295,42 @@ public sealed class BattleReplayRecorder : IStateRecordUpdateListener, IShutdown
         return true;
     }
 
-    private async Task WriteLoopAsync()
+    private async Task WriteRequiredLoopAsync()
     {
         try
         {
-            await _writerStartGate.ConfigureAwait(false);
+            await _requiredWriterStartGate.ConfigureAwait(false);
             await using FileStream states = File.Create(Path.Combine(_packageDirectory, "states.jsonl"));
             await using FileStream decisions = File.Create(Path.Combine(_packageDirectory, "decisions.jsonl"));
-            while (true)
+            while (await _requiredQueue.Reader.WaitToReadAsync().ConfigureAwait(false))
             {
-                bool wroteItem = false;
-                int requiredBatchCount = 0;
-                while (requiredBatchCount < 256 && _requiredQueue.Reader.TryRead(out ReplayItem? item))
+                while (_requiredQueue.Reader.TryRead(out ReplayItem? item))
                 {
                     await WriteRequiredItemAsync(states, decisions, item).ConfigureAwait(false);
-                    requiredBatchCount++;
-                    wroteItem = true;
                 }
-
-                if (_frameQueue.Reader.TryRead(out FrameItem? frame))
-                {
-                    WriteFrame(frame);
-                    wroteItem = true;
-                }
-
-                if (wroteItem)
-                {
-                    continue;
-                }
-
-                bool requiredCompleted = _requiredQueue.Reader.Completion.IsCompleted;
-                bool framesCompleted = _frameQueue.Reader.Completion.IsCompleted;
-                if (requiredCompleted && framesCompleted)
-                {
-                    break;
-                }
-
-                await WaitForDataAsync(requiredCompleted, framesCompleted).ConfigureAwait(false);
             }
 
             await states.FlushAsync().ConfigureAwait(false);
             await decisions.FlushAsync().ConfigureAwait(false);
+        }
+        catch (Exception ex)
+        {
+            StopAfterFailure(ex);
+        }
+    }
+
+    private async Task WriteFrameLoopAsync()
+    {
+        try
+        {
+            await _frameWriterStartGate.ConfigureAwait(false);
+            while (await _frameQueue.Reader.WaitToReadAsync().ConfigureAwait(false))
+            {
+                while (_frameQueue.Reader.TryRead(out FrameItem? frame))
+                {
+                    WriteFrame(frame);
+                }
+            }
         }
         catch (Exception ex)
         {
@@ -331,25 +353,6 @@ public sealed class BattleReplayRecorder : IStateRecordUpdateListener, IShutdown
                 await WriteJsonLineAsync(decisions, decision.Value).ConfigureAwait(false);
                 break;
         }
-    }
-
-    private async Task WaitForDataAsync(bool requiredCompleted, bool framesCompleted)
-    {
-        if (requiredCompleted)
-        {
-            await _frameQueue.Reader.WaitToReadAsync().ConfigureAwait(false);
-            return;
-        }
-
-        if (framesCompleted)
-        {
-            await _requiredQueue.Reader.WaitToReadAsync().ConfigureAwait(false);
-            return;
-        }
-
-        Task<bool> requiredWait = _requiredQueue.Reader.WaitToReadAsync().AsTask();
-        Task<bool> frameWait = _frameQueue.Reader.WaitToReadAsync().AsTask();
-        await Task.WhenAny(requiredWait, frameWait).ConfigureAwait(false);
     }
 
     private void WriteFrame(FrameItem frame)

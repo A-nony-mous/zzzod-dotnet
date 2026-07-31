@@ -120,6 +120,67 @@ public sealed class BattleReplayRecorderTests
     }
 
     [Fact]
+    public async Task Recorder_DisposeWaitsForBlockedFrameWriterWithoutDelayingRequiredWriter()
+    {
+        string root = CreateTempRoot();
+        var frameWriterGate = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var recorder = new BattleReplayRecorder(
+            root,
+            "independent-writers",
+            "测试配置",
+            "ABC",
+            maxFrames: 10,
+            maxBytes: 16 * 1024 * 1024,
+            queueCapacity: 1,
+            requiredWriterStartGate: Task.CompletedTask,
+            frameWriterStartGate: frameWriterGate.Task);
+        Task? disposeTask = null;
+
+        try
+        {
+            recorder.Start();
+            using var frame = new Mat(8, 8, MatType.CV_8UC3, Scalar.Black);
+            Assert.True(recorder.RecordFrame(frame, DateTimeOffset.UtcNow));
+            recorder.RecordDecision(new BattleReplayDecision(
+                "completed",
+                "主循环",
+                "尾部操作",
+                true,
+                null,
+                DateTimeOffset.UtcNow));
+
+            disposeTask = Task.Run(recorder.Dispose);
+            string decisionsPath = Path.Combine(recorder.PackageDirectory, "decisions.jsonl");
+            await WaitForFileContentAsync(decisionsPath, "尾部操作");
+
+            Assert.False(disposeTask.IsCompleted);
+            Assert.Contains("尾部操作", await File.ReadAllTextAsync(decisionsPath), StringComparison.Ordinal);
+
+            frameWriterGate.SetResult();
+            await disposeTask;
+
+            Assert.Single(Directory.GetFiles(Path.Combine(recorder.PackageDirectory, "frames"), "*.webp"));
+            string manifest = await File.ReadAllTextAsync(Path.Combine(recorder.PackageDirectory, "manifest.yml"));
+            Assert.DoesNotContain("endedAtUtc: \n", manifest, StringComparison.Ordinal);
+            Assert.Contains("droppedFrameCount: 0", manifest, StringComparison.Ordinal);
+            Assert.Contains("truncated: false", manifest, StringComparison.Ordinal);
+        }
+        finally
+        {
+            frameWriterGate.TrySetResult();
+            if (disposeTask != null)
+            {
+                await disposeTask;
+            }
+            else
+            {
+                recorder.Dispose();
+            }
+            Directory.Delete(root, recursive: true);
+        }
+    }
+
+    [Fact]
     public async Task Recorder_StopsAfterFrameWriteFailureWithoutThrowingToCaller()
     {
         string root = CreateTempRoot();
@@ -151,6 +212,21 @@ public sealed class BattleReplayRecorderTests
         }
 
         Assert.True(File.Exists(path));
+    }
+
+    private static async Task WaitForFileContentAsync(string path, string expected)
+    {
+        for (int i = 0; i < 100; i++)
+        {
+            if (File.Exists(path) && (await File.ReadAllTextAsync(path)).Contains(expected, StringComparison.Ordinal))
+            {
+                return;
+            }
+
+            await Task.Delay(20);
+        }
+
+        Assert.Fail($"文件未在超时前写入预期内容: {path}");
     }
 
     private static async Task WaitUntilStoppedAsync(BattleReplayRecorder recorder)

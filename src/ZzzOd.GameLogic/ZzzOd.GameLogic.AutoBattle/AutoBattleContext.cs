@@ -251,9 +251,7 @@ public class AutoBattleContext : IRunParticipant
 	{
 		if (ReplayRecorder != null)
 		{
-			StateRecordService.UnregisterOperator(ReplayRecorder);
-			ReplayRecorder.Dispose();
-			ReplayRecorder = null;
+			StopReplayRecorder();
 		}
 		AutoOp = null;
 		_replayOpName = opName;
@@ -515,8 +513,22 @@ public class AutoBattleContext : IRunParticipant
 		}
 
 		StateRecordService.UnregisterOperator(recorder);
-		recorder.Dispose();
 		ReplayRecorder = null;
+		Task shutdownTask = recorder.ShutdownAsync(CancellationToken.None);
+		_ = ObserveReplayShutdownAsync(recorder, shutdownTask);
+	}
+
+	private async Task ObserveReplayShutdownAsync(BattleReplayRecorder recorder, Task shutdownTask)
+	{
+		try
+		{
+			await shutdownTask.ConfigureAwait(false);
+			_ctx.Logger.Information("战斗回放录制后台收尾完成: PackageDirectory={PackageDirectory}, DroppedFrameCount={DroppedFrameCount}", recorder.PackageDirectory, recorder.DroppedFrameCount);
+		}
+		catch (Exception exception)
+		{
+			_ctx.Logger.Error(exception, "战斗回放录制后台收尾失败: PackageDirectory={PackageDirectory}", recorder.PackageDirectory);
+		}
 	}
 
 	public bool CheckBattleState(Mat? screen, double screenshotTime, bool checkBattleEndNormalResult = false, bool checkBattleEndHollowResult = false, bool checkBattleEndDefenseResult = false, bool checkDistance = false, bool sync = false, string source = "unknown")
