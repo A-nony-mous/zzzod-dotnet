@@ -2150,7 +2150,7 @@ public sealed class LostVoidContextTests
 			using ZContext context = new ZContext(new OneDragonEnvironment(rootDirectory));
 			ScriptedLostVoidRunLevelRuntime runtime = new ScriptedLostVoidRunLevelRuntime
 			{
-				BattleState = new LostVoidBattleState(CurrentFrameInBattle: true, NextRegionHint: false, NoLongerInBattleByDetection: true)
+				BattleState = new LostVoidBattleState(CurrentFrameInBattle: true, NextRegionHint: false, NoLongerInBattleByDetection: true, DetectorChecked: true)
 			};
 			LostVoidRunLevel operation = new LostVoidRunLevel(context, new LostVoidRunRecord(new LostVoidConfig()), "挚交会谈", runtime);
 			for (int i = 0; i < 9; i++)
@@ -2192,8 +2192,8 @@ public sealed class LostVoidContextTests
 	public async Task RunLevel_InBattleYoloExitCountResetsOnCleanDetectionFrame()
 	{
 		using ZContext context = new ZContext(new OneDragonEnvironment(CreateTempRoot()));
-		LostVoidBattleState yoloExit = new LostVoidBattleState(CurrentFrameInBattle: true, NoLongerInBattleByDetection: true);
-		LostVoidBattleState clean = new LostVoidBattleState(CurrentFrameInBattle: true, NoLongerInBattleByDetection: false);
+		LostVoidBattleState yoloExit = new LostVoidBattleState(CurrentFrameInBattle: true, NoLongerInBattleByDetection: true, DetectorChecked: true);
+		LostVoidBattleState clean = new LostVoidBattleState(CurrentFrameInBattle: true, NoLongerInBattleByDetection: false, DetectorChecked: true);
 		ScriptedLostVoidRunLevelRuntime runtime = new ScriptedLostVoidRunLevelRuntime
 		{
 			BattleStates = new Queue<LostVoidBattleState>(Enumerable.Repeat(yoloExit, 9).Append(clean).Concat(Enumerable.Repeat(yoloExit, 9)))
@@ -2206,6 +2206,29 @@ public sealed class LostVoidContextTests
 		}
 
 		Assert.Equal(0, runtime.StopAutoBattleCount);
+	}
+
+	[Fact]
+	public async Task RunLevel_InBattleYoloExitCountIgnoresRoundsWithoutDetectorResult()
+	{
+		using ZContext context = new ZContext(new OneDragonEnvironment(CreateTempRoot()));
+		LostVoidBattleState yoloExit = new LostVoidBattleState(CurrentFrameInBattle: true, NoLongerInBattleByDetection: true, DetectorChecked: true);
+		LostVoidBattleState detectorPending = new LostVoidBattleState(CurrentFrameInBattle: true, NoLongerInBattleByDetection: false, TransitionCheckPerformed: true, DetectorChecked: false);
+		ScriptedLostVoidRunLevelRuntime runtime = new ScriptedLostVoidRunLevelRuntime
+		{
+			BattleStates = new Queue<LostVoidBattleState>(Enumerable.Range(0, 10).SelectMany(_ => new[] { yoloExit, detectorPending }))
+		};
+		LostVoidRunLevel operation = new LostVoidRunLevel(context, new LostVoidRunRecord(new LostVoidConfig()), "挚交会谈", runtime);
+
+		for (int i = 0; i < 18; i++)
+		{
+			Assert.Equal(OperationRoundResultKind.Wait, (await InvokeInBattleAsync(operation)).Kind);
+		}
+		OperationRoundResult completed = await InvokeInBattleAsync(operation);
+
+		Assert.True(completed.IsSuccess);
+		Assert.Equal("识别需移动交互", completed.Status);
+		Assert.Equal(1, runtime.StopAutoBattleCount);
 	}
 
 	[Fact]
@@ -2306,7 +2329,7 @@ public sealed class LostVoidContextTests
 		using Logger logger = new LoggerConfiguration().MinimumLevel.Verbose().WriteTo.Sink(sink).CreateLogger();
 		using ZContext context = new ZContext(new OneDragonEnvironment(CreateTempRoot()), logger);
 		context.LostVoid.PriorityUpdated = true;
-		LostVoidBattleState yoloExit = new LostVoidBattleState(CurrentFrameInBattle: true, NoLongerInBattleByDetection: true);
+		LostVoidBattleState yoloExit = new LostVoidBattleState(CurrentFrameInBattle: true, NoLongerInBattleByDetection: true, DetectorChecked: true);
 		ScriptedLostVoidRunLevelRuntime runtime = new ScriptedLostVoidRunLevelRuntime
 		{
 			BattleStates = new Queue<LostVoidBattleState>(Enumerable.Repeat(yoloExit, 10)),

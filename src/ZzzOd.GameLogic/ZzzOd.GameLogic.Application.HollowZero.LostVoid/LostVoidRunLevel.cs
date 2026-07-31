@@ -562,10 +562,13 @@ public sealed class LostVoidRunLevel : ZOperation
 				return RoundWaitForScreenshotRound(TimeSpan.FromSeconds(base.ZContext.BattleAssistantConfig.ScreenshotInterval));
 			}
 			_nextRegionHintTimes = 0;
-			_noInBattleTimes = (state.NoLongerInBattleByDetection ? (_noInBattleTimes + 1) : 0);
-			if (state.NoLongerInBattleByDetection)
+			if (state.DetectorChecked)
 			{
-				LogBattleTransition("InBattleYolo", _noInBattleTimes, InBattleDetectionExitThreshold, _noInBattleTimes >= InBattleDetectionExitThreshold ? "StopAutoBattleAndMove" : "KeepAutoBattle");
+				_noInBattleTimes = (state.NoLongerInBattleByDetection ? (_noInBattleTimes + 1) : 0);
+				if (state.NoLongerInBattleByDetection)
+				{
+					LogBattleTransition("InBattleYolo", _noInBattleTimes, InBattleDetectionExitThreshold, _noInBattleTimes >= InBattleDetectionExitThreshold ? "StopAutoBattleAndMove" : "KeepAutoBattle");
+				}
 			}
 			if (_noInBattleTimes >= InBattleDetectionExitThreshold)
 			{
