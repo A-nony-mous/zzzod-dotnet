@@ -437,7 +437,16 @@ public sealed class ScreenLostVoidRunLevelRuntime : ILostVoidRunLevelRuntime
 				detect = LostVoidDetectorResultHelper.DescribeDetectedClasses(frameResult);
 				operation.GameContext.Logger.Information("迷失之地战斗检测: Region={Region}, FrameTimeUtc={FrameTimeUtc}, FrameId={FrameId}, OverlaySource={OverlaySource}, Detect={Detect}, Interact={Interact}, Distance={Distance}, Entry={Entry}, ElapsedMilliseconds={ElapsedMilliseconds:F2}", operation.RegionType, frameTimeUtc, frameResult.FrameId, frameResult.OverlaySource, detect, item, item2, item3, elapsedMilliseconds);
 			}
-			bool nextRegionHint = !noLongerInBattleByDetection && ScreenUtils.FindByOcr(operation.GameContext, screen, "前往下一个区域", operation.GameContext.ScreenContext.GetArea("迷失之地-大世界", "区域-文本提示"), 0.5);
+			bool nextRegionHint = false;
+			if (!noLongerInBattleByDetection)
+			{
+				OneDragon.Core.Screen.ScreenArea area = operation.GameContext.ScreenContext.GetArea("迷失之地-大世界", "区域-文本提示");
+				IReadOnlyList<OcrMatchResult> ocrResults = operation.GameContext.OcrService.GetOcrResultList(screen, area.ColorRange, area.Rect);
+				string targetText = operation.GameContext.ResolveGameText("前往下一个区域");
+				OcrMatchResult? match = ocrResults.FirstOrDefault(result => StringUtils.FindByLcs(targetText, result.Text, 0.5));
+				nextRegionHint = match != null;
+				operation.GameContext.Logger.Information("迷失之地下层入口 OCR: Region={Region}, FrameTimeUtc={FrameTimeUtc}, Target={Target}, Texts={Texts}, Match={Match}, MatchConfidence={MatchConfidence}", operation.RegionType, frameTimeUtc, targetText, string.Join("|", ocrResults.Select(result => result.Text)), match?.Text ?? "无", match?.Confidence ?? 0d);
+			}
 			return new LostVoidInBattleProbeResult(frameTimeUtc, noLongerInBattleByDetection, nextRegionHint, detect, elapsedMilliseconds, detectorRan);
 		}
 		catch (Exception exception)

@@ -2234,15 +2234,46 @@ public sealed class LostVoidContextTests
 	}
 
 	[Fact]
-	public async Task RunLevel_NextRegionHintStopsAutoBattleImmediately()
+	public async Task RunLevel_NextRegionHintRequiresTwoStableHitsBeforeStoppingAutoBattle()
 	{
 		using ZContext context = new ZContext(new OneDragonEnvironment(CreateTempRoot()));
 		ScriptedLostVoidRunLevelRuntime runtime = new ScriptedLostVoidRunLevelRuntime
 		{
-			BattleState = new LostVoidBattleState(CurrentFrameInBattle: true, NextRegionHint: true, NoLongerInBattleByDetection: true)
+			BattleStates = new Queue<LostVoidBattleState>(new[]
+			{
+				new LostVoidBattleState(CurrentFrameInBattle: true, NextRegionHint: true, NoLongerInBattleByDetection: true),
+				new LostVoidBattleState(CurrentFrameInBattle: true, NextRegionHint: true, NoLongerInBattleByDetection: true)
+			})
 		};
 		LostVoidRunLevel operation = new LostVoidRunLevel(context, new LostVoidRunRecord(new LostVoidConfig()), "挚交会谈", runtime);
 
+		Assert.Equal(OperationRoundResultKind.Wait, (await InvokeInBattleAsync(operation)).Kind);
+		OperationRoundResult result = await InvokeInBattleAsync(operation);
+
+		Assert.True(result.IsSuccess);
+		Assert.Equal("识别需移动交互", result.Status);
+		Assert.Equal(1, runtime.StopAutoBattleCount);
+	}
+
+	[Fact]
+	public async Task RunLevel_NextRegionHintCounterResetsAfterCleanBattleFrame()
+	{
+		using ZContext context = new ZContext(new OneDragonEnvironment(CreateTempRoot()));
+		ScriptedLostVoidRunLevelRuntime runtime = new ScriptedLostVoidRunLevelRuntime
+		{
+			BattleStates = new Queue<LostVoidBattleState>(new[]
+			{
+				new LostVoidBattleState(CurrentFrameInBattle: true, NextRegionHint: true, NoLongerInBattleByDetection: true),
+				new LostVoidBattleState(CurrentFrameInBattle: true, NextRegionHint: false, NoLongerInBattleByDetection: false),
+				new LostVoidBattleState(CurrentFrameInBattle: true, NextRegionHint: true, NoLongerInBattleByDetection: true),
+				new LostVoidBattleState(CurrentFrameInBattle: true, NextRegionHint: true, NoLongerInBattleByDetection: true)
+			})
+		};
+		LostVoidRunLevel operation = new LostVoidRunLevel(context, new LostVoidRunRecord(new LostVoidConfig()), "挚交会谈", runtime);
+
+		Assert.Equal(OperationRoundResultKind.Wait, (await InvokeInBattleAsync(operation)).Kind);
+		Assert.Equal(OperationRoundResultKind.Wait, (await InvokeInBattleAsync(operation)).Kind);
+		Assert.Equal(OperationRoundResultKind.Wait, (await InvokeInBattleAsync(operation)).Kind);
 		OperationRoundResult result = await InvokeInBattleAsync(operation);
 
 		Assert.True(result.IsSuccess);

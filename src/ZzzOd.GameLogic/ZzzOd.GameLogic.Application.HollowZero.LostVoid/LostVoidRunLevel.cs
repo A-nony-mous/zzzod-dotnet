@@ -20,6 +20,8 @@ public sealed class LostVoidRunLevel : ZOperation
 
 	private const int NonBattleScreenExitThreshold = 3;
 
+	private const int NextRegionHintExitThreshold = 2;
+
 	public const string StatusNextLevel = "进入下层";
 
 	public const string StatusComplete = "通关";
@@ -61,6 +63,8 @@ public sealed class LostVoidRunLevel : ZOperation
 	private CancellationToken _cancellationToken;
 
 	private int _noInBattleTimes;
+
+	private int _nextRegionHintTimes;
 
 	private bool _interactAttempted;
 
@@ -546,11 +550,18 @@ public sealed class LostVoidRunLevel : ZOperation
 		{
 			if (state.NextRegionHint)
 			{
-				LogBattleTransition("NextRegionHint", 1, 1, "StopAutoBattleAndMove");
-				_runtime.StopAutoBattle(this);
-				_noInBattleTimes = 0;
-				return RoundSuccess("识别需移动交互");
+				_nextRegionHintTimes++;
+				LogBattleTransition("NextRegionHint", _nextRegionHintTimes, NextRegionHintExitThreshold, _nextRegionHintTimes >= NextRegionHintExitThreshold ? "StopAutoBattleAndMove" : "KeepAutoBattle");
+				if (_nextRegionHintTimes >= NextRegionHintExitThreshold)
+				{
+					_runtime.StopAutoBattle(this);
+					_nextRegionHintTimes = 0;
+					_noInBattleTimes = 0;
+					return RoundSuccess("识别需移动交互");
+				}
+				return RoundWaitForScreenshotRound(TimeSpan.FromSeconds(base.ZContext.BattleAssistantConfig.ScreenshotInterval));
 			}
+			_nextRegionHintTimes = 0;
 			_noInBattleTimes = (state.NoLongerInBattleByDetection ? (_noInBattleTimes + 1) : 0);
 			if (state.NoLongerInBattleByDetection)
 			{
