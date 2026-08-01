@@ -555,6 +555,7 @@ public class AutoBattleContext : IRunParticipant
 		long timestamp3 = Stopwatch.GetTimestamp();
 		if (flag)
 		{
+			StateRecordService.UpdateState(new StateRecord(BattleStateEnum.StatusNormalAttackReady.GetDescription(), screenshotTime));
 			Task<bool> task = Task.FromResult(result: false);
 			if (DodgeContext.TryScheduleDodgeAudioCheck(out var audioRunGeneration))
 			{
@@ -600,6 +601,7 @@ public class AutoBattleContext : IRunParticipant
 		}
 		else
 		{
+			StateRecordService.UpdateState(new StateRecord(BattleStateEnum.StatusNormalAttackReady.GetDescription(), 0.0, null, null, null, isClear: true));
 			TryQueueSecondaryCheck(_chainSubmissionGate, "Chain", source, screenshotTime, GetTaskScreen, delegate(Mat screen2, double queueDelayMilliseconds)
 			{
 				CheckChainAttack(screen2, screenshotTime, updateState: true, source, queueDelayMilliseconds);

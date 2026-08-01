@@ -46,5 +46,7 @@ public enum BattleStateEnum
 	[Description("按键可用-快速支援")]
 	StatusQuickAssistReady,
 	[Description("按键可用-切换后援")]
-	StatusSwitchBackupReady
+	StatusSwitchBackupReady,
+	[Description("按键可用-普通攻击")]
+	StatusNormalAttackReady
 }

@@ -31,7 +31,8 @@ public sealed class AutoBattleStateEnumParityTests
 			[BattleStateEnum.StatusUltimateReady] = "按键可用-终结技",
 			[BattleStateEnum.StatusChainReady] = "按键可用-连携技",
 			[BattleStateEnum.StatusQuickAssistReady] = "按键可用-快速支援",
-			[BattleStateEnum.StatusSwitchBackupReady] = "按键可用-切换后援"
+			[BattleStateEnum.StatusSwitchBackupReady] = "按键可用-切换后援",
+			[BattleStateEnum.StatusNormalAttackReady] = "按键可用-普通攻击"
 		};
 		Assert.Equal(dictionary.Count, Enum.GetValues<BattleStateEnum>().Length);
 		foreach (var (value, expected) in dictionary)
