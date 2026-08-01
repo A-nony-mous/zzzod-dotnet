@@ -37,6 +37,24 @@
     <Setter Property="MinHeight" Value="28" />
   </Style>
 
+  <Style Selector="ToggleButton.zzz-segmented-button">
+    <Setter Property="MinHeight" Value="36" />
+    <Setter Property="Padding" Value="16,6" />
+    <Setter Property="CornerRadius" Value="0" />
+    <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="Background" Value="Transparent" />
+  </Style>
+  <Style Selector="ToggleButton.zzz-segmented-button:pointerover">
+    <Setter Property="Background" Value="{DynamicResource ControlFillColorSecondaryBrush}" />
+  </Style>
+  <Style Selector="ToggleButton.zzz-segmented-button:checked">
+    <Setter Property="Background" Value="{DynamicResource AccentFillColorDefaultBrush}" />
+    <Setter Property="Foreground" Value="{DynamicResource TextOnAccentFillColorPrimaryBrush}" />
+  </Style>
+  <Style Selector="ToggleButton.zzz-segmented-button:checked:pointerover">
+    <Setter Property="Background" Value="{DynamicResource AccentFillColorSecondaryBrush}" />
+  </Style>
+
   <Style Selector="Border.zzz-media-overlay">
     <Setter Property="Background" Value="{DynamicResource ZzzMediaOverlayBrush}" />
   </Style>

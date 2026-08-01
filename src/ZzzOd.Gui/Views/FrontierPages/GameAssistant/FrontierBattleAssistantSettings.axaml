@@ -4,6 +4,13 @@
              xmlns:local="using:ZzzOd.Gui.PageModels.GameAssistant"
              x:Class="ZzzOd.Gui.Views.FrontierPages.GameAssistant.FrontierBattleAssistantSettings"
              x:DataType="local:ZzzBattleAssistantSettingsViewModel">
+  <UserControl.Styles>
+    <Style Selector="ItemsControl.zzz-settings-list fa|FASettingsExpanderItem">
+      <Setter Property="CornerRadius" Value="0" />
+      <Setter Property="Margin" Value="0" />
+      <Setter Property="FocusAdorner" Value="{x:Null}" />
+    </Style>
+  </UserControl.Styles>
 
   <Grid>
     <ScrollViewer HorizontalScrollBarVisibility="Disabled"
@@ -14,30 +21,46 @@
                     Message="{Binding LastError}"
                     IsClosable="False"
                     Severity="Error" />
-        <TabControl Classes="zzz-pivot" x:Name="ModeTabs">
-          <TabItem Header="自动战斗"
-                          Classes="battle-mode-tab"
-                          HorizontalContentAlignment="Stretch"
-                          VerticalContentAlignment="Top">
-            <StackPanel Spacing="8">
+        <StackPanel Spacing="8">
+          <Border HorizontalAlignment="Left"
+                  BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}"
+                  BorderThickness="{DynamicResource ExpanderHeaderBorderThickness}"
+                  CornerRadius="{DynamicResource ControlCornerRadius}"
+                  ClipToBounds="True">
+            <StackPanel Orientation="Horizontal" Spacing="0">
+              <ToggleButton x:Name="AutoBattleModeButton"
+                            Classes="zzz-segmented-button"
+                            Content="自动战斗"
+                            IsChecked="True"
+                            Click="OnAutoBattleModeClicked" />
+              <ToggleButton x:Name="DodgeAssistantModeButton"
+                            Classes="zzz-segmented-button"
+                            Content="闪避助手"
+                            Click="OnDodgeAssistantModeClicked" />
+            </StackPanel>
+          </Border>
+          <Border x:Name="AutoBattleSettingsPanel"
+                  Background="{DynamicResource CardStrokeColorDefaultBrush}"
+                  BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}"
+                  BorderThickness="{DynamicResource ExpanderHeaderBorderThickness}"
+                  CornerRadius="{DynamicResource ControlCornerRadius}"
+                  ClipToBounds="True">
+          <ItemsControl Classes="zzz-settings-list">
+            <ItemsControl.ItemsPanel>
+              <ItemsPanelTemplate>
+                <StackPanel Spacing="1" />
+              </ItemsPanelTemplate>
+            </ItemsControl.ItemsPanel>
+              <fa:FASettingsExpanderItem Content="使用说明"
+                                          Description="先看说明 再使用与提问">
+                <fa:FASettingsExpanderItem.IconSource>
+                  <fa:FAFontIconSource Glyph="&#xE897;" />
+                </fa:FASettingsExpanderItem.IconSource>
+                <fa:FASettingsExpanderItem.Footer>
               <fa:FACommandBar x:Name="HelpCommandBar"
-                             Height="48"
                              DefaultLabelPosition="Right"
                              IsDynamicOverflowEnabled="False"
                              OverflowButtonVisibility="Collapsed">
-                <fa:FACommandBar.Content>
-                  <Grid Margin="8,0"
-                        ColumnDefinitions="Auto,8,Auto"
-                        VerticalAlignment="Center">
-                    <fa:FASymbolIcon Symbol="Message"
-                                   VerticalAlignment="Center" />
-                    <StackPanel Grid.Column="2">
-                      <TextBlock Text="使用说明"
-                                 FontWeight="SemiBold" />
-                      <TextBlock Text="先看说明 再使用与提问" />
-                    </StackPanel>
-                  </Grid>
-                </fa:FACommandBar.Content>
                 <fa:FACommandBar.PrimaryCommands>
                   <fa:FACommandBarButton Label="如何让AI打得更好？"
                                        Click="OnHelpClicked" />
@@ -47,12 +70,14 @@
                                        Click="OnCommunityClicked" />
                 </fa:FACommandBar.PrimaryCommands>
               </fa:FACommandBar>
-              <fa:FASettingsExpander Header="战斗配置"
-                                       Description="全配队通用会自动为您的队伍匹配专属配队，遇到问题请反馈。">
-                <fa:FASettingsExpander.IconSource>
+                </fa:FASettingsExpanderItem.Footer>
+              </fa:FASettingsExpanderItem>
+              <fa:FASettingsExpanderItem Content="战斗配置"
+                                          Description="全配队通用会自动为您的队伍匹配专属配队，遇到问题请反馈。">
+                <fa:FASettingsExpanderItem.IconSource>
                   <fa:FAFontIconSource Glyph="&#xE7FC;" />
-                </fa:FASettingsExpander.IconSource>
-                <fa:FASettingsExpander.Footer>
+                </fa:FASettingsExpanderItem.IconSource>
+                <fa:FASettingsExpanderItem.Footer>
                   <StackPanel Orientation="Horizontal"
                               Spacing="8">
                     <fa:FAComboBox x:Name="AutoBattleConfigCombo"
@@ -71,47 +96,56 @@
                       </fa:FACommandBarButton.IconSource>
                     </fa:FACommandBarButton>
                   </StackPanel>
-                </fa:FASettingsExpander.Footer>
-              </fa:FASettingsExpander>
-              <fa:FASettingsExpander Header="终结技一好就放"
-                                       Description="终结技无视时机立刻释放">
-                <fa:FASettingsExpander.IconSource>
+                </fa:FASettingsExpanderItem.Footer>
+              </fa:FASettingsExpanderItem>
+              <fa:FASettingsExpanderItem Content="终结技一好就放"
+                                           Description="终结技无视时机立刻释放">
+                <fa:FASettingsExpanderItem.IconSource>
                   <fa:FAFontIconSource Glyph="&#xE7FC;" />
-                </fa:FASettingsExpander.IconSource>
-                <fa:FASettingsExpander.Footer>
+                </fa:FASettingsExpanderItem.IconSource>
+                <fa:FASettingsExpanderItem.Footer>
                   <ToggleSwitch x:Name="AutoUltimateToggle"
                                 OnContent="开"
                                 OffContent="关"
                                 IsChecked="{Binding AutoUltimateEnabled, Mode=TwoWay}"
                                 IsEnabled="{Binding BattleValuesAvailable}" />
-                </fa:FASettingsExpander.Footer>
-              </fa:FASettingsExpander>
-              <fa:FASettingsExpander Header="使用合并配置文件"
-                                       Description="关闭用于调试模板文件 正常开启即可">
-                <fa:FASettingsExpander.IconSource>
+                </fa:FASettingsExpanderItem.Footer>
+              </fa:FASettingsExpanderItem>
+              <fa:FASettingsExpanderItem Content="使用合并配置文件"
+                                           Description="关闭用于调试模板文件 正常开启即可">
+                <fa:FASettingsExpanderItem.IconSource>
                   <fa:FAFontIconSource Glyph="&#xE7FC;" />
-                </fa:FASettingsExpander.IconSource>
-                <fa:FASettingsExpander.Footer>
+                </fa:FASettingsExpanderItem.IconSource>
+                <fa:FASettingsExpanderItem.Footer>
                   <ToggleSwitch x:Name="MergedFileToggle"
                                 OnContent="开"
                                 OffContent="关"
                                 IsChecked="{Binding UseMergedFile, Mode=TwoWay}"
                                 IsEnabled="{Binding BattleValuesAvailable}" />
-                </fa:FASettingsExpander.Footer>
-              </fa:FASettingsExpander>
-            </StackPanel>
-          </TabItem>
-          <TabItem Header="闪避助手"
-                          Classes="battle-mode-tab"
-                          HorizontalContentAlignment="Stretch"
-                          VerticalContentAlignment="Top">
-            <fa:FASettingsExpander Header="闪避方式"
+                </fa:FASettingsExpanderItem.Footer>
+              </fa:FASettingsExpanderItem>
+          </ItemsControl>
+          </Border>
+          <Border x:Name="DodgeAssistantSettingsPanel"
+                  Background="{DynamicResource CardStrokeColorDefaultBrush}"
+                  BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}"
+                  BorderThickness="{DynamicResource ExpanderHeaderBorderThickness}"
+                  CornerRadius="{DynamicResource ControlCornerRadius}"
+                  ClipToBounds="True"
+                  IsVisible="False">
+          <ItemsControl Classes="zzz-settings-list">
+            <ItemsControl.ItemsPanel>
+              <ItemsPanelTemplate>
+                <StackPanel Spacing="1" />
+              </ItemsPanelTemplate>
+            </ItemsControl.ItemsPanel>
+            <fa:FASettingsExpanderItem Content="闪避方式"
                                      HorizontalAlignment="Stretch"
                                      VerticalAlignment="Top">
-              <fa:FASettingsExpander.IconSource>
+              <fa:FASettingsExpanderItem.IconSource>
                 <fa:FAFontIconSource Glyph="&#xE7FC;" />
-              </fa:FASettingsExpander.IconSource>
-              <fa:FASettingsExpander.Footer>
+              </fa:FASettingsExpanderItem.IconSource>
+              <fa:FASettingsExpanderItem.Footer>
                 <StackPanel Orientation="Horizontal"
                             Spacing="8">
                   <fa:FAComboBox x:Name="DodgeConfigCombo"
@@ -130,29 +164,41 @@
                     </fa:FACommandBarButton.IconSource>
                   </fa:FACommandBarButton>
                 </StackPanel>
-              </fa:FASettingsExpander.Footer>
-            </fa:FASettingsExpander>
-          </TabItem>
-        </TabControl>
-        <fa:FASettingsExpander Header="GPU运算"
-                                 Description="游戏画面掉帧的话 可以不启用">
-          <fa:FASettingsExpander.IconSource>
+              </fa:FASettingsExpanderItem.Footer>
+            </fa:FASettingsExpanderItem>
+          </ItemsControl>
+          </Border>
+        </StackPanel>
+        <Border Background="{DynamicResource CardStrokeColorDefaultBrush}"
+                BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}"
+                BorderThickness="{DynamicResource ExpanderHeaderBorderThickness}"
+                CornerRadius="{DynamicResource ControlCornerRadius}"
+                ClipToBounds="True">
+        <ItemsControl Classes="zzz-settings-list">
+          <ItemsControl.ItemsPanel>
+            <ItemsPanelTemplate>
+              <StackPanel Spacing="1" />
+            </ItemsPanelTemplate>
+          </ItemsControl.ItemsPanel>
+        <fa:FASettingsExpanderItem Content="GPU运算"
+                                     Description="游戏画面掉帧的话 可以不启用">
+          <fa:FASettingsExpanderItem.IconSource>
             <fa:FAFontIconSource Glyph="&#xE7FC;" />
-          </fa:FASettingsExpander.IconSource>
-          <fa:FASettingsExpander.Footer>
+          </fa:FASettingsExpanderItem.IconSource>
+          <fa:FASettingsExpanderItem.Footer>
             <ToggleSwitch x:Name="GpuToggle"
                           OnContent="开"
                           OffContent="关"
                           IsChecked="{Binding FlashClassifierGpu, Mode=TwoWay}"
                           IsEnabled="{Binding ModelValuesAvailable}" />
-          </fa:FASettingsExpander.Footer>
-        </fa:FASettingsExpander>
-        <fa:FASettingsExpander Header="截图间隔 (秒)"
-                                 Description="一般默认0.02，除非电脑很卡。优先通过设置游戏30帧和低画质给AI留算力">
-          <fa:FASettingsExpander.IconSource>
+          </fa:FASettingsExpanderItem.Footer>
+        </fa:FASettingsExpanderItem>
+        <fa:FASettingsExpanderItem Content="截图间隔 (秒)"
+                                     Description="一般默认0.02，除非电脑很卡。优先通过设置游戏30帧和低画质给AI留算力">
+          <fa:FASettingsExpanderItem.IconSource>
             <fa:FAFontIconSource Glyph="&#xE823;" />
-          </fa:FASettingsExpander.IconSource>
-          <fa:FASettingsExpander.Footer>
+          </fa:FASettingsExpanderItem.IconSource>
+          <fa:FASettingsExpanderItem.Footer>
             <fa:FANumberBox x:Name="ScreenshotIntervalNumber"
                           Minimum="0.02"
                           Maximum="0.1"
@@ -161,21 +207,23 @@
                           Width="140"
                           Value="{Binding ScreenshotInterval, Mode=TwoWay}"
                           IsEnabled="{Binding BattleValuesAvailable}" />
-          </fa:FASettingsExpander.Footer>
-        </fa:FASettingsExpander>
-        <fa:FASettingsExpander Header="操作方式"
-                                 Description="仅影响自动战斗。如需使用手柄，请先安装虚拟手柄依赖。">
-          <fa:FASettingsExpander.IconSource>
+          </fa:FASettingsExpanderItem.Footer>
+        </fa:FASettingsExpanderItem>
+        <fa:FASettingsExpanderItem Content="操作方式"
+                                     Description="仅影响自动战斗。如需使用手柄，请先安装虚拟手柄依赖。">
+          <fa:FASettingsExpanderItem.IconSource>
             <fa:FAFontIconSource Glyph="&#xE7FC;" />
-          </fa:FASettingsExpander.IconSource>
-          <fa:FASettingsExpander.Footer>
+          </fa:FASettingsExpanderItem.IconSource>
+          <fa:FASettingsExpanderItem.Footer>
             <fa:FAComboBox x:Name="ControlMethodCombo"
                            Width="72"
                            ItemsSource="{Binding ControlMethodOptions}"
                            SelectedItem="{Binding SelectedControlMethod, Mode=TwoWay}"
                            IsEnabled="{Binding BattleValuesAvailable}" />
-          </fa:FASettingsExpander.Footer>
-        </fa:FASettingsExpander>
+          </fa:FASettingsExpanderItem.Footer>
+        </fa:FASettingsExpanderItem>
+        </ItemsControl>
+        </Border>
       </StackPanel>
     </ScrollViewer>
 

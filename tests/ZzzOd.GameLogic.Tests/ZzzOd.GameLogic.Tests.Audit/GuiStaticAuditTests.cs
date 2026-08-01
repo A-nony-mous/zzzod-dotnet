@@ -322,7 +322,7 @@ public sealed class GuiStaticAuditTests
 
 			foreach (XElement item in document.Descendants().Where(element => element.Name.LocalName == "FASettingsExpanderItem"))
 			{
-				bool directItem = item.Parent?.Name.LocalName == "FASettingsExpander";
+				bool directItem = item.Parent?.Name.LocalName is "FASettingsExpander" or "ItemsControl";
 				// 不带折叠外壳的设置行列表用 ItemsControl 承载，行本身仍是 SettingsExpanderItem。
 				bool itemTemplate = item.Parent?.Name.LocalName == "DataTemplate"
 					&& item.Parent.Parent?.Name.LocalName is "FASettingsExpander.ItemTemplate" or "ItemsControl.ItemTemplate";
@@ -336,9 +336,39 @@ public sealed class GuiStaticAuditTests
 							StringComparison.Ordinal));
 				Assert.True(
 					directItem || itemTemplate || resourceTemplate,
-					$"{Path.GetRelativePath(root, file)} 的 SettingsExpanderItem 必须直接放在 SettingsExpander 或其 ItemTemplate 下。行 {((IXmlLineInfo)item).LineNumber}");
+					$"{Path.GetRelativePath(root, file)} 的 SettingsExpanderItem 必须放在 SettingsExpander、ItemsControl 或其 ItemTemplate 下。行 {((IXmlLineInfo)item).LineNumber}");
 			}
 		}
+	}
+
+	[Fact]
+	public void BattleAssistantUsesSegmentedModesAndCompactSettingsRows()
+	{
+		string path = Path.Combine(
+			FindGuiRoot(),
+			"Views",
+			"FrontierPages",
+			"GameAssistant",
+			"FrontierBattleAssistantSettings.axaml");
+		XDocument document = XDocument.Load(path, LoadOptions.SetLineInfo);
+		XNamespace x = "http://schemas.microsoft.com/winfx/2006/xaml";
+		XElement[] toggles = document.Descendants()
+			.Where(element => element.Name.LocalName == "ToggleButton")
+			.Where(element => element.Attribute("Classes")?.Value.Contains("zzz-segmented-button", StringComparison.Ordinal) == true)
+			.ToArray();
+
+		Assert.Equal(
+			new[] { "AutoBattleModeButton", "DodgeAssistantModeButton" },
+			toggles.Select(element => element.Attribute(x + "Name")?.Value));
+		Assert.DoesNotContain(document.Descendants(), element => element.Name.LocalName is "TabControl" or "FATabView");
+		Assert.Contains(document.Descendants(), element =>
+			element.Name.LocalName == "Border" &&
+			element.Attribute(x + "Name")?.Value == "AutoBattleSettingsPanel");
+		Assert.Contains(document.Descendants(), element =>
+			element.Name.LocalName == "Border" &&
+			element.Attribute(x + "Name")?.Value == "DodgeAssistantSettingsPanel");
+		Assert.DoesNotContain(document.Descendants(), element => element.Name.LocalName == "FASettingsExpander");
+		Assert.Contains(document.Descendants(), element => element.Name.LocalName == "FASettingsExpanderItem");
 	}
 
 	[Fact]

@@ -1,4 +1,5 @@
 using Avalonia.Controls;
+using Avalonia.Controls.Primitives;
 using Avalonia.Input;
 using Avalonia.Layout;
 using Avalonia.Markup.Xaml;
@@ -393,7 +394,10 @@ internal sealed partial class FrontierCommissionAssistantPage : UserControl, IZz
 
 internal sealed partial class FrontierBattleAssistantSettings : UserControl, IZzzPageLifecycle
 {
-    private readonly TabControl _modeTabs;
+    private readonly ToggleButton _autoBattleModeButton;
+    private readonly ToggleButton _dodgeAssistantModeButton;
+    private readonly Border _autoBattleSettingsPanel;
+    private readonly Border _dodgeAssistantSettingsPanel;
     private readonly FAContentDialog _helpDialog;
     private readonly ZzzBattleAssistantSettingsViewModel _viewModel;
 
@@ -401,14 +405,19 @@ internal sealed partial class FrontierBattleAssistantSettings : UserControl, IZz
     {
         _viewModel = new ZzzBattleAssistantSettingsViewModel(backend);
         AvaloniaXamlLoader.Load(this);
-        _modeTabs = this.FindControl<TabControl>("ModeTabs")
-            ?? throw new InvalidOperationException("战斗助手缺少模式 TabView?");
+        _autoBattleModeButton = this.FindControl<ToggleButton>("AutoBattleModeButton")
+            ?? throw new InvalidOperationException("战斗助手缺少自动战斗模式按钮。");
+        _dodgeAssistantModeButton = this.FindControl<ToggleButton>("DodgeAssistantModeButton")
+            ?? throw new InvalidOperationException("战斗助手缺少闪避助手模式按钮。");
+        _autoBattleSettingsPanel = this.FindControl<Border>("AutoBattleSettingsPanel")
+            ?? throw new InvalidOperationException("战斗助手缺少自动战斗设置区。");
+        _dodgeAssistantSettingsPanel = this.FindControl<Border>("DodgeAssistantSettingsPanel")
+            ?? throw new InvalidOperationException("战斗助手缺少闪避助手设置区。");
         _helpDialog = this.FindControl<FAContentDialog>("BattleHelpDialog")
             ?? throw new InvalidOperationException("战斗助手缺少使用说明 ContentDialog?");
         DataContext = _viewModel;
-        _modeTabs.SelectionChanged += OnModeSelectionChanged;
         string? evidenceTab = ZzzGuiEvidenceSelection.FromEnvironment().Tab;
-        _modeTabs.SelectedIndex = string.Equals(evidenceTab, "闪避助手", StringComparison.Ordinal) ? 1 : 0;
+        SetSelectedMode(string.Equals(evidenceTab, "闪避助手", StringComparison.Ordinal));
         ReloadSettings();
         ApplySelectedMode();
     }
@@ -429,8 +438,7 @@ internal sealed partial class FrontierBattleAssistantSettings : UserControl, IZz
             return false;
         }
 
-        _modeTabs.SelectedIndex = index;
-        ApplySelectedMode();
+        SetSelectedMode(index == 1);
         return true;
     }
 
@@ -450,7 +458,6 @@ internal sealed partial class FrontierBattleAssistantSettings : UserControl, IZz
 
     public void DisposePage()
     {
-        _modeTabs.SelectionChanged -= OnModeSelectionChanged;
         _viewModel.DisposePage();
     }
 
@@ -505,11 +512,24 @@ internal sealed partial class FrontierBattleAssistantSettings : UserControl, IZz
 
     private void ReloadSettings() => _viewModel.OnPageShown();
 
-    private void OnModeSelectionChanged(object? sender, SelectionChangedEventArgs args) => ApplySelectedMode();
+    private void OnAutoBattleModeClicked(object? sender, Avalonia.Interactivity.RoutedEventArgs args) =>
+        SetSelectedMode(false);
+
+    private void OnDodgeAssistantModeClicked(object? sender, Avalonia.Interactivity.RoutedEventArgs args) =>
+        SetSelectedMode(true);
+
+    private void SetSelectedMode(bool dodge)
+    {
+        _autoBattleModeButton.IsChecked = !dodge;
+        _dodgeAssistantModeButton.IsChecked = dodge;
+        _autoBattleSettingsPanel.IsVisible = !dodge;
+        _dodgeAssistantSettingsPanel.IsVisible = dodge;
+        ApplySelectedMode();
+    }
 
     private void ApplySelectedMode()
     {
-        bool auto = _modeTabs.SelectedIndex != 1;
+        bool auto = _autoBattleModeButton.IsChecked == true;
         SelectedAppId = auto ? ZzzApplicationIds.AutoBattle : ZzzApplicationIds.DodgeAssistant;
         SelectedAppIdChanged?.Invoke(this, EventArgs.Empty);
     }
