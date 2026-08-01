@@ -547,6 +547,11 @@ public sealed class CommissionAssistantAppTests
 			return new OperationResult(IsSuccess: false, "未处于二级界面");
 		}
 
+		public OperationResult CheckExploreDomainMenu(ZContext context, Mat? screen)
+		{
+			return new OperationResult(IsSuccess: false, "未处于勘域菜单");
+		}
+
 		public OperationResult CheckGameTutorial(ZContext context, Mat? screen)
 		{
 			return new OperationResult(IsSuccess: false, "未处于玩法引导");

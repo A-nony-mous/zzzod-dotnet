@@ -49,7 +49,7 @@ public sealed class CombatSimulation : CompendiumChallengeOperationBase
 	protected override string TimeoutExitWaitScreenName => "画面-通用";
 
 	/// <inheritdoc />
-	protected override string TimeoutExitWaitAreaName => "左上角-街区";
+	protected override string TimeoutExitWaitAreaName => "左上角-区域";
 
 	/// <inheritdoc />
 	protected override bool ClickResultExitAfterTimeout => false;

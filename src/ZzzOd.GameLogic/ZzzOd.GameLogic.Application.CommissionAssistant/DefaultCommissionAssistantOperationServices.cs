@@ -331,6 +331,20 @@ public sealed class DefaultCommissionAssistantOperationServices : ICommissionAss
 	}
 
 	/// <inheritdoc />
+	public OperationResult CheckExploreDomainMenu(ZContext context, Mat? screen)
+	{
+		if (screen == null)
+		{
+			return new OperationResult(IsSuccess: false, "未获取截图");
+		}
+		if (ScreenUtils.FindArea(context, screen, "大世界-勘域", "勘域-菜单") == FindAreaResultEnum.True)
+		{
+			return new OperationResult(IsSuccess: true, "在勘域中, 不自动点击鼠标");
+		}
+		return new OperationResult(IsSuccess: false, "未处于勘域菜单");
+	}
+
+	/// <inheritdoc />
 	public OperationResult CheckGameTutorial(ZContext context, Mat? screen)
 	{
 		if (screen == null)

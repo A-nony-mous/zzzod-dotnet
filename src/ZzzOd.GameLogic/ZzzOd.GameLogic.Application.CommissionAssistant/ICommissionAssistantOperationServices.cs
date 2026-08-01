@@ -59,6 +59,9 @@ public interface ICommissionAssistantOperationServices
 	/// <summary>等待二级菜单。</summary>
 	OperationResult WaitSecondaryMenu(ZContext context, Mat? screen);
 
+	/// <summary>检测勘域菜单是否打开（在勘域中避免自动点击）。</summary>
+	OperationResult CheckExploreDomainMenu(ZContext context, Mat? screen);
+
 	/// <summary>检查玩法引导。</summary>
 	OperationResult CheckGameTutorial(ZContext context, Mat? screen);
 

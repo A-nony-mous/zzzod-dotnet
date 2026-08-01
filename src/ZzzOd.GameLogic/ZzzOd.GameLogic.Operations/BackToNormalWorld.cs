@@ -94,7 +94,7 @@ public sealed class BackToNormalWorld : ZOperation
 		{
 			return RoundSuccess("发现地图");
 		}
-		OperationRoundResult commonStreet = FindAndClick("画面-通用", "左上角-街区");
+		OperationRoundResult commonStreet = FindAndClick("画面-通用", "左上角-区域");
 		if (commonStreet.IsSuccess)
 		{
 			return RoundRetry(commonStreet.Status, null, _retryDelay);
