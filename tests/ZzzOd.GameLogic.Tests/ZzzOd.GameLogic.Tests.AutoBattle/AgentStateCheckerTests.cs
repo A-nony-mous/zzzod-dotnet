@@ -28,7 +28,7 @@ public sealed class AgentStateCheckerTests
 	public void FilterByColor_RgbRangeAndEmptyRulesMatchPython()
 	{
 		using Mat mat = new Mat(2, 2, MatType.CV_8UC3, new Scalar(10.0, 20.0, 30.0));
-		mat.Set(0, 0, new Vec3b(200, 20, 20));
+		mat.Set(0, 0, new Vec3b(20, 20, 200));
 		AgentStateDef stateDef = new AgentStateDef("红色", AgentStateCheckWay.COLOR_RANGE_EXIST, "", new int[3] { 180, 0, 0 }, new int[3] { 255, 60, 60 });
 		using Mat mat2 = AgentStateChecker.FilterByColor(mat, stateDef);
 		using Mat mat3 = AgentStateChecker.FilterByColor(mat, new AgentStateDef("全部"));
@@ -42,7 +42,7 @@ public sealed class AgentStateCheckerTests
 	public void FilterByColor_HsvRangeHandlesHueWrap()
 	{
 		using Mat mat = new Mat(1, 2, MatType.CV_8UC3, new Scalar(0.0, 255.0, 0.0));
-		mat.Set(0, 0, new Vec3b(byte.MaxValue, 0, 0));
+		mat.Set(0, 0, new Vec3b(0, 0, byte.MaxValue));
 		AgentStateDef stateDef = new AgentStateDef("红色", AgentStateCheckWay.COLOR_RANGE_EXIST, "", null, null, new int[3] { 0, 255, 255 }, new int[3] { 10, 20, 20 });
 		using Mat mat2 = AgentStateChecker.FilterByColor(mat, stateDef);
 		Assert.Equal(255, mat2.At<byte>(0, 0));
@@ -53,9 +53,9 @@ public sealed class AgentStateCheckerTests
 	public void CountByColorRange_UsesConnectedComponentsAndAreaThreshold()
 	{
 		using Mat mat = new Mat(20, 20, MatType.CV_8UC3, new Scalar(0.0, 0.0, 0.0));
-		Cv2.Rectangle(mat, new Rect(1, 1, 3, 3), new Scalar(255.0, 0.0, 0.0), -1);
-		Cv2.Rectangle(mat, new Rect(12, 12, 3, 3), new Scalar(255.0, 0.0, 0.0), -1);
-		mat.Set(10, 1, new Vec3b(byte.MaxValue, 0, 0));
+		Cv2.Rectangle(mat, new Rect(1, 1, 3, 3), new Scalar(0.0, 0.0, 255.0), -1);
+		Cv2.Rectangle(mat, new Rect(12, 12, 3, 3), new Scalar(0.0, 0.0, 255.0), -1);
+		mat.Set(10, 1, new Vec3b(0, 0, byte.MaxValue));
 		AgentStateDef stateDef = new AgentStateDef("红块", AgentStateCheckWay.COLOR_RANGE_EXIST, "", connectCnt: 30, lowerColor: new int[3] { 200, 0, 0 }, upperColor: new int[3] { 255, 50, 50 });
 		int actual = AgentStateChecker.CountByColorRange(mat, stateDef);
 		Assert.Equal(2, actual);
@@ -65,10 +65,23 @@ public sealed class AgentStateCheckerTests
 	public void LengthByForegroundColor_UsesBoundingWidthAndMaxLength()
 	{
 		using Mat mat = new Mat(1, 10, MatType.CV_8UC3, new Scalar(60.0, 60.0, 60.0));
-		Cv2.Rectangle(mat, new Rect(0, 0, 5, 1), new Scalar(255.0, 0.0, 0.0), -1);
+		Cv2.Rectangle(mat, new Rect(0, 0, 5, 1), new Scalar(0.0, 0.0, 255.0), -1);
 		AgentStateDef stateDef = new AgentStateDef("彩色长度", AgentStateCheckWay.COLOR_RANGE_EXIST, "", new int[3] { 200, 0, 0 }, new int[3] { 255, 50, 50 });
 		int actual = AgentStateChecker.LengthByForegroundColor(mat, stateDef);
 		Assert.Equal(50, actual);
+	}
+
+	[Fact]
+	public void LengthByForegroundColor_UsesBgrScreenshotForYeShunGuangMingXinJing()
+	{
+		using Mat hsv = new Mat(1, 182, MatType.CV_8UC3, new Scalar(113.0, 75.0, 255.0));
+		using Mat screenshot = new Mat();
+		Cv2.CvtColor(hsv, screenshot, ColorConversionCodes.HSV2BGR);
+		AgentStateDef stateDef = new AgentStateDef("叶瞬光-明心境", AgentStateCheckWay.FOREGROUND_COLOR_RANGE_LENGTH, "yeshunguang_mingxinjing", null, null, new int[3] { 113, 75, 255 }, new int[3] { 10, 50, 50 }, null, null, 120);
+
+		int actual = AgentStateChecker.LengthByForegroundColor(screenshot, stateDef);
+
+		Assert.Equal(120, actual);
 	}
 
 	[Fact]
@@ -181,7 +194,7 @@ public sealed class AgentStateCheckerTests
 		ZContext ctx = new ZContext(environment);
 		AutoBattleAgentContext autoBattleAgentContext = new AutoBattleAgentContext(ctx);
 		using Mat mat = new Mat(10, 10, MatType.CV_8UC3, new Scalar(0.0, 0.0, 0.0));
-		Cv2.Rectangle(mat, new Rect(1, 1, 3, 3), new Scalar(255.0, 0.0, 0.0), -1);
+		Cv2.Rectangle(mat, new Rect(1, 1, 3, 3), new Scalar(0.0, 0.0, 255.0), -1);
 		AgentStateDef stateDef = new AgentStateDef("测试状态", AgentStateCheckWay.COLOR_RANGE_EXIST, "", new int[3] { 200, 0, 0 }, new int[3] { 255, 50, 50 }, null, null, 10);
 		StateRecord stateRecord = autoBattleAgentContext.CheckAgentRelatedState(mat, stateDef, 3.0);
 		Assert.NotNull(stateRecord);

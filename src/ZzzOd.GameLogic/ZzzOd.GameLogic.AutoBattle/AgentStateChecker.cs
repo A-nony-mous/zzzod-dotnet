@@ -251,10 +251,10 @@ public static class AgentStateChecker
 		// 对齐 参考实现 cv2.inRange 的向量化实现；单元素上下界表示三通道共用同一区间
 		bool perChannel = lower.Count != 1 && upper.Count != 1;
 		Scalar lowerBound = perChannel
-			? new Scalar(ClampLow(lower[0]), ClampLow(lower[1]), ClampLow(lower[2]))
+			? new Scalar(ClampLow(lower[2]), ClampLow(lower[1]), ClampLow(lower[0]))
 			: new Scalar(ClampLow(lower[0]), ClampLow(lower[0]), ClampLow(lower[0]));
 		Scalar upperBound = perChannel
-			? new Scalar(ClampHigh(upper[0]), ClampHigh(upper[1]), ClampHigh(upper[2]))
+			? new Scalar(ClampHigh(upper[2]), ClampHigh(upper[1]), ClampHigh(upper[0]))
 			: new Scalar(ClampHigh(upper[0]), ClampHigh(upper[0]), ClampHigh(upper[0]));
 		Mat mat = new Mat();
 		Cv2.InRange(image, lowerBound, upperBound, mat);
@@ -264,7 +264,7 @@ public static class AgentStateChecker
 	private static Mat FilterByHsv(Mat image, IReadOnlyList<int> hsvColor, IReadOnlyList<int> hsvDiff)
 	{
 		using Mat mat = new Mat();
-		Cv2.CvtColor(image, mat, ColorConversionCodes.RGB2HSV);
+		Cv2.CvtColor(image, mat, ColorConversionCodes.BGR2HSV);
 		// 色相是环形量：中心 ± 容差跨越 0/180 时要拆成两段区间并取并集
 		int hueCenter = (hsvColor[0] % 180 + 180) % 180;
 		int hueDiff = hsvDiff[0];
