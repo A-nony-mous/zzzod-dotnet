@@ -15,11 +15,19 @@ public sealed class ZzzNoticeService
 
     private readonly string _cacheDirectory;
     private readonly string _noticeCachePath;
+    private readonly HttpClient _httpClient;
 
     public ZzzNoticeService(ZzzRunRoot runRoot)
+        : this(runRoot, SharedHttpClient)
     {
+    }
+
+    internal ZzzNoticeService(ZzzRunRoot runRoot, HttpClient httpClient)
+    {
+        ArgumentNullException.ThrowIfNull(httpClient);
         _cacheDirectory = Path.Combine(runRoot.Path, "notice_cache");
         _noticeCachePath = Path.Combine(_cacheDirectory, "notice_cache.json");
+        _httpClient = httpClient;
     }
 
     public async Task<ZzzNoticeLoadResult> LoadAsync(string noticeUrl, CancellationToken cancellationToken = default)
@@ -32,7 +40,7 @@ public sealed class ZzzNoticeService
 
         try
         {
-            using HttpResponseMessage response = await SharedHttpClient.GetAsync(
+            using HttpResponseMessage response = await _httpClient.GetAsync(
                 uri,
                 HttpCompletionOption.ResponseHeadersRead,
                 cancellationToken).ConfigureAwait(false);
@@ -81,7 +89,7 @@ public sealed class ZzzNoticeService
         string temporaryPath = cachePath + ".tmp";
         try
         {
-            using HttpResponseMessage response = await SharedHttpClient.GetAsync(
+            using HttpResponseMessage response = await _httpClient.GetAsync(
                 uri,
                 HttpCompletionOption.ResponseHeadersRead,
                 cancellationToken).ConfigureAwait(false);

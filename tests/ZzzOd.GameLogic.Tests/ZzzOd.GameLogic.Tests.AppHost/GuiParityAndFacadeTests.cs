@@ -4,6 +4,8 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.IO;
 using System.Linq;
+using System.Net;
+using System.Net.Http;
 using System.Runtime.CompilerServices;
 using System.Runtime.ExceptionServices;
 using System.Runtime.InteropServices;
@@ -21,6 +23,7 @@ using FluentAvalonia.Styling;
 using FluentAvalonia.UI.Controls;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
+using OneDragon.Core.Runtime;
 using OpenCvSharp;
 using Xunit;
 using ZzzOd.AppHost;
@@ -29,6 +32,7 @@ using ZzzOd.AppHost.Devtools;
 using ZzzOd.AppHost.Overlay;
 using ZzzOd.GameLogic.Application.ChargePlan;
 using ZzzOd.GameLogic.Config;
+using ZzzOd.GameLogic.Context;
 using ZzzOd.Gui;
 using ZzzOd.Gui.Controls;
 using ZzzOd.Gui.PageModels.Accounts;
@@ -206,12 +210,14 @@ public sealed class GuiParityAndFacadeTests
 			Backend = backend;
 		}
 
-		public static BackendHarness Create()
+		public static BackendHarness Create(Func<string, int, ZContext>? contextFactory = null)
 		{
 			string text = Path.Combine(Path.GetTempPath(), "zzzod-gui-parity-tests", Guid.NewGuid().ToString("N"));
 			Directory.CreateDirectory(Path.Combine(text, "config", "00"));
 			File.WriteAllText(Path.Combine(text, "config", "one_dragon.yml"), "instance_list:\n- idx: 0\n  name: '00'\n  active: true\n  active_in_od: true");
-			ZzzRuntimeManager runtime = new ZzzRuntimeManager(text, NullLogger<ZzzRuntimeManager>.Instance);
+			ZzzRuntimeManager runtime = contextFactory is null
+				? new ZzzRuntimeManager(text, NullLogger<ZzzRuntimeManager>.Instance)
+				: new ZzzRuntimeManager(text, NullLogger<ZzzRuntimeManager>.Instance, index => contextFactory(text, index));
 			ZzzBackendEventBus eventBus = new ZzzBackendEventBus();
 			ZzzBattleAssistantRuntimeSource battleAssistantRuntimeSource = new ZzzBattleAssistantRuntimeSource();
 			ZzzLogFanOutLoggerProvider logProvider = new ZzzLogFanOutLoggerProvider(new ZzzRunRoot(text), eventBus);
@@ -228,6 +234,26 @@ public sealed class GuiParityAndFacadeTests
 			{
 				Directory.Delete(RunRoot, recursive: true);
 			}
+		}
+	}
+
+	private sealed class NoticeSequenceHandler(Uri expectedUri, string json) : HttpMessageHandler
+	{
+		public int RequestCount { get; private set; }
+
+		protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+		{
+			Assert.Equal(expectedUri, request.RequestUri);
+			RequestCount++;
+			if (RequestCount == 1)
+			{
+				return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK)
+				{
+					Content = new StringContent(json),
+				});
+			}
+
+			throw new HttpRequestException("deterministic notice failure");
 		}
 	}
 
@@ -2771,37 +2797,64 @@ public sealed class GuiParityAndFacadeTests
 	}
 
 	/// <summary>
-	/// 首页公告服务应从真实 project.notice_url 读取三类文章、日期、链接和 Banner。
+	/// 首页公告服务应从 project.notice_url 读取三类文章、日期、链接和 Banner。
 	/// </summary>
 	[Fact]
 	public async Task NoticeServiceLoadsRealProjectNoticeUrl()
 	{
 		using BackendHarness harness = BackendHarness.Create();
-		string noticeUrl = "https://one-dragon.com/notice/zzz/notice.json";
+		string noticeUrl = "https://notice.example.test/zzz/notice.json";
 		File.WriteAllText(Path.Combine(harness.RunRoot, "config", "project.yml"), "notice_url: " + noticeUrl + "\n");
 		ZzzBackendResult<ZzzConfigScopeValuesDto> project = harness.Backend.GetConfigScope("project");
 		string configuredUrl = Assert.IsType<string>(project.Value.Values["notice_url"]);
-		ZzzNoticeService service = new ZzzNoticeService(new ZzzRunRoot(harness.RunRoot));
+		string json = """
+			{
+			  "data": {
+			    "content": {
+			      "banners": [
+			        { "image": { "url": "https://cdn.example.test/banner.png", "link": "https://docs.example.test/banner" } }
+			      ],
+			      "posts": [
+			        { "type": "POST_TYPE_ANNOUNCE", "title": "公告 1", "link": "https://docs.example.test/announce-1", "date": "2026-08-01" },
+			        { "type": "POST_TYPE_ANNOUNCE", "title": "公告 2", "link": "https://docs.example.test/announce-2", "date": "2026-07-31" },
+			        { "type": "POST_TYPE_ANNOUNCE", "title": "公告 3", "link": "https://docs.example.test/announce-3", "date": "2026-07-30" },
+			        { "type": "POST_TYPE_ANNOUNCE", "title": "公告 4", "link": "https://docs.example.test/announce-4", "date": "2026-07-29" },
+			        { "type": "POST_TYPE_RESEARCHS", "title": "研究 1", "link": "https://docs.example.test/research-1", "date": "2026-08-01" },
+			        { "type": "POST_TYPE_RESEARCHS", "title": "研究 2", "link": "https://docs.example.test/research-2", "date": "2026-07-31" },
+			        { "type": "POST_TYPE_RESEARCHS", "title": "研究 3", "link": "https://docs.example.test/research-3", "date": "2026-07-30" },
+			        { "type": "POST_TYPE_RESEARCHS", "title": "研究 4", "link": "https://docs.example.test/research-4", "date": "2026-07-29" },
+			        { "type": "POST_TYPE_GUIDES", "title": "攻略 1", "link": "https://docs.example.test/guide-1", "date": "2026-08-01" },
+			        { "type": "POST_TYPE_GUIDES", "title": "攻略 2", "link": "https://docs.example.test/guide-2", "date": "2026-07-31" },
+			        { "type": "POST_TYPE_GUIDES", "title": "攻略 3", "link": "https://docs.example.test/guide-3", "date": "2026-07-30" },
+			        { "type": "POST_TYPE_GUIDES", "title": "攻略 4", "link": "https://docs.example.test/guide-4", "date": "2026-07-29" }
+			      ]
+			    }
+			  }
+			}
+			""";
+		NoticeSequenceHandler handler = new NoticeSequenceHandler(new Uri(noticeUrl), json);
+		using HttpClient client = new HttpClient(handler);
+		ZzzNoticeService service = new ZzzNoticeService(new ZzzRunRoot(harness.RunRoot), client);
 		ZzzNoticeLoadResult result = await service.LoadAsync(configuredUrl);
 		Assert.True(result.Success, result.Error);
 		Assert.NotNull(result.Content);
-		Assert.NotEmpty(result.Content.Banners);
-		Assert.NotEmpty(result.Content.GameGuides);
-		Assert.NotEmpty(result.Content.SoftwareResearch);
-		Assert.NotEmpty(result.Content.Announcements);
+		ZzzNoticeBanner banner = Assert.Single(result.Content.Banners);
+		Assert.Equal("https://cdn.example.test/banner.png", banner.ImageUrl);
+		Assert.Equal("https://docs.example.test/banner", banner.Link);
 		Assert.All(result.Content.GameGuides.Concat(result.Content.SoftwareResearch).Concat(result.Content.Announcements), delegate(ZzzNoticePost post)
 		{
 			Assert.False(string.IsNullOrWhiteSpace(post.Title));
 			Assert.False(string.IsNullOrWhiteSpace(post.Date));
 			Assert.True(Uri.TryCreate(post.Link, UriKind.Absolute, out Uri _));
 		});
-		Assert.True(result.Content.GameGuides.Count <= 3);
-		Assert.True(result.Content.SoftwareResearch.Count <= 3);
-		Assert.True(result.Content.Announcements.Count <= 3);
-		ZzzNoticeLoadResult cached = await service.LoadAsync("https://127.0.0.1:1/notice.json");
+		Assert.Equal(3, result.Content.GameGuides.Count);
+		Assert.Equal(3, result.Content.SoftwareResearch.Count);
+		Assert.Equal(3, result.Content.Announcements.Count);
+		ZzzNoticeLoadResult cached = await service.LoadAsync(configuredUrl);
 		Assert.True(cached.Success, cached.Error);
 		Assert.True(cached.FromCache);
 		Assert.Equal(result.Content.GameGuides, cached.Content.GameGuides);
+		Assert.Equal(2, handler.RequestCount);
 	}
 
 	/// <summary>
@@ -3301,7 +3354,12 @@ public sealed class GuiParityAndFacadeTests
 	[Fact]
 	public void BackendPersistsOneDragonDragOrderAndEnabledStateToRealGroupYaml()
 	{
-		using BackendHarness backendHarness = BackendHarness.Create();
+		using BackendHarness backendHarness = BackendHarness.Create((runRoot, instanceIndex) =>
+		{
+			ZContext context = new ZContext(new OneDragonEnvironment(runRoot), null, instanceIndex);
+			context.ApplicationFactoryRegistry.RegisterBuiltInApplications();
+			return context;
+		});
 		Directory.CreateDirectory(Path.Combine(backendHarness.RunRoot, "assets", "models"));
 		Directory.CreateDirectory(Path.Combine(backendHarness.RunRoot, "assets", "template"));
 		Directory.CreateDirectory(Path.Combine(backendHarness.RunRoot, "assets", "game_data", "screen_info"));
