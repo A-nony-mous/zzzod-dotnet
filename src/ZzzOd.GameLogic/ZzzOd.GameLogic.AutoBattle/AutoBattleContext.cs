@@ -1317,7 +1317,7 @@ public class AutoBattleContext : IRunParticipant
 			return false;
 		}
 		using Mat mat = new Mat();
-		Cv2.CvtColor(part, mat, ColorConversionCodes.RGB2HSV);
+		Cv2.CvtColor(part, mat, ColorConversionCodes.BGR2HSV);
 		int num2 = mat.Rows * mat.Cols;
 		using Mat blackMask = new Mat();
 		Cv2.InRange(mat, new Scalar(0.0, 0.0, 0.0), new Scalar(179.0, 10.0, 20.0), blackMask);
@@ -1332,7 +1332,7 @@ public class AutoBattleContext : IRunParticipant
 			return false;
 		}
 		using Mat mat = new Mat();
-		Cv2.CvtColor(part, mat, ColorConversionCodes.RGB2HSV);
+		Cv2.CvtColor(part, mat, ColorConversionCodes.BGR2HSV);
 		int num3 = mat.Rows * mat.Cols;
 		using Mat colorfulMask = new Mat();
 		using Mat grayishMask = new Mat();
@@ -1351,7 +1351,7 @@ public class AutoBattleContext : IRunParticipant
 	{
 		using Mat mat = CvImageUtils.Crop(screen, ChainBarArea.Rect);
 		using Mat mat2 = new Mat();
-		Cv2.CvtColor(mat, mat2, ColorConversionCodes.RGB2HSV);
+		Cv2.CvtColor(mat, mat2, ColorConversionCodes.BGR2HSV);
 		using Mat mat3 = new Mat();
 		Cv2.InRange(mat2, new Scalar(5.0, 173.0, 227.0), new Scalar(25.0, 193.0, 247.0), mat3);
 		Cv2.FindContours(mat3, out Point[][] contours, out HierarchyIndex[] _, RetrievalModes.External, ContourApproximationModes.ApproxSimple);

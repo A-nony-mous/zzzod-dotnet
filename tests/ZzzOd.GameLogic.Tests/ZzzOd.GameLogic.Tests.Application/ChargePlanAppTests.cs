@@ -486,6 +486,22 @@ public sealed class ChargePlanAppTests
 	}
 
 	[Fact]
+	public void ChargePlanOperation_RgbColorRangeMatchesBgrScreenshot()
+	{
+		using Mat screenshot = new Mat(1, 2, MatType.CV_8UC3, Scalar.Black);
+		screenshot.Set(0, 0, new Vec3b(180, 120, 20));
+		screenshot.Set(0, 1, new Vec3b(20, 120, 180));
+
+		using Mat mask = ChargePlanOperation.CreateRgbRangeMask(
+			screenshot,
+			new int[] { 10, 100, 160 },
+			new int[] { 30, 140, 200 });
+
+		Assert.Equal(byte.MaxValue, mask.At<byte>(0, 0));
+		Assert.Equal(0, mask.At<byte>(0, 1));
+	}
+
+	[Fact]
 	public void ChargePlanOperation_BatteryCheckRetriesWhenAnyFieldMissingAndChecksDoubleRewardOnce()
 	{
 		string rootDirectory = CreateTempRoot();

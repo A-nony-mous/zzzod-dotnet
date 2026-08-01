@@ -179,7 +179,7 @@ public sealed class LargeMapRecorderTests
 		try
 		{
 			using Mat img = new Mat(6, 6, MatType.CV_8UC3, Scalar.Black);
-			Cv2.Rectangle(img, new OpenCvSharp.Rect(2, 1, 2, 3), new Scalar(20.0, 120.0, 180.0), -1);
+			Cv2.Rectangle(img, new OpenCvSharp.Rect(2, 1, 2, 3), new Scalar(180.0, 120.0, 20.0), -1);
 			string[] buffer = new string[5];
 			buffer[0] = text;
 			buffer[1] = "assets";

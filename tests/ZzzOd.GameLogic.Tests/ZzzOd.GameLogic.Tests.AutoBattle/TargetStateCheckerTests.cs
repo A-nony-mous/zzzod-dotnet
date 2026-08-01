@@ -203,6 +203,34 @@ public sealed class TargetStateCheckerTests
 	}
 
 	[Fact]
+	public void RunTask_WithMatUsesBgrScreenshotForLockFarPipeline()
+	{
+		string repoRoot = FindRepoRoot();
+		using ZContext ctx = new ZContext(new OneDragonEnvironment(repoRoot));
+		TargetStateChecker checker = new TargetStateChecker(ctx);
+		using Mat screen = new Mat(1080, 1920, MatType.CV_8UC3, Scalar.Black);
+		TemplateInfo template = ctx.TemplateLoader.GetTemplate("target_state", "target_lock");
+		OneDragon.Core.Abstractions.Geometry.Rect rect = template.GetTemplateRectByPoint().Value;
+		Scalar color = BgrScalarFromHsv(20, 220, byte.MaxValue);
+		Cv2.Rectangle(screen, new OpenCvSharp.Rect(rect.X1 + 20, rect.Y1 + 20, 30, 30), color, -1);
+		DetectionTask task = new DetectionTask
+		{
+			TaskId = "lock-far",
+			PipelineName = "lock-far",
+			StateDefinitions = new TargetStateDef[] { new TargetStateDef
+			{
+				StateName = "目标-近距离锁定",
+				CheckWay = TargetCheckWay.ContourCountInRange,
+				CheckParams = new Dictionary<string, object> { ["min_count"] = 1 }
+			} }
+		};
+
+		IReadOnlyList<TargetStateCheckResult> results = checker.RunTask(screen, task);
+
+		Assert.True(Assert.Single(results).IsHit);
+	}
+
+	[Fact]
 	public async Task RunTask_WithMatRunsBossStunPipelineFromTemplateCrop()
 	{
 		string repoRoot = FindRepoRoot();
@@ -220,7 +248,7 @@ public sealed class TargetStateCheckerTests
 			using Mat screen = new Mat(1080, 1920, MatType.CV_8UC3, new Scalar(0.0, 0.0, 0.0));
 			TemplateInfo template = ctx.TemplateLoader.GetTemplate("target_state", "boss_stun_line");
 			OneDragon.Core.Abstractions.Geometry.Rect rect = template.GetTemplateRectByPoint().Value;
-			Vec3b color = RgbFromHsv(26, byte.MaxValue, byte.MaxValue);
+			Vec3b color = BgrFromHsv(26, byte.MaxValue, byte.MaxValue);
 			for (int x = rect.X1; x < rect.X1 + 120; x++)
 			{
 				screen.Set(rect.Y1, x, color);
@@ -287,13 +315,19 @@ public sealed class TargetStateCheckerTests
 		};
 	}
 
-	private static Vec3b RgbFromHsv(byte hue, byte saturation, byte value)
+	private static Vec3b BgrFromHsv(byte hue, byte saturation, byte value)
 	{
 		using Mat mat = new Mat(1, 1, MatType.CV_8UC3);
 		mat.Set(0, 0, new Vec3b(hue, saturation, value));
 		using Mat mat2 = new Mat();
-		Cv2.CvtColor(mat, mat2, ColorConversionCodes.HSV2RGB);
+		Cv2.CvtColor(mat, mat2, ColorConversionCodes.HSV2BGR);
 		return mat2.At<Vec3b>(0, 0);
+	}
+
+	private static Scalar BgrScalarFromHsv(byte hue, byte saturation, byte value)
+	{
+		Vec3b color = BgrFromHsv(hue, saturation, value);
+		return new Scalar(color.Item0, color.Item1, color.Item2);
 	}
 
 	private static string FindRepoRoot()

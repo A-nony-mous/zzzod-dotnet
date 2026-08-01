@@ -1066,9 +1066,8 @@ internal static class WitheredDomainEventOperations
 	private static IReadOnlyList<OcrMatchResult> ReadMerchantPrices(ZContext context, Mat screen, OneDragon.Core.Screen.ScreenArea area)
 	{
 		using Mat mat = CvImageUtils.Crop(screen, area.Rect);
-		using Mat mat2 = new Mat();
+		using Mat mat2 = CreateMerchantPriceMask(mat);
 		using Mat mat3 = new Mat();
-		Cv2.InRange(mat, new Scalar(240.0, 140.0, 0.0), new Scalar(255.0, 255.0, 50.0), mat2);
 		using Mat mat4 = Cv2.GetStructuringElement(MorphShapes.Rect, new Size(2, 2));
 		Cv2.Dilate(mat2, mat3, mat4);
 		using Mat mat5 = new Mat();
@@ -1096,9 +1095,8 @@ internal static class WitheredDomainEventOperations
 					continue;
 				}
 				using Mat mat6 = CvImageUtils.Crop(screen, area2.Rect);
-				using Mat mat7 = new Mat();
+				using Mat mat7 = CreateMerchantPriceMask(mat6);
 				using Mat mat8 = new Mat();
-				Cv2.InRange(mat6, new Scalar(240.0, 140.0, 0.0), new Scalar(255.0, 255.0, 50.0), mat7);
 				Cv2.Dilate(mat7, mat8, mat4);
 				using Mat mat9 = new Mat();
 				Cv2.CvtColor(mat8, mat9, ColorConversionCodes.GRAY2BGR);
@@ -1115,6 +1113,13 @@ internal static class WitheredDomainEventOperations
 			}
 		}
 		return list;
+	}
+
+	internal static Mat CreateMerchantPriceMask(Mat image)
+	{
+		Mat mask = new Mat();
+		Cv2.InRange(image, new Scalar(0.0, 140.0, 240.0), new Scalar(50.0, 255.0, 255.0), mask);
+		return mask;
 	}
 
 	internal static int? ParseMerchantFallbackPrice(string text)

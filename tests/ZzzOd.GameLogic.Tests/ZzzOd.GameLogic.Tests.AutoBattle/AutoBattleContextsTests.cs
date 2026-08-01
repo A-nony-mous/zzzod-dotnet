@@ -435,6 +435,24 @@ public class AutoBattleContextsTests
 	}
 
 	[Fact]
+	public void Test_AutoBattleContext_CheckChainAttackUsesBgrScreenshotForChainBar()
+	{
+		using ZContext zContext = CreateContextWithAssets();
+		using Mat screen = CreateBlankScreen();
+		OneDragon.Core.Screen.ScreenArea area = zContext.ScreenContext.GetArea("战斗画面", "连携条");
+		using Mat hsv = new Mat(1, 1, MatType.CV_8UC3, new Scalar(15.0, 183.0, 237.0));
+		using Mat bgr = new Mat();
+		Cv2.CvtColor(hsv, bgr, ColorConversionCodes.HSV2BGR);
+		Vec3b color = bgr.At<Vec3b>(0, 0);
+		Cv2.Rectangle(screen, new Rect(area.Rect.X1, area.Rect.Y1, area.Rect.Width, area.Rect.Height), new Scalar(color.Item0, color.Item1, color.Item2), -1);
+
+		zContext.AutoBattleContext.CheckChainAttack(screen, 1.0);
+
+		string stateName = BattleStateEnum.StatusChainReady.GetDescription();
+		Assert.True(SpinWait.SpinUntil(() => zContext.AutoBattleContext.StateRecordService.GetStateRecorder(stateName).LastRecordTime == 1.0, TimeSpan.FromSeconds(2)));
+	}
+
+	[Fact]
 	public void Test_AutoBattleContext_CheckBattleStateChecksChainAndEndResultOutsideBattle()
 	{
 		using ZContext zContext = CreateContextWithAssets();

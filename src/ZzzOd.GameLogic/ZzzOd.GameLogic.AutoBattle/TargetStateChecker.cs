@@ -334,7 +334,7 @@ public sealed class TargetStateChecker : IAutoBattleTargetStateChecker
 	private static Mat FilterByHsv(Mat image, IReadOnlyList<int> hsvColor, IReadOnlyList<int> hsvDiff)
 	{
 		using Mat mat = new Mat();
-		Cv2.CvtColor(image, mat, ColorConversionCodes.RGB2HSV);
+		Cv2.CvtColor(image, mat, ColorConversionCodes.BGR2HSV);
 		Mat mat2 = new Mat(image.Rows, image.Cols, MatType.CV_8UC1, Scalar.Black);
 		for (int i = 0; i < mat.Rows; i++)
 		{

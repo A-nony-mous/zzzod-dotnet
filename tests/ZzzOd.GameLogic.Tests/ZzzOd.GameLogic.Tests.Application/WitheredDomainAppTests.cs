@@ -308,6 +308,19 @@ public sealed class WitheredDomainAppTests
 	}
 
 	[Fact]
+	public void MerchantPriceMask_MatchesBgrOrangeAndRejectsSwappedBlue()
+	{
+		using Mat screenshot = new Mat(1, 2, MatType.CV_8UC3, Scalar.Black);
+		screenshot.Set(0, 0, new Vec3b(20, 180, 250));
+		screenshot.Set(0, 1, new Vec3b(250, 180, 20));
+
+		using Mat mask = WitheredDomainEventOperations.CreateMerchantPriceMask(screenshot);
+
+		Assert.Equal(byte.MaxValue, mask.At<byte>(0, 0));
+		Assert.Equal(0, mask.At<byte>(0, 1));
+	}
+
+	[Fact]
 	public void Context_LoadsSelectedChallengeYamlAndUsesItsRouteAndBattleValues()
 	{
 		string text = CreateTempRoot();

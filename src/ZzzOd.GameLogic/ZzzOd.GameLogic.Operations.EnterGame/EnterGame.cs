@@ -146,7 +146,7 @@ public sealed class EnterGame : ZOperation
 		int val2 = Math.Max(1, screen.Height * 8 / 10);
 		using Mat mat = new Mat(screen, new OpenCvSharp.Rect(num, num2, Math.Min(val, screen.Width - num), Math.Min(val2, screen.Height - num2)));
 		using Mat mat2 = new Mat();
-		Cv2.CvtColor(mat, mat2, ColorConversionCodes.RGB2HSV);
+		Cv2.CvtColor(mat, mat2, ColorConversionCodes.BGR2HSV);
 		Mat[] array = Cv2.Split(mat2);
 		using Mat mat3 = array[1];
 		using Mat mat4 = array[2];

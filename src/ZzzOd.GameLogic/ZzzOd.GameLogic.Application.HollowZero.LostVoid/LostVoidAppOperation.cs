@@ -953,7 +953,7 @@ internal sealed class LostVoidAppOperation : ZOperation
 			return false;
 		}
 		using Mat mat = new Mat();
-		Cv2.CvtColor(image, mat, ColorConversionCodes.RGB2HSV);
+		Cv2.CvtColor(image, mat, ColorConversionCodes.BGR2HSV);
 		Mat[] array = Cv2.Split(mat);
 		try
 		{

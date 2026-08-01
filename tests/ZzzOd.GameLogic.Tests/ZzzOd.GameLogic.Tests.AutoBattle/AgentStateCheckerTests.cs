@@ -99,6 +99,17 @@ public sealed class AgentStateCheckerTests
 	}
 
 	[Fact]
+	public void LengthByForegroundGray_UsesBgrScreenshotColorContract()
+	{
+		using Mat screenshot = new Mat(1, 1, MatType.CV_8UC3, new Scalar(255.0, 0.0, 0.0));
+		AgentStateDef stateDef = new AgentStateDef("蓝色灰度", AgentStateCheckWay.FOREGROUND_GRAY_RANGE_LENGTH, "", new int[] { 20 }, new int[] { 40 });
+
+		int actual = AgentStateChecker.LengthByForegroundGray(screenshot, stateDef);
+
+		Assert.Equal(100, actual);
+	}
+
+	[Fact]
 	public void LengthByBackgroundGray_InfersForegroundFromBackgroundRange()
 	{
 		using Mat mat = new Mat(1, 10, MatType.CV_8UC3, new Scalar(20.0, 20.0, 20.0));

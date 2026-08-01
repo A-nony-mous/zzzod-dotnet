@@ -444,8 +444,7 @@ public sealed class ChargePlanOperation : ZOperation
 		using Mat part = CvImageUtils.Crop(screen, area.Rect);
 		System.Collections.Generic.IReadOnlyList<int> lower = area.ColorRangeLower;
 		System.Collections.Generic.IReadOnlyList<int> upper = area.ColorRangeUpper;
-		using Mat mask = new Mat();
-		Cv2.InRange(part, new Scalar(lower[0], lower[1], lower[2]), new Scalar(upper[0], upper[1], upper[2]), mask);
+		using Mat mask = CreateRgbRangeMask(part, lower, upper);
 		using Mat colored = new Mat();
 		Cv2.CvtColor(mask, colored, ColorConversionCodes.GRAY2RGB);
 		// 整栏文字检测会被图标、分隔线和“/240”干扰，导致漏识或串位；
@@ -470,6 +469,13 @@ public sealed class ChargePlanOperation : ZOperation
 			return null;
 		}
 		return new ChargePlanResourceReading(values[0].Value, values[1].Value, values[2].Value);
+	}
+
+	internal static Mat CreateRgbRangeMask(Mat image, System.Collections.Generic.IReadOnlyList<int> lower, System.Collections.Generic.IReadOnlyList<int> upper)
+	{
+		Mat mask = new Mat();
+		Cv2.InRange(image, new Scalar(lower[2], lower[1], lower[0]), new Scalar(upper[2], upper[1], upper[0]), mask);
+		return mask;
 	}
 
 	private async Task<ChargePlanDoubleRewardResult> DefaultDoubleRewardPlanAsync(ZContext context, int chargePower)

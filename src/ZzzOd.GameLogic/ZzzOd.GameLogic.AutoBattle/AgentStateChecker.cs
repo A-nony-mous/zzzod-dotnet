@@ -352,7 +352,7 @@ public static class AgentStateChecker
 			return Array.Empty<double>();
 		}
 		using Mat mat = new Mat();
-		Cv2.CvtColor(image, mat, ColorConversionCodes.RGB2GRAY);
+		Cv2.CvtColor(image, mat, ColorConversionCodes.BGR2GRAY);
 		// 对齐 参考实现 numpy 的按列求均值：用 Reduce 一次算完，避免逐像素访问
 		using Mat columnSums = new Mat();
 		Cv2.Reduce(mat, columnSums, ReduceDimension.Row, ReduceTypes.Avg, MatType.CV_64F);

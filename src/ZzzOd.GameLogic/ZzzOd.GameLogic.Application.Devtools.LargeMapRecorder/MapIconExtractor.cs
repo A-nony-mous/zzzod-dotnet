@@ -34,7 +34,7 @@ public sealed class MapIconExtractor
 		foreach (var (lowerb, upperb) in colorRanges)
 		{
 			using Mat mat2 = new Mat();
-			Cv2.InRange(raw, lowerb, upperb, mat2);
+			Cv2.InRange(raw, RgbToBgr(lowerb), RgbToBgr(upperb), mat2);
 			Cv2.BitwiseOr(mat, mat2, mat);
 		}
 		Rect? rect = FindNonZeroBounds(mat);
@@ -59,6 +59,8 @@ public sealed class MapIconExtractor
 		}
 		return new MapIconExtractionResult(mat3, mat4);
 	}
+
+	private static Scalar RgbToBgr(Scalar color) => new Scalar(color.Val2, color.Val1, color.Val0, color.Val3);
 
 	private static Rect? FindNonZeroBounds(Mat mask)
 	{
