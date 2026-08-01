@@ -154,7 +154,7 @@ public sealed class BattleReplayRecorderTests
             await WaitForFileContentAsync(decisionsPath, "尾部操作");
 
             Assert.False(disposeTask.IsCompleted);
-            Assert.Contains("尾部操作", await File.ReadAllTextAsync(decisionsPath), StringComparison.Ordinal);
+            Assert.Contains("尾部操作", await ReadSharedTextAsync(decisionsPath), StringComparison.Ordinal);
 
             frameWriterGate.SetResult();
             await disposeTask;
@@ -218,7 +218,7 @@ public sealed class BattleReplayRecorderTests
     {
         for (int i = 0; i < 100; i++)
         {
-            if (File.Exists(path) && (await File.ReadAllTextAsync(path)).Contains(expected, StringComparison.Ordinal))
+            if (File.Exists(path) && (await ReadSharedTextAsync(path)).Contains(expected, StringComparison.Ordinal))
             {
                 return;
             }
@@ -227,6 +227,19 @@ public sealed class BattleReplayRecorderTests
         }
 
         Assert.Fail($"文件未在超时前写入预期内容: {path}");
+    }
+
+    private static async Task<string> ReadSharedTextAsync(string path)
+    {
+        await using var stream = new FileStream(
+            path,
+            FileMode.Open,
+            FileAccess.Read,
+            FileShare.ReadWrite,
+            bufferSize: 4096,
+            FileOptions.Asynchronous | FileOptions.SequentialScan);
+        using var reader = new StreamReader(stream);
+        return await reader.ReadToEndAsync();
     }
 
     private static async Task WaitUntilStoppedAsync(BattleReplayRecorder recorder)
