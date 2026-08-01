@@ -16,10 +16,10 @@ public sealed class BattleReplayHarnessTests
         BattleReplayLoadResult loaded = BattleReplayPackageReader.Read(packageDirectory, "SYNTHETIC");
         BattleReplayLoadResult skipped = BattleReplayPackageReader.Read(packageDirectory, "OTHER");
 
-        Assert.False(loaded.IsSkipped, loaded.SkipReason);
-        Assert.NotNull(loaded.Package);
-        Assert.Equal(3, loaded.Package.States.Count);
-        Assert.Equal(3, loaded.Package.Decisions.Count);
+		Assert.False(loaded.IsSkipped, loaded.SkipReason);
+		Assert.NotNull(loaded.Package);
+		Assert.Equal(8, loaded.Package.States.Count);
+		Assert.Equal(11, loaded.Package.Decisions.Count);
         Assert.True(skipped.IsSkipped);
         Assert.Contains("配置指纹不匹配", skipped.SkipReason, StringComparison.Ordinal);
     }
@@ -36,30 +36,16 @@ public sealed class BattleReplayHarnessTests
     }
 
     [Fact]
-    public void SyntheticPackage_ExercisesRealStateWindowAndStubbedExecution()
-    {
-        BattleReplayPackage package = BattleReplayPackageReader.Read(GetSyntheticPackageDirectory(), "SYNTHETIC").Package!;
-        var recorders = new Dictionary<string, StateRecorder>(StringComparer.Ordinal);
-        foreach (ReplayStateSubmission state in package.States)
-        {
-            StateRecorder recorder = recorders.GetValueOrDefault(state.Record.StateName) ?? new StateRecorder(state.Record.StateName);
-            recorders[state.Record.StateName] = recorder;
-            recorder.UpdateStateRecord(state.Record);
-        }
+	public async Task SyntheticPackage_DrivesOperatorWindowCooldownAndPrioritySemantics()
+	{
+		BattleReplayPackage package = BattleReplayPackageReader.Read(GetSyntheticPackageDirectory(), "SYNTHETIC").Package!;
+		var runner = new BattleReplayRunner();
 
-        var clock = new BattleReplayClock(package.Decisions.Select(decision => decision.TriggerTime ?? 0d));
-        var executor = new BattleReplayExecutionStub(clock);
-        foreach (BattleReplayDecision decision in package.Decisions)
-        {
-            StateCalNode expression = StateCalExpressionParser.Construct(decision.Expression, name => recorders.GetValueOrDefault(name));
-            if (expression.InTimeRange(clock.NowSeconds()))
-            {
-                executor.Execute(decision);
-            }
-        }
+		IReadOnlyList<BattleReplayDecision> actual = await runner.RunAsync(package, package.Directory, readFromMerged: false);
 
-        Assert.Null(BattleReplayDecisionComparer.FindFirstMismatch(package.Decisions, executor.Actual, TimeSpan.FromMilliseconds(1)));
-    }
+		string? mismatch = BattleReplayDecisionComparer.FindFirstMismatch(package.Decisions, actual, TimeSpan.FromMilliseconds(1));
+		Assert.True(mismatch is null, mismatch);
+	}
 
     [Fact]
     public void DecisionComparer_ReportsFirstDifferentDecisionWithContext()
@@ -71,24 +57,32 @@ public sealed class BattleReplayHarnessTests
         string? mismatch = BattleReplayDecisionComparer.FindFirstMismatch(expected, actual, TimeSpan.FromMilliseconds(1));
 
         Assert.Contains("决策 0", mismatch, StringComparison.Ordinal);
-        Assert.Contains("期望 (A", mismatch, StringComparison.Ordinal);
+        Assert.Contains("期望 (started, A", mismatch, StringComparison.Ordinal);
     }
 
     [BattleReplayIntegrationFact]
     [Trait("Category", "Integration")]
-    public void RealPackages_PassSchemaFingerprintAndDecisionReplay()
-    {
-        string root = Environment.GetEnvironmentVariable(IntegrationEnvironmentVariable)!;
-        string expectedHash = Environment.GetEnvironmentVariable("ZZZOD_BATTLE_REPLAY_CONFIG_HASH") ?? string.Empty;
-        string[] packages = Directory.GetDirectories(root);
-        Assert.NotEmpty(packages);
-        foreach (string packageDirectory in packages)
-        {
-            BattleReplayLoadResult result = BattleReplayPackageReader.Read(packageDirectory, expectedHash);
-            Assert.False(result.IsSkipped, result.SkipReason);
-            Assert.NotEmpty(result.Package!.Decisions);
-        }
-    }
+	public async Task RealPackages_PassSchemaFingerprintAndDecisionReplay()
+	{
+		string root = Environment.GetEnvironmentVariable(IntegrationEnvironmentVariable)!;
+		string expectedHash = Environment.GetEnvironmentVariable("ZZZOD_BATTLE_REPLAY_CONFIG_HASH") ?? string.Empty;
+		string configurationRoot = Environment.GetEnvironmentVariable("ZZZOD_BATTLE_REPLAY_CONFIG_ROOT")
+			?? Directory.GetParent(Path.GetFullPath(root.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar)))?.FullName
+			?? throw new InvalidOperationException("无法推断回放配置根目录");
+		string[] packages = Directory.GetDirectories(root);
+		Assert.NotEmpty(packages);
+		var runner = new BattleReplayRunner();
+		foreach (string packageDirectory in packages)
+		{
+			BattleReplayLoadResult result = BattleReplayPackageReader.Read(packageDirectory, expectedHash);
+			Assert.False(result.IsSkipped, result.SkipReason);
+			BattleReplayPackage package = result.Package!;
+			Assert.NotEmpty(package.Decisions);
+			IReadOnlyList<BattleReplayDecision> actual = await runner.RunAsync(package, configurationRoot, readFromMerged: true);
+			string? mismatch = BattleReplayDecisionComparer.FindFirstMismatch(package.Decisions, actual, TimeSpan.FromMilliseconds(2));
+			Assert.True(mismatch is null, mismatch);
+		}
+	}
 
     private static string GetSyntheticPackageDirectory() => Path.Combine(AppContext.BaseDirectory, "TestData", "BattleReplay", "synthetic");
 

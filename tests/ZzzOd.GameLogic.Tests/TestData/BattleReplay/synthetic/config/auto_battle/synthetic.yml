@@ -1,0 +1,41 @@
+auto_lock_interval: 0
+auto_turn_interval: 0
+scenes:
+  - triggers: ["自定义-窗口状态"]
+    interval: 0
+    handlers:
+      - states: "[自定义-窗口状态, 0, 1]"
+        debug_name: "窗口命中"
+        operations:
+          - op_name: "回放-窗口"
+  - triggers: ["自定义-冷却状态"]
+    interval: 5
+    handlers:
+      - states: "[自定义-冷却状态, 0, 1]"
+        debug_name: "冷却命中"
+        operations:
+          - op_name: "回放-冷却"
+  - triggers: ["自定义-低优先级状态"]
+    priority: 5
+    interval: 0
+    handlers:
+      - states: "[自定义-低优先级状态, 0, 1]"
+        debug_name: "低优先级命中"
+        operations:
+          - op_name: "回放-低优先级"
+  - triggers: ["自定义-更低优先级状态"]
+    priority: 4
+    interval: 0
+    handlers:
+      - states: "[自定义-更低优先级状态, 0, 1]"
+        debug_name: "更低优先级命中"
+        operations:
+          - op_name: "回放-更低优先级"
+  - triggers: ["自定义-高优先级状态"]
+    priority: 6
+    interval: 0
+    handlers:
+      - states: "[自定义-高优先级状态, 0, 1]"
+        debug_name: "高优先级命中"
+        operations:
+          - op_name: "回放-高优先级"

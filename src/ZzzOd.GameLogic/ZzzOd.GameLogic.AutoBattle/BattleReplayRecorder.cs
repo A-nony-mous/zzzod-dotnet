@@ -300,8 +300,8 @@ public sealed class BattleReplayRecorder : IStateRecordUpdateListener, IShutdown
         try
         {
             await _requiredWriterStartGate.ConfigureAwait(false);
-            await using FileStream states = File.Create(Path.Combine(_packageDirectory, "states.jsonl"));
-            await using FileStream decisions = File.Create(Path.Combine(_packageDirectory, "decisions.jsonl"));
+            await using FileStream states = OpenRequiredStream(Path.Combine(_packageDirectory, "states.jsonl"));
+            await using FileStream decisions = OpenRequiredStream(Path.Combine(_packageDirectory, "decisions.jsonl"));
             while (await _requiredQueue.Reader.WaitToReadAsync().ConfigureAwait(false))
             {
                 while (_requiredQueue.Reader.TryRead(out ReplayItem? item))
@@ -353,6 +353,17 @@ public sealed class BattleReplayRecorder : IStateRecordUpdateListener, IShutdown
                 await WriteJsonLineAsync(decisions, decision.Value).ConfigureAwait(false);
                 break;
         }
+    }
+
+    private static FileStream OpenRequiredStream(string path)
+    {
+        return new FileStream(
+            path,
+            FileMode.Create,
+            FileAccess.Write,
+            FileShare.Read,
+            bufferSize: 4096,
+            FileOptions.Asynchronous | FileOptions.SequentialScan);
     }
 
     private void WriteFrame(FrameItem frame)

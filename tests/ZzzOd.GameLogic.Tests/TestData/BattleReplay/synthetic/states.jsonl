@@ -1,3 +1,8 @@
-{"Record":{"StateName":"窗口状态","IsClear":false,"TriggerTime":10.0,"TriggerTimeAdd":null,"Value":null,"ValueAdd":null},"SubmittedAtUtc":"2026-07-27T00:00:00Z"}
-{"Record":{"StateName":"冷却状态","IsClear":false,"TriggerTime":20.0,"TriggerTimeAdd":null,"Value":null,"ValueAdd":null},"SubmittedAtUtc":"2026-07-27T00:00:01Z"}
-{"Record":{"StateName":"高优先级状态","IsClear":false,"TriggerTime":30.0,"TriggerTimeAdd":null,"Value":null,"ValueAdd":null},"SubmittedAtUtc":"2026-07-27T00:00:02Z"}
+{"Record":{"StateName":"自定义-窗口状态","IsClear":false,"TriggerTime":10.0,"TriggerTimeAdd":null,"Value":null,"ValueAdd":null},"SubmittedAtUtc":"1970-01-01T00:00:12Z"}
+{"Record":{"StateName":"自定义-窗口状态","IsClear":false,"TriggerTime":13.0,"TriggerTimeAdd":null,"Value":null,"ValueAdd":null},"SubmittedAtUtc":"1970-01-01T00:00:13Z"}
+{"Record":{"StateName":"自定义-冷却状态","IsClear":false,"TriggerTime":20.0,"TriggerTimeAdd":null,"Value":null,"ValueAdd":null},"SubmittedAtUtc":"1970-01-01T00:00:20Z"}
+{"Record":{"StateName":"自定义-冷却状态","IsClear":false,"TriggerTime":21.0,"TriggerTimeAdd":null,"Value":null,"ValueAdd":null},"SubmittedAtUtc":"1970-01-01T00:00:21Z"}
+{"Record":{"StateName":"自定义-冷却状态","IsClear":false,"TriggerTime":26.1,"TriggerTimeAdd":null,"Value":null,"ValueAdd":null},"SubmittedAtUtc":"1970-01-01T00:00:26.100Z"}
+{"Record":{"StateName":"自定义-低优先级状态","IsClear":false,"TriggerTime":30.0,"TriggerTimeAdd":null,"Value":null,"ValueAdd":null},"SubmittedAtUtc":"1970-01-01T00:00:30Z"}
+{"Record":{"StateName":"自定义-更低优先级状态","IsClear":false,"TriggerTime":31.0,"TriggerTimeAdd":null,"Value":null,"ValueAdd":null},"SubmittedAtUtc":"1970-01-01T00:00:31Z"}
+{"Record":{"StateName":"自定义-高优先级状态","IsClear":false,"TriggerTime":32.0,"TriggerTimeAdd":null,"Value":null,"ValueAdd":null},"SubmittedAtUtc":"1970-01-01T00:00:32Z"}
