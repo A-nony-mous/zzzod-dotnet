@@ -177,17 +177,6 @@ public static class AutoBattleUtils
 				return true;
 			}
 		}
-		OneDragon.Core.Screen.ScreenArea area = ctx.ScreenContext.GetArea("迷失之地-大世界", "区域-文本提示");
-		if (ScreenUtils.FindByOcr(ctx, screen, "战斗开始", area, 0.5))
-		{
-			ctx.Logger.Information("迷失之地遭遇战斗判定: Source=BattleStartOcr, AttackButton={AttackButton}, ScreenshotTime={ScreenshotTime:F3}", flag, num);
-			return true;
-		}
-		if (ScreenUtils.FindByOcr(ctx, screen, "侦测到最后的敌人", area, 0.5))
-		{
-			ctx.Logger.Information("迷失之地遭遇战斗判定: Source=LastEnemyOcr, AttackButton={AttackButton}, ScreenshotTime={ScreenshotTime:F3}", flag, num);
-			return true;
-		}
 		return false;
 	}
 
