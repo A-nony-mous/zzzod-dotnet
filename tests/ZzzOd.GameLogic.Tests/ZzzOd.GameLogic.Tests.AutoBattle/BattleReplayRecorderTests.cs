@@ -79,8 +79,10 @@ public sealed class BattleReplayRecorderTests
         {
             recorder.Start();
             using var frame = new Mat(8, 8, MatType.CV_8UC3, Scalar.Black);
-            Assert.True(recorder.RecordFrame(frame, DateTimeOffset.UtcNow));
-            Assert.False(recorder.RecordFrame(frame, DateTimeOffset.UtcNow));
+            DateTimeOffset firstFrameAt = DateTimeOffset.UtcNow;
+            Assert.True(recorder.RecordFrame(frame, firstFrameAt));
+            Assert.False(recorder.RecordFrame(frame, firstFrameAt.AddMilliseconds(499)));
+            Assert.True(recorder.RecordFrame(frame, firstFrameAt.AddMilliseconds(500)));
 
             Task producer = Task.Run(() =>
             {
@@ -113,6 +115,53 @@ public sealed class BattleReplayRecorderTests
         finally
         {
             writerGate.TrySetResult();
+            await recorder.ShutdownAsync(CancellationToken.None);
+            recorder.Dispose();
+            Directory.Delete(root, recursive: true);
+        }
+    }
+
+    [Fact]
+    public async Task Recorder_SamplesFramesEveryHalfSecondAndKeepsLatestQueuedFrame()
+    {
+        string root = CreateTempRoot();
+        var frameWriterGate = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var recorder = new BattleReplayRecorder(
+            root,
+            "sample-latest",
+            "测试配置",
+            "ABC",
+            maxFrames: 10,
+            maxBytes: 16 * 1024 * 1024,
+            queueCapacity: 64,
+            requiredWriterStartGate: Task.CompletedTask,
+            frameWriterStartGate: frameWriterGate.Task);
+
+        try
+        {
+            recorder.Start();
+            DateTimeOffset capturedAt = DateTimeOffset.UtcNow;
+            using var blackFrame = new Mat(8, 8, MatType.CV_8UC3, Scalar.Black);
+            using var whiteFrame = new Mat(8, 8, MatType.CV_8UC3, Scalar.White);
+
+            Assert.True(recorder.RecordFrame(blackFrame, capturedAt));
+            Assert.False(recorder.RecordFrame(whiteFrame, capturedAt.AddMilliseconds(499)));
+            Assert.True(recorder.RecordFrame(whiteFrame, capturedAt.AddMilliseconds(500)));
+
+            Task shutdown = recorder.ShutdownAsync(CancellationToken.None);
+            frameWriterGate.SetResult();
+            await shutdown;
+
+            string[] frames = Directory.GetFiles(Path.Combine(recorder.PackageDirectory, "frames"), "*.webp");
+            Assert.Single(frames);
+            Assert.Contains(capturedAt.AddMilliseconds(500).ToString("yyyyMMdd_HHmmss_fff"), Path.GetFileName(frames[0]), StringComparison.Ordinal);
+            using Mat decoded = Cv2.ImRead(frames[0], ImreadModes.Color);
+            Assert.Equal(255, decoded.At<Vec3b>(0, 0)[0]);
+            Assert.Contains("droppedFrameCount: 1", await File.ReadAllTextAsync(Path.Combine(recorder.PackageDirectory, "manifest.yml")), StringComparison.Ordinal);
+        }
+        finally
+        {
+            frameWriterGate.TrySetResult();
             await recorder.ShutdownAsync(CancellationToken.None);
             recorder.Dispose();
             Directory.Delete(root, recursive: true);

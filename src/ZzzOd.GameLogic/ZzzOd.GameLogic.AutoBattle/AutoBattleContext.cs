@@ -4,7 +4,6 @@ using System.Diagnostics;
 using System.Globalization;
 using System.Linq;
 using System.IO;
-using System.Security.Cryptography;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
@@ -472,15 +471,21 @@ public class AutoBattleContext : IRunParticipant
 			return;
 		}
 
-		string mergedPath = _ctx.Environment.GetPathUnderWorkDir("config", subDir, opName + ".merged.yml");
-		string hash = File.Exists(mergedPath)
-			? Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(mergedPath)))
-			: string.Empty;
+		string configurationPath = autoOp.ConfigurationYamlPath
+			?? AutoBattleOperator.ResolveYamlPath(
+				_ctx.Environment,
+				subDir,
+				opName,
+				_ctx.BattleAssistantConfig.UseMergedFile);
+		BattleReplayConfigurationSnapshot configurationSnapshot = new(
+			_ctx.Environment.WorkDirectory,
+			configurationPath,
+			autoOp.LoadedYamlPaths);
 		BattleReplayRecorder recorder = new(
 			_ctx.Environment.GetPathUnderWorkDir(".replay"),
 			opName,
 			opName,
-			hash);
+			configurationSnapshot);
 		recorder.Start();
 		ReplayRecorder = recorder;
 		_ctx.RegisterShutdownParticipant(recorder);

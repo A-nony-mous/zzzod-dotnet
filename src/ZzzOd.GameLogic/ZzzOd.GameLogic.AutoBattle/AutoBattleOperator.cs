@@ -9,6 +9,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using OneDragon.Core.Events;
 using OneDragon.Core.Operation;
+using OneDragon.Core.Runtime;
 using OneDragon.Core.Utils;
 using Serilog;
 using YamlDotNet.Serialization;
@@ -19,7 +20,7 @@ namespace ZzzOd.GameLogic.AutoBattle;
 public class AutoBattleOperator : IStateRecordUpdateListener
 {
 	public event Action<AutoBattleExecutionRecord>? ExecutionRecordAdded;
-	private const string FallbackTemplateName = "全配队通用";
+	internal const string FallbackTemplateName = "全配队通用";
 
 	// 调度器为进程内共享：容量需覆盖并发运行的 operator 数量（主循环 + 周期动作各占一条），
 	// 续体现在固定回到这些线程上，容量不足会直接表现为循环节奏被拖慢。
@@ -78,6 +79,14 @@ public class AutoBattleOperator : IStateRecordUpdateListener
 	private ExecutionInfo? _naturalCompletionPriorityProtection;
 
 	private string? _lastLoadedYamlPath;
+
+	private string? _configurationYamlPath;
+
+	private readonly HashSet<string> _loadedYamlPaths = new(StringComparer.OrdinalIgnoreCase);
+
+	internal string? ConfigurationYamlPath => _configurationYamlPath;
+
+	internal IReadOnlyList<string> LoadedYamlPaths => _loadedYamlPaths.ToArray();
 
 	private Task? _normalSceneLoopTask;
 
@@ -183,6 +192,8 @@ public class AutoBattleOperator : IStateRecordUpdateListener
 		try
 		{
 			_lastLoadedYamlPath = null;
+			_configurationYamlPath = null;
+			_loadedYamlPaths.Clear();
 			// 与销毁流程保持一致的"先停后建"顺序：重新初始化前先停掉旧的运行状态，
 			// 避免旧场景循环、周期动作在新配置构建完成前继续基于旧数据运行。
 			StopRunning();
@@ -507,6 +518,7 @@ public class AutoBattleOperator : IStateRecordUpdateListener
 	private void Load()
 	{
 		Dictionary<string, object> dictionary = LoadYamlConfig(_subDir, ResolveTemplateName());
+		_configurationYamlPath = _lastLoadedYamlPath;
 		LoadOtherInfo(dictionary.ToDictionary<KeyValuePair<string, object>, string, object>((KeyValuePair<string, object> pair) => pair.Key, (KeyValuePair<string, object> pair) => pair.Value ?? new object(), StringComparer.Ordinal));
 		Scenes = (from scene in AutoBattleCondOpScene.GetDictionaryList(dictionary, "scenes")
 			select new AutoBattleCondOpScene(scene)).ToList();
@@ -821,6 +833,7 @@ public class AutoBattleOperator : IStateRecordUpdateListener
 	{
 		string text = ResolveYamlPath(subDir, templateName);
 		_lastLoadedYamlPath = text;
+		_loadedYamlPaths.Add(text);
 		if (!File.Exists(text))
 		{
 			throw new FileNotFoundException("未找到配置文件 " + subDir + "/" + templateName, text);
@@ -831,8 +844,18 @@ public class AutoBattleOperator : IStateRecordUpdateListener
 
 	private string ResolveYamlPath(string subDir, string templateName)
 	{
-		string pathUnderWorkDir = _ctx.ZContext.Environment.GetPathUnderWorkDir("config", subDir);
-		if (_readFromMerged)
+		return ResolveYamlPath(_ctx.ZContext.Environment, subDir, templateName, _readFromMerged);
+	}
+
+	internal static string ResolveYamlPath(
+		OneDragonEnvironment environment,
+		string subDir,
+		string templateName,
+		bool readFromMerged)
+	{
+		ArgumentNullException.ThrowIfNull(environment);
+		string pathUnderWorkDir = environment.GetPathUnderWorkDir("config", subDir);
+		if (readFromMerged)
 		{
 			string text = Path.Combine(pathUnderWorkDir, templateName + ".merged.yml");
 			if (File.Exists(text))
