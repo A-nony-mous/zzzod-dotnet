@@ -16,14 +16,18 @@ public sealed record RandomPlayTransportPoint(string Value, string AreaName, str
 	/// <summary>澄辉坪录像店营业点。</summary>
 	public static RandomPlayTransportPoint FailumeHeightsBusinessPoint { get; } = new RandomPlayTransportPoint("澄辉坪 - 录像店营业点", "澄辉坪", "录像店营业点");
 
+	/// <summary>布亚斯特城区录像店营业点。</summary>
+	public static RandomPlayTransportPoint BuyasteBusinessPoint { get; } = new RandomPlayTransportPoint("布亚斯特城区 - 录像店营业点", "布亚斯特城区", "录像店营业点");
+
 	/// <summary>所有可选传送点。</summary>
-	public static IReadOnlyList<RandomPlayTransportPoint> All { get; } = new RandomPlayTransportPoint[2] { VideoStoreCounter, FailumeHeightsBusinessPoint };
+	public static IReadOnlyList<RandomPlayTransportPoint> All { get; } = new RandomPlayTransportPoint[3] { VideoStoreCounter, FailumeHeightsBusinessPoint, BuyasteBusinessPoint };
 
 	/// <summary>设置选项。</summary>
-	public static IReadOnlyList<ConfigItem> Options { get; } = new ConfigItem[2]
+	public static IReadOnlyList<ConfigItem> Options { get; } = new ConfigItem[3]
 	{
 		new ConfigItem(VideoStoreCounter.Value),
-		new ConfigItem(FailumeHeightsBusinessPoint.Value)
+		new ConfigItem(FailumeHeightsBusinessPoint.Value),
+		new ConfigItem(BuyasteBusinessPoint.Value)
 	};
 
 	/// <summary>
