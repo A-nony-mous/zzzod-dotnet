@@ -1,8 +1,10 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using OneDragon.Core.Runtime;
 using Xunit;
@@ -15,6 +17,25 @@ namespace ZzzOd.GameLogic.Tests.AppHost;
 
 public sealed class LostVoidAppSettingPageTests
 {
+	private sealed class RecordingLogger<T> : ILogger<T>
+	{
+		public List<(LogLevel Level, object? State, Exception? Exception, string Message)> Events { get; } = new();
+
+		public IDisposable? BeginScope<TState>(TState state) where TState : notnull => null;
+
+		public bool IsEnabled(LogLevel logLevel) => true;
+
+		public void Log<TState>(
+			LogLevel logLevel,
+			EventId eventId,
+			TState state,
+			Exception? exception,
+			Func<TState, Exception?, string> formatter)
+		{
+			Events.Add((logLevel, state, exception, formatter(state, exception)));
+		}
+	}
+
 	public class RecordingMainBackendProxy : DispatchProxy
 	{
 		public Dictionary<string, object?> Values { get; } = new Dictionary<string, object>(StringComparer.Ordinal)
@@ -239,6 +260,51 @@ public sealed class LostVoidAppSettingPageTests
 			if (Directory.Exists(text))
 			{
 				Directory.Delete(text, recursive: true);
+			}
+		}
+	}
+
+	[Fact]
+	public void ProductionBackendSkipsInvalidChallengeConfigsAndLogsOriginalExceptions()
+	{
+		string root = Path.Combine(Path.GetTempPath(), "zzzod-lost-void-settings", Guid.NewGuid().ToString("N"));
+		string challengeDirectory = Path.Combine(root, "config", "lost_void_challenge");
+		Directory.CreateDirectory(challengeDirectory);
+		File.WriteAllText(Path.Combine(challengeDirectory, "默认.sample.yml"), "auto_battle: 全配队通用\n");
+		File.WriteAllText(Path.Combine(challengeDirectory, "自定义-01.yml"), "predefined_team_idx: [\n");
+		File.WriteAllText(Path.Combine(challengeDirectory, "自定义-02.yml"), "artifact_priority:\n  nested: value\n");
+		ZzzRuntimeManager runtime = new ZzzRuntimeManager(root, NullLogger<ZzzRuntimeManager>.Instance);
+		ZzzBackendEventBus eventBus = new ZzzBackendEventBus();
+		ZzzBattleAssistantRuntimeSource runtimeSource = new ZzzBattleAssistantRuntimeSource();
+		ZzzLogFanOutLoggerProvider logProvider = new ZzzLogFanOutLoggerProvider(new ZzzRunRoot(root), eventBus);
+		RecordingLogger<ZzzAppBackend> logger = new RecordingLogger<ZzzAppBackend>();
+
+		try
+		{
+			ZzzAppBackend backend = new ZzzAppBackend(runtime, eventBus, runtimeSource, logProvider, new ZzzHostModeOptions(ZzzHostMode.ApiOnly), new ZzzApiOptions(), logger);
+			IReadOnlyList<string> names = backend.GetReadableLostVoidChallengeConfigNames(new OneDragonEnvironment(root));
+
+			Assert.Equal(new[] { "默认" }, names);
+			Assert.Equal(2, logger.Events.Count);
+			Assert.All(logger.Events, entry =>
+			{
+				Assert.Equal(LogLevel.Error, entry.Level);
+				Assert.NotNull(entry.Exception);
+				Assert.Contains("迷失之地挑战配置读取错误", entry.Message, StringComparison.Ordinal);
+			});
+			Assert.Equal(
+				new[] { "自定义-01", "自定义-02" },
+				logger.Events.Select(entry => Assert.IsAssignableFrom<IEnumerable<KeyValuePair<string, object?>>>(entry.State)
+					.Single(pair => pair.Key == "ModuleName").Value?.ToString()).Order(StringComparer.Ordinal));
+		}
+		finally
+		{
+			runtime.Dispose();
+			runtimeSource.Dispose();
+			logProvider.Dispose();
+			if (Directory.Exists(root))
+			{
+				Directory.Delete(root, recursive: true);
 			}
 		}
 	}

@@ -2014,7 +2014,7 @@ public sealed class ZzzAppBackend : IZzzAppBackend, IZzzIntelBoardProgressBacken
 		}
 	}
 
-	private IReadOnlyList<string> GetReadableLostVoidChallengeConfigNames(OneDragonEnvironment environment)
+	internal IReadOnlyList<string> GetReadableLostVoidChallengeConfigNames(OneDragonEnvironment environment)
 	{
 		return LostVoidChallengeConfig.GetAllModuleNames(
 			environment,
