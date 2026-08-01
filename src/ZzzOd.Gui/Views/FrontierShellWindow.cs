@@ -175,7 +175,8 @@ public sealed partial class FrontierShellWindow : FAAppWindow
         IBrush fallback = ResolveTransparencyFallback();
         TransparencyBackgroundFallback = fallback;
 
-        if (ActualThemeVariant == FluentAvaloniaTheme.HighContrastTheme)
+        if (ActualThemeVariant == FluentAvaloniaTheme.HighContrastTheme
+            || !OperatingSystem.IsWindowsVersionAtLeast(10, 0, 22000))
         {
             Background = fallback;
             TransparencyLevelHint = [WindowTransparencyLevel.None];
