@@ -72,6 +72,7 @@ public sealed class ChargePlanItem
 				"区域巡防" => 60, 
 				"专业挑战室" => 40, 
 				"恶名狩猎" => 60, 
+				"合成电池" => 60, 
 				_ => 0, 
 			};
 			if (1 == 0)

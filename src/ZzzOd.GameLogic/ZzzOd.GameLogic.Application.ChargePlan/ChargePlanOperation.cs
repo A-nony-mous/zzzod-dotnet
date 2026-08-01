@@ -44,6 +44,8 @@ public sealed class ChargePlanOperation : ZOperation
 
 	private readonly Func<ZContext, ChargePlanItem, Task<OperationResult>> _notoriousHuntAsync;
 
+	private readonly Func<ZContext, ChargePlanItem, Task<OperationResult>> _exchangeEtherBatteryAsync;
+
 	private readonly Func<ZContext, Task<OperationResult>> _backToWorldAsync;
 
 	private readonly Func<ZContext, ChargePlanResourceReading?> _resourceReader;
@@ -71,7 +73,7 @@ public sealed class ChargePlanOperation : ZOperation
 	/// <summary>
 	/// 初始化电量计划流程。
 	/// </summary>
-	public ChargePlanOperation(ZContext context, ChargePlanConfig config, ChargePlanRunRecord runRecord, Func<ZContext, Task<OperationResult>>? backToWorldBeforeCompendiumAsync = null, Func<ZContext, ChargePlanItem, Task<OperationResult>>? transportAsync = null, Func<ZContext, ChargePlanItem, Task<OperationResult>>? combatSimulationAsync = null, Func<ZContext, ChargePlanItem, Task<OperationResult>>? areaPatrolAsync = null, Func<ZContext, ChargePlanItem, Task<OperationResult>>? expertChallengeAsync = null, Func<ZContext, ChargePlanItem, Task<OperationResult>>? notoriousHuntAsync = null, Func<ZContext, Task<OperationResult>>? backToWorldAsync = null, Func<ZContext, ChargePlanResourceReading?>? resourceReader = null, Func<ZContext, int, Task<ChargePlanDoubleRewardResult>>? doubleRewardPlanAsync = null, Func<ZContext, Task<OperationResult>>? doubleRewardTransportAsync = null, Func<DateTimeOffset>? now = null, Func<ZContext, Task<OperationResult>>? openCompendiumAsync = null)
+	public ChargePlanOperation(ZContext context, ChargePlanConfig config, ChargePlanRunRecord runRecord, Func<ZContext, Task<OperationResult>>? backToWorldBeforeCompendiumAsync = null, Func<ZContext, ChargePlanItem, Task<OperationResult>>? transportAsync = null, Func<ZContext, ChargePlanItem, Task<OperationResult>>? combatSimulationAsync = null, Func<ZContext, ChargePlanItem, Task<OperationResult>>? areaPatrolAsync = null, Func<ZContext, ChargePlanItem, Task<OperationResult>>? expertChallengeAsync = null, Func<ZContext, ChargePlanItem, Task<OperationResult>>? notoriousHuntAsync = null, Func<ZContext, Task<OperationResult>>? backToWorldAsync = null, Func<ZContext, ChargePlanResourceReading?>? resourceReader = null, Func<ZContext, int, Task<ChargePlanDoubleRewardResult>>? doubleRewardPlanAsync = null, Func<ZContext, Task<OperationResult>>? doubleRewardTransportAsync = null, Func<DateTimeOffset>? now = null, Func<ZContext, Task<OperationResult>>? openCompendiumAsync = null, Func<ZContext, ChargePlanItem, Task<OperationResult>>? exchangeEtherBatteryAsync = null)
 		: base(context, "体力刷本")
 	{
 		_config = config;
@@ -83,6 +85,7 @@ public sealed class ChargePlanOperation : ZOperation
 		_areaPatrolAsync = areaPatrolAsync ?? ((Func<ZContext, ChargePlanItem, Task<OperationResult>>)((ZContext ctx, ChargePlanItem plan) => new AreaPatrol(ctx, plan, _config).ExecuteAsync()));
 		_expertChallengeAsync = expertChallengeAsync ?? ((Func<ZContext, ChargePlanItem, Task<OperationResult>>)((ZContext ctx, ChargePlanItem plan) => new ExpertChallenge(ctx, plan, _config).ExecuteAsync()));
 		_notoriousHuntAsync = notoriousHuntAsync ?? ((Func<ZContext, ChargePlanItem, Task<OperationResult>>)((ZContext ctx, ChargePlanItem plan) => new ZzzOd.GameLogic.Operations.Compendium.NotoriousHunt(ctx, plan, _config, null, useChargePower: true).ExecuteAsync()));
+		_exchangeEtherBatteryAsync = exchangeEtherBatteryAsync ?? ((Func<ZContext, ChargePlanItem, Task<OperationResult>>)((ZContext ctx, ChargePlanItem plan) => new ZzzOd.GameLogic.Operations.ExchangeEtherBatteryOperation(ctx, plan, _config).ExecuteAsync()));
 		_backToWorldAsync = backToWorldAsync ?? ((Func<ZContext, Task<OperationResult>>)((ZContext ctx) => new BackToNormalWorld(ctx).ExecuteAsync()));
 		_resourceReader = resourceReader ?? new Func<ZContext, ChargePlanResourceReading?>(ReadResourcesFromCompendium);
 		_doubleRewardPlanAsync = doubleRewardPlanAsync ?? new Func<ZContext, int, Task<ChargePlanDoubleRewardResult>>(DefaultDoubleRewardPlanAsync);
@@ -276,6 +279,10 @@ public sealed class ChargePlanOperation : ZOperation
 		{
 			return RoundFail("未选择计划");
 		}
+		if (string.Equals(_currentPlan.CategoryName, "合成电池", StringComparison.Ordinal))
+		{
+			return RoundSuccess("合成电池");
+		}
 		return RoundByOperationResult(await _transportAsync(base.ZContext, _currentPlan).ConfigureAwait(continueOnCapturedContext: false));
 	}
 
@@ -330,6 +337,16 @@ public sealed class ChargePlanOperation : ZOperation
 	}
 
 	/// <summary>
+	/// 执行合成电池。
+	/// </summary>
+	[NodeFrom("传送", Status = "合成电池")]
+	[OperationNode("合成电池")]
+	public Task<OperationRoundResult> ExchangeEtherBattery()
+	{
+		return RunChallengeAsync(_exchangeEtherBatteryAsync);
+	}
+
+	/// <summary>
 	/// 挑战完成后更新本轮状态。
 	/// </summary>
 	[NodeFrom("实战模拟室", Success = true)]
@@ -340,6 +357,8 @@ public sealed class ChargePlanOperation : ZOperation
 	[NodeFrom("专业挑战室", Success = false)]
 	[NodeFrom("恶名狩猎", Success = true)]
 	[NodeFrom("恶名狩猎", Success = false)]
+	[NodeFrom("合成电池", Success = true)]
+	[NodeFrom("合成电池", Success = false)]
 	[OperationNode("挑战完成")]
 	public OperationRoundResult ChallengeComplete()
 	{
@@ -371,6 +390,8 @@ public sealed class ChargePlanOperation : ZOperation
 	[NodeFrom("专业挑战室", Status = "电量不足")]
 	[NodeFrom("恶名狩猎", Status = "电量不足")]
 	[NodeFrom("恶名狩猎", Status = "周期挑战有剩余次数，本次跳过深度追猎")]
+	[NodeFrom("合成电池", Status = "合成素材不足")]
+	[NodeFrom("合成电池", Status = "当前可合成项目不是以太电池")]
 	[NodeFrom("实战模拟室", Status = "特训目标已达成")]
 	[NodeFrom("区域巡防", Status = "特训目标已达成")]
 	[NodeFrom("专业挑战室", Status = "特训目标已达成")]
