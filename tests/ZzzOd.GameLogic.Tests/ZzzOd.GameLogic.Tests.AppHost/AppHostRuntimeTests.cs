@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 using Avalonia.Controls;
 using FluentAvalonia.UI.Controls;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using OneDragon.Core.Abstractions.Operations;
@@ -478,6 +479,39 @@ public sealed class AppHostRuntimeTests
 		Assert.True(stopped.Success);
 		Assert.Equal(ZzzRunState.Cancelled, stopped.Value.State);
 		Assert.Equal(0, harness.Application.StopCount);
+	}
+
+	/// <summary>
+	/// GUI composition root 启动 hosted services 时不得提前创建运行上下文或迷失模型。
+	/// </summary>
+	[Fact]
+	public async Task GuiAppHostStartupDoesNotCreateLostVoidRuntimeContext()
+	{
+		string runRoot = Path.Combine(Path.GetTempPath(), "zzzod-gui-apphost-startup-tests", Guid.NewGuid().ToString("N"));
+		Directory.CreateDirectory(runRoot);
+		try
+		{
+			using IHost host = Host.CreateDefaultBuilder()
+				.ConfigureServices(services => services.AddZzzAppHost(runRoot, ZzzHostMode.Gui))
+				.Build();
+			await host.StartAsync();
+			try
+			{
+				_ = host.Services.GetRequiredService<IZzzAppBackend>();
+				ZzzRuntimeManager runtime = host.Services.GetRequiredService<ZzzRuntimeManager>();
+
+				Assert.False(runtime.HasContext);
+				Assert.Null(runtime.TryGetContext());
+			}
+			finally
+			{
+				await host.StopAsync();
+			}
+		}
+		finally
+		{
+			Directory.Delete(runRoot, recursive: true);
+		}
 	}
 
 	/// <summary>

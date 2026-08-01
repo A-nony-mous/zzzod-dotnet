@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -15,10 +16,14 @@ using OneDragon.Core.Matcher;
 using OneDragon.Core.Ocr;
 using OneDragon.Core.Runtime;
 using OpenCvSharp;
+using Serilog;
+using Serilog.Core;
+using Serilog.Events;
 using YamlDotNet.Serialization;
 using Xunit;
 using ZzzOd.GameLogic.Application.HollowZero.LostVoid;
 using ZzzOd.GameLogic.Context;
+using ZzzOd.GameLogic.Controller;
 using ZzzOd.GameLogic.Operations;
 using ZzzOd.GameLogic.Tests.TestSupport;
 
@@ -138,6 +143,52 @@ public sealed class LostVoidAppTests
 	{
 		string actual = LostVoidAppOperation.ResolveInitialScreenStatus(currentScreen, "迷失之地-特遣调查", canGoMission, canGoCompendium);
 		Assert.Equal(expected, actual);
+	}
+
+	private sealed class CountingLostVoidController : ControllerBase, IZzzControllerActions
+	{
+		public int InputCount { get; private set; }
+
+		public override bool IsGameWindowReady => true;
+
+		public override bool InitBeforeContextRun() => true;
+
+		public override bool Click(OneDragon.Core.Abstractions.Geometry.Point? position = null, TimeSpan? pressTime = null, bool pcAlt = false, string? gamepadAction = null)
+		{
+			InputCount++;
+			return true;
+		}
+
+		public override void Scroll(int down, OneDragon.Core.Abstractions.Geometry.Point? position = null) => InputCount++;
+
+		public override void DragTo(OneDragon.Core.Abstractions.Geometry.Point end, OneDragon.Core.Abstractions.Geometry.Point? start = null, TimeSpan? duration = null) => InputCount++;
+
+		public override void InputText(string text) => InputCount++;
+
+		public override void MouseMove(OneDragon.Core.Abstractions.Geometry.Point position) => InputCount++;
+
+		public void MoveW(bool press = false, TimeSpan? pressTime = null, bool release = false) => InputCount++;
+
+		public void MoveS(bool press = false, TimeSpan? pressTime = null, bool release = false) => InputCount++;
+
+		public void MoveA(bool press = false, TimeSpan? pressTime = null, bool release = false) => InputCount++;
+
+		public void MoveD(bool press = false, TimeSpan? pressTime = null, bool release = false) => InputCount++;
+
+		public void Interact(bool press = false, TimeSpan? pressTime = null, bool release = false) => InputCount++;
+
+		public void TurnByDistance(float distance) => InputCount++;
+
+		protected override Mat? GetScreenshot(bool independent = false) => null;
+	}
+
+	private sealed class RecordingLogSink : ILogEventSink
+	{
+		private readonly ConcurrentQueue<LogEvent> _events = new();
+
+		public IReadOnlyList<LogEvent> Events => _events.ToArray();
+
+		public void Emit(LogEvent logEvent) => _events.Enqueue(logEvent);
 	}
 
 	[Theory]
@@ -699,7 +750,9 @@ public sealed class LostVoidAppTests
 	[Fact]
 	public void ModelPreparation_PreservesOnnxInitializationException()
 	{
-		using ZContext context = new ZContext(new OneDragonEnvironment("test_project", "test_user_id"));
+		RecordingLogSink sink = new RecordingLogSink();
+		using Logger logger = new LoggerConfiguration().MinimumLevel.Verbose().WriteTo.Sink(sink).CreateLogger();
+		using ZContext context = new ZContext(new OneDragonEnvironment("test_project", "test_user_id"), logger);
 		InvalidOperationException original = new InvalidOperationException("onnx session original error");
 
 		LostVoidModelPreparationResult result = context.LostVoid.PrepareLostVoidDetectorModel(
@@ -709,6 +762,14 @@ public sealed class LostVoidAppTests
 		Assert.Equal("ONNX 初始化", result.Stage);
 		Assert.Same(original, result.Exception);
 		Assert.Equal(original.Message, result.ErrorMessage);
+		LogEvent failure = Assert.Single(
+			sink.Events,
+			eventItem => eventItem.MessageTemplate.Text.StartsWith("迷失之地模型准备失败", StringComparison.Ordinal));
+		Assert.Equal(LogEventLevel.Error, failure.Level);
+		Assert.Same(original, failure.Exception);
+		Assert.Equal("ONNX 初始化", Assert.IsType<ScalarValue>(failure.Properties["Stage"]).Value);
+		Assert.Contains("model.onnx", Convert.ToString(Assert.IsType<ScalarValue>(failure.Properties["ModelPath"]).Value), StringComparison.OrdinalIgnoreCase);
+		Assert.Equal(original.Message, Assert.IsType<ScalarValue>(failure.Properties["Error"]).Value);
 	}
 
 	[Theory]
@@ -749,12 +810,15 @@ public sealed class LostVoidAppTests
 	public async Task AppInitialization_ModelFailureEndsCurrentRunAndKeepsHostAlive(string stage, string originalError)
 	{
 		using ZContext context = new ZContext(new OneDragonEnvironment("test_project", "test_user_id"));
+		CountingLostVoidController controller = new CountingLostVoidController();
+		context.AttachController(controller);
 		LostVoidConfig config = new LostVoidConfig();
+		RecordingLostVoidRunner runner = new RecordingLostVoidRunner(new OperationResult(true, "通关"));
 		LostVoidAppOperation operation = new LostVoidAppOperation(
 			context,
 			config,
 			new LostVoidRunRecord(config),
-			new RecordingLostVoidRunner(new OperationResult(true, "通关")),
+			runner,
 			_ => LostVoidModelPreparationResult.Failure(stage, @"C:\models\lost_void\model.onnx", originalError));
 
 		OperationResult result = await operation.ExecuteAsync(CancellationToken.None);
@@ -764,6 +828,8 @@ public sealed class LostVoidAppTests
 		Assert.Contains(originalError, result.Status, StringComparison.Ordinal);
 		Assert.NotNull(context.RunContext);
 		Assert.NotNull(context.ModelConfig);
+		Assert.Equal(0, runner.RunCount);
+		Assert.Equal(0, controller.InputCount);
 	}
 
 	private static void AssertForwardCompatibleDocument(string path, string rootValue, string nestedValue)
