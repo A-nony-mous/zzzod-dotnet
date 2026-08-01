@@ -143,12 +143,16 @@ public abstract class ZApplication : IApplication
 	/// </summary>
 	protected virtual Task<OperationResult> EnterGameAsync(CancellationToken cancellationToken)
 	{
+		if (_enterGameAsync != null)
+		{
+			return _enterGameAsync(cancellationToken);
+		}
 		ControllerBase? controller = Context.Controller;
 		if (controller != null && controller.IsGameWindowReady)
 		{
 			return Task.FromResult(new OperationResult(IsSuccess: true));
 		}
-		return _enterGameAsync?.Invoke(cancellationToken) ?? _defaultEnterGameAsync(Context, cancellationToken);
+		return _defaultEnterGameAsync(Context, cancellationToken);
 	}
 
 	private static Task<OperationResult> RunDefaultEnterGameAsync(ZContext context, CancellationToken cancellationToken)
