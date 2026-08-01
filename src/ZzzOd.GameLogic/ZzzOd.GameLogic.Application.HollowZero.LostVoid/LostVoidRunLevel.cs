@@ -38,6 +38,8 @@ public sealed class LostVoidRunLevel : ZOperation
 
 	public const string StatusNeedMoveInteract = "识别需移动交互";
 
+	public LostVoidStuckState StuckState { get; } = new();
+
 	public const string StatusBattleFail = "迷失之地-战斗失败";
 
 	public const string StatusUnknownScreen = "未知画面";

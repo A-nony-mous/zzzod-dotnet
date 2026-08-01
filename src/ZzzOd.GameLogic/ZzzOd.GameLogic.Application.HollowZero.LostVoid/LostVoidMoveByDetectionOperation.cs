@@ -14,6 +14,12 @@ using ZzzOd.GameLogic.Operations;
 
 namespace ZzzOd.GameLogic.Application.HollowZero.LostVoid;
 
+public sealed class LostVoidStuckState
+{
+	public int StuckTimes { get; set; }
+	public bool PreferLeftEscape { get; set; } = true;
+}
+
 public sealed class LostVoidMoveByDetectionOperation : ZOperation
 {
 	public const string StatusInBattle = "遭遇战斗";
@@ -42,6 +48,8 @@ public sealed class LostVoidMoveByDetectionOperation : ZOperation
 
 	private readonly LostVoidMoveByDetectionService _service;
 
+	private readonly LostVoidStuckState _stuckState;
+
 	private LostVoidMoveTargetWrapper? _lastTarget;
 
 	private string? _lastTargetName;
@@ -54,15 +62,11 @@ public sealed class LostVoidMoveByDetectionOperation : ZOperation
 
 	private double _sameTargetTimes;
 
-	private int _stuckTimes;
-
 	private int _lostTargetDuringMoveTimes;
 
 	private int _noTargetHandleTimes;
 
 	private int _totalTurnTimes;
-
-	private bool _preferLeftEscape = true;
 
 	private bool _waitingNoTargetScreenshot;
 
@@ -84,7 +88,7 @@ public sealed class LostVoidMoveByDetectionOperation : ZOperation
 
 	internal Func<YoloDetectFrameResult>? DetectFrameOverride { get; set; }
 
-	public LostVoidMoveByDetectionOperation(ZContext context, string currentRegion, string targetType, bool stopWhenInteract = true, bool stopWhenDisappear = true, IReadOnlyList<string>? ignoreEntryList = null, bool allowArrivalByInteractButton = false, LostVoidMoveByDetectionService? service = null)
+	public LostVoidMoveByDetectionOperation(ZContext context, string currentRegion, string targetType, bool stopWhenInteract = true, bool stopWhenDisappear = true, IReadOnlyList<string>? ignoreEntryList = null, bool allowArrivalByInteractButton = false, LostVoidMoveByDetectionService? service = null, LostVoidStuckState? stuckState = null)
 		: base(context, "迷失之地-识别寻路-" + ((targetType.Length > 5) ? targetType.Substring(5) : targetType), 3, 180.0)
 	{
 		_currentRegion = currentRegion;
@@ -94,6 +98,7 @@ public sealed class LostVoidMoveByDetectionOperation : ZOperation
 		_ignoreEntryList = ignoreEntryList ?? Array.Empty<string>();
 		_allowArrivalByInteractButton = allowArrivalByInteractButton;
 		_service = service ?? LostVoidMoveByDetectionService.Instance;
+		_stuckState = stuckState ?? new LostVoidStuckState();
 	}
 
 	[NodeFrom("脱困", Status = "继续识别目标")]
@@ -249,7 +254,7 @@ public sealed class LostVoidMoveByDetectionOperation : ZOperation
 		{
 			WriteTargetedNoTargetEvidence("连续七次无目标，准备脱困", yoloDetectFrameResult ?? new YoloDetectFrameResult(Array.Empty<YoloDetectObjectResult>(), 0.0));
 			_noTargetHandleTimes = 0;
-			_stuckTimes++;
+			_stuckState.StuckTimes++;
 			return RoundSuccess("尝试脱困");
 		}
 		if (_lastTarget != null)
@@ -280,12 +285,12 @@ public sealed class LostVoidMoveByDetectionOperation : ZOperation
 			base.ZContext.AutoBattleContext.NormalAttack(press: true, TimeSpan.FromMilliseconds(200L), release: true);
 			Thread.Sleep(TimeSpan.FromSeconds(1L));
 		}
-		int num = (_stuckTimes - 1) % 8;
+		int num = (_stuckState.StuckTimes - 1) % 8;
 		TimeSpan value = TimeSpan.FromSeconds(Math.Min((double)num * 0.5, 2.0));
 		TimeSpan value2 = TimeSpan.FromSeconds(Math.Min((double)(num + 1) * 0.2, 2.0));
 		TimeSpan timeSpan = TimeSpan.FromSeconds(Math.Min((double)num * 0.2, 2.0));
 		base.ZContext.AutoBattleContext.MoveS(press: true, value, release: true);
-		if (_preferLeftEscape)
+		if (_stuckState.PreferLeftEscape)
 		{
 			base.ZContext.AutoBattleContext.MoveA(press: true, value2, release: true);
 		}
@@ -293,7 +298,7 @@ public sealed class LostVoidMoveByDetectionOperation : ZOperation
 		{
 			base.ZContext.AutoBattleContext.MoveD(press: true, value2, release: true);
 		}
-		_preferLeftEscape = !_preferLeftEscape;
+		_stuckState.PreferLeftEscape = !_stuckState.PreferLeftEscape;
 		if (timeSpan > TimeSpan.Zero)
 		{
 			base.ZContext.AutoBattleContext.MoveW(press: true, timeSpan, release: true);
@@ -328,7 +333,7 @@ public sealed class LostVoidMoveByDetectionOperation : ZOperation
 		_lostTargetDuringMoveTimes++;
 		if (_lostTargetDuringMoveTimes % escapeInterval == 0)
 		{
-			_stuckTimes++;
+			_stuckState.StuckTimes++;
 			if (escapeFromStuck == null)
 			{
 				GetOutOfStuck();
@@ -439,7 +444,7 @@ public sealed class LostVoidMoveByDetectionOperation : ZOperation
 					currentRegion = _currentRegion,
 					noTargetHandleTimes = _noTargetHandleTimes,
 					lostTargetDuringMoveTimes = _lostTargetDuringMoveTimes,
-					stuckTimes = _stuckTimes,
+					stuckTimes = _stuckState.StuckTimes,
 					totalTurnTimes = _totalTurnTimes,
 					detections = frameResult.Results.Select((YoloDetectObjectResult result) => new
 					{
@@ -493,9 +498,9 @@ public sealed class LostVoidMoveByDetectionOperation : ZOperation
 			return null;
 		}
 		StopMovingForward();
-		_stuckTimes++;
+		_stuckState.StuckTimes++;
 		ResetStuckStatus();
-		return (_stuckTimes > 12) ? RoundFail("无法脱困") : RoundSuccess("尝试脱困");
+		return (_stuckState.StuckTimes > 12) ? RoundFail("无法脱困") : RoundSuccess("尝试脱困");
 	}
 
 	private bool TurnToTarget(OneDragon.Core.Abstractions.Geometry.Point target, bool isMoving)

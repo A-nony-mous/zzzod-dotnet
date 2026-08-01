@@ -167,7 +167,7 @@ public sealed class ScreenLostVoidRunLevelRuntime : ILostVoidRunLevelRuntime
 	{
 		ZContext gameContext = operation.GameContext;
 		bool allowArrivalByInteractButton2 = allowArrivalByInteractButton;
-		LostVoidMoveByDetectionOperation lostVoidMoveByDetectionOperation = new LostVoidMoveByDetectionOperation(gameContext, regionType, targetType, stopWhenInteract, stopWhenDisappear, ignoreEntries, allowArrivalByInteractButton2);
+		LostVoidMoveByDetectionOperation lostVoidMoveByDetectionOperation = new LostVoidMoveByDetectionOperation(gameContext, regionType, targetType, stopWhenInteract, stopWhenDisappear, ignoreEntries, allowArrivalByInteractButton2, service: null, stuckState: operation.StuckState);
 		return lostVoidMoveByDetectionOperation.ExecuteAsync(cancellationToken);
 	}
 
