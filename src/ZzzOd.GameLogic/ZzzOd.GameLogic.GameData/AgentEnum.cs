@@ -117,16 +117,18 @@ public sealed class AgentEnum
 
 	public static readonly AgentEnum NORMA = new AgentEnum(Create("norma", "诺姆", RareTypeEnum.S, AgentTypeEnum.STUN, DmgTypeEnum.FIRE, new string[] { "norma" }, new string[] { "诺姆-预热" }));
 
+	public static readonly AgentEnum REMIELLE = new AgentEnum(Create("remielle", "蕾米艾尔", RareTypeEnum.S, AgentTypeEnum.ANOMALY, DmgTypeEnum.PHYSICAL, new string[2] { "remielle", "remielle_dark" }, new string[2] { "remielle_floating_radiance", "remielle_voidflare" }));
+
 	public Agent Value { get; }
 
-	public static IReadOnlyList<AgentEnum> Values { get; } = new AgentEnum[56]
+	public static IReadOnlyList<AgentEnum> Values { get; } = new AgentEnum[57]
 	{
 		ANBY, ANTON, BEN, BILLY, CORIN, ELLEN, GRACE, KOLEDA, LUCY, LYCAON,
 		NEKOMATA, NICOLE, PIPER, RINA, SOLDIER_11, SOUKAKU, ZHU_YUAN, QINGYI, JANE_DOE, SETH_LOWELL,
 		CAESAR_KING, BURNICE_WHITE, YANAGI, LIGHTER, ASABA_HARUMASA, HOSHIMI_MIYABI, ASTRA_YAO, EVELYN_CHEVALIER, SOLDIER_0_ANBY, PULCHRA,
 		TRIGGER, VIVIAN, HUGO_VLAD, YIXUAN, PANYINHU, JU_FUFU, YUZUHA, ALICE, SEED, ORPHIE,
 		LUCIA, MANATO, YIDHARI, DIALYN, BANYUE, ZHAO, SUNNA, YESHUNGUANG, ARIA, NANGONGYU,
-		CISSIA, PROMEIA, VELINA, PYROIS_WISE, STARLIGHT_BILLY_KID, NORMA
+		CISSIA, PROMEIA, VELINA, PYROIS_WISE, STARLIGHT_BILLY_KID, NORMA, REMIELLE
 	};
 
 	private AgentEnum(Agent value)
