@@ -1960,7 +1960,7 @@ public sealed class ZzzAppBackend : IZzzAppBackend, IZzzIntelBoardProgressBacken
 			ZContext zContext = _runtime.EnsureContext();
 			LostVoidRunRecord lostVoidRunRecord = GetLostVoidRunRecord(zContext, instanceIndex);
 			lostVoidRunRecord.CheckAndUpdateStatus();
-			return ZzzBackendResult<ZzzLostVoidSettingsCatalogDto>.Ok(new ZzzLostVoidSettingsCatalogDto(zContext.CompendiumService.GetLostVoidMissionNameList(), LostVoidChallengeConfig.GetAllModuleNames(zContext.Environment), ToLostVoidRunRecordDto(instanceIndex, lostVoidRunRecord)));
+			return ZzzBackendResult<ZzzLostVoidSettingsCatalogDto>.Ok(new ZzzLostVoidSettingsCatalogDto(zContext.CompendiumService.GetLostVoidMissionNameList(), GetReadableLostVoidChallengeConfigNames(zContext.Environment), ToLostVoidRunRecordDto(instanceIndex, lostVoidRunRecord)));
 		}
 		catch (Exception ex)
 		{
@@ -1998,7 +1998,7 @@ public sealed class ZzzAppBackend : IZzzAppBackend, IZzzIntelBoardProgressBacken
 				throw new InvalidOperationException(zzzBackendResult.Error ?? "预备编队配置缺少 team_list。");
 			}
 			OneDragonEnvironment environment = zContext.Environment;
-			return ZzzBackendResult<ZzzLostVoidChallengeCatalogDto>.Ok(new ZzzLostVoidChallengeCatalogDto((from name in LostVoidChallengeConfig.GetAllModuleNames(environment)
+			return ZzzBackendResult<ZzzLostVoidChallengeCatalogDto>.Ok(new ZzzLostVoidChallengeCatalogDto((from name in GetReadableLostVoidChallengeConfigNames(environment)
 				select new ZzzLostVoidChallengeSummaryDto(name, LostVoidChallengeConfig.IsSample(environment, name))).ToArray(), source.Select((PredefinedTeamInfo team) => new ZzzLostVoidTeamDto(team.Idx, team.Name)).ToArray(), (from item in autoBattleConfigProvider.GetAutoBattleOpConfigList("auto_battle")
 				select Convert.ToString(item.Value, CultureInfo.InvariantCulture) ?? item.Label).ToArray(), new ZzzLostVoidOptionDto[1]
 			{
@@ -2012,6 +2012,14 @@ public sealed class ZzzAppBackend : IZzzAppBackend, IZzzIntelBoardProgressBacken
 		{
 			return ZzzBackendResult<ZzzLostVoidChallengeCatalogDto>.Fail(ZzzBackendErrorCode.NotReady, ex.Message);
 		}
+	}
+
+	private IReadOnlyList<string> GetReadableLostVoidChallengeConfigNames(OneDragonEnvironment environment)
+	{
+		return LostVoidChallengeConfig.GetAllModuleNames(
+			environment,
+			onInvalidConfig: (moduleName, exception) =>
+				_logger.LogError(exception, "迷失之地挑战配置读取错误，跳过 {ModuleName}", moduleName));
 	}
 
 	/// <inheritdoc />

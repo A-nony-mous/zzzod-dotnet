@@ -166,35 +166,31 @@ public sealed class LostVoidChallengeConfig : IYamlUnknownFieldPreserving
 	}
 
 	/// <summary>
-	/// 获取配置目录下全部挑战配置名。
+	/// 获取配置目录下全部可读取的挑战配置名。
 	/// </summary>
-	public static IReadOnlyList<string> GetAllModuleNames(OneDragonEnvironment environment, bool withSample = true)
+	/// <param name="environment">运行环境。</param>
+	/// <param name="withSample">是否包含 sample 配置。</param>
+	/// <param name="onInvalidConfig">发现无法读取的配置时接收模块名和原始异常。</param>
+	public static IReadOnlyList<string> GetAllModuleNames(
+		OneDragonEnvironment environment,
+		bool withSample = true,
+		Action<string, Exception>? onInvalidConfig = null)
 	{
-		string path = Path.Combine(environment.WorkDirectory, "config", "lost_void_challenge");
-		if (!Directory.Exists(path))
+		IReadOnlyList<string> moduleNames = GetModuleNamesOnDisk(environment, withSample);
+		List<string> validModuleNames = new List<string>(moduleNames.Count);
+		foreach (string moduleName in moduleNames)
 		{
-			return Array.Empty<string>();
+			try
+			{
+				Load(environment, moduleName);
+				validModuleNames.Add(moduleName);
+			}
+			catch (Exception ex)
+			{
+				onInvalidConfig?.Invoke(moduleName, ex);
+			}
 		}
-		return (from name in Directory.EnumerateFiles(path, "*.yml", SearchOption.TopDirectoryOnly).Select(Path.GetFileName)
-			where !string.IsNullOrWhiteSpace(name)
-			select (name) into name
-			where withSample || !name.EndsWith(".sample.yml", StringComparison.Ordinal)
-			select name).Select(delegate(string name)
-		{
-			string result;
-			if (!name.EndsWith(".sample.yml", StringComparison.Ordinal))
-			{
-				string text = name;
-				result = text.Substring(0, text.Length - 4);
-			}
-			else
-			{
-				string text = name;
-				result = text.Substring(0, text.Length - 11);
-			}
-			return result;
-		}).Distinct<string>(StringComparer.Ordinal).Order<string>(StringComparer.Ordinal)
-			.ToArray();
+		return validModuleNames;
 	}
 
 	/// <summary>
@@ -203,7 +199,7 @@ public sealed class LostVoidChallengeConfig : IYamlUnknownFieldPreserving
 	public static string GetNewModuleName(OneDragonEnvironment environment)
 	{
 		int num = 0;
-		foreach (string allModuleName in GetAllModuleNames(environment))
+		foreach (string allModuleName in GetModuleNamesOnDisk(environment, withSample: true))
 		{
 			if (allModuleName.StartsWith("自定义-", StringComparison.Ordinal) && int.TryParse(allModuleName.Substring("自定义-".Length), out var result))
 			{
@@ -211,6 +207,25 @@ public sealed class LostVoidChallengeConfig : IYamlUnknownFieldPreserving
 			}
 		}
 		return $"{"自定义-"}{num + 1:00}";
+	}
+
+	private static IReadOnlyList<string> GetModuleNamesOnDisk(OneDragonEnvironment environment, bool withSample)
+	{
+		string path = Path.Combine(environment.WorkDirectory, "config", "lost_void_challenge");
+		if (!Directory.Exists(path))
+		{
+			return Array.Empty<string>();
+		}
+		return (from name in Directory.EnumerateFiles(path, "*.yml", SearchOption.TopDirectoryOnly).Select(Path.GetFileName)
+			where !string.IsNullOrWhiteSpace(name)
+			select name into fileName
+			where withSample || !fileName.EndsWith(".sample.yml", StringComparison.Ordinal)
+			select fileName.EndsWith(".sample.yml", StringComparison.Ordinal)
+				? fileName.Substring(0, fileName.Length - 11)
+				: fileName.Substring(0, fileName.Length - 4))
+			.Distinct(StringComparer.Ordinal)
+			.Order(StringComparer.Ordinal)
+			.ToArray();
 	}
 
 	private static string ValidateModuleName(string moduleName)

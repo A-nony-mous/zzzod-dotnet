@@ -544,6 +544,7 @@ public sealed class LostVoidAppTests
 			File.WriteAllText(Path.Combine(text2, "默认-成就模式.yml"), "predefined_team_idx: 2\nchoose_team_by_priority: true\nmanually_choose_agent: true\nteam_info:\n  - ellen\n  - anby\n  - nicole\nauto_battle: 自定义战斗\nartifact_priority_new: true\nartifact_priority:\n  - 优先一\nartifact_priority_2:\n  - 优先二\nregion_type_priority:\n  - 战斗-鸣徽\nperiod_buff_no: 第二个\nbuy_only_priority_1: 4\nbuy_only_priority_2: 999\nstore_gold: false\nstore_blood: true\nstore_blood_min: 70\ninvestigation_strategy: 战略A\nchase_new_mode: true");
 			File.WriteAllText(Path.Combine(text2, "自定义-02.yml"), "auto_battle: B\n");
 			File.WriteAllText(Path.Combine(text2, "自定义-03.sample.yml"), "auto_battle: C\n");
+			File.WriteAllText(Path.Combine(text2, "自定义-04.yml"), "predefined_team_idx: [\n");
 			OneDragonEnvironment environment = new OneDragonEnvironment(text);
 			LostVoidChallengeConfig lostVoidChallengeConfig = LostVoidChallengeConfig.Load(environment, "默认-成就模式");
 			Assert.Equal(2, lostVoidChallengeConfig.PredefinedTeamIdx);
@@ -570,8 +571,12 @@ public sealed class LostVoidAppTests
 			Assert.Equal(70, lostVoidChallengeConfig.StoreBloodMin);
 			Assert.Equal("战略A", lostVoidChallengeConfig.InvestigationStrategy);
 			Assert.True(lostVoidChallengeConfig.ChaseNewMode);
-			Assert.Equal(new string[3] { "自定义-02", "自定义-03", "默认-成就模式" }, LostVoidChallengeConfig.GetAllModuleNames(environment));
-			Assert.Equal("自定义-04", LostVoidChallengeConfig.GetNewModuleName(environment));
+			List<(string ModuleName, Exception Error)> invalidConfigs = new List<(string ModuleName, Exception Error)>();
+			Assert.Equal(new string[3] { "自定义-02", "自定义-03", "默认-成就模式" }, LostVoidChallengeConfig.GetAllModuleNames(environment, onInvalidConfig: (moduleName, error) => invalidConfigs.Add((moduleName, error))));
+			(string moduleName, Exception error) = Assert.Single(invalidConfigs);
+			Assert.Equal("自定义-04", moduleName);
+			Assert.NotNull(error);
+			Assert.Equal("自定义-05", LostVoidChallengeConfig.GetNewModuleName(environment));
 			Assert.Equal("入口", LostVoidRegionType.FromValue("不存在"));
 		}
 		finally
