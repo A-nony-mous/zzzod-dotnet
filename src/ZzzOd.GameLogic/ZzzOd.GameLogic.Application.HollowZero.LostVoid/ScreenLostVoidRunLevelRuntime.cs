@@ -58,8 +58,8 @@ public sealed class ScreenLostVoidRunLevelRuntime : ILostVoidRunLevelRuntime
 		{
 			return Task.FromResult(new LostVoidRunLevelLoadingState(InNormalWorld: false, IsChoosingReward: false, ChallengeConfirmAvailable: true));
 		}
-		string talkStatus = TryTalk(operation, screen)?.Status;
-		return Task.FromResult(new LostVoidRunLevelLoadingState(InNormalWorld: false, IsChoosingReward: false, ChallengeConfirmAvailable: false, talkStatus));
+		LostVoidInteractResult? talkResult = TryTalk(operation, screen);
+		return Task.FromResult(new LostVoidRunLevelLoadingState(InNormalWorld: false, IsChoosingReward: false, ChallengeConfirmAvailable: false, talkResult?.Status, talkResult?.Delay));
 	}
 
 	public Task<LostVoidRunLevelWorldState> GetNonBattleWorldStateAsync(LostVoidRunLevel operation, Mat? screen, DateTimeOffset? screenshotTimeUtc, CancellationToken cancellationToken)
@@ -478,7 +478,7 @@ public sealed class ScreenLostVoidRunLevelRuntime : ILostVoidRunLevelRuntime
 		double num2 = 0.0;
 		if (flag)
 		{
-			if (_inBattleProbe.TryConsume(out LostVoidInBattleProbeResult probeResult))
+			if (_inBattleProbe.TryConsume(dateTimeOffset, out LostVoidInBattleProbeResult probeResult))
 			{
 				probeConsumed = true;
 				flag3 = probeResult.DetectorRan;
@@ -635,7 +635,7 @@ public sealed class ScreenLostVoidRunLevelRuntime : ILostVoidRunLevelRuntime
 		OneDragon.Core.Screen.ScreenArea area2 = operation.GameContext.ScreenContext.GetArea("迷失之地-大世界", "区域-对话内容");
 		IReadOnlyList<OcrMatchResult> whiteOcrResults2 = GetWhiteOcrResults(operation.GameContext, screen, area2);
 		string[] specialTalks = new string[4] { "似乎购买了充值卡就会得到齿轮硬币奖励，但是在离开之后身上的齿轮硬币都", "（声音消失了，伸手从裂隙那头好像摸到了什么）", "这位似曾相识的研究员为我们准备了一些「礼物」。", "但当正要选择的时候，她却拦住了我们。" };
-		if (whiteOcrResults2.Any((OcrMatchResult result) => result.Text.Length > 10 || specialTalks.Any((string target) => StringUtils.FindByLcs(target, result.Text, 0.6))))
+		if (whiteOcrResults2.Any((OcrMatchResult result) => IsSpecialTalkText(result.Text, specialTalks)))
 		{
 			LostVoidInteractResult lostVoidInteractResult2 = TryTalkOptions(operation, screen);
 			if ((object)lostVoidInteractResult2 != null)
@@ -651,6 +651,11 @@ public sealed class ScreenLostVoidRunLevelRuntime : ILostVoidRunLevelRuntime
 			};
 		}
 		return null;
+	}
+
+	internal static bool IsSpecialTalkText(string text, IEnumerable<string> specialTalks)
+	{
+		return text.Length > 10 || specialTalks.Any((string target) => StringUtils.FindByLcs(target, text, 0.3));
 	}
 
 	private static LostVoidInteractResult? TryTalkOptions(LostVoidRunLevel operation, Mat screen)

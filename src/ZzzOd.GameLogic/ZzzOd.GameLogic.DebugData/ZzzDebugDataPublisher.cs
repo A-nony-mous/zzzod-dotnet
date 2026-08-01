@@ -55,6 +55,23 @@ public sealed class ZzzDebugDataPublisher
 		}
 	}
 
+	/// <summary>
+	/// 发布带来源和有效期的业务状态。同一键的新值覆盖旧值。
+	/// </summary>
+	public bool PublishBusinessState(string key, string value, string source, double ttlSeconds)
+	{
+		if (_overlayDebugBus == null)
+		{
+			return false;
+		}
+		return _overlayDebugBus.PublishBusinessState(new BusinessStateItem(
+			key,
+			value,
+			DateTimeOffset.UtcNow,
+			ttlSeconds,
+			source));
+	}
+
 	private void PublishOverlayDebugItem(ZzzDebugDataItem item)
 	{
 		if (_overlayDebugBus == null)

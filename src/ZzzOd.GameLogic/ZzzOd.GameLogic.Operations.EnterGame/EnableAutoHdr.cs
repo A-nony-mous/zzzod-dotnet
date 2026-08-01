@@ -17,7 +17,7 @@ public sealed class EnableAutoHdr : ZOperation
 	/// Initialize the operation.
 	/// </summary>
 	public EnableAutoHdr(ZContext context, IAutoHdrPreferenceStore? store = null, TimeSpan? successDelay = null)
-		: base(context, "恢复HDR")
+		: base(context, "恢复HDR", needCheckGameWindow: false)
 	{
 		_store = store ?? new WindowsAutoHdrPreferenceStore();
 		_successDelay = successDelay ?? TimeSpan.FromMilliseconds(500L);

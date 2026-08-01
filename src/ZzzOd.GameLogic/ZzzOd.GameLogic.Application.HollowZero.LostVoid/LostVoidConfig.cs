@@ -9,7 +9,7 @@ namespace ZzzOd.GameLogic.Application.HollowZero.LostVoid;
 /// <summary>
 /// 迷失之地应用配置。
 /// </summary>
-public sealed class LostVoidConfig : ZApplicationConfig, IApplicationConfig
+public sealed class LostVoidConfig : ZApplicationConfig, IApplicationConfig, IYamlUnknownFieldPreserving
 {
 	[YamlMember(Alias = "daily_plan_times", ApplyNamingConventions = false)]
 	public int DailyPlanTimes { get; set; } = 5;

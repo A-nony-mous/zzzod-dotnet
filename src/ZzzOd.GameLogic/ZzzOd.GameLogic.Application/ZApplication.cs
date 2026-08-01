@@ -82,20 +82,6 @@ public abstract class ZApplication : IApplication
 		}
 		try
 		{
-			if (NeedCheckGameWindow)
-			{
-				OperationResult enterGameResult = await EnterGameAsync(cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
-				if (!enterGameResult.IsSuccess)
-				{
-					RunRecord?.UpdateStatus(2);
-					if (needNotify)
-					{
-						Context.OperationNotificationService.OnApplicationCompleted(AppId, AppName, success: false);
-					}
-					_operationCallback?.Invoke(enterGameResult);
-					return enterGameResult;
-				}
-			}
 			OperationResult result = await ExecuteCoreAsync(cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
 			RunRecord?.UpdateStatus(result.IsSuccess ? 1 : 2);
 			if (needNotify)

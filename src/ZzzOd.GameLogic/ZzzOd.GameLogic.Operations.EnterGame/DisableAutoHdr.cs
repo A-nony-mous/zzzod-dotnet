@@ -17,7 +17,7 @@ public sealed class DisableAutoHdr : ZOperation
 	/// Initialize the operation.
 	/// </summary>
 	public DisableAutoHdr(ZContext context, IAutoHdrPreferenceStore? store = null, TimeSpan? successDelay = null)
-		: base(context, "禁用HDR")
+		: base(context, "禁用HDR", needCheckGameWindow: false)
 	{
 		_store = store ?? new WindowsAutoHdrPreferenceStore();
 		_successDelay = successDelay ?? TimeSpan.FromMilliseconds(500L);

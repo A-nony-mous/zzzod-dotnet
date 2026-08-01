@@ -47,13 +47,15 @@ public class ZContextTests
 	}
 
 	[Fact]
-	public void ReloadInstanceConfig_UpdatesConfigReference()
+	public void ReloadInstanceConfig_RefreshesOnlyInstanceConfigsAndKeepsLongLivedServices()
 	{
 		OneDragonEnvironment environment = new OneDragonEnvironment(AppContext.BaseDirectory);
 		using ZContext zContext = new ZContext(environment);
 		ZzzOd.GameLogic.Config.ModelConfig modelConfig = zContext.ModelConfig;
 		GameConfig gameConfig = zContext.GameConfig;
+		TeamConfig teamConfig = zContext.TeamConfig;
 		BattleAssistantConfig battleAssistantConfig = zContext.BattleAssistantConfig;
+		GameAccountConfig gameAccountConfig = zContext.GameAccountConfig;
 		AutoBattleContext autoBattleContext = zContext.AutoBattleContext;
 		LostVoidContext lostVoid = zContext.LostVoid;
 		WitheredDomainContext witheredDomain = zContext.WitheredDomain;
@@ -69,7 +71,9 @@ public class ZContextTests
 		zContext.ReloadInstanceConfig();
 		ZzzOd.GameLogic.Config.ModelConfig modelConfig2 = zContext.ModelConfig;
 		GameConfig gameConfig2 = zContext.GameConfig;
+		TeamConfig teamConfig2 = zContext.TeamConfig;
 		BattleAssistantConfig battleAssistantConfig2 = zContext.BattleAssistantConfig;
+		GameAccountConfig gameAccountConfig2 = zContext.GameAccountConfig;
 		AutoBattleContext autoBattleContext2 = zContext.AutoBattleContext;
 		LostVoidContext lostVoid2 = zContext.LostVoid;
 		WitheredDomainContext witheredDomain2 = zContext.WitheredDomain;
@@ -82,21 +86,69 @@ public class ZContextTests
 		ZzzOcrService zzzOcrService2 = zContext.ZzzOcrService;
 		ZzzDebugDataPublisher debugDataPublisher2 = zContext.DebugDataPublisher;
 		ApplicationFactoryRegistry applicationFactoryRegistry2 = zContext.ApplicationFactoryRegistry;
-		Assert.NotSame(modelConfig, modelConfig2);
+		Assert.Same(modelConfig, modelConfig2);
 		Assert.NotSame(gameConfig, gameConfig2);
+		Assert.NotSame(teamConfig, teamConfig2);
 		Assert.NotSame(battleAssistantConfig, battleAssistantConfig2);
-		Assert.NotSame(autoBattleContext, autoBattleContext2);
-		Assert.NotSame(lostVoid, lostVoid2);
-		Assert.NotSame(witheredDomain, witheredDomain2);
-		Assert.NotSame(mapService, mapService2);
-		Assert.NotSame(compendiumService, compendiumService2);
-		Assert.NotSame(telemetry, telemetry2);
-		Assert.NotSame(backend, backend2);
-		Assert.NotSame(flashClassifier, flashClassifier2);
-		Assert.NotSame(hollowEventDetector, hollowEventDetector2);
-		Assert.NotSame(zzzOcrService, zzzOcrService2);
-		Assert.NotSame(debugDataPublisher, debugDataPublisher2);
-		Assert.NotSame(applicationFactoryRegistry, applicationFactoryRegistry2);
+		Assert.NotSame(gameAccountConfig, gameAccountConfig2);
+		Assert.Same(autoBattleContext, autoBattleContext2);
+		Assert.Same(lostVoid, lostVoid2);
+		Assert.Same(witheredDomain, witheredDomain2);
+		Assert.Same(mapService, mapService2);
+		Assert.Same(compendiumService, compendiumService2);
+		Assert.Same(telemetry, telemetry2);
+		Assert.Same(backend, backend2);
+		Assert.Same(flashClassifier, flashClassifier2);
+		Assert.Same(hollowEventDetector, hollowEventDetector2);
+		Assert.Same(zzzOcrService, zzzOcrService2);
+		Assert.Same(debugDataPublisher, debugDataPublisher2);
+		Assert.Same(applicationFactoryRegistry, applicationFactoryRegistry2);
+	}
+
+	[Fact]
+	public void SwitchInstanceRefreshesFourConfigsKeepsRegistryAndSyncsControllerGameConfig()
+	{
+		string root = Path.Combine(Path.GetTempPath(), "zzzod-dotnet-tests", Guid.NewGuid().ToString("N"));
+		try
+		{
+			Directory.CreateDirectory(Path.Combine(root, "config", "00"));
+			Directory.CreateDirectory(Path.Combine(root, "config", "01"));
+			File.WriteAllText(Path.Combine(root, "config", "one_dragon.yml"), "instance_list:\n  - idx: 0\n    name: '00'\n    active: true\n  - idx: 1\n    name: '01'\n    active: false\n");
+			File.WriteAllText(Path.Combine(root, "config", "00", "game.yml"), "control_method: keyboard\n");
+			File.WriteAllText(Path.Combine(root, "config", "01", "game.yml"), "control_method: xbox\n");
+			File.WriteAllText(Path.Combine(root, "config", "00", "team.yml"), "team_list:\n  - name: zero-team\n");
+			File.WriteAllText(Path.Combine(root, "config", "01", "team.yml"), "team_list:\n  - name: one-team\n");
+			File.WriteAllText(Path.Combine(root, "config", "00", "battle_assistant.yml"), "auto_battle_config: zero-battle\n");
+			File.WriteAllText(Path.Combine(root, "config", "01", "battle_assistant.yml"), "auto_battle_config: one-battle\n");
+			File.WriteAllText(Path.Combine(root, "config", "00", "game_account.yml"), "account: zero\n");
+			File.WriteAllText(Path.Combine(root, "config", "01", "game_account.yml"), "account: one\n");
+			using ZContext context = new ZContext(new OneDragonEnvironment(root));
+			ApplicationFactoryRegistry registry = context.ApplicationFactoryRegistry;
+			GameConfig oldGame = context.GameConfig;
+			TeamConfig oldTeam = context.TeamConfig;
+			BattleAssistantConfig oldBattle = context.BattleAssistantConfig;
+			GameAccountConfig oldAccount = context.GameAccountConfig;
+			ZzzOd.GameLogic.Controller.ZPcController controller = new ZzzOd.GameLogic.Controller.ZPcController(oldGame, skipForegroundActivation: true);
+			context.AttachController(controller);
+
+			context.SwitchInstance(1);
+
+			Assert.NotSame(oldGame, context.GameConfig);
+			Assert.NotSame(oldTeam, context.TeamConfig);
+			Assert.NotSame(oldBattle, context.BattleAssistantConfig);
+			Assert.NotSame(oldAccount, context.GameAccountConfig);
+			Assert.Equal("xbox", context.GameConfig.ControlMethod);
+			Assert.Equal("one-team", context.TeamConfig.TeamList[0].Name);
+			Assert.Equal("one-battle", context.BattleAssistantConfig.AutoBattleConfig);
+			Assert.Equal("one", context.GameAccountConfig.Account);
+			Assert.Same(registry, context.ApplicationFactoryRegistry);
+			FieldInfo field = typeof(ZzzOd.GameLogic.Controller.ZPcController).GetField("_gameConfig", BindingFlags.Instance | BindingFlags.NonPublic)!;
+			Assert.Same(context.GameConfig, field.GetValue(controller));
+		}
+		finally
+		{
+			Directory.Delete(root, recursive: true);
+		}
 	}
 
 	[Fact]
@@ -142,7 +194,7 @@ public class ZContextTests
 	}
 
 	[Fact]
-	public void ReloadInstanceConfig_RebuildsYoloAndOcrBusinessServicesFromUpdatedModelConfig()
+	public void ReloadInstanceConfig_DoesNotReloadSharedModelConfigOrRebuildModelServices()
 	{
 		string text = Path.Combine(Path.GetTempPath(), "zzzod-dotnet-tests", Guid.NewGuid().ToString("N"));
 		Directory.CreateDirectory(Path.Combine(text, "config"));
@@ -154,9 +206,9 @@ public class ZContextTests
 		Assert.Equal("v5-server", zContext.ZzzOcrService.ProfileId);
 		File.WriteAllText(Path.Combine(text, "config", "model.yml"), "flash_classifier: yolov8n-640-flash-20250921\nhollow_zero_event: yolov8s-736-hollow-zero-event-0126\nocr_profile: v6-small\n");
 		zContext.ReloadInstanceConfig();
-		Assert.Equal("yolov8n-640-flash-20250921", zContext.FlashClassifier.ModelName);
-		Assert.Equal("yolov8s-736-hollow-zero-event-0126", zContext.HollowEventDetector.ModelName);
-		Assert.Equal("v6-small", zContext.ZzzOcrService.ProfileId);
+		Assert.Equal("yolov8n-640-flash-20250906", zContext.FlashClassifier.ModelName);
+		Assert.Equal("yolov8s-736-hollow-zero-event-1130", zContext.HollowEventDetector.ModelName);
+		Assert.Equal("v5-server", zContext.ZzzOcrService.ProfileId);
 		Directory.Delete(text, recursive: true);
 	}
 
@@ -187,7 +239,7 @@ public class ZContextTests
 		_ = zContext.FlashClassifier;
 		_ = zContext.HollowEventDetector;
 		_ = zContext.ZzzOcrService;
-		_ = zContext.LostVoid;
+		zContext.LostVoid.InitLostVoidDetectorModel();
 		_ = zContext.WitheredDomain;
 		zContext.AutoBattleContext.StartContextAsync();
 		zContext.AfterAppShutdown();
@@ -197,6 +249,7 @@ public class ZContextTests
 		Assert.True(zContext.HollowEventDetector.IsShutdown);
 		Assert.True(zContext.ZzzOcrService.IsShutdown);
 		Assert.True(zContext.LostVoid.AfterAppShutdownCalled);
+		Assert.True(zContext.LostVoid.Detector!.IsShutdown);
 		Assert.True(zContext.WitheredDomain.AfterAppShutdownCalled);
 		Assert.True(zContext.AutoBattleContext.AfterAppShutdownCalled);
 	}

@@ -22,6 +22,9 @@ public sealed class EnvConfig
 	[YamlMember(Alias = "personal_proxy", ApplyNamingConventions = false)]
 	public string PersonalProxy { get; set; } = string.Empty;
 
+	[YamlMember(Alias = "gh_proxy_url", ApplyNamingConventions = false)]
+	public string GhProxyUrl { get; set; } = "https://ghfast.top";
+
 	[YamlMember(Alias = "key_start_running", ApplyNamingConventions = false)]
 	public string KeyStartRunning { get; set; } = "f9";
 

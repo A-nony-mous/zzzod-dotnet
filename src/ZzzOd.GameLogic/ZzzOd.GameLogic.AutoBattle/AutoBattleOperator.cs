@@ -41,6 +41,12 @@ public class AutoBattleOperator : IStateRecordUpdateListener
 
 	private readonly ICondOpClock _clock;
 
+	private readonly Func<OperationDef, OneDragon.Core.Operation.AtomicOp> _atomicOpFactory;
+
+	private readonly Action<Action>? _sceneDispatcher;
+
+	private readonly bool _runNormalSceneLoop;
+
 	private readonly object _taskLock = new object();
 
 	private readonly List<AutoBattleExecutionRecord> _executionRecords = new List<AutoBattleExecutionRecord>();
@@ -68,6 +74,10 @@ public class AutoBattleOperator : IStateRecordUpdateListener
 	private int _runningExecutorCount;
 
 	private Task<bool>? _runningExecutionTask;
+
+	private ExecutionInfo? _naturalCompletionPriorityProtection;
+
+	private string? _lastLoadedYamlPath;
 
 	private Task? _normalSceneLoopTask;
 
@@ -153,19 +163,26 @@ public class AutoBattleOperator : IStateRecordUpdateListener
 		string subDir,
 		string templateName,
 		bool readFromMerged = true,
-		ICondOpClock? clock = null)
+		ICondOpClock? clock = null,
+		Func<OperationDef, OneDragon.Core.Operation.AtomicOp>? atomicOpFactory = null,
+		Action<Action>? sceneDispatcher = null,
+		bool runNormalSceneLoop = true)
 	{
 		_ctx = ctx;
 		_subDir = subDir;
 		_templateName = templateName;
 		_readFromMerged = readFromMerged;
 		_clock = clock ?? new SystemCondOpClock();
+		_atomicOpFactory = atomicOpFactory ?? _ctx.AtomicOpFactory.GetAtomicOp;
+		_sceneDispatcher = sceneDispatcher;
+		_runNormalSceneLoop = runNormalSceneLoop;
 	}
 
 	public (bool Success, string Message) InitBeforeRunning()
 	{
 		try
 		{
+			_lastLoadedYamlPath = null;
 			// 与销毁流程保持一致的"先停后建"顺序：重新初始化前先停掉旧的运行状态，
 			// 避免旧场景循环、周期动作在新配置构建完成前继续基于旧数据运行。
 			StopRunning();
@@ -179,8 +196,9 @@ public class AutoBattleOperator : IStateRecordUpdateListener
 		catch (Exception ex)
 		{
 			_inited = false;
-			Log.Error(ex, "自动战斗初始化失败 如果是共享配队文件请在群内提醒对应作者修复");
-			return (Success: false, Message: ex.Message);
+			string configPath = _lastLoadedYamlPath ?? ResolveYamlPath(_subDir, _templateName);
+			Log.Error(ex, "自动战斗初始化失败: ConfigPath={ConfigPath} 如果是共享配队文件请在群内提醒对应作者修复", configPath);
+			return (Success: false, Message: $"自动战斗配置 {configPath} 初始化失败: {ex.Message}");
 		}
 	}
 
@@ -205,16 +223,23 @@ public class AutoBattleOperator : IStateRecordUpdateListener
 
 	public OneDragon.Core.Operation.AtomicOp GetAtomicOp(OperationDef opDef)
 	{
-		return _ctx.AtomicOpFactory.GetAtomicOp(opDef);
+		return _atomicOpFactory(opDef);
 	}
 
-	public bool SubmitExecution(ExecutionInfo executionInfo, string? trigger = null, double? triggerTime = null)
+	public bool SubmitExecution(ExecutionInfo executionInfo, string? trigger = null, double? triggerTime = null, bool consumeNaturalCompletionProtection = false)
 	{
 		ArgumentNullException.ThrowIfNull(executionInfo, "executionInfo");
 		lock (_taskLock)
 		{
+			if (consumeNaturalCompletionProtection)
+			{
+				_naturalCompletionPriorityProtection = null;
+			}
 			OperationExecutor runningExecutor = RunningExecutor;
-			if (runningExecutor != null && runningExecutor.Running && !CanInterrupt(CurrentExecutionInfo, executionInfo))
+			ExecutionInfo? protectedExecution = runningExecutor != null && runningExecutor.Running
+				? CurrentExecutionInfo
+				: _naturalCompletionPriorityProtection;
+			if (protectedExecution != null && !CanInterrupt(protectedExecution, executionInfo))
 			{
 				AddExecutionRecordLocked("rejected", trigger ?? executionInfo.TriggerDisplay, executionInfo, completed: false, "priority-blocked", triggerTime);
 				PublishExecutionDecision(
@@ -223,11 +248,12 @@ public class AutoBattleOperator : IStateRecordUpdateListener
 					"priority-blocked",
 					new Dictionary<string, object?>
 					{
-						["current_priority"] = CurrentExecutionInfo?.Priority,
+						["current_priority"] = protectedExecution.Priority,
 						["candidate_priority"] = executionInfo.Priority,
 					});
 				return false;
 			}
+			_naturalCompletionPriorityProtection = null;
 			_runningExecutorCount++;
 			runningExecutor = RunningExecutor;
 			if (runningExecutor != null && runningExecutor.Running)
@@ -313,12 +339,13 @@ public class AutoBattleOperator : IStateRecordUpdateListener
 			_cts = new CancellationTokenSource();
 			IsRunning = true;
 			_runningExecutorCount = 0;
+			_naturalCompletionPriorityProtection = null;
 			Interlocked.Exchange(ref _lastNormalLoopProgressAtMs, DateTimeOffset.UtcNow.ToUnixTimeMilliseconds());
 			Interlocked.Exchange(ref _lastNormalLoopDiagnosticAtMs, 0L);
 			_periodicGeneration++;
 			int gen = _periodicGeneration;
 			CancellationToken token = _cts.Token;
-			if (NormalScene != null)
+			if (NormalScene != null && _runNormalSceneLoop)
 			{
 				_normalSceneLoopTask = PeriodicOperationExecutor.StartNew(() => RunNormalSceneLoopAsync(gen, token), token).Unwrap();
 				ObserveBackgroundTask(_normalSceneLoopTask, "自动战斗常驻场景");
@@ -362,11 +389,19 @@ public class AutoBattleOperator : IStateRecordUpdateListener
 		}
 		if (topPriorityScene != null && topPriorityState != null)
 		{
-			Task task = ConditionalOperationExecutor.StartNew(delegate
+			Action action = delegate
 			{
 				TriggerScene(topPriorityState, topPriorityScene, topPriorityStateTime);
-			});
-			ObserveBackgroundTask(task, "自动战斗条件场景");
+			};
+			if (_sceneDispatcher != null)
+			{
+				_sceneDispatcher(action);
+			}
+			else
+			{
+				Task task = ConditionalOperationExecutor.StartNew(action);
+				ObserveBackgroundTask(task, "自动战斗条件场景");
+			}
 		}
 		else
 		{
@@ -595,50 +630,65 @@ public class AutoBattleOperator : IStateRecordUpdateListener
 				await DelayNoThrow(TimeSpan.FromMilliseconds(20L), token);
 				continue;
 			}
-			double? toSleepSeconds = null;
-			// 读取/判断冷却时间、匹配执行、写回触发时间、提交执行整段作为一个原子操作上锁，
-			// 避免与状态触发路径（TriggerScene）在 _lastTriggerTime 上出现竞态。
-			// SubmitExecution 内部同样会对 _taskLock 加锁，但同一线程重入不会死锁。
-			lock (_taskLock)
-			{
-				double triggerTime = Now();
-				int sceneId = scene.GetHashCode();
-				double lastTriggerTime = _lastTriggerTime.GetValueOrDefault(sceneId);
-				double pastTime = triggerTime - lastTriggerTime;
-				if (pastTime < scene.IntervalSeconds)
-				{
-					toSleepSeconds = scene.IntervalSeconds - pastTime;
-				}
-				else
-				{
-					ExecutionInfo executionInfo = scene.MatchExecution(triggerTime);
-					if (executionInfo != null)
-					{
-						executionInfo.Priority = scene.Priority;
-						PublishExecutionDecision(
-							executionInfo,
-							executionInfo.TriggerDisplay,
-							"matched",
-							CreateSceneDecisionMetadata(scene, triggerTime));
-						_lastTriggerTime[sceneId] = triggerTime;
-						SubmitExecution(executionInfo, null, triggerTime);
-						Interlocked.Exchange(ref _lastNormalLoopProgressAtMs, DateTimeOffset.UtcNow.ToUnixTimeMilliseconds());
-					}
-					else
-					{
-						LogNormalLoopIdle("NoMatch", scene);
-					}
-				}
-			}
+			NormalSceneEvaluationResult evaluation = EvaluateNormalScene(scene);
 			// 等待时间不能写在锁里，需尽快释放锁。
-			if (toSleepSeconds.HasValue)
+			if (evaluation.ToSleepSeconds.HasValue)
 			{
-				await DelayNoThrow(TimeSpan.FromSeconds(toSleepSeconds.Value), token);
+				await DelayNoThrow(TimeSpan.FromSeconds(evaluation.ToSleepSeconds.Value), token);
 				continue;
 			}
 			await DelayNoThrow(TimeSpan.FromMilliseconds(20L), token);
 		}
 	}
+
+	internal bool RunNormalSceneReplayTick()
+	{
+		AutoBattleCondOpScene? scene = NormalScene;
+		if (!IsRunning || !_inited || scene == null || Volatile.Read(in _runningExecutorCount) > 0)
+		{
+			return false;
+		}
+
+		return EvaluateNormalScene(scene).Submitted;
+	}
+
+	private NormalSceneEvaluationResult EvaluateNormalScene(AutoBattleCondOpScene scene)
+	{
+		// 读取/判断冷却时间、匹配执行、写回触发时间、提交执行整段作为一个原子操作上锁，
+		// 避免与状态触发路径（TriggerScene）在 _lastTriggerTime 上出现竞态。
+		// SubmitExecution 内部同样会对 _taskLock 加锁，但同一线程重入不会死锁。
+		lock (_taskLock)
+		{
+			double triggerTime = Now();
+			int sceneId = scene.GetHashCode();
+			double lastTriggerTime = _lastTriggerTime.GetValueOrDefault(sceneId);
+			double pastTime = triggerTime - lastTriggerTime;
+			if (pastTime < scene.IntervalSeconds)
+			{
+				return new NormalSceneEvaluationResult(false, scene.IntervalSeconds - pastTime);
+			}
+
+			ExecutionInfo? executionInfo = scene.MatchExecution(triggerTime);
+			if (executionInfo == null)
+			{
+				LogNormalLoopIdle("NoMatch", scene);
+				return new NormalSceneEvaluationResult(false, null);
+			}
+
+			executionInfo.Priority = scene.Priority;
+			PublishExecutionDecision(
+				executionInfo,
+				executionInfo.TriggerDisplay,
+				"matched",
+				CreateSceneDecisionMetadata(scene, triggerTime));
+			_lastTriggerTime[sceneId] = triggerTime;
+			SubmitExecution(executionInfo, null, triggerTime, consumeNaturalCompletionProtection: true);
+			Interlocked.Exchange(ref _lastNormalLoopProgressAtMs, DateTimeOffset.UtcNow.ToUnixTimeMilliseconds());
+			return new NormalSceneEvaluationResult(true, null);
+		}
+	}
+
+	private readonly record struct NormalSceneEvaluationResult(bool Submitted, double? ToSleepSeconds);
 
 	/// <summary>
 	/// 主循环连续空转（既没提交执行、也没被打断）超过 1 秒时按秒记录一次。
@@ -770,6 +820,7 @@ public class AutoBattleOperator : IStateRecordUpdateListener
 	private Dictionary<string, object?> LoadYamlConfig(string subDir, string templateName)
 	{
 		string text = ResolveYamlPath(subDir, templateName);
+		_lastLoadedYamlPath = text;
 		if (!File.Exists(text))
 		{
 			throw new FileNotFoundException("未找到配置文件 " + subDir + "/" + templateName, text);
@@ -879,6 +930,7 @@ public class AutoBattleOperator : IStateRecordUpdateListener
 
 	private void StopRunningTaskLocked(string reason)
 	{
+		_naturalCompletionPriorityProtection = null;
 		if (RunningExecutor != null)
 		{
 			ExecutionInfo currentExecutionInfo = CurrentExecutionInfo;
@@ -938,6 +990,7 @@ public class AutoBattleOperator : IStateRecordUpdateListener
 				_ctx.ZContext.Logger.Information("自动战斗执行结束: Template={Template}, Trigger={Trigger}, Completed={Completed}, Error={Error}", _templateName, executionInfo.TriggerDisplay, flag, text ?? "无");
 				RunningExecutor = null;
 				CurrentExecutionInfo = null;
+				_naturalCompletionPriorityProtection = flag ? executionInfo : null;
 			}
 		}
 	}

@@ -11,6 +11,7 @@ using System.Threading.Tasks;
 using OneDragon.Core.Abstractions.Geometry;
 using OneDragon.Core.Abstractions.Operations;
 using OneDragon.Core.Controller;
+using OneDragon.Core.Events;
 using OneDragon.Core.Input;
 using OneDragon.Core.Matcher;
 using OneDragon.Core.Ocr;
@@ -29,7 +30,9 @@ using ZzzOd.GameLogic.AutoBattle;
 using ZzzOd.GameLogic.Config;
 using ZzzOd.GameLogic.Context;
 using ZzzOd.GameLogic.Controller;
+using ZzzOd.GameLogic.DebugData;
 using ZzzOd.GameLogic.GameData;
+using ZzzOd.GameLogic.HollowZero;
 using ZzzOd.GameLogic.Operations;
 
 namespace ZzzOd.GameLogic.Tests.Application;
@@ -691,11 +694,14 @@ public sealed class LostVoidContextTests
 			zContext.AutoBattleContext.AgentContext.Team.Agents.Add(new AgentInfo(AgentEnum.NICOLE.Value));
 			zContext.LostVoid.DynamicPriorityList.Add("击破");
 			zContext.LostVoid.AppendAgentTypePriorityFromCurrentTeam();
-			Assert.Contains("击破", (IEnumerable<string>)zContext.LostVoid.DynamicPriorityList);
-			Assert.Contains("支援", (IEnumerable<string>)zContext.LostVoid.DynamicPriorityList);
+			Assert.Equal(new[] { "击破", "支援" }, zContext.LostVoid.DynamicPriorityList);
 			Assert.DoesNotContain("支援", (IEnumerable<string>)zContext.LostVoid.DynamicAbandonList);
 			Assert.Contains("强攻", (IEnumerable<string>)zContext.LostVoid.DynamicAbandonList);
 			Assert.Contains("防护", (IEnumerable<string>)zContext.LostVoid.DynamicAbandonList);
+			BusinessStateItem state = Assert.Single(zContext.OverlayDebugBus.Snapshot().BusinessStateItems, item => item.Key == "迷失之地-动态优先级");
+			Assert.Equal(nameof(LostVoidContext), state.Source);
+			Assert.Equal(120d, state.TtlSeconds);
+			Assert.Contains("Current=击破, 支援", state.Value, StringComparison.Ordinal);
 		}
 		finally
 		{
@@ -749,6 +755,91 @@ public sealed class LostVoidContextTests
 		finally
 		{
 			Directory.Delete(text, recursive: true);
+		}
+	}
+
+	[Fact]
+	public void FirstNavigationFrame_AppliesEntryIgnoreListAfterLabelsAreLoaded()
+	{
+		IReadOnlyList<string>? labels = LostVoidMoveByDetectionService.BuildLabelList(
+			new[]
+			{
+				new YoloDetectClass(0, "0000-感叹号"),
+				new YoloDetectClass(1, "1000-战斗-普通"),
+				new YoloDetectClass(2, "1001-商店-金币")
+			},
+			new[] { "战斗-普通" });
+
+		Assert.Equal(new[] { "0000-感叹号", "1001-商店-金币" }, labels);
+	}
+
+	[Fact]
+	public void Context_ArtifactOcrUsesPythonCategoryAndPerCardTieBreakOrder()
+	{
+		Assert.True(LostVoidContext.TryCreateArtifactFromOcrText("[异常击破]藏品名", out LostVoidArtifact artifact, out bool isPrimary));
+		Assert.Equal("异常", artifact.Category);
+		Assert.True(isPrimary);
+
+		LostVoidArtifactPos secondary = ArtifactCandidate("普通", "同卡", "S", "较长的次选文本", y: 10, isPrimary: false);
+		LostVoidArtifactPos primary = ArtifactCandidate("普通", "同卡", "未知", "短", y: 100, isPrimary: true);
+		Assert.Same(primary, LostVoidContext.PickBetterCandidate(secondary, primary));
+
+		LostVoidArtifactPos unknownLevel = ArtifactCandidate("普通", "同卡", "未知", "更长的未知等级文本", y: 10);
+		LostVoidArtifactPos knownLevel = ArtifactCandidate("普通", "同卡", "A", "短", y: 100);
+		Assert.Same(knownLevel, LostVoidContext.PickBetterCandidate(unknownLevel, knownLevel));
+
+		LostVoidArtifactPos shortText = ArtifactCandidate("普通", "同卡", "A", "短", y: 10);
+		LostVoidArtifactPos longText = ArtifactCandidate("普通", "同卡", "A", "较长文本", y: 100);
+		Assert.Same(longText, LostVoidContext.PickBetterCandidate(shortText, longText));
+
+		LostVoidArtifactPos lower = ArtifactCandidate("普通", "同卡", "A", "同长", y: 100);
+		LostVoidArtifactPos upper = ArtifactCandidate("普通", "同卡", "A", "同长", y: 10);
+		Assert.Same(upper, LostVoidContext.PickBetterCandidate(lower, upper));
+	}
+
+	[Fact]
+	public void Context_ConsumesOnlyHighestConfidenceMarkerForEachText()
+	{
+		OcrMatchResult[] markers = new[]
+		{
+			new OcrMatchResult(0.61, 10, 10, 20, 10, "NEW!"),
+			new OcrMatchResult(0.93, 30, 10, 20, 10, "NEW!"),
+			new OcrMatchResult(0.72, 10, 30, 20, 10, "已选择"),
+			new OcrMatchResult(0.88, 30, 30, 20, 10, "已选择")
+		};
+
+		IReadOnlyList<OcrMatchResult> selected = LostVoidContext.SelectHighestConfidenceMarkerPerText(markers);
+
+		Assert.Equal(2, selected.Count);
+		Assert.Equal(0.93, Assert.Single(selected, item => item.Text == "NEW!").Confidence);
+		Assert.Equal(0.88, Assert.Single(selected, item => item.Text == "已选择").Confidence);
+	}
+
+	[Fact]
+	public void Context_EmptyPriorityReturnsNoCandidateWhenNonPriorityIsDisabled()
+	{
+		string root = CreateTempRoot();
+		try
+		{
+			string configDirectory = Path.Combine(root, "config", "lost_void_challenge");
+			Directory.CreateDirectory(configDirectory);
+			File.WriteAllText(Path.Combine(configDirectory, "空优先级.yml"), "artifact_priority: []\nartifact_priority_2: []\n");
+			using ZContext context = new ZContext(new OneDragonEnvironment(root));
+			context.LostVoid.InitBeforeRun("空优先级");
+			LostVoidArtifactPos candidate = ArtifactPos("普通", "普通鸣徽", "S", 100);
+
+			IReadOnlyList<LostVoidArtifactPos> selected = context.LostVoid.GetArtifactByPriority(
+				new[] { candidate },
+				1,
+				considerPriority1: true,
+				considerPriority2: true,
+				considerNotInPriority: false);
+
+			Assert.Empty(selected);
+		}
+		finally
+		{
+			Directory.Delete(root, recursive: true);
 		}
 	}
 
@@ -1355,6 +1446,10 @@ public sealed class LostVoidContextTests
 			Assert.True(lostVoidRunLevel3.EnterBattle(null, endBossPreBattle: true).IsSuccess);
 			Assert.False(lostVoidRunLevel3.BossPreBattle);
 			Assert.Equal("战斗区域", lostVoidRunLevel3.InitForRegionTypeStatus());
+			BusinessStateItem state = Assert.Single(context.OverlayDebugBus.Snapshot().BusinessStateItems, item => item.Key == "迷失之地-当前区域");
+			Assert.Equal("战斗-终结之役", state.Value);
+			Assert.Equal(nameof(LostVoidRunLevel), state.Source);
+			Assert.Equal(60d, state.TtlSeconds);
 		}
 		finally
 		{
@@ -1498,6 +1593,81 @@ public sealed class LostVoidContextTests
 		Assert.Equal(1, runtime.TurnToFindTargetCount);
 		Assert.Equal(1, runtime.PeriodBattleEncounterCheckCount);
 		Assert.Equal(0.5f, runtime.LastPeriodBattleCheckSeconds);
+		Assert.Null(result.Delay);
+	}
+
+	[Fact]
+	public async Task RunLevel_LoadingTalkKeepsPythonHalfSecondDelay()
+	{
+		using ZContext context = new ZContext(new OneDragonEnvironment(CreateTempRoot()));
+		ScriptedLostVoidRunLevelRuntime runtime = new ScriptedLostVoidRunLevelRuntime
+		{
+			LoadingStates = new Queue<LostVoidRunLevelLoadingState>(new[]
+			{
+				new LostVoidRunLevelLoadingState(
+					InNormalWorld: false,
+					TalkStatus: "尝试交互选项",
+					TalkDelay: TimeSpan.FromMilliseconds(500L))
+			})
+		};
+		LostVoidRunLevel operation = new LostVoidRunLevel(context, new LostVoidRunRecord(new LostVoidConfig()), "入口", runtime);
+
+		OperationRoundResult result = await InvokeWaitLoadingAsync(operation);
+
+		Assert.Equal(OperationRoundResultKind.Wait, result.Kind);
+		Assert.Equal("尝试交互选项", result.Status);
+		Assert.Equal(TimeSpan.FromMilliseconds(500L), result.Delay);
+	}
+
+	[Fact]
+	public async Task RunLevel_ConsumesInnerInteractStatusWithoutContinuingMovement()
+	{
+		using ZContext context = new ZContext(new OneDragonEnvironment(CreateTempRoot()));
+		context.LostVoid.PriorityUpdated = true;
+		ScriptedLostVoidRunLevelRuntime runtime = new ScriptedLostVoidRunLevelRuntime
+		{
+			NonBattleFrames = new Queue<LostVoidRunLevelFrame>(new[]
+			{
+				new LostVoidRunLevelFrame(
+					InNormalWorld: true,
+					DetectResult: new YoloDetectFrameResult(new[] { Object("0000-感叹号", 100) }, 0d))
+			}),
+			MoveResult = new OperationResult(true, LostVoidMoveByDetectionOperation.StatusInteract)
+		};
+		LostVoidRunLevel operation = new LostVoidRunLevel(context, new LostVoidRunRecord(new LostVoidConfig()), "入口", runtime);
+
+		OperationRoundResult result = await InvokeNonBattleCheckAsync(operation);
+
+		Assert.True(result.IsSuccess);
+		Assert.Equal("未在大世界", result.Status);
+		Assert.Equal(new[] { "0000-感叹号" }, runtime.MoveTargetTypes);
+		Assert.Equal(0, runtime.TurnToFindTargetCount);
+		BusinessStateItem state = Assert.Single(context.OverlayDebugBus.Snapshot().BusinessStateItems, item => item.Key == "迷失之地-寻路");
+		Assert.Equal(nameof(LostVoidRunLevel), state.Source);
+		Assert.Equal(15d, state.TtlSeconds);
+		Assert.Contains("Status=处于交互中", state.Value, StringComparison.Ordinal);
+	}
+
+	[Fact]
+	public async Task RunLevel_BattleTransitionPublishesDecisionWithContractTtl()
+	{
+		using ZContext context = new ZContext(new OneDragonEnvironment(CreateTempRoot()));
+		ScriptedLostVoidRunLevelRuntime runtime = new ScriptedLostVoidRunLevelRuntime
+		{
+			BattleState = new LostVoidBattleState(
+				CurrentFrameInBattle: true,
+				NextRegionHint: true,
+				NoLongerInBattleByDetection: true)
+		};
+		LostVoidRunLevel operation = new LostVoidRunLevel(context, new LostVoidRunRecord(new LostVoidConfig()), "战斗-道中危机", runtime);
+
+		_ = await InvokeInBattleAsync(operation);
+
+		BusinessStateItem state = Assert.Single(context.OverlayDebugBus.Snapshot().BusinessStateItems, item => item.Key == "迷失之地-战斗");
+		Assert.Equal(nameof(LostVoidRunLevel), state.Source);
+		Assert.Equal(10d, state.TtlSeconds);
+		Assert.Contains("Signal=NextRegionHint", state.Value, StringComparison.Ordinal);
+		Assert.Contains("Action=StopAutoBattleAndMove", state.Value, StringComparison.Ordinal);
 	}
 
 	[Fact]
@@ -2257,20 +2427,18 @@ public sealed class LostVoidContextTests
 	}
 
 	[Fact]
-	public async Task RunLevel_NextRegionHintRequiresTwoStableHitsBeforeStoppingAutoBattle()
+	public async Task RunLevel_NextRegionHintStopsAutoBattleOnFirstHit()
 	{
 		using ZContext context = new ZContext(new OneDragonEnvironment(CreateTempRoot()));
 		ScriptedLostVoidRunLevelRuntime runtime = new ScriptedLostVoidRunLevelRuntime
 		{
 			BattleStates = new Queue<LostVoidBattleState>(new[]
 			{
-				new LostVoidBattleState(CurrentFrameInBattle: true, NextRegionHint: true, NoLongerInBattleByDetection: true),
 				new LostVoidBattleState(CurrentFrameInBattle: true, NextRegionHint: true, NoLongerInBattleByDetection: true)
 			})
 		};
 		LostVoidRunLevel operation = new LostVoidRunLevel(context, new LostVoidRunRecord(new LostVoidConfig()), "挚交会谈", runtime);
 
-		Assert.Equal(OperationRoundResultKind.Wait, (await InvokeInBattleAsync(operation)).Kind);
 		OperationRoundResult result = await InvokeInBattleAsync(operation);
 
 		Assert.True(result.IsSuccess);
@@ -2279,7 +2447,7 @@ public sealed class LostVoidContextTests
 	}
 
 	[Fact]
-	public async Task RunLevel_NextRegionHintCounterResetsAfterCleanBattleFrame()
+	public async Task RunLevel_NextRegionHintDoesNotNeedASecondConfirmationFrame()
 	{
 		using ZContext context = new ZContext(new OneDragonEnvironment(CreateTempRoot()));
 		ScriptedLostVoidRunLevelRuntime runtime = new ScriptedLostVoidRunLevelRuntime
@@ -2287,16 +2455,11 @@ public sealed class LostVoidContextTests
 			BattleStates = new Queue<LostVoidBattleState>(new[]
 			{
 				new LostVoidBattleState(CurrentFrameInBattle: true, NextRegionHint: true, NoLongerInBattleByDetection: true),
-				new LostVoidBattleState(CurrentFrameInBattle: true, NextRegionHint: false, NoLongerInBattleByDetection: false),
-				new LostVoidBattleState(CurrentFrameInBattle: true, NextRegionHint: true, NoLongerInBattleByDetection: true),
-				new LostVoidBattleState(CurrentFrameInBattle: true, NextRegionHint: true, NoLongerInBattleByDetection: true)
+				new LostVoidBattleState(CurrentFrameInBattle: true, NextRegionHint: false, NoLongerInBattleByDetection: false)
 			})
 		};
 		LostVoidRunLevel operation = new LostVoidRunLevel(context, new LostVoidRunRecord(new LostVoidConfig()), "挚交会谈", runtime);
 
-		Assert.Equal(OperationRoundResultKind.Wait, (await InvokeInBattleAsync(operation)).Kind);
-		Assert.Equal(OperationRoundResultKind.Wait, (await InvokeInBattleAsync(operation)).Kind);
-		Assert.Equal(OperationRoundResultKind.Wait, (await InvokeInBattleAsync(operation)).Kind);
 		OperationRoundResult result = await InvokeInBattleAsync(operation);
 
 		Assert.True(result.IsSuccess);
@@ -2429,7 +2592,7 @@ public sealed class LostVoidContextTests
 		Assert.True(probe.TrySchedule(start.AddMilliseconds(800L), () => Result(start.AddMilliseconds(800L))));
 		// 节流间隔可按区域覆盖（道中危机/终结之役 不受 0.8 秒限制）
 		queued[0]();
-		Assert.True(probe.TryConsume(out LostVoidInBattleProbeResult _));
+		Assert.True(probe.TryConsume(start.AddMilliseconds(800L), out LostVoidInBattleProbeResult _));
 		Assert.True(probe.TrySchedule(start.AddMilliseconds(801L), () => Result(start.AddMilliseconds(801L)), TimeSpan.Zero));
 	}
 
@@ -2441,31 +2604,78 @@ public sealed class LostVoidContextTests
 		DateTimeOffset start = new DateTimeOffset(2026, 7, 26, 7, 39, 0, TimeSpan.Zero);
 		LostVoidInBattleProbeResult Result(DateTimeOffset frameTime, bool noLongerInBattle) => new LostVoidInBattleProbeResult(frameTime, noLongerInBattle, NextRegionHint: false, "无", 1.0, DetectorRan: true);
 
-		Assert.False(probe.TryConsume(out LostVoidInBattleProbeResult _));
+		Assert.False(probe.TryConsume(start, out LostVoidInBattleProbeResult _));
 		Assert.True(probe.TrySchedule(start, () => Result(start, noLongerInBattle: true)));
 		queued[0]();
 		queued.Clear();
-		Assert.True(probe.TryConsume(out LostVoidInBattleProbeResult first));
+		Assert.True(probe.TryConsume(start, out LostVoidInBattleProbeResult first));
 		Assert.True(first.NoLongerInBattleByDetection);
 		Assert.Equal(start, first.FrameTimeUtc);
 		// 同一结果不会被重复消费（脱战计数不会因重复读取加速）
-		Assert.False(probe.TryConsume(out LostVoidInBattleProbeResult _));
+		Assert.False(probe.TryConsume(start, out LostVoidInBattleProbeResult _));
 		// 迟到的旧帧结果被丢弃
 		Assert.True(probe.TrySchedule(start.AddSeconds(1L), () => Result(start.AddSeconds(-1L), noLongerInBattle: true)));
 		queued[0]();
 		queued.Clear();
-		Assert.False(probe.TryConsume(out LostVoidInBattleProbeResult _));
+		Assert.False(probe.TryConsume(start.AddSeconds(1L), out LostVoidInBattleProbeResult _));
 		// 探测失败（返回 null）只解除飞行标记，不产生证据
 		Assert.True(probe.TrySchedule(start.AddSeconds(2L), () => null));
 		queued[0]();
 		queued.Clear();
-		Assert.False(probe.TryConsume(out LostVoidInBattleProbeResult _));
+		Assert.False(probe.TryConsume(start.AddSeconds(2L), out LostVoidInBattleProbeResult _));
 		// Reset 后旧的已消费帧时间不再抑制新结果
 		probe.Reset();
 		Assert.True(probe.TrySchedule(start.AddSeconds(-5L), () => Result(start.AddSeconds(-5L), noLongerInBattle: false)));
 		queued[0]();
-		Assert.True(probe.TryConsume(out LostVoidInBattleProbeResult afterReset));
+		Assert.True(probe.TryConsume(start.AddSeconds(-5L), out LostVoidInBattleProbeResult afterReset));
 		Assert.Equal(start.AddSeconds(-5L), afterReset.FrameTimeUtc);
+	}
+
+	[Fact]
+	public void InBattleProbe_UsesPointOneSecondIntervalAfterExitCandidate()
+	{
+		List<Action> queued = new List<Action>();
+		LostVoidInBattleProbe probe = new LostVoidInBattleProbe(TimeSpan.FromMilliseconds(800L), queued.Add);
+		DateTimeOffset start = new DateTimeOffset(2026, 7, 26, 7, 39, 0, TimeSpan.Zero);
+		LostVoidInBattleProbeResult candidate = new LostVoidInBattleProbeResult(start, NoLongerInBattleByDetection: true, NextRegionHint: false, "入口", 1.0, DetectorRan: true);
+
+		Assert.True(probe.TrySchedule(start, () => candidate));
+		queued[0]();
+		queued.Clear();
+		Assert.True(probe.TryConsume(start, out LostVoidInBattleProbeResult _));
+		Assert.False(probe.TrySchedule(start.AddMilliseconds(99L), () => candidate with { FrameTimeUtc = start.AddMilliseconds(99L) }));
+		Assert.True(probe.TrySchedule(start.AddMilliseconds(100L), () => candidate with { FrameTimeUtc = start.AddMilliseconds(100L) }));
+	}
+
+	[Fact]
+	public void InBattleProbe_ResetWhileRunningRejectsOldGenerationResult()
+	{
+		List<Action> queued = new List<Action>();
+		LostVoidInBattleProbe probe = new LostVoidInBattleProbe(TimeSpan.Zero, queued.Add);
+		DateTimeOffset start = new DateTimeOffset(2026, 7, 26, 7, 39, 0, TimeSpan.Zero);
+
+		Assert.True(probe.TrySchedule(start, () => new LostVoidInBattleProbeResult(start, true, false, "旧", 1.0, true)));
+		Action oldRun = queued[0];
+		probe.Reset();
+		Assert.True(probe.TrySchedule(start.AddMilliseconds(1L), () => new LostVoidInBattleProbeResult(start.AddMilliseconds(1L), false, false, "新", 1.0, true)));
+		Action newRun = queued[1];
+		oldRun();
+		Assert.False(probe.TryConsume(start.AddMilliseconds(1L), out LostVoidInBattleProbeResult _));
+		newRun();
+		Assert.True(probe.TryConsume(start.AddMilliseconds(1L), out LostVoidInBattleProbeResult current));
+		Assert.Equal("新", current.Detect);
+	}
+
+	[Fact]
+	public void InBattleProbe_DropsResultOlderThanMaximumFrameAge()
+	{
+		List<Action> queued = new List<Action>();
+		LostVoidInBattleProbe probe = new LostVoidInBattleProbe(TimeSpan.Zero, queued.Add, maxFrameAge: TimeSpan.FromMilliseconds(500L));
+		DateTimeOffset start = new DateTimeOffset(2026, 7, 26, 7, 39, 0, TimeSpan.Zero);
+
+		Assert.True(probe.TrySchedule(start, () => new LostVoidInBattleProbeResult(start, true, false, "旧", 1.0, true)));
+		queued[0]();
+		Assert.False(probe.TryConsume(start.AddMilliseconds(501L), out LostVoidInBattleProbeResult _));
 	}
 
 	[Fact]
@@ -2653,6 +2863,21 @@ public sealed class LostVoidContextTests
 		}, new OneDragon.Core.Abstractions.Geometry.Rect(x, y, x + width, y + height), "", isPrimary);
 	}
 
+	private static LostVoidArtifactPos ArtifactCandidate(string category, string name, string level, string ocrText, int y, bool isPrimary = true)
+	{
+		return new LostVoidArtifactPos(
+			new LostVoidArtifact
+			{
+				Category = category,
+				Name = name,
+				Level = level,
+				IsGear = true
+			},
+			new OneDragon.Core.Abstractions.Geometry.Rect(0, y, 40, y + 40),
+			ocrText,
+			isPrimary);
+	}
+
 	private static OcrMatchResult Ocr(string text)
 	{
 		return new OcrMatchResult(0.99, 10, 10, 20, 10, text);
@@ -2669,6 +2894,13 @@ public sealed class LostVoidContextTests
 	private static async Task<OperationRoundResult> InvokeInBattleAsync(LostVoidRunLevel operation)
 	{
 		MethodInfo method = typeof(LostVoidRunLevel).GetMethod("InBattleAsync", BindingFlags.Instance | BindingFlags.NonPublic);
+		Task<OperationRoundResult> task = Assert.IsAssignableFrom<Task<OperationRoundResult>>(method.Invoke(operation, null));
+		return await task;
+	}
+
+	private static async Task<OperationRoundResult> InvokeWaitLoadingAsync(LostVoidRunLevel operation)
+	{
+		MethodInfo method = typeof(LostVoidRunLevel).GetMethod("WaitLoadingAsync", BindingFlags.Instance | BindingFlags.NonPublic);
 		Task<OperationRoundResult> task = Assert.IsAssignableFrom<Task<OperationRoundResult>>(method.Invoke(operation, null));
 		return await task;
 	}

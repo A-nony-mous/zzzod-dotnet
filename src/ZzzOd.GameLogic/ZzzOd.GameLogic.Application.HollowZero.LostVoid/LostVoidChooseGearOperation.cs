@@ -17,6 +17,8 @@ public sealed class LostVoidChooseGearOperation : ZOperation
 {
 	private static readonly TimeSpan OneSecond = TimeSpan.FromSeconds(1L);
 
+	internal static IReadOnlyList<string>? CurrentScreenCandidates => null;
+
 	public LostVoidChooseGearOperation(ZContext context)
 		: base(context, "迷失之地-武备选择")
 	{
@@ -29,7 +31,7 @@ public sealed class LostVoidChooseGearOperation : ZOperation
 		{
 			return RoundRetry("未获取截图", null, OneSecond);
 		}
-		string text = CheckAndUpdateCurrentScreen(base.LastScreenshot, new string[] { "迷失之地-武备选择" });
+		string text = CheckAndUpdateCurrentScreen(base.LastScreenshot, CurrentScreenCandidates);
 		if (!string.Equals(text, "迷失之地-武备选择", StringComparison.Ordinal))
 		{
 			return RoundRetry("当前画面 " + text, null, OneSecond);

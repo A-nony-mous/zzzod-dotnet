@@ -30,7 +30,7 @@ public sealed class OpenAndEnterGame : ZOperation
 	/// Initialize the operation.
 	/// </summary>
 	public OpenAndEnterGame(ZContext context, Func<Task<OperationResult>>? disableAutoHdrAsync = null, Func<Task<OperationResult>>? openGameAsync = null, Func<bool>? refreshWindowAndCheckReady = null, Action? activateWindow = null, Func<Task<OperationResult>>? enableAutoHdrAsync = null, Func<Task<OperationResult>>? enterGameAsync = null, TimeSpan? retryDelay = null)
-		: base(context, "打开并登录游戏")
+		: base(context, "打开并登录游戏", needCheckGameWindow: false)
 	{
 		_disableAutoHdrAsync = disableAutoHdrAsync ?? ((Func<Task<OperationResult>>)(() => new DisableAutoHdr(context).ExecuteAsync()));
 		_openGameAsync = openGameAsync ?? ((Func<Task<OperationResult>>)(() => new OpenGame(context).ExecuteAsync()));

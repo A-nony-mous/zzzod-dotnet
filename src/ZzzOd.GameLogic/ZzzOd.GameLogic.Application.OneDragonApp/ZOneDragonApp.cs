@@ -107,9 +107,7 @@ public sealed class ZOneDragonApp : ZApplication
 				currentIndex = nextIndex;
 				if (currentIndex == startIndex)
 				{
-					return HasFailure(results)
-						? ZApplication.Fail("一条龙应用执行失败", new ZOneDragonRunSummary(nextInstanceIndex, _groupId, results))
-						: await CompleteNaturallyAsync(nextInstanceIndex, results, cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
+					return await CompleteNaturallyAsync(nextInstanceIndex, results, cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
 				}
 				OperationResult enterResult = await ExecuteEnterGameAsync(cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
 				if (!enterResult.IsSuccess)
@@ -133,9 +131,7 @@ public sealed class ZOneDragonApp : ZApplication
 				break;
 			}
 		}
-		return HasFailure(results)
-			? ZApplication.Fail("一条龙应用执行失败", new ZOneDragonRunSummary(nextInstanceIndex, _groupId, results))
-			: await CompleteNaturallyAsync(nextInstanceIndex, results, cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
+		return await CompleteNaturallyAsync(nextInstanceIndex, results, cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
 	}
 
 	/// <summary>
@@ -247,7 +243,10 @@ public sealed class ZOneDragonApp : ZApplication
 		{
 			return ZApplication.Fail(afterDoneResult.Status, new ZOneDragonRunSummary(instanceIndex, _groupId, results.ToArray()));
 		}
-		return ZApplication.Success(StatusAllDone, new ZOneDragonRunSummary(instanceIndex, _groupId, results.ToArray()));
+		ZOneDragonRunSummary summary = new ZOneDragonRunSummary(instanceIndex, _groupId, results.ToArray());
+		return HasFailure(results)
+			? ZApplication.Fail("一条龙应用执行失败", summary)
+			: ZApplication.Success(StatusAllDone, summary);
 	}
 
 	private async Task<OperationResult> ExecuteAfterDoneAsync(string? afterDone, CancellationToken cancellationToken)

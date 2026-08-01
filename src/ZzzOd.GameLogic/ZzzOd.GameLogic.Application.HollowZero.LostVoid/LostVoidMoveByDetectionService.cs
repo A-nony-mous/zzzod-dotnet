@@ -30,11 +30,19 @@ public sealed class LostVoidMoveByDetectionService
 
 	public IReadOnlyList<string>? BuildLabelList(LostVoidDetector? detector, IReadOnlyList<string> ignoreList)
 	{
-		if (detector == null || ignoreList.Count == 0 || detector.CoreDetector.Classes.Count == 0)
+		return detector == null
+			? null
+			: BuildLabelList(detector.CoreDetector.Classes.Values, ignoreList);
+	}
+
+	internal static IReadOnlyList<string>? BuildLabelList(IEnumerable<YoloDetectClass> classes, IReadOnlyList<string> ignoreList)
+	{
+		YoloDetectClass[] loadedClasses = classes.ToArray();
+		if (ignoreList.Count == 0 || loadedClasses.Length == 0)
 		{
 			return null;
 		}
-		return (from item in detector.CoreDetector.Classes.Values
+		return (from item in loadedClasses
 			select item.ClassName into label
 			where label.Length <= 5 || !ignoreList.Contains<string>(label.Substring(5), StringComparer.Ordinal)
 			select label).ToArray();

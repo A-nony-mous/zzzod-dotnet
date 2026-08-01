@@ -90,10 +90,10 @@ public sealed class ZApplicationEnterGameTests
 	}
 
 	/// <summary>
-	/// NeedCheckGameWindow runs the open-and-enter flow when the game window is missing.
+	/// 应用层不再重复执行进入游戏流程，窗口检查由具体 Operation 负责。
 	/// </summary>
 	[Fact]
-	public async Task NeedCheckGameWindowRunsOpenAndEnterWhenWindowIsMissing()
+	public async Task ApplicationDelegatesMissingWindowCheckToOperations()
 	{
 		using ZContext context = new ZContext(new OneDragonEnvironment("test_project", "test_user_id"));
 		List<string> steps = new List<string>();
@@ -109,14 +109,14 @@ public sealed class ZApplicationEnterGameTests
 		OperationResult result = await app.ExecuteAsync(CancellationToken.None);
 		Assert.True(result.IsSuccess);
 		Assert.Equal("core-ok", result.Status);
-		Assert.Equal<List<string>>(new List<string>(2) { "default-enter", "core" }, steps);
+		Assert.Equal<List<string>>(new List<string>(1) { "core" }, steps);
 	}
 
 	/// <summary>
-	/// NeedCheckGameWindow stops core execution when opening the game fails.
+	/// 旧的应用级进入游戏委托不再参与执行。
 	/// </summary>
 	[Fact]
-	public async Task NeedCheckGameWindowStopsCoreWhenOpenAndEnterFails()
+	public async Task ApplicationDoesNotInvokeLegacyEnterGameHook()
 	{
 		using ZContext context = new ZContext(new OneDragonEnvironment("test_project", "test_user_id"));
 		bool coreCalled = false;
@@ -126,8 +126,8 @@ public sealed class ZApplicationEnterGameTests
 			return Task.FromResult(new OperationResult(IsSuccess: true, "core-ok"));
 		}, (ZContext _, CancellationToken _) => Task.FromResult(new OperationResult(IsSuccess: false, "enter-failed")));
 		OperationResult result = await app.ExecuteAsync(CancellationToken.None);
-		Assert.False(result.IsSuccess);
-		Assert.Equal("enter-failed", result.Status);
-		Assert.False(coreCalled);
+		Assert.True(result.IsSuccess);
+		Assert.Equal("core-ok", result.Status);
+		Assert.True(coreCalled);
 	}
 }

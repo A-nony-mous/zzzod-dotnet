@@ -2051,7 +2051,10 @@ public sealed class ZzzAppBackend : IZzzAppBackend, IZzzIntelBoardProgressBacken
 		{
 			OneDragonEnvironment environment = new OneDragonEnvironment(_runtime.RunRoot);
 			LostVoidChallengeConfig config = LostVoidChallengeConfig.Load(environment, moduleName);
-			return ZzzBackendResult<ZzzLostVoidChallengeConfigDto>.Ok(ToLostVoidChallengeConfigDto(moduleName + "_copy", isSample: false, exists: false, config));
+			return ZzzBackendResult<ZzzLostVoidChallengeConfigDto>.Ok(ToLostVoidChallengeConfigDto(moduleName + "_copy", isSample: false, exists: false, config) with
+			{
+				SourceModuleName = moduleName
+			});
 		}
 		catch (Exception ex)
 		{
@@ -2068,7 +2071,10 @@ public sealed class ZzzAppBackend : IZzzAppBackend, IZzzIntelBoardProgressBacken
 			OneDragonEnvironment environment = new OneDragonEnvironment(_runtime.RunRoot);
 			ZzzLostVoidChallengeConfigDto config = request.Config;
 			LostVoidChallengeConfig config2 = FromLostVoidChallengeConfigDto(config);
-			LostVoidChallengeConfig.Save(environment, config.ModuleName, config2);
+			string? sourceModuleName = string.IsNullOrWhiteSpace(request.OriginalModuleName)
+				? config.SourceModuleName
+				: request.OriginalModuleName;
+			LostVoidChallengeConfig.Save(environment, config.ModuleName, config2, sourceModuleName);
 			if (!string.IsNullOrWhiteSpace(request.OriginalModuleName) && !string.Equals(request.OriginalModuleName, config.ModuleName, StringComparison.Ordinal) && !LostVoidChallengeConfig.IsSample(environment, request.OriginalModuleName))
 			{
 				LostVoidChallengeConfig.Delete(environment, request.OriginalModuleName);

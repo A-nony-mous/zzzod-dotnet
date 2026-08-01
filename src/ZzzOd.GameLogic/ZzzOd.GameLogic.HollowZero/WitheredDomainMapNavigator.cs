@@ -36,6 +36,14 @@ public sealed class WitheredDomainMapNavigator : IHollowMapNavigator
 		{
 			return null;
 		}
+		string nextNodeName = string.IsNullOrWhiteSpace(hollowZeroMapNode.Entry.EntryName)
+			? hollowZeroMapNode.Entry.EntryId
+			: hollowZeroMapNode.Entry.EntryName;
+		_context.DebugDataPublisher.PublishBusinessState(
+			"枯萎之都-下一步",
+			nextNodeName,
+			nameof(WitheredDomainMapNavigator),
+			15d);
 		OneDragon.Core.Abstractions.Geometry.Point mapNodeClickPosition = GetMapNodeClickPosition(hollowZeroMapNode, screen);
 		bool flag = _context.Controller?.Click(mapNodeClickPosition) ?? false;
 		if (flag)

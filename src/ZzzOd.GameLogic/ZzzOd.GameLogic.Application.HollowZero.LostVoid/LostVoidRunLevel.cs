@@ -20,7 +20,7 @@ public sealed class LostVoidRunLevel : ZOperation
 
 	private const int NonBattleScreenExitThreshold = 3;
 
-	private const int NextRegionHintExitThreshold = 2;
+	private const int NextRegionHintExitThreshold = 1;
 
 	public const string StatusNextLevel = "进入下层";
 
@@ -142,6 +142,7 @@ public sealed class LostVoidRunLevel : ZOperation
 
 	public string InitForRegionTypeStatus()
 	{
+		PublishCurrentRegion();
 		string regionType = RegionType;
 		if (1 == 0)
 		{
@@ -283,12 +284,13 @@ public sealed class LostVoidRunLevel : ZOperation
 		if (state.ChallengeConfirmAvailable)
 		{
 			RegionType = "挑战-限时";
+			PublishCurrentRegion();
 			_clickChallengeConfirm = true;
 			return RoundWait("按钮-挑战-确认");
 		}
 		if (!string.IsNullOrWhiteSpace(state.TalkStatus))
 		{
-			return RoundWait(state.TalkStatus);
+			return RoundWait(state.TalkStatus, null, state.TalkDelay);
 		}
 		return RoundRetry("未找到攻击交互按键", null, TimeSpan.FromSeconds(1L));
 	}
@@ -317,6 +319,7 @@ public sealed class LostVoidRunLevel : ZOperation
 			if (worldState.ChallengeConfirmAvailable)
 			{
 				RegionType = "挑战-限时";
+				PublishCurrentRegion();
 				_clickChallengeConfirm = true;
 				return RoundSuccess("按钮-挑战-确认");
 			}
@@ -383,7 +386,7 @@ public sealed class LostVoidRunLevel : ZOperation
 			_nothingTimes = 0;
 			return RoundSuccess("处理寻路失败");
 		}
-		return _runtime.CheckBattleEncounterInPeriod(this, 0.5f) ? EnterBattle(DateTimeOffset.UtcNow, _bossPreBattle) : RoundWait("转动识别目标", null, TimeSpan.FromMilliseconds(500L));
+		return _runtime.CheckBattleEncounterInPeriod(this, 0.5f) ? EnterBattle(DateTimeOffset.UtcNow, _bossPreBattle) : RoundWait("转动识别目标");
 	}
 
 	[NodeFrom("非战斗画面识别", Status = "需要更新优先级")]
@@ -607,6 +610,11 @@ public sealed class LostVoidRunLevel : ZOperation
 	private void LogBattleTransition(string signal, int count, int threshold, string action)
 	{
 		base.ZContext.Logger.Information("迷失之地战斗状态转移: Region={Region}, CurrentFrameInBattle={CurrentFrameInBattle}, Signal={Signal}, Count={Count}, Threshold={Threshold}, Action={Action}", RegionType, _currentFrameInBattle, signal, count, threshold, action);
+		base.ZContext.DebugDataPublisher.PublishBusinessState(
+			"迷失之地-战斗",
+			$"Region={RegionType}; CurrentFrameInBattle={_currentFrameInBattle}; Signal={signal}; Count={count}; Threshold={threshold}; Action={action}",
+			nameof(LostVoidRunLevel),
+			10d);
 	}
 
 	private static bool ShouldLogDiagnostic(ref long lastDiagnosticAtMilliseconds)
@@ -725,8 +733,18 @@ public sealed class LostVoidRunLevel : ZOperation
 	{
 		_nothingTimes = 0;
 		base.ZContext.Logger.Information("迷失之地状态动作: Action=StartPathfinding, Region={Region}, Target={Target}", RegionType, targetType);
+		base.ZContext.DebugDataPublisher.PublishBusinessState(
+			"迷失之地-寻路",
+			$"Region={RegionType}; Target={targetType}; Status=StartPathfinding",
+			nameof(LostVoidRunLevel),
+			15d);
 		OperationResult moveResult = await _runtime.MoveByDetectionAsync(this, RegionType, targetType, stopWhenInteract, stopWhenDisappear, allowArrivalByInteractButton, ignoreEntries ?? Array.Empty<string>(), _cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
 		base.ZContext.Logger.Information("迷失之地状态动作: Action=PathfindingResult, Region={Region}, Target={Target}, Status={Status}, Success={Success}", RegionType, targetType, moveResult.Status, moveResult.IsSuccess);
+		base.ZContext.DebugDataPublisher.PublishBusinessState(
+			"迷失之地-寻路",
+			$"Region={RegionType}; Target={targetType}; Status={moveResult.Status}; Success={moveResult.IsSuccess}",
+			nameof(LostVoidRunLevel),
+			15d);
 		if (!moveResult.IsSuccess)
 		{
 			// 超时硬失败仅对"感叹号"交互目标生效；"距离"与"入口"类目标的任何失败（含超时）都按可重试处理。
@@ -750,7 +768,8 @@ public sealed class LostVoidRunLevel : ZOperation
 			InteractTarget = new LostVoidInteractTarget("战斗后", "战斗后", isAgent: false, isNpc: false, isEntry: false, isExclamation: false, isDistance: false, afterBattle: true);
 			return RoundSuccess("遭遇战斗");
 		}
-		if (string.Equals(moveResult.Status, "交互", StringComparison.Ordinal))
+		if (string.Equals(moveResult.Status, LostVoidMoveByDetectionOperation.StatusInteract, StringComparison.Ordinal)
+			|| string.Equals(moveResult.Status, "交互", StringComparison.Ordinal))
 		{
 			InteractTarget = new LostVoidInteractTarget("未知", "感叹号", isAgent: false, isNpc: false, isEntry: false, isExclamation: true);
 			return RoundSuccess("未在大世界");
@@ -778,5 +797,14 @@ public sealed class LostVoidRunLevel : ZOperation
 	{
 		_clickChallengeConfirm = false;
 		return "战斗区域";
+	}
+
+	private void PublishCurrentRegion()
+	{
+		base.ZContext.DebugDataPublisher.PublishBusinessState(
+			"迷失之地-当前区域",
+			RegionType,
+			nameof(LostVoidRunLevel),
+			60d);
 	}
 }

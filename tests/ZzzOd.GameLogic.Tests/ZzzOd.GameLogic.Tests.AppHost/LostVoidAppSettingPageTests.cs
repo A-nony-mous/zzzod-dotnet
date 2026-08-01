@@ -197,7 +197,7 @@ public sealed class LostVoidAppSettingPageTests
 		string text = Path.Combine(Path.GetTempPath(), "zzzod-lost-void-settings", Guid.NewGuid().ToString("N"));
 		Directory.CreateDirectory(Path.Combine(text, "config", "lost_void_challenge"));
 		File.WriteAllText(Path.Combine(text, "config", "one_dragon.yml"), "instance_list:\n- idx: 0\n  name: '00'\n  active: true\n  active_in_od: true");
-		File.WriteAllText(Path.Combine(text, "config", "lost_void_challenge", "默认.sample.yml"), "store_gold: true\nperiod_buff_no: 第二个\n");
+		File.WriteAllText(Path.Combine(text, "config", "lost_void_challenge", "默认.sample.yml"), "store_gold: true\nperiod_buff_no: 第二个\nfuture_nested:\n  child: keep-me\n");
 		ZzzRuntimeManager zzzRuntimeManager = new ZzzRuntimeManager(text, NullLogger<ZzzRuntimeManager>.Instance);
 		ZzzBackendEventBus eventBus = new ZzzBackendEventBus();
 		ZzzBattleAssistantRuntimeSource zzzBattleAssistantRuntimeSource = new ZzzBattleAssistantRuntimeSource();
@@ -218,6 +218,7 @@ public sealed class LostVoidAppSettingPageTests
 			Assert.True(zzzBackendResult.Success, zzzBackendResult.Error);
 			Assert.True(File.Exists(Path.Combine(text, "config", "lost_void_challenge", "默认_copy.yml")));
 			Assert.False(LostVoidChallengeConfig.Load(new OneDragonEnvironment(text), "默认_copy").StoreGold);
+			Assert.Contains("child: keep-me", File.ReadAllText(Path.Combine(text, "config", "lost_void_challenge", "默认_copy.yml")), StringComparison.Ordinal);
 			ZzzBackendResult<ZzzLostVoidChallengeConfigDto> zzzBackendResult2 = zzzLostVoidSettingsBackend.SaveLostVoidChallengeConfig(new ZzzSaveLostVoidChallengeConfigRequest("默认_copy", zzzBackendResult.Value with
 			{
 				ModuleName = "自定义-01"
@@ -225,6 +226,7 @@ public sealed class LostVoidAppSettingPageTests
 			Assert.True(zzzBackendResult2.Success, zzzBackendResult2.Error);
 			Assert.False(File.Exists(Path.Combine(text, "config", "lost_void_challenge", "默认_copy.yml")));
 			Assert.True(File.Exists(Path.Combine(text, "config", "lost_void_challenge", "自定义-01.yml")));
+			Assert.Contains("child: keep-me", File.ReadAllText(Path.Combine(text, "config", "lost_void_challenge", "自定义-01.yml")), StringComparison.Ordinal);
 			Assert.True(zzzLostVoidSettingsBackend.DeleteLostVoidChallengeConfig("自定义-01").Success);
 			Assert.False(File.Exists(Path.Combine(text, "config", "lost_void_challenge", "自定义-01.yml")));
 			Assert.False(zzzLostVoidSettingsBackend.DeleteLostVoidChallengeConfig("默认").Success);

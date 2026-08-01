@@ -103,8 +103,109 @@ public class LostVoidContext
 	/// </summary>
 	public bool LoadLostVoidDetectorModel()
 	{
+		return PrepareLostVoidDetectorModel().IsSuccess;
+	}
+
+	/// <summary>
+	/// 在迷失应用运行边界准备模型，并保留下载或 ONNX 初始化错误。
+	/// </summary>
+	public LostVoidModelPreparationResult PrepareLostVoidDetectorModel()
+	{
+		return PrepareLostVoidDetectorModel(null);
+	}
+
+	internal LostVoidModelPreparationResult PrepareLostVoidDetectorModel(
+		Func<string?, string?, Action<double, string>?, bool>? initializeModel)
+	{
 		InitLostVoidDetectorModel();
-		return Detector!.InitModel();
+		LostVoidDetector detector = Detector!;
+		(string? personalProxy, string? ghProxy) = ResolveModelProxy(_ctx.EnvConfig);
+		string? lastMessage = null;
+		try
+		{
+			bool initialized = initializeModel != null
+				? initializeModel(personalProxy, ghProxy, ReportProgress)
+				: detector.InitModel(personalProxy, ghProxy, progressCallback: ReportProgress);
+			if (initialized)
+			{
+				return LostVoidModelPreparationResult.Success(detector.CoreDetector.Config.ModelPath);
+			}
+
+			string error = detector.CoreDetector.LastInitializationError ?? lastMessage ?? "模型初始化返回失败";
+			LostVoidModelPreparationResult result = LostVoidModelPreparationResult.Failure(
+				ResolveModelPreparationStage(error),
+				detector.CoreDetector.Config.ModelPath,
+				error,
+				detector.CoreDetector.LastInitializationException);
+			LogModelPreparationFailure(result);
+			return result;
+		}
+		catch (Exception ex)
+		{
+			LostVoidModelPreparationResult result = LostVoidModelPreparationResult.Failure(
+				"ONNX 初始化",
+				detector.CoreDetector.Config.ModelPath,
+				ex.Message,
+				ex);
+			LogModelPreparationFailure(result);
+			return result;
+		}
+
+		void ReportProgress(double progress, string message)
+		{
+			lastMessage = message;
+			_ctx.Logger.Information(
+				"迷失之地模型准备: Progress={Progress}, ModelPath={ModelPath}, Message={Message}",
+				progress,
+				detector.CoreDetector.Config.ModelPath,
+				message);
+		}
+	}
+
+	internal static (string? PersonalProxy, string? GhProxy) ResolveModelProxy(ZzzOd.GameLogic.Config.EnvConfig envConfig)
+	{
+		ArgumentNullException.ThrowIfNull(envConfig);
+		if (string.Equals(envConfig.ProxyType, "personal", StringComparison.OrdinalIgnoreCase))
+		{
+			return (string.IsNullOrWhiteSpace(envConfig.PersonalProxy) ? null : envConfig.PersonalProxy.Trim(), null);
+		}
+		if (string.Equals(envConfig.ProxyType, "ghproxy", StringComparison.OrdinalIgnoreCase))
+		{
+			return (null, string.IsNullOrWhiteSpace(envConfig.GhProxyUrl) ? null : envConfig.GhProxyUrl.Trim());
+		}
+		return (null, null);
+	}
+
+	private static string ResolveModelPreparationStage(string error)
+	{
+		if (error.Contains("下载", StringComparison.Ordinal) || error.Contains("压缩包", StringComparison.Ordinal))
+		{
+			return "模型下载";
+		}
+		if (error.Contains("文件缺失", StringComparison.Ordinal))
+		{
+			return "模型文件检查";
+		}
+		return "ONNX 初始化";
+	}
+
+	private void LogModelPreparationFailure(LostVoidModelPreparationResult result)
+	{
+		if (result.Exception != null)
+		{
+			_ctx.Logger.Error(
+				result.Exception,
+				"迷失之地模型准备失败: Stage={Stage}, ModelPath={ModelPath}, Error={Error}",
+				result.Stage,
+				result.ModelPath,
+				result.ErrorMessage);
+			return;
+		}
+		_ctx.Logger.Error(
+			"迷失之地模型准备失败: Stage={Stage}, ModelPath={ModelPath}, Error={Error}",
+			result.Stage,
+			result.ModelPath,
+			result.ErrorMessage);
 	}
 
 	public void LoadChallengeConfig()
@@ -239,7 +340,8 @@ public class LostVoidContext
 			}
 		}
 		string[] targetWords = new string[4] { "有同流派武备", "已选择", "齿轮硬币不足", "NEW!" }.Select(_ctx.GameTextResolver).ToArray();
-		foreach (OcrMatchResult marker in _ctx.OcrService.GetOcrResultList(screen))
+		IReadOnlyList<OcrMatchResult> markers = SelectHighestConfidenceMarkerPerText(_ctx.OcrService.GetOcrResultList(screen));
+		foreach (OcrMatchResult marker in markers)
 		{
 			int? num = StringUtils.FindBestMatchByDifflib(marker.Text, targetWords);
 			if (!num.HasValue)
@@ -272,6 +374,14 @@ public class LostVoidContext
 		return list;
 	}
 
+	internal static IReadOnlyList<OcrMatchResult> SelectHighestConfidenceMarkerPerText(IEnumerable<OcrMatchResult> markers)
+	{
+		return markers
+			.GroupBy((OcrMatchResult marker) => marker.Text, StringComparer.Ordinal)
+			.Select((IGrouping<string, OcrMatchResult> group) => group.MaxBy((OcrMatchResult marker) => marker.Confidence)!)
+			.ToArray();
+	}
+
 	/// <summary>
 	/// 按 BaselineParity 的主选、NEW、两级优先级、动态放弃组和坐标顺序挑选候选。
 	/// </summary>
@@ -300,10 +410,6 @@ public class LostVoidContext
 		if (considerPriority2 && challengeConfig.ArtifactPriority2.Count > 0)
 		{
 			list.Add(challengeConfig.ArtifactPriority2);
-		}
-		if (list.All((IReadOnlyList<string> priority) => priority.Count == 0))
-		{
-			considerNotInPriority = true;
 		}
 		HashSet<int> hashSet;
 		if (ignoreIndexList == null)
@@ -405,7 +511,7 @@ public class LostVoidContext
 			select item).ToList();
 	}
 
-	private static bool TryCreateArtifactFromOcrText(string? ocrText, out LostVoidArtifact? artifact, out bool isPrimaryName)
+	internal static bool TryCreateArtifactFromOcrText(string? ocrText, out LostVoidArtifact? artifact, out bool isPrimaryName)
 	{
 		artifact = null;
 		isPrimaryName = false;
@@ -423,7 +529,8 @@ public class LostVoidContext
 			{
 				return false;
 			}
-			string text4 = text2.Split('：', ':')[0].Trim();
+			int separatorIndex = text2.IndexOfAny(new char[2] { '：', ':' });
+			string text4 = (separatorIndex >= 0 ? text2[..separatorIndex] : text2[..Math.Min(2, text2.Length)]).Trim();
 			artifact = new LostVoidArtifact
 			{
 				Category = ((text4.Length == 0) ? text2 : text4),
@@ -459,17 +566,14 @@ public class LostVoidContext
 		return true;
 	}
 
-	private static LostVoidArtifactPos PickBetterCandidate(LostVoidArtifactPos left, LostVoidArtifactPos right)
+	internal static LostVoidArtifactPos PickBetterCandidate(LostVoidArtifactPos left, LostVoidArtifactPos right)
 	{
-		if (right.IsPrimaryName && !left.IsPrimaryName)
-		{
-			return right;
-		}
-		if (left.IsPrimaryName && !right.IsPrimaryName)
-		{
-			return left;
-		}
-		return (right.Rect.Center.Y < left.Rect.Center.Y) ? right : left;
+		(int Primary, int KnownLevel, int TextLength, int Upper) Score(LostVoidArtifactPos item) =>
+			(item.IsPrimaryName ? 1 : 0,
+			 item.Artifact.Level is "S" or "A" or "B" ? 1 : 0,
+			 item.OcrText.Length,
+			 -item.Rect.Center.Y);
+		return Score(right).CompareTo(Score(left)) > 0 ? right : left;
 	}
 
 	private static IReadOnlyList<LostVoidArtifactPos> RemoveOverlappingArtifacts(IEnumerable<LostVoidArtifactPos> artifacts)
@@ -717,11 +821,11 @@ public class LostVoidContext
 				mat?.Dispose();
 			}
 		}
-		HashSet<string> hashSet = (from agent in _ctx.AutoBattleContext.AgentContext.Team.Snapshot()
+		List<string> currentTypes = (from agent in _ctx.AutoBattleContext.AgentContext.Team.Snapshot()
 			select agent.Agent?.AgentType.GetStringValue() into type
 			where !string.IsNullOrWhiteSpace(type)
-			select (type)).ToHashSet<string>(StringComparer.Ordinal);
-		if (hashSet.Count == 0)
+			select type).Distinct(StringComparer.Ordinal).ToList();
+		if (currentTypes.Count == 0)
 		{
 			_ctx.Logger.Information("迷失之地刷新后仍未识别到队伍，跳过代理人类型优先级追加");
 			return;
@@ -741,7 +845,7 @@ public class LostVoidContext
 				}
 			}
 		}
-		foreach (string currentType in hashSet)
+		foreach (string currentType in currentTypes)
 		{
 			if (!DynamicPriorityList.Contains<string>(currentType, StringComparer.Ordinal))
 			{
@@ -755,13 +859,18 @@ public class LostVoidContext
 			if (agentTypeEnum != AgentTypeEnum.UNKNOWN)
 			{
 				string stringValue = agentTypeEnum.GetStringValue();
-				if (!hashSet.Contains(stringValue) && !hashSet2.Contains(stringValue) && !DynamicAbandonList.Contains<string>(stringValue, StringComparer.Ordinal))
+				if (!currentTypes.Contains<string>(stringValue, StringComparer.Ordinal) && !hashSet2.Contains(stringValue) && !DynamicAbandonList.Contains<string>(stringValue, StringComparer.Ordinal))
 				{
 					DynamicAbandonList.Add(stringValue);
 				}
 			}
 		}
-		_ctx.Logger.Information("迷失之地代理人类型优先级更新: Current={Current}, Priority={Priority}, Abandon={Abandon}", string.Join(", ", hashSet), string.Join(", ", DynamicPriorityList), string.Join(", ", DynamicAbandonList));
+		_ctx.Logger.Information("迷失之地代理人类型优先级更新: Current={Current}, Priority={Priority}, Abandon={Abandon}", string.Join(", ", currentTypes), string.Join(", ", DynamicPriorityList), string.Join(", ", DynamicAbandonList));
+		_ctx.DebugDataPublisher.PublishBusinessState(
+			"迷失之地-动态优先级",
+			$"Current={string.Join(", ", currentTypes)}; Priority={string.Join(", ", DynamicPriorityList)}; Abandon={string.Join(", ", DynamicAbandonList)}",
+			nameof(LostVoidContext),
+			120d);
 	}
 
 	public void AfterAppShutdown()

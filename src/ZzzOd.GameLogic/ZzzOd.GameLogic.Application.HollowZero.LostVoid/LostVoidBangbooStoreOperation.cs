@@ -15,6 +15,8 @@ namespace ZzzOd.GameLogic.Application.HollowZero.LostVoid;
 
 public sealed class LostVoidBangbooStoreOperation(ZContext context) : ZOperation(context, "迷失之地-邦布商店")
 {
+	internal static IReadOnlyList<string>? CurrentScreenCandidates => null;
+
 	public const string GoldStore = "标识-金币";
 
 	public const string BloodStore = "标识-血量";
@@ -81,7 +83,7 @@ public sealed class LostVoidBangbooStoreOperation(ZContext context) : ZOperation
 			_refreshTimes++;
 			return RoundWait(operationRoundResult.Status, null, TimeSpan.FromSeconds(1L));
 		}
-		string text = CheckAndUpdateCurrentScreen(base.LastScreenshot, new string[2] { "迷失之地-邦布商店", "迷失之地-通用选择" });
+		string text = CheckAndUpdateCurrentScreen(base.LastScreenshot, CurrentScreenCandidates);
 		if (text == "迷失之地-通用选择")
 		{
 			OperationResult result = new LostVoidChooseCommonOperation(base.ZContext).ExecuteAsync().GetAwaiter().GetResult();
@@ -222,7 +224,7 @@ public sealed class LostVoidBangbooStoreOperation(ZContext context) : ZOperation
 	[OperationNode("确认后处理")]
 	public OperationRoundResult AfterConfirm()
 	{
-		string text = CheckAndUpdateCurrentScreen(base.LastScreenshot, new string[2] { "迷失之地-通用选择", "迷失之地-邦布商店" });
+		string text = CheckAndUpdateCurrentScreen(base.LastScreenshot, CurrentScreenCandidates);
 		if (text == "迷失之地-通用选择")
 		{
 			OperationResult result = new LostVoidChooseCommonOperation(base.ZContext).ExecuteAsync().GetAwaiter().GetResult();

@@ -41,8 +41,10 @@ public sealed class LostVoidChooseCommonOperation : ZOperation
 		base.ZContext.Controller.MouseMove(area.Center + new OneDragon.Core.Abstractions.Geometry.Point(0, 100));
 		Thread.Sleep(TimeSpan.FromMilliseconds(100L));
 		IReadOnlyList<string> titleWords = ReadOcrTexts("迷失之地-通用选择", "区域-标题");
-		bool gearMarkerFound = ScreenUtils.FindArea(base.ZContext, base.LastScreenshot, "迷失之地-通用选择", "区域-武备标识") == FindAreaResultEnum.True;
-		LostVoidChooseTitleState lostVoidChooseTitleState = _service.ParseChooseTitle(titleWords, gearMarkerFound);
+		LostVoidChooseTitleState lostVoidChooseTitleState = ResolveChooseTitle(
+			_service,
+			titleWords,
+			() => ScreenUtils.FindArea(base.ZContext, base.LastScreenshot, "迷失之地-通用选择", "区域-武备标识") == FindAreaResultEnum.True);
 		if (lostVoidChooseTitleState.ToChooseNum <= 0)
 		{
 			_fallbackClickCount = 0;
@@ -65,6 +67,14 @@ public sealed class LostVoidChooseCommonOperation : ZOperation
 		}
 		int effectiveChosenCount = GetEffectiveChosenCount(mat, lostVoidChooseTitleState.ToChooseNum);
 		return (effectiveChosenCount >= lostVoidChooseTitleState.ToChooseNum) ? ClickConfirm() : RoundRetry($"未选满 目标={lostVoidChooseTitleState.ToChooseNum} 当前={effectiveChosenCount}", null, TimeSpan.FromMilliseconds(500L));
+	}
+
+	internal static LostVoidChooseTitleState ResolveChooseTitle(LostVoidInteractService service, IReadOnlyList<string> titleWords, Func<bool> gearMarkerDetector)
+	{
+		LostVoidChooseTitleState state = service.ParseChooseTitle(titleWords);
+		return string.Equals(state.RuleId, "fallback:none", StringComparison.Ordinal)
+			? service.ParseChooseTitle(titleWords, gearMarkerDetector())
+			: state;
 	}
 
 	private bool TrySelectByLayers(LostVoidChooseTitleState state)

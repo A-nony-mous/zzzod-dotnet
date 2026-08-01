@@ -266,7 +266,7 @@ public sealed class ZOneDragonAppTests
 	}
 
 	[Fact]
-	public async Task OneDragonApp_ContinuesConfiguredGroupThenReturnsFailureAndSkipsAfterDone()
+	public async Task OneDragonApp_ContinuesConfiguredGroupThenReturnsFailureAndRunsAfterDone()
 	{
 		string rootDirectory = CreateTempRoot();
 		try
@@ -296,8 +296,8 @@ public sealed class ZOneDragonAppTests
 			ZOneDragonRunSummary summary = Assert.IsType<ZOneDragonRunSummary>(result.Data);
 			Assert.Equal(2, summary.Results.Count);
 			Assert.False(summary.Results[0].IsSuccess);
-			Assert.Empty(platform.ClosedControllers);
-			Assert.Equal(0, platform.ShutdownCallCount);
+			Assert.Single(platform.ClosedControllers);
+			Assert.Equal(1, platform.ShutdownCallCount);
 		}
 		finally
 		{
@@ -345,8 +345,8 @@ public sealed class ZOneDragonAppTests
 			Assert.Equal(2, summary.Results.Count);
 			Assert.False(summary.Results[0].IsSuccess);
 			Assert.True(summary.Results[1].IsSuccess);
-			Assert.Empty(platform.ClosedControllers);
-			Assert.Equal(0, platform.ShutdownCallCount);
+			Assert.Single(platform.ClosedControllers);
+			Assert.Equal(1, platform.ShutdownCallCount);
 		}
 		finally
 		{

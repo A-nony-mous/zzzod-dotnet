@@ -10,10 +10,12 @@ using OneDragon.Core.Abstractions.Geometry;
 using OneDragon.Core.Abstractions.Operations;
 using OneDragon.Core.Configuration;
 using OneDragon.Core.Controller;
+using OneDragon.Core.Events;
 using OneDragon.Core.Matcher;
 using OneDragon.Core.Ocr;
 using OneDragon.Core.Runtime;
 using OpenCvSharp;
+using YamlDotNet.Serialization;
 using Xunit;
 using ZzzOd.GameLogic.Application.HollowZero.LostVoid;
 using ZzzOd.GameLogic.Context;
@@ -136,6 +138,125 @@ public sealed class LostVoidAppTests
 	{
 		string actual = LostVoidAppOperation.ResolveInitialScreenStatus(currentScreen, "迷失之地-特遣调查", canGoMission, canGoCompendium);
 		Assert.Equal(expected, actual);
+	}
+
+	[Theory]
+	[InlineData("success")]
+	[InlineData("failure")]
+	[InlineData("cancel")]
+	public async Task AppScope_IsActiveDuringFlowAndRestoredForEveryExit(string outcome)
+	{
+		string root = CreateTempRoot();
+		try
+		{
+			string screenDirectory = Path.Combine(root, "screens");
+			Directory.CreateDirectory(screenDirectory);
+			File.WriteAllText(
+				Path.Combine(screenDirectory, "lost_void.yml"),
+				"screen_id: lost_void_scope_test\nscreen_name: 迷失之地-作用域测试\napp_id: lost_void\narea_list: []\n");
+			File.WriteAllText(
+				Path.Combine(screenDirectory, "global.yml"),
+				"screen_id: global_scope_test\nscreen_name: 全局-作用域测试\narea_list: []\n");
+			using ZContext context = new ZContext(new OneDragonEnvironment(root));
+			context.ScreenContext.LoadExtraScreenDir(screenDirectory);
+			context.AttachController(new ReadyController());
+			ScopeProbeLostVoidFlow flow = new ScopeProbeLostVoidFlow(outcome);
+			LostVoidConfig config = new LostVoidConfig();
+			LostVoidApp app = new LostVoidApp(context, config, new LostVoidRunRecord(config), flow);
+
+			try
+			{
+				_ = await app.ExecuteAsync(CancellationToken.None).WaitAsync(TimeSpan.FromSeconds(2L));
+			}
+			catch (OperationCanceledException) when (string.Equals(outcome, "cancel", StringComparison.Ordinal))
+			{
+			}
+
+			Assert.True(flow.SawLostVoidScope);
+			Assert.Null(context.ScreenContext.ActiveScreenNames);
+		}
+		finally
+		{
+			Directory.Delete(root, recursive: true);
+		}
+	}
+
+	[Fact]
+	public void InteractionScreenCandidates_FollowPythonUnrestrictedCalls()
+	{
+		Assert.Null(LostVoidBangbooStoreOperation.CurrentScreenCandidates);
+		Assert.Null(LostVoidChooseGearOperation.CurrentScreenCandidates);
+		Assert.Null(LostVoidLotteryOperation.CurrentScreenCandidates);
+	}
+
+	[Fact]
+	public async Task RunLevel_PublishesNextRegionBusinessStateWithContractTtl()
+	{
+		using ZContext context = new ZContext(new OneDragonEnvironment(CreateTempRoot()));
+		LostVoidConfig config = new LostVoidConfig();
+		LostVoidAppOperation operation = new LostVoidAppOperation(
+			context,
+			config,
+			new LostVoidRunRecord(config),
+			new RecordingLostVoidRunner(new OperationResult(true, "通关")));
+		MethodInfo method = Assert.IsAssignableFrom<MethodInfo>(typeof(LostVoidAppOperation).GetMethod("RunLevel", BindingFlags.Instance | BindingFlags.NonPublic));
+
+		_ = await Assert.IsAssignableFrom<Task<OperationRoundResult>>(method.Invoke(operation, null));
+
+		BusinessStateItem state = Assert.Single(
+			context.OverlayDebugBus.Snapshot().BusinessStateItems,
+			item => item.Key == "迷失之地-下一层");
+		Assert.Equal("入口", state.Value);
+		Assert.Equal(nameof(LostVoidAppOperation), state.Source);
+		Assert.Equal(60d, state.TtlSeconds);
+	}
+
+	[Fact]
+	public void SupportPanel_UsesLcsFallbackWhenDifflibDoesNotMatch()
+	{
+		Assert.True(LostVoidAppOperation.IsSupportPanelVisible(new[] { "代xxxxxxxx理" }, "代理人"));
+		Assert.False(LostVoidAppOperation.IsSupportPanelVisible(new[] { "完全无关" }, "代理人"));
+	}
+
+	[Fact]
+	public void StrategyDirection_UsesPointSixDifflibBoundary()
+	{
+		string[] ordered = new[] { "abcde", "target" };
+		Assert.True(LostVoidAppOperation.IsStrategyAfterOcr("target", ordered, new[] { "abcXY" }, static text => text));
+		Assert.False(LostVoidAppOperation.IsStrategyAfterOcr("target", ordered, new[] { "abXYZ" }, static text => text));
+	}
+
+	[Fact]
+	public void SpecialTalk_UsesPointThreeLcsBoundary()
+	{
+		Assert.True(ScreenLostVoidRunLevelRuntime.IsSpecialTalkText("abc", new[] { "abcdefghij" }));
+		Assert.False(ScreenLostVoidRunLevelRuntime.IsSpecialTalkText("ab", new[] { "abcdefghij" }));
+	}
+
+	[Fact]
+	public void ChooseTitle_DetectsGearMarkerOnlyAfterTitleRulesMiss()
+	{
+		int detectorCalls = 0;
+		LostVoidChooseTitleState exact = LostVoidChooseCommonOperation.ResolveChooseTitle(
+			LostVoidInteractService.Instance,
+			new[] { "获得武备" },
+			() =>
+			{
+				detectorCalls++;
+				return true;
+			});
+		LostVoidChooseTitleState fallback = LostVoidChooseCommonOperation.ResolveChooseTitle(
+			LostVoidInteractService.Instance,
+			new[] { "未知标题" },
+			() =>
+			{
+				detectorCalls++;
+				return true;
+			});
+
+		Assert.Equal("GEAR_GAIN", exact.RuleId);
+		Assert.Equal("fallback:gear_marker", fallback.RuleId);
+		Assert.Equal(1, detectorCalls);
 	}
 
 	[Fact]
@@ -454,6 +575,211 @@ public sealed class LostVoidAppTests
 		{
 			Directory.Delete(text, recursive: true);
 		}
+	}
+
+	private sealed class ScopeProbeLostVoidFlow(string outcome) : ILostVoidAppFlow
+	{
+		public bool SawLostVoidScope { get; private set; }
+
+		public Task<OperationResult> RunAsync(ZContext context, LostVoidConfig config, LostVoidRunRecord runRecord, CancellationToken cancellationToken)
+		{
+			SawLostVoidScope = context.ScreenContext.ActiveScreenNames?.Contains("迷失之地-作用域测试") ?? false;
+			return outcome switch
+			{
+				"success" => Task.FromResult(new OperationResult(true, "完成")),
+				"failure" => Task.FromResult(new OperationResult(false, "失败")),
+				"cancel" => Task.FromCanceled<OperationResult>(new CancellationToken(canceled: true)),
+				_ => throw new ArgumentOutOfRangeException(nameof(outcome))
+			};
+		}
+	}
+
+	[Fact]
+	public void YamlForwardCompatibility_PreservesUnknownFieldsForAllLostVoidDocuments()
+	{
+		string root = CreateTempRoot();
+		try
+		{
+			OneDragonEnvironment environment = new OneDragonEnvironment(root);
+			string appConfigPath = Path.Combine(root, "config", "00", "one_dragon", "lost_void.yml");
+			Directory.CreateDirectory(Path.GetDirectoryName(appConfigPath)!);
+			File.WriteAllText(Path.ChangeExtension(appConfigPath, ".sample.yml"), "daily_plan_times: 4\nfuture_root: keep-app\nfuture_nested:\n  child: app-child\nfuture_list:\n- future-a\n- future-b\n");
+			YamlConfig<LostVoidConfig> appConfig = new YamlConfig<LostVoidConfig>(environment, "lost_void", null, 0, new string[] { "app_config", "one_dragon" }, sample: true);
+			appConfig.Current.DailyPlanTimes = 6;
+			appConfig.Save();
+
+			string challengePath = LostVoidChallengeConfig.GetUserFilePath(environment, "前向兼容");
+			Directory.CreateDirectory(Path.GetDirectoryName(challengePath)!);
+			File.WriteAllText(challengePath, "store_gold: true\nfuture_root: keep-challenge\nfuture_nested:\n  child: challenge-child\nfuture_list:\n- future-a\n- future-b\n");
+			LostVoidChallengeConfig challengeConfig = LostVoidChallengeConfig.Load(environment, "前向兼容");
+			challengeConfig.StoreGold = false;
+			LostVoidChallengeConfig.Save(environment, "前向兼容", challengeConfig);
+			string copiedChallengePath = LostVoidChallengeConfig.GetUserFilePath(environment, "前向兼容-copy");
+			LostVoidChallengeConfig.Save(environment, "前向兼容-copy", challengeConfig);
+
+			string runRecordPath = Path.Combine(root, "config", "00", "app_run_record", "lost_void.yml");
+			Directory.CreateDirectory(Path.GetDirectoryName(runRecordPath)!);
+			File.WriteAllText(runRecordPath, "daily_run_times: 1\nfuture_root: keep-record\nfuture_nested:\n  child: record-child\nfuture_list:\n- future-a\n- future-b\n");
+			LostVoidRunRecord runRecord = LostVoidRunRecord.Load(environment, new LostVoidConfig(), 0);
+			runRecord.AddCompleteTimes();
+
+			AssertForwardCompatibleDocument(appConfigPath, "keep-app", "app-child");
+			Assert.Equal(6, Convert.ToInt32(ReadYamlMap(appConfigPath)["daily_plan_times"]));
+			AssertForwardCompatibleDocument(challengePath, "keep-challenge", "challenge-child");
+			Assert.False(Convert.ToBoolean(ReadYamlMap(challengePath)["store_gold"]));
+			AssertForwardCompatibleDocument(copiedChallengePath, "keep-challenge", "challenge-child");
+			AssertForwardCompatibleDocument(runRecordPath, "keep-record", "record-child");
+			Assert.Equal(2, Convert.ToInt32(ReadYamlMap(runRecordPath)["daily_run_times"]));
+		}
+		finally
+		{
+			Directory.Delete(root, recursive: true);
+		}
+	}
+
+	[Fact]
+	public void LostVoidConstruction_DoesNotCreateOrInitializeDetector()
+	{
+		using ZContext context = new ZContext(new OneDragonEnvironment("test_project", "test_user_id"));
+		Assert.Null(context.LostVoid.Detector);
+
+		_ = new LostVoidApp(
+			context,
+			new LostVoidConfig(),
+			new LostVoidRunRecord(new LostVoidConfig()));
+
+		Assert.Null(context.LostVoid.Detector);
+	}
+
+	[Fact]
+	public void AppInitialization_PreparesModelBeforeReturningContinueStatus()
+	{
+		using ZContext context = new ZContext(new OneDragonEnvironment("test_project", "test_user_id"));
+		LostVoidConfig config = new LostVoidConfig();
+		bool prepared = false;
+		LostVoidAppOperation operation = new LostVoidAppOperation(
+			context,
+			config,
+			new LostVoidRunRecord(config),
+			new RecordingLostVoidRunner(new OperationResult(true, "通关")),
+			ctx =>
+			{
+				prepared = true;
+				return LostVoidModelPreparationResult.Success(ctx.LostVoid.Detector!.CoreDetector.Config.ModelPath);
+			});
+		MethodInfo initialize = typeof(LostVoidAppOperation).GetMethod("Initialize", BindingFlags.Instance | BindingFlags.NonPublic)!;
+
+		OperationRoundResult result = Assert.IsType<OperationRoundResult>(initialize.Invoke(operation, null));
+
+		Assert.True(prepared);
+		Assert.True(result.IsSuccess);
+		Assert.Equal(LostVoidApp.StatusAgain, result.Status);
+	}
+
+	[Theory]
+	[InlineData("YOLO 模型文件缺失: model.onnx", "模型文件检查")]
+	[InlineData("YOLO 模型下载失败: connection refused", "模型下载")]
+	public void ModelPreparation_PreservesMissingAndDownloadFailures(string originalError, string expectedStage)
+	{
+		using ZContext context = new ZContext(new OneDragonEnvironment("test_project", "test_user_id"));
+
+		LostVoidModelPreparationResult result = context.LostVoid.PrepareLostVoidDetectorModel(
+			(_, _, progress) =>
+			{
+				progress?.Invoke(1d, originalError);
+				return false;
+			});
+
+		Assert.False(result.IsSuccess);
+		Assert.Equal(expectedStage, result.Stage);
+		Assert.Equal(originalError, result.ErrorMessage);
+		Assert.Contains("model.onnx", result.ModelPath, StringComparison.OrdinalIgnoreCase);
+	}
+
+	[Fact]
+	public void ModelPreparation_PreservesOnnxInitializationException()
+	{
+		using ZContext context = new ZContext(new OneDragonEnvironment("test_project", "test_user_id"));
+		InvalidOperationException original = new InvalidOperationException("onnx session original error");
+
+		LostVoidModelPreparationResult result = context.LostVoid.PrepareLostVoidDetectorModel(
+			(_, _, _) => throw original);
+
+		Assert.False(result.IsSuccess);
+		Assert.Equal("ONNX 初始化", result.Stage);
+		Assert.Same(original, result.Exception);
+		Assert.Equal(original.Message, result.ErrorMessage);
+	}
+
+	[Theory]
+	[InlineData("personal", "http://127.0.0.1:7890", "https://gh.example", "http://127.0.0.1:7890", null)]
+	[InlineData("ghproxy", "http://127.0.0.1:7890", "https://gh.example", null, "https://gh.example")]
+	[InlineData("None", "http://127.0.0.1:7890", "https://gh.example", null, null)]
+	public void ModelPreparation_UsesOnlyTheConfiguredProxy(
+		string proxyType,
+		string personalProxy,
+		string ghProxy,
+		string? expectedPersonalProxy,
+		string? expectedGhProxy)
+	{
+		using ZContext context = new ZContext(new OneDragonEnvironment("test_project", "test_user_id"));
+		context.EnvConfig.ProxyType = proxyType;
+		context.EnvConfig.PersonalProxy = personalProxy;
+		context.EnvConfig.GhProxyUrl = ghProxy;
+		string? actualPersonalProxy = null;
+		string? actualGhProxy = null;
+
+		_ = context.LostVoid.PrepareLostVoidDetectorModel(
+			(personal, gh, progress) =>
+			{
+				actualPersonalProxy = personal;
+				actualGhProxy = gh;
+				progress?.Invoke(1d, "YOLO 模型文件缺失: model.onnx");
+				return false;
+			});
+
+		Assert.Equal(expectedPersonalProxy, actualPersonalProxy);
+		Assert.Equal(expectedGhProxy, actualGhProxy);
+	}
+
+	[Theory]
+	[InlineData("模型文件检查", "model.onnx missing")]
+	[InlineData("模型下载", "download original error")]
+	[InlineData("ONNX 初始化", "onnx original error")]
+	public async Task AppInitialization_ModelFailureEndsCurrentRunAndKeepsHostAlive(string stage, string originalError)
+	{
+		using ZContext context = new ZContext(new OneDragonEnvironment("test_project", "test_user_id"));
+		LostVoidConfig config = new LostVoidConfig();
+		LostVoidAppOperation operation = new LostVoidAppOperation(
+			context,
+			config,
+			new LostVoidRunRecord(config),
+			new RecordingLostVoidRunner(new OperationResult(true, "通关")),
+			_ => LostVoidModelPreparationResult.Failure(stage, @"C:\models\lost_void\model.onnx", originalError));
+
+		OperationResult result = await operation.ExecuteAsync(CancellationToken.None);
+
+		Assert.False(result.IsSuccess);
+		Assert.Contains(stage, result.Status, StringComparison.Ordinal);
+		Assert.Contains(originalError, result.Status, StringComparison.Ordinal);
+		Assert.NotNull(context.RunContext);
+		Assert.NotNull(context.ModelConfig);
+	}
+
+	private static void AssertForwardCompatibleDocument(string path, string rootValue, string nestedValue)
+	{
+		Dictionary<object, object> yaml = ReadYamlMap(path);
+		Assert.Equal(rootValue, Convert.ToString(yaml["future_root"]));
+		Dictionary<object, object> nested = Assert.IsType<Dictionary<object, object>>(yaml["future_nested"]);
+		Assert.Equal(nestedValue, Convert.ToString(nested["child"]));
+		Assert.Equal(
+			new[] { "future-a", "future-b" },
+			Assert.IsAssignableFrom<IEnumerable<object>>(yaml["future_list"]).Select(value => Convert.ToString(value)).ToArray());
+	}
+
+	private static Dictionary<object, object> ReadYamlMap(string path)
+	{
+		return new DeserializerBuilder().Build().Deserialize<Dictionary<object, object>>(File.ReadAllText(path));
 	}
 
 	private static string Edge(string from, string to, bool success = true, string? status = null)

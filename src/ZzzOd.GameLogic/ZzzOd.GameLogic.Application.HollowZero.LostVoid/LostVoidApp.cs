@@ -34,9 +34,17 @@ public sealed class LostVoidApp : ZApplication
 	}
 
 	/// <inheritdoc />
-	protected override Task<OperationResult> ExecuteCoreAsync(CancellationToken cancellationToken)
+	protected override async Task<OperationResult> ExecuteCoreAsync(CancellationToken cancellationToken)
 	{
-		return _flow.RunAsync(base.Context, _config, _runRecord, cancellationToken);
+		base.Context.ScreenContext.EnterScope("lost_void");
+		try
+		{
+			return await _flow.RunAsync(base.Context, _config, _runRecord, cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
+		}
+		finally
+		{
+			base.Context.ScreenContext.ExitScope();
+		}
 	}
 
 	/// <summary>暂停当前运行层并释放自动战斗输入。</summary>

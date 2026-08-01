@@ -43,6 +43,9 @@ public sealed class HollowContextTests
 			witheredDomain.InitBeforeHollowStart("旧都列车", "旧都列车-核心");
 			HollowZeroMap hollowZeroMap = CreateTwoNodeMap();
 			HollowZeroMapNode nextToMove = witheredDomain.GetNextToMove(hollowZeroMap);
+			Assert.Contains(
+				zContext.OverlayDebugBus.Snapshot().BusinessStateItems,
+				item => item.Key == "枯萎之都-选路" && item.Value.EndsWith("/目标", StringComparison.Ordinal) && item.Source == nameof(WitheredDomainContext) && item.TtlSeconds == 15d);
 			witheredDomain.UpdateContextAfterMove(hollowZeroMap, nextToMove);
 			Assert.NotNull(nextToMove);
 			Assert.Equal("旧都列车", witheredDomain.LevelInfo.MissionTypeName);

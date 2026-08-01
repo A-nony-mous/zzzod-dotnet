@@ -27,6 +27,8 @@ internal sealed class LostVoidAppOperation : ZOperation
 
 	private readonly ILostVoidRunner _runner;
 
+	private readonly Func<ZContext, LostVoidModelPreparationResult> _prepareModel;
+
 	private bool _usePriorityAgent;
 
 	private List<Agent> _priorityAgentList = new List<Agent>();
@@ -35,12 +37,18 @@ internal sealed class LostVoidAppOperation : ZOperation
 
 	private CancellationToken _cancellationToken;
 
-	public LostVoidAppOperation(ZContext context, LostVoidConfig config, LostVoidRunRecord runRecord, ILostVoidRunner runner)
+	public LostVoidAppOperation(
+		ZContext context,
+		LostVoidConfig config,
+		LostVoidRunRecord runRecord,
+		ILostVoidRunner runner,
+		Func<ZContext, LostVoidModelPreparationResult>? prepareModel = null)
 		: base(context, "迷失之地")
 	{
 		_config = config;
 		_runRecord = runRecord;
 		_runner = runner;
+		_prepareModel = prepareModel ?? (ctx => ctx.LostVoid.PrepareLostVoidDetectorModel());
 	}
 
 	protected override Task OnInitializeAsync(CancellationToken cancellationToken)
@@ -62,11 +70,17 @@ internal sealed class LostVoidAppOperation : ZOperation
 		try
 		{
 			base.ZContext.LostVoid.InitBeforeRun(_config.ChallengeConfig);
+			LostVoidModelPreparationResult modelPreparation = _prepareModel(base.ZContext);
+			if (!modelPreparation.IsSuccess)
+			{
+				return RoundFail(modelPreparation.ToFailureStatus());
+			}
 			return RoundSuccess("继续挑战");
 		}
-		catch (Exception)
+		catch (Exception ex)
 		{
-			return RoundFail("初始化失败");
+			base.ZContext.Logger.Error(ex, "迷失之地初始化失败: Error={Error}", ex.Message);
+			return RoundFail("初始化失败: " + ex.Message);
 		}
 	}
 
@@ -389,7 +403,18 @@ internal sealed class LostVoidAppOperation : ZOperation
 	[OperationNode("矩阵行动-等待代理人列表", NodeMaxRetryTimes = 300)]
 	private OperationRoundResult MatrixWaitSupportPanel()
 	{
-		return (base.LastScreenshot != null && base.ZContext.OcrService.GetOcrResultList(base.LastScreenshot).Any((OcrMatchResult result) => StringUtils.FindBestMatchByDifflib(result.Text, new string[] { "代理人" }, 0.5).HasValue)) ? RoundSuccess("已出现代理人列表") : RoundRetry("等待代理人列表", null, TimeSpan.FromMilliseconds(100L));
+		return (base.LastScreenshot != null && IsSupportPanelVisible(
+			base.ZContext.OcrService.GetOcrResultList(base.LastScreenshot).Select((OcrMatchResult result) => result.Text),
+			base.ZContext.GameTextResolver("代理人")))
+			? RoundSuccess("已出现代理人列表")
+			: RoundRetry("等待代理人列表", null, TimeSpan.FromMilliseconds(100L));
+	}
+
+	internal static bool IsSupportPanelVisible(IEnumerable<string> ocrTexts, string target)
+	{
+		string[] texts = ocrTexts.ToArray();
+		return StringUtils.FindBestMatchByDifflib(target, texts, 0.5).HasValue
+			|| texts.Any((string text) => StringUtils.FindByLcs(target, text, 0.6));
 	}
 
 	[NodeFrom("矩阵行动-等待代理人列表")]
@@ -672,6 +697,11 @@ internal sealed class LostVoidAppOperation : ZOperation
 	private async Task<OperationRoundResult> RunLevel()
 	{
 		base.ZContext.Logger.Information("迷失之地推测楼层类型: {RegionType}", _nextRegionType);
+		base.ZContext.DebugDataPublisher.PublishBusinessState(
+			"迷失之地-下一层",
+			_nextRegionType,
+			nameof(LostVoidAppOperation),
+			60d);
 		OperationResult result = await _runner.RunLevelAsync(base.ZContext, _config, _runRecord, _nextRegionType, _cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
 		if (result.IsSuccess && string.Equals(result.Status, "进入下层", StringComparison.Ordinal))
 		{
@@ -945,7 +975,17 @@ internal sealed class LostVoidAppOperation : ZOperation
 
 	private bool IsStrategyAfterOcr(string target, IEnumerable<string> ocrTexts)
 	{
-		List<string> list = base.ZContext.LostVoid.InvestigationStrategyList.Select((LostVoidInvestigationStrategy item) => item.StrategyName).ToList();
+		return IsStrategyAfterOcr(
+			target,
+			base.ZContext.LostVoid.InvestigationStrategyList.Select((LostVoidInvestigationStrategy item) => item.StrategyName),
+			ocrTexts,
+			base.ZContext.GameTextResolver);
+	}
+
+	internal static bool IsStrategyAfterOcr(string target, IEnumerable<string> orderedStrategies, IEnumerable<string> ocrTexts, Func<string, string> gameTextResolver)
+	{
+		List<string> list = orderedStrategies.ToList();
+		string[] texts = ocrTexts.ToArray();
 		int num = list.FindIndex((string item) => string.Equals(item, target, StringComparison.Ordinal));
 		if (num < 0)
 		{
@@ -958,7 +998,7 @@ internal sealed class LostVoidAppOperation : ZOperation
 			{
 				return result;
 			}
-			if (StringUtils.FindBestMatchByDifflib(base.ZContext.GameTextResolver(item), ocrTexts.ToArray(), 0.5).HasValue)
+			if (StringUtils.FindBestMatchByDifflib(gameTextResolver(item), texts, 0.6).HasValue)
 			{
 				result = true;
 			}

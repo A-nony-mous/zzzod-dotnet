@@ -260,6 +260,56 @@ public sealed class AutoBattleOperatorTests
 	}
 
 	[Fact]
+	public async Task NaturalCompletionPriorityProtectionRejectsSameAndLowerButAcceptsHigher()
+	{
+		using ZContext context = new ZContext(new OneDragonEnvironment("test_project", "test_user_id"));
+		AutoBattleOperator op = new AutoBattleOperator(context.AutoBattleContext, "auto_battle", "test");
+		ExecutionInfo current = new ExecutionInfo(new List<AtomicOp> { new RecordingAtomicOp("current") }) { Priority = 5 };
+		Assert.True(op.SubmitExecution(current, "current"));
+		Assert.True(await op.GetRunningExecutionTask().WaitAsync(TimeSpan.FromSeconds(1L)));
+		await WaitUntilIdle(op);
+
+		ExecutionInfo same = new ExecutionInfo(new List<AtomicOp> { new RecordingAtomicOp("same") }) { Priority = 5 };
+		ExecutionInfo lower = new ExecutionInfo(new List<AtomicOp> { new RecordingAtomicOp("lower") }) { Priority = 4 };
+		ExecutionInfo higher = new ExecutionInfo(new List<AtomicOp> { new RecordingAtomicOp("higher") }) { Priority = 6 };
+		Assert.False(op.TryInterrupt(same, "same"));
+		Assert.False(op.TryInterrupt(lower, "lower"));
+		Assert.True(op.TryInterrupt(higher, "higher"));
+		Assert.True(await op.GetRunningExecutionTask().WaitAsync(TimeSpan.FromSeconds(1L)));
+	}
+
+	[Fact]
+	public async Task MainLoopSubmissionConsumesNaturalCompletionPriorityProtection()
+	{
+		using ZContext context = new ZContext(new OneDragonEnvironment("test_project", "test_user_id"));
+		AutoBattleOperator op = new AutoBattleOperator(context.AutoBattleContext, "auto_battle", "test");
+		ExecutionInfo current = new ExecutionInfo(new List<AtomicOp> { new RecordingAtomicOp("current") }) { Priority = 5 };
+		Assert.True(op.SubmitExecution(current, "current"));
+		Assert.True(await op.GetRunningExecutionTask().WaitAsync(TimeSpan.FromSeconds(1L)));
+		await WaitUntilIdle(op);
+
+		ExecutionInfo nextMainLoop = new ExecutionInfo(new List<AtomicOp> { new RecordingAtomicOp("next") }) { Priority = 5 };
+		Assert.True(op.SubmitExecution(nextMainLoop, trigger: null, consumeNaturalCompletionProtection: true));
+		Assert.True(await op.GetRunningExecutionTask().WaitAsync(TimeSpan.FromSeconds(1L)));
+	}
+
+	[Fact]
+	public async Task StopRunningClearsNaturalCompletionPriorityProtection()
+	{
+		using ZContext context = new ZContext(new OneDragonEnvironment("test_project", "test_user_id"));
+		AutoBattleOperator op = new AutoBattleOperator(context.AutoBattleContext, "auto_battle", "test");
+		ExecutionInfo current = new ExecutionInfo(new List<AtomicOp> { new RecordingAtomicOp("current") }) { Priority = 5 };
+		Assert.True(op.SubmitExecution(current, "current"));
+		Assert.True(await op.GetRunningExecutionTask().WaitAsync(TimeSpan.FromSeconds(1L)));
+		await WaitUntilIdle(op);
+
+		op.StopRunning();
+		ExecutionInfo same = new ExecutionInfo(new List<AtomicOp> { new RecordingAtomicOp("same") }) { Priority = 5 };
+		Assert.True(op.SubmitExecution(same, "same"));
+		Assert.True(await op.GetRunningExecutionTask().WaitAsync(TimeSpan.FromSeconds(1L)));
+	}
+
+	[Fact]
 	public async Task SubmitExecution_RejectsLowerPriorityInterrupt()
 	{
 		using ZContext zctx = new ZContext(new OneDragonEnvironment("test_project", "test_user_id"));
@@ -361,6 +411,29 @@ public sealed class AutoBattleOperatorTests
 		finally
 		{
 			Directory.Delete(text, recursive: true);
+		}
+	}
+
+	[Fact]
+	public void InitBeforeRunning_WhitespaceExpressionReturnsReadableFailure()
+	{
+		string root = CreateTempRoot();
+		try
+		{
+			string directory = Path.Combine(root, "config", "auto_battle");
+			Directory.CreateDirectory(directory);
+			File.WriteAllText(Path.Combine(directory, "空白表达式.yml"), "scenes:\n  - triggers: []\n    priority: 1\n    handlers:\n      - states: \"   \"\n        operations:\n          - op_name: \"等待秒数\"\n            seconds: 0.1");
+			using ZContext context = new ZContext(new OneDragonEnvironment(root));
+			AutoBattleOperator op = new AutoBattleOperator(context.AutoBattleContext, "auto_battle", "空白表达式", readFromMerged: false);
+			var result = op.InitBeforeRunning();
+			Assert.False(result.Success);
+			Assert.Contains("空白", result.Message, StringComparison.Ordinal);
+			Assert.Contains("空白表达式.yml", result.Message, StringComparison.Ordinal);
+			Assert.False(op.IsRunning);
+		}
+		finally
+		{
+			Directory.Delete(root, recursive: true);
 		}
 	}
 

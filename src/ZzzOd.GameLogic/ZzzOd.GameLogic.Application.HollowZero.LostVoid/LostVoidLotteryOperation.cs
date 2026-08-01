@@ -12,6 +12,8 @@ namespace ZzzOd.GameLogic.Application.HollowZero.LostVoid;
 
 public sealed class LostVoidLotteryOperation : ZOperation
 {
+	internal static IReadOnlyList<string>? CurrentScreenCandidates => null;
+
 	public const string StatusNoTimesLeft = "无剩余次数";
 
 	public const string StatusContinue = "继续抽奖";
@@ -49,7 +51,7 @@ public sealed class LostVoidLotteryOperation : ZOperation
 	[OperationNode("点击后确定")]
 	public OperationRoundResult ConfirmAfterClick()
 	{
-		string text = CheckAndUpdateCurrentScreen(base.LastScreenshot, new string[2] { "迷失之地-通用选择", "迷失之地-抽奖机" });
+		string text = CheckAndUpdateCurrentScreen(base.LastScreenshot, CurrentScreenCandidates);
 		if (text == "迷失之地-通用选择")
 		{
 			LostVoidChooseCommonOperation lostVoidChooseCommonOperation = new LostVoidChooseCommonOperation(base.ZContext);

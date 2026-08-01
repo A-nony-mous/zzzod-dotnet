@@ -107,7 +107,7 @@ public class WitheredDomainContext
 					hollowZeroMapNode.PathStepCnt = 999;
 					hollowZeroMapNode.PathNodeCnt = 1;
 					InvalidMapTimes = 0;
-					return hollowZeroMapNode;
+					return PublishRouteDecision(hollowZeroMapNode, "空白已通行");
 				}
 			}
 			return null;
@@ -117,14 +117,14 @@ public class WitheredDomainContext
 		HollowZeroMapNode hollowZeroMapNode2 = TryTargetNode(currentMap, HollowPathfinding.GetRouteIn1Step(currentMap, _visitedNodes, GetGoInOneStep().ToList()));
 		if (hollowZeroMapNode2 != null)
 		{
-			return hollowZeroMapNode2;
+			return PublishRouteDecision(hollowZeroMapNode2, "一步");
 		}
 		foreach (string item in GetWaypoint())
 		{
 			hollowZeroMapNode2 = TryTargetNode(currentMap, HollowPathfinding.GetRouteByEntry(currentMap, item, _visitedNodes));
 			if (hollowZeroMapNode2 != null)
 			{
-				return hollowZeroMapNode2;
+				return PublishRouteDecision(hollowZeroMapNode2, "途经");
 			}
 		}
 		string[] array = new string[3] { "守门人", "传送点", "不宜久留" };
@@ -133,30 +133,30 @@ public class WitheredDomainContext
 			hollowZeroMapNode2 = TryTargetNode(currentMap, HollowPathfinding.GetRouteByEntry(currentMap, entryName, _visitedNodes));
 			if (hollowZeroMapNode2 != null)
 			{
-				return hollowZeroMapNode2;
+				return PublishRouteDecision(hollowZeroMapNode2, "终点");
 			}
 			hollowZeroMapNode2 = TryTargetNode(currentMap, HollowPathfinding.GetRouteByEntry(currentMap, entryName, new List<HollowZeroMapNode>()));
 			if (hollowZeroMapNode2 != null)
 			{
 				hollowZeroMapNode2.PathGoWay = 0;
-				return hollowZeroMapNode2;
+				return PublishRouteDecision(hollowZeroMapNode2, "终点");
 			}
 		}
 		hollowZeroMapNode2 = TryTargetNode(currentMap, HollowPathfinding.GetRouteIn1Step(currentMap, _visitedNodes, _challengeConfigStore.GetNoBattle().ToList()));
 		if (hollowZeroMapNode2 != null)
 		{
-			return hollowZeroMapNode2;
+			return PublishRouteDecision(hollowZeroMapNode2, "随机一步");
 		}
 		string fallbackDirection = ResolveFallbackDirection();
 		hollowZeroMapNode2 = TryTargetNode(currentMap, HollowPathfinding.GetRouteByDirection(currentMap, fallbackDirection));
 		if (hollowZeroMapNode2 != null)
 		{
-			return hollowZeroMapNode2;
+			return PublishRouteDecision(hollowZeroMapNode2, "方向");
 		}
 		hollowZeroMapNode2 = TryTargetNode(currentMap, HollowPathfinding.GetRouteIn1Step(currentMap, _visitedNodes));
 		if (hollowZeroMapNode2 != null)
 		{
-			return hollowZeroMapNode2;
+			return PublishRouteDecision(hollowZeroMapNode2, "兜底");
 		}
 
 		// 最终兜底：以上所有策略都没有目标时，在 [当前] 节点四周强行挪动一格，制造一次点击
@@ -188,7 +188,7 @@ public class WitheredDomainContext
 		};
 		fakeNode.PathFirstNode = fakeNode;
 		fakeNode.PathFirstNeedStepNode = fakeNode;
-		return fakeNode;
+		return PublishRouteDecision(fakeNode, "随机相邻");
 	}
 
 	public HollowZeroMapNode? TryTargetNode(HollowZeroMap currentMap, HollowZeroMapNode? target)
@@ -444,6 +444,19 @@ public class WitheredDomainContext
 		string missionTypeName = LevelInfo.MissionTypeName;
 		bool flag = ((missionTypeName == "施工废墟" || missionTypeName == "巨厦遗骸") ? true : false);
 		return flag ? "d" : "w";
+	}
+
+	private HollowZeroMapNode PublishRouteDecision(HollowZeroMapNode target, string reason)
+	{
+		string targetName = string.IsNullOrWhiteSpace(target.Entry.EntryName)
+			? target.Entry.EntryId
+			: target.Entry.EntryName;
+		_ctx.DebugDataPublisher.PublishBusinessState(
+			"枯萎之都-选路",
+			$"{reason}/{targetName}",
+			nameof(WitheredDomainContext),
+			15d);
+		return target;
 	}
 
 	private IReadOnlyList<Agent?>? TryMatchAgentList(Mat screen, IReadOnlyList<Agent?>? possibleAgents)

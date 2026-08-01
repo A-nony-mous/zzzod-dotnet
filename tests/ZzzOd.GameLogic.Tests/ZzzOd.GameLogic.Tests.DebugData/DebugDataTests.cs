@@ -94,6 +94,24 @@ public sealed class DebugDataTests
 	}
 
 	[Fact]
+	public void DebugDataPublisher_ShouldPublishBusinessStateWithSourceAndTtl()
+	{
+		using ZContext context = new ZContext(new OneDragonEnvironment(CreateTempRoot()));
+		Assert.True(context.DebugDataPublisher.PublishBusinessState(
+			"迷失之地-当前区域",
+			"战斗-普通",
+			"LostVoidRunLevel",
+			60d));
+
+		BusinessStateItem item = Assert.Single(context.OverlayDebugBus.Snapshot().BusinessStateItems);
+		Assert.Equal("迷失之地-当前区域", item.Key);
+		Assert.Equal("战斗-普通", item.Value);
+		Assert.Equal("LostVoidRunLevel", item.Source);
+		Assert.Equal(60d, item.TtlSeconds);
+		Assert.Empty(context.OverlayDebugBus.Snapshot(item.CreatedAt.AddSeconds(61d)).BusinessStateItems);
+	}
+
+	[Fact]
 	public void DebugDataModels_ShouldNotExposeGuiOrWindowTypes()
 	{
 		Type[] array = (from type2 in typeof(ZzzDebugDataItem).Assembly.GetTypes()

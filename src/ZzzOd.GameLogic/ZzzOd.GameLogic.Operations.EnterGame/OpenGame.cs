@@ -17,7 +17,7 @@ public sealed class OpenGame : ZOperation
 	/// Initialize the open-game operation.
 	/// </summary>
 	public OpenGame(ZContext context, Func<string, bool>? startCommand = null, TimeSpan? successDelay = null)
-		: base(context, "打开游戏")
+		: base(context, "打开游戏", needCheckGameWindow: false)
 	{
 		_startCommand = startCommand ?? new Func<string, bool>(StartCommandWithProcess);
 		_successDelay = successDelay ?? TimeSpan.FromSeconds(5L);

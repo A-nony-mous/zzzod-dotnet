@@ -25,6 +25,10 @@ public abstract class ZOperation : Operation
 
 	private string? _lastRoundNodeName;
 
+	private readonly bool _needCheckGameWindow;
+
+	private readonly Func<CancellationToken, Task<OperationResult>>? _enterGameAsync;
+
 	/// <summary>
 	/// ZZZ 类型化上下文。
 	/// </summary>
@@ -52,10 +56,34 @@ public abstract class ZOperation : Operation
 	/// <summary>
 	/// 初始化 ZZZ Operation。
 	/// </summary>
-	protected ZOperation(ZContext context, string operationName = "", int nodeMaxRetryTimes = 3, double timeoutSeconds = -1.0)
+	protected ZOperation(ZContext context, string operationName = "", int nodeMaxRetryTimes = 3, double timeoutSeconds = -1.0, bool needCheckGameWindow = true, Func<CancellationToken, Task<OperationResult>>? enterGameAsync = null)
 		: base(context, operationName, nodeMaxRetryTimes, timeoutSeconds)
 	{
 		ZContext = context;
+		_needCheckGameWindow = needCheckGameWindow;
+		_enterGameAsync = enterGameAsync;
+	}
+
+	/// <inheritdoc />
+	protected override async Task<OperationResult?> BeforeExecuteAsync(CancellationToken cancellationToken)
+	{
+		if (!_needCheckGameWindow || IsGameWindowReady())
+		{
+			return null;
+		}
+		OperationResult result = _enterGameAsync != null
+			? await _enterGameAsync(cancellationToken).ConfigureAwait(false)
+			: await new EnterGame.OpenAndEnterGame(ZContext).ExecuteAsync(cancellationToken).ConfigureAwait(false);
+		return result.IsSuccess ? null : result;
+	}
+
+	/// <summary>
+	/// 判断当前 Operation 是否已经具备可用游戏窗口。测试替身可以覆写该边界。
+	/// </summary>
+	protected virtual bool IsGameWindowReady()
+	{
+		ControllerBase? controller = ZContext.Controller;
+		return controller is null || controller is not OneDragon.Core.Windows.Controller.WindowsGameController || controller.IsGameWindowReady;
 	}
 
 	/// <inheritdoc />

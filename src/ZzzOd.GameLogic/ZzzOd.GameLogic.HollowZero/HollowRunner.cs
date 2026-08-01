@@ -376,6 +376,11 @@ public class HollowRunner : IDisposable
 		{
 			levelInfo.MissionTypeName = "施工废墟";
 		}
+		_ctx.DebugDataPublisher.PublishBusinessState(
+			"枯萎之都-当前层",
+			$"{levelInfo.Level}/{levelInfo.Phase}",
+			nameof(HollowRunner),
+			60d);
 	}
 
 	public void StopRunning()

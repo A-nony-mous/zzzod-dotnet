@@ -252,13 +252,8 @@ public class ZContext : OneDragonContext
 			instance.Active = instance.Idx == instanceIndex;
 		}
 		yamlConfig.Save();
-		ApplicationFactoryRegistry registeredApplications = (_applicationFactoryRegistry.IsValueCreated ? _applicationFactoryRegistry.Value : null);
 		_instanceIndex = instanceIndex;
 		ReloadInstanceConfig();
-		if (registeredApplications != null)
-		{
-			_applicationFactoryRegistry = new Lazy<ApplicationFactoryRegistry>(() => registeredApplications);
-		}
 		OnSwitchInstance();
 		base.EventBus.Publish("instance_active", instanceIndex);
 	}
@@ -268,28 +263,10 @@ public class ZContext : OneDragonContext
 	/// </summary>
 	public void ReloadInstanceConfig()
 	{
-		_modelConfig = new Lazy<ZzzOd.GameLogic.Config.ModelConfig>(() => LoadSharedConfig<ZzzOd.GameLogic.Config.ModelConfig>("model"));
 		_gameConfig = new Lazy<GameConfig>(() => LoadInstanceConfig<GameConfig>("game"));
 		_teamConfig = new Lazy<YamlConfig<TeamConfig>>(() => new YamlConfig<TeamConfig>(base.Environment, "team", null, _instanceIndex));
 		_battleAssistantConfig = new Lazy<BattleAssistantConfig>(() => LoadInstanceConfig<BattleAssistantConfig>("battle_assistant"));
 		_gameAccountConfig = new Lazy<GameAccountConfig>(() => LoadInstanceConfig<GameAccountConfig>("game_account"));
-		_envConfig = new Lazy<EnvConfig>(() => LoadSharedConfig<EnvConfig>("env"));
-		_projectConfig = new Lazy<ProjectConfig>(() => LoadSharedConfig<ProjectConfig>("project"));
-		_pushConfig = new Lazy<PushConfig>(() => LoadSharedConfig<PushConfig>("push"));
-		_autoBattleContext = new Lazy<AutoBattleContext>(() => new AutoBattleContext(this));
-		_lostVoidContext = new Lazy<LostVoidContext>(() => new LostVoidContext(this));
-		_witheredDomainContext = new Lazy<WitheredDomainContext>(() => new WitheredDomainContext(this));
-		_mapService = new Lazy<MapAreaService>(() => new MapAreaService(base.Environment));
-		_compendiumService = new Lazy<CompendiumService>(() => new CompendiumService(base.Environment));
-		_worldPatrolService = new Lazy<WorldPatrolService>(() => new WorldPatrolService(base.Environment));
-		_telemetry = new Lazy<TelemetryManager>(() => new TelemetryManager(this));
-		_backend = new Lazy<ZzzBackendContext>(() => new ZzzBackendContext(this));
-		_flashClassifier = new Lazy<FlashClassifier>(() => new FlashClassifier(this));
-		_hollowEventDetector = new Lazy<HollowEventDetector>(() => new HollowEventDetector(this));
-		_zzzOcrService = new Lazy<ZzzOcrService>(() => new ZzzOcrService(this));
-		_debugDataPublisher = new Lazy<ZzzDebugDataPublisher>(() => new ZzzDebugDataPublisher(base.EventBus, base.OverlayDebugBus));
-		_applicationFactoryRegistry = new Lazy<ApplicationFactoryRegistry>(() => new ApplicationFactoryRegistry(this));
-		_operationNotificationService = new Lazy<OperationNotificationService>(() => new OperationNotificationService(this));
 	}
 
 	/// <summary>

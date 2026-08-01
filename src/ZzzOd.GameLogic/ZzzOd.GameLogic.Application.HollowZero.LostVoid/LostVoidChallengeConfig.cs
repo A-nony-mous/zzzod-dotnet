@@ -12,9 +12,12 @@ namespace ZzzOd.GameLogic.Application.HollowZero.LostVoid;
 /// <summary>
 /// 迷失之地挑战配置。
 /// </summary>
-public sealed class LostVoidChallengeConfig
+public sealed class LostVoidChallengeConfig : IYamlUnknownFieldPreserving
 {
 	private List<string>? _artifactPriorityInBattle;
+
+	[YamlIgnore]
+	internal string? SourceFilePath { get; private set; }
 
 	[YamlMember(Alias = "predefined_team_idx", ApplyNamingConventions = false)]
 	public int PredefinedTeamIdx { get; set; } = -1;
@@ -100,19 +103,31 @@ public sealed class LostVoidChallengeConfig
 	{
 		IReadOnlyList<string> subDirectories = new string[] { "lost_void_challenge" };
 		YamlConfig<LostVoidChallengeConfig> yamlConfig = new YamlConfig<LostVoidChallengeConfig>(environment, moduleName, null, null, subDirectories, sample: true);
-		return yamlConfig.Current;
+		LostVoidChallengeConfig current = yamlConfig.Current;
+		current.SourceFilePath = yamlConfig.FilePath;
+		return current;
 	}
 
 	/// <summary>
 	/// 把挑战配置写入真实用户配置文件。
 	/// </summary>
-	public static void Save(OneDragonEnvironment environment, string moduleName, LostVoidChallengeConfig config)
+	public static void Save(
+		OneDragonEnvironment environment,
+		string moduleName,
+		LostVoidChallengeConfig config,
+		string? sourceModuleName = null)
 	{
 		ArgumentNullException.ThrowIfNull(environment, "environment");
 		ArgumentNullException.ThrowIfNull(config, "config");
 		string userFilePath = GetUserFilePath(environment, moduleName);
 		Directory.CreateDirectory(Path.GetDirectoryName(userFilePath));
-		new YamlOperator().Save(userFilePath, config);
+		string? sourceFilePath = config.SourceFilePath;
+		if (string.IsNullOrWhiteSpace(sourceFilePath) && !string.IsNullOrWhiteSpace(sourceModuleName))
+		{
+			sourceFilePath = Load(environment, sourceModuleName).SourceFilePath;
+		}
+		new YamlOperator().SavePreservingUnknownFields(userFilePath, config, sourceFilePath);
+		config.SourceFilePath = userFilePath;
 	}
 
 	/// <summary>

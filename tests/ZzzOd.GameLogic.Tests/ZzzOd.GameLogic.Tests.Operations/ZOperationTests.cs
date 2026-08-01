@@ -169,6 +169,45 @@ public sealed class ZOperationTests : IDisposable
 		}
 	}
 
+	private sealed class GameWindowCheckProbeOperation : ZOperation
+	{
+		private readonly bool _ready;
+
+		public int BodyCount { get; private set; }
+
+		public GameWindowCheckProbeOperation(ZContext context, bool ready, bool needCheckGameWindow = true, Func<CancellationToken, Task<OperationResult>>? enterGameAsync = null)
+			: base(context, "游戏窗口检查", needCheckGameWindow: needCheckGameWindow, enterGameAsync: enterGameAsync)
+		{
+			_ready = ready;
+		}
+
+		protected override bool IsGameWindowReady() => _ready;
+
+		[OperationNode("业务", IsStartNode = true, ScreenshotBeforeRound = false)]
+		private OperationRoundResult RunBody()
+		{
+			BodyCount++;
+			return RoundSuccess("完成");
+		}
+	}
+
+	private sealed class NestedGameWindowCheckOperation : ZOperation
+	{
+		private readonly GameWindowCheckProbeOperation _child;
+
+		public NestedGameWindowCheckOperation(ZContext context, GameWindowCheckProbeOperation child)
+			: base(context, "嵌套窗口检查", needCheckGameWindow: false)
+		{
+			_child = child;
+		}
+
+		[OperationNode("执行子操作", IsStartNode = true, ScreenshotBeforeRound = false)]
+		private async Task<OperationRoundResult> RunChildAsync()
+		{
+			return RoundByOperationResult(await _child.ExecuteAsync());
+		}
+	}
+
 	private sealed class RecordingNotificationService : IPushNotificationService
 	{
 		public TaskCompletionSource<(string Title, string Content)> Next { get; } = new TaskCompletionSource<(string, string)>(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -308,6 +347,62 @@ public sealed class ZOperationTests : IDisposable
 		Assert.Equal("元数据测试", metadataProbeOperation.ExposedOperationName);
 		Assert.Equal(7, metadataProbeOperation.ExposedDefaultNodeMaxRetryTimes);
 		Assert.Equal(12.5, metadataProbeOperation.ExposedTimeoutSeconds);
+	}
+
+	[Fact]
+	public async Task ExecuteAsync_ChecksWindowForDirectAndNestedOperations()
+	{
+		using ZContext context = new ZContext(new OneDragonEnvironment(_rootDirectory, _rootDirectory));
+		int directEnterCount = 0;
+		GameWindowCheckProbeOperation direct = new GameWindowCheckProbeOperation(context, ready: false, enterGameAsync: _ =>
+		{
+			directEnterCount++;
+			return Task.FromResult(new OperationResult(true));
+		});
+		Assert.True((await direct.ExecuteAsync()).IsSuccess);
+		Assert.Equal(1, directEnterCount);
+		Assert.Equal(1, direct.BodyCount);
+
+		int nestedEnterCount = 0;
+		GameWindowCheckProbeOperation child = new GameWindowCheckProbeOperation(context, ready: false, enterGameAsync: _ =>
+		{
+			nestedEnterCount++;
+			return Task.FromResult(new OperationResult(true));
+		});
+		Assert.True((await new NestedGameWindowCheckOperation(context, child).ExecuteAsync()).IsSuccess);
+		Assert.Equal(1, nestedEnterCount);
+		Assert.Equal(1, child.BodyCount);
+	}
+
+	[Fact]
+	public async Task ExecuteAsync_SkipsEnterWhenReadyAndReturnsEnterFailureBeforeBody()
+	{
+		using ZContext context = new ZContext(new OneDragonEnvironment(_rootDirectory, _rootDirectory));
+		int readyEnterCount = 0;
+		GameWindowCheckProbeOperation ready = new GameWindowCheckProbeOperation(context, ready: true, enterGameAsync: _ =>
+		{
+			readyEnterCount++;
+			return Task.FromResult(new OperationResult(true));
+		});
+		Assert.True((await ready.ExecuteAsync()).IsSuccess);
+		Assert.Equal(0, readyEnterCount);
+
+		GameWindowCheckProbeOperation failed = new GameWindowCheckProbeOperation(context, ready: false, enterGameAsync: _ => Task.FromResult(new OperationResult(false, "进入游戏失败")));
+		OperationResult result = await failed.ExecuteAsync();
+		Assert.False(result.IsSuccess);
+		Assert.Equal("进入游戏失败", result.Status);
+		Assert.Equal(0, failed.BodyCount);
+	}
+
+	[Fact]
+	public async Task ExecuteAsync_PropagatesCancellationFromWindowCheck()
+	{
+		using ZContext context = new ZContext(new OneDragonEnvironment(_rootDirectory, _rootDirectory));
+		GameWindowCheckProbeOperation operation = new GameWindowCheckProbeOperation(context, ready: false, enterGameAsync: token => throw new OperationCanceledException(token));
+		using CancellationTokenSource cancellation = new CancellationTokenSource();
+		cancellation.Cancel();
+		await Assert.ThrowsAnyAsync<OperationCanceledException>(() => operation.ExecuteAsync(cancellation.Token));
+		Assert.Equal(0, operation.BodyCount);
 	}
 
 	[Fact]

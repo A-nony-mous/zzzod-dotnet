@@ -1,3 +1,4 @@
+using OneDragon.Core.Configuration;
 using YamlDotNet.Serialization;
 
 namespace ZzzOd.GameLogic.Application.HollowZero.LostVoid;
@@ -5,7 +6,7 @@ namespace ZzzOd.GameLogic.Application.HollowZero.LostVoid;
 /// <summary>
 /// 迷失之地运行记录 YAML 数据。
 /// </summary>
-public sealed class LostVoidRunRecordData
+public sealed class LostVoidRunRecordData : IYamlUnknownFieldPreserving
 {
 	/// <summary>记录日期。</summary>
 	[YamlMember(Alias = "dt", ApplyNamingConventions = false)]
