@@ -117,7 +117,7 @@ public sealed class AgentEnum
 
 	public static readonly AgentEnum NORMA = new AgentEnum(Create("norma", "诺姆", RareTypeEnum.S, AgentTypeEnum.STUN, DmgTypeEnum.FIRE, new string[] { "norma" }, new string[] { "诺姆-预热" }));
 
-	public static readonly AgentEnum REMIELLE = new AgentEnum(Create("remielle", "蕾米艾尔", RareTypeEnum.S, AgentTypeEnum.ANOMALY, DmgTypeEnum.PHYSICAL, new string[2] { "remielle", "remielle_dark" }, new string[2] { "remielle_floating_radiance", "remielle_voidflare" }));
+	public static readonly AgentEnum REMIELLE = new AgentEnum(Create("remielle", "蕾米埃尔", RareTypeEnum.S, AgentTypeEnum.ANOMALY, DmgTypeEnum.LUMIFLUX, new string[2] { "remielle", "remielle_dark" }, new string[2] { "蕾米埃尔-浮晖", "蕾米埃尔-虚曜" }));
 
 	public Agent Value { get; }
 

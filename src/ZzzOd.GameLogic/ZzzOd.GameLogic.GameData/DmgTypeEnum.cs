@@ -8,5 +8,6 @@ public enum DmgTypeEnum
 	FIRE,
 	ICE,
 	WIND,
+	LUMIFLUX,
 	UNKNOWN
 }
