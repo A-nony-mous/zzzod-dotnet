@@ -1,3 +1,4 @@
+using System.Collections.ObjectModel;
 using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Threading;
@@ -38,6 +39,7 @@ internal sealed partial class FrontierChargePlanPage : UserControl, IZzzPageLife
     private readonly ContentControl _dialogPlanHost;
     private readonly FAContentDialog _confirmDialog;
     private readonly TextBlock _confirmMessage;
+    private ObservableCollection<ZzzChargePlanRowModel>? _planRows;
     private ZzzChargePlanRowModel? _dragCandidate;
     private Point _dragStart;
     private PointerPressedEventArgs? _dragPointerPressedArgs;
@@ -126,9 +128,12 @@ internal sealed partial class FrontierChargePlanPage : UserControl, IZzzPageLife
 
     private void RefreshPlans()
     {
-        _planList.ItemsSource = null;
-        _planList.ItemsSource = _state.CreateRows();
+        bool loading = _loading;
+        _loading = true;
+        _planRows = new ObservableCollection<ZzzChargePlanRowModel>(_state.CreateRows());
+        _planList.ItemsSource = _planRows;
         _undoButton.IsEnabled = _state.UndoAvailable;
+        _loading = loading;
     }
 
     private void RefreshDoubleReward()
@@ -271,7 +276,8 @@ internal sealed partial class FrontierChargePlanPage : UserControl, IZzzPageLife
 
     private void OnCategoryChanged(object? sender, SelectionChangedEventArgs args)
     {
-        if (TryRowOption(sender, out ZzzChargePlanRowModel? row, out ZzzChargePlanOption? option))
+        if (TryRowOption(sender, out ZzzChargePlanRowModel? row, out ZzzChargePlanOption? option)
+            && option.Value != row.Plan.CategoryName)
         {
             UpdateRow(row, plan =>
             {
@@ -282,7 +288,8 @@ internal sealed partial class FrontierChargePlanPage : UserControl, IZzzPageLife
 
     private void OnMissionTypeChanged(object? sender, SelectionChangedEventArgs args)
     {
-        if (TryRowOption(sender, out ZzzChargePlanRowModel? row, out ZzzChargePlanOption? option))
+        if (TryRowOption(sender, out ZzzChargePlanRowModel? row, out ZzzChargePlanOption? option)
+            && option.Value != row.Plan.MissionTypeName)
         {
             UpdateRow(row, plan =>
             {
@@ -369,16 +376,18 @@ internal sealed partial class FrontierChargePlanPage : UserControl, IZzzPageLife
         {
             if (refresh)
             {
+                _loading = true;
                 _dialogPlanHost.Content = _state.CreateRow(row.Plan, -1, showCommands: false);
+                _loading = false;
             }
             return;
         }
 
         _state.UpdatePlan(row.Index, _ => { });
-        if (refresh)
+        if (refresh && _planRows is not null && row.Index >= 0 && row.Index < _planRows.Count)
         {
             _loading = true;
-            RefreshPlans();
+            _planRows[row.Index] = _state.CreateRow(row.Plan, row.Index, showCommands: true);
             _loading = false;
         }
         ShowError();
@@ -430,6 +439,7 @@ internal sealed partial class FrontierChargePlanPage : UserControl, IZzzPageLife
         }
 
         FAContentDialogResult result = await _addPlanDialog.ShowAsync(owner).ConfigureAwait(true);
+
         if (result == FAContentDialogResult.Primary)
         {
             _state.AddPlan(row.Plan);
