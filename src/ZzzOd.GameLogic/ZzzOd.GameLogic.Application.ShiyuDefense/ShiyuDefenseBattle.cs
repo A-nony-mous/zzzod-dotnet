@@ -217,7 +217,7 @@ public sealed class ShiyuDefenseBattle : ZOperation
 	{
 		Mat? lastScreenshot = base.LastScreenshot;
 		TimeSpan? retryDelay = TimeSpan.FromSeconds(1L);
-		OperationRoundResult operationRoundResult = RoundByFindArea(lastScreenshot, "式舆防卫战", "前哨档案", null, retryDelay);
+		OperationRoundResult operationRoundResult = RoundByFindArea(lastScreenshot, "式舆防卫战", "战报", null, retryDelay);
 		return (operationRoundResult.IsSuccess && _battleFail != null) ? RoundFail(_battleFail) : operationRoundResult;
 	}
 

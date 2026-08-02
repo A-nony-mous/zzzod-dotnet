@@ -40,7 +40,7 @@ public sealed class DefaultShiyuDefenseOperationServices : IShiyuDefenseOperatio
 			ClickArea(context, "式舆防卫战", "前次-关闭");
 			return Task.FromResult(new OperationResult(IsSuccess: true, "前次行动最佳记录"));
 		}
-		return Task.FromResult((ScreenUtils.FindArea(context, screen, "式舆防卫战", "前哨档案") == FindAreaResultEnum.True) ? new OperationResult(IsSuccess: true, "前哨档案") : new OperationResult(IsSuccess: false, "等待画面加载"));
+		return Task.FromResult((ScreenUtils.FindArea(context, screen, "式舆防卫战", "战报") == FindAreaResultEnum.True) ? new OperationResult(IsSuccess: true, "战报") : new OperationResult(IsSuccess: false, "等待画面加载"));
 	}
 
 	/// <inheritdoc />
@@ -204,7 +204,7 @@ public sealed class DefaultShiyuDefenseOperationServices : IShiyuDefenseOperatio
 	/// <inheritdoc />
 	public Task<OperationResult> BackToMainScreenAsync(ZContext context, Mat? screen)
 	{
-		if (screen != null && ScreenUtils.FindArea(context, screen, "式舆防卫战", "前哨档案") == FindAreaResultEnum.True)
+		if (screen != null && ScreenUtils.FindArea(context, screen, "式舆防卫战", "战报") == FindAreaResultEnum.True)
 		{
 			return Task.FromResult(new OperationResult(IsSuccess: true, "式舆防卫战"));
 		}
@@ -214,9 +214,9 @@ public sealed class DefaultShiyuDefenseOperationServices : IShiyuDefenseOperatio
 	/// <inheritdoc />
 	public Task<OperationResult> RecoverFromMultiRoomFailureAsync(ZContext context, Mat? screen)
 	{
-		if (screen != null && ScreenUtils.FindArea(context, screen, "式舆防卫战", "前哨档案") == FindAreaResultEnum.True)
+		if (screen != null && ScreenUtils.FindArea(context, screen, "式舆防卫战", "战报") == FindAreaResultEnum.True)
 		{
-			return Task.FromResult(new OperationResult(IsSuccess: true, "前哨档案"));
+			return Task.FromResult(new OperationResult(IsSuccess: true, "战报"));
 		}
 		return Task.FromResult(ClickArea(context, "菜单", "返回"));
 	}
@@ -258,9 +258,9 @@ public sealed class DefaultShiyuDefenseOperationServices : IShiyuDefenseOperatio
 		{
 			return Task.FromResult(new OperationResult(IsSuccess: false, "未获取截图"));
 		}
-		if (ScreenUtils.FindArea(context, screen, "式舆防卫战", "前哨档案") == FindAreaResultEnum.True)
+		if (ScreenUtils.FindArea(context, screen, "式舆防卫战", "战报") == FindAreaResultEnum.True)
 		{
-			return Task.FromResult(new OperationResult(IsSuccess: true, "前哨档案"));
+			return Task.FromResult(new OperationResult(IsSuccess: true, "战报"));
 		}
 		return Task.FromResult(FindAndClickArea(context, screen, "式舆防卫战", "战斗结束-退出"));
 	}
@@ -286,9 +286,9 @@ public sealed class DefaultShiyuDefenseOperationServices : IShiyuDefenseOperatio
 		{
 			return Task.FromResult(new OperationResult(IsSuccess: false, "未获取截图"));
 		}
-		if (ScreenUtils.FindArea(context, screen, "式舆防卫战", "前哨档案") == FindAreaResultEnum.True)
+		if (ScreenUtils.FindArea(context, screen, "式舆防卫战", "战报") == FindAreaResultEnum.True)
 		{
-			return Task.FromResult(new OperationResult(IsSuccess: true, "前哨档案"));
+			return Task.FromResult(new OperationResult(IsSuccess: true, "战报"));
 		}
 		OperationResult operationResult = ConvertClickResult(ScreenUtils.FindAndClickArea(context, screen, "式舆防卫战", "领取奖励-确认"), "领取奖励-确认");
 		if (operationResult.IsSuccess)

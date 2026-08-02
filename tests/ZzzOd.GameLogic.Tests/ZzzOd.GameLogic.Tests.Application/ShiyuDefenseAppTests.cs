@@ -64,7 +64,7 @@ public sealed class ShiyuDefenseAppTests
 
 		public Task<OperationResult> WaitForMainScreenAsync(ZContext context, Mat? screen)
 		{
-			return Task.FromResult(new OperationResult(IsSuccess: true, "前哨档案"));
+			return Task.FromResult(new OperationResult(IsSuccess: true, "战报"));
 		}
 
 		public Task<int?> GetNextNodeIndexAsync(ZContext context, ShiyuDefenseConfig config, ShiyuDefenseRunRecord runRecord, Mat? screen)
@@ -137,7 +137,7 @@ public sealed class ShiyuDefenseAppTests
 
 		public Task<OperationResult> RecoverFromMultiRoomFailureAsync(ZContext context, Mat? screen)
 		{
-			return Task.FromResult(new OperationResult(IsSuccess: true, "前哨档案"));
+			return Task.FromResult(new OperationResult(IsSuccess: true, "战报"));
 		}
 
 		public Task<OperationResult> AdvanceAfterBattleAsync(ZContext context, int currentNodeIndex, ShiyuDefenseConfig config, Mat? screen)
@@ -148,7 +148,7 @@ public sealed class ShiyuDefenseAppTests
 
 		public Task<OperationResult> FinishAllNodesAsync(ZContext context, Mat? screen)
 		{
-			return Task.FromResult(new OperationResult(IsSuccess: true, "前哨档案"));
+			return Task.FromResult(new OperationResult(IsSuccess: true, "战报"));
 		}
 
 		public Task<OperationResult> ClaimRewardAsync(ZContext context, Mat? screen)
@@ -158,7 +158,7 @@ public sealed class ShiyuDefenseAppTests
 
 		public Task<OperationResult> CloseRewardAsync(ZContext context, Mat? screen)
 		{
-			return Task.FromResult(new OperationResult(IsSuccess: true, "前哨档案"));
+			return Task.FromResult(new OperationResult(IsSuccess: true, "战报"));
 		}
 
 		public Task<OperationResult> BackToWorldAsync(ZContext context)
@@ -800,7 +800,7 @@ public sealed class ShiyuDefenseAppTests
 	}
 
 	[Fact]
-	public async Task DefaultShiyuDefenseOperationServices_WaitForMainScreen_DetectsOutpostArchive()
+	public async Task DefaultShiyuDefenseOperationServices_WaitForMainScreen_DetectsBattleReport()
 	{
 		string rootDirectory = CreateTempRoot();
 		try
@@ -810,13 +810,13 @@ public sealed class ShiyuDefenseAppTests
 			context.AttachController(new ReadyController());
 			using TestScreenshotController controller = new TestScreenshotController();
 			context.AttachController(controller);
-			context.OcrService.Matcher = new FakeOcrMatcher(new OcrMatchResult[] { new OcrMatchResult(0.99, 0, 0, 16, 8, "前哨档案") });
+			context.OcrService.Matcher = new FakeOcrMatcher(new OcrMatchResult[] { new OcrMatchResult(0.99, 0, 0, 16, 8, "战报") });
 			context.ScreenContext.Reload();
 			DefaultShiyuDefenseOperationServices services = new DefaultShiyuDefenseOperationServices();
 			using Mat screen = Capture(controller);
 			OperationResult result = await services.WaitForMainScreenAsync(context, screen);
 			Assert.True(result.IsSuccess);
-			Assert.Equal("前哨档案", result.Status);
+			Assert.Equal("战报", result.Status);
 			Assert.Equal(0, controller.ClickCount);
 		}
 		finally
@@ -1064,7 +1064,7 @@ public sealed class ShiyuDefenseAppTests
 			context.AttachController(new ReadyController());
 			using TestScreenshotController controller = new TestScreenshotController();
 			context.AttachController(controller);
-			context.OcrService.Matcher = new FakeOcrMatcher(new OcrMatchResult[] { new OcrMatchResult(0.99, 0, 0, 16, 8, "前哨档案") });
+			context.OcrService.Matcher = new FakeOcrMatcher(new OcrMatchResult[] { new OcrMatchResult(0.99, 0, 0, 16, 8, "战报") });
 			context.ScreenContext.Reload();
 			DefaultShiyuDefenseOperationServices services = new DefaultShiyuDefenseOperationServices();
 			using Mat screen = Capture(controller);
@@ -1569,7 +1569,7 @@ public sealed class ShiyuDefenseAppTests
 			context.OcrService.Matcher = new FakeOcrMatcher(new OcrMatchResult[2]
 			{
 				new OcrMatchResult(0.99, 0, 0, 16, 8, "撤退"),
-				new OcrMatchResult(0.99, 0, 0, 16, 8, "前哨档案")
+				new OcrMatchResult(0.99, 0, 0, 16, 8, "战报")
 			});
 			context.ScreenContext.Reload();
 			ShiyuDefenseBattle operation = new ShiyuDefenseBattle(context, 0, new FailureShiyuDefenseBattleServices());
@@ -1639,7 +1639,7 @@ public sealed class ShiyuDefenseAppTests
 	{
 		string text = Path.Combine(rootDirectory, "assets", "game_data", "screen_info");
 		Directory.CreateDirectory(text);
-		File.WriteAllText(Path.Combine(text, "_od_merged.yml"), "- screen_id: shiyu_defense\n  screen_name: 式舆防卫战\n  app_id: shiyu_defense\n  area_list:\n    - area_name: 前哨档案\n      id_mark: true\n      pc_rect: [10, 10, 80, 30]\n      text: 前哨档案\n      lcs_percent: 0.5\n    - area_name: 节点区域\n      pc_rect: [0, 0, 100, 100]\n    - area_name: 节点-01\n      pc_rect: [10, 10, 80, 30]\n      text: 节点01\n      lcs_percent: 0.5\n    - area_name: 节点-05\n      pc_rect: [10, 10, 80, 30]\n      text: 节点05\n      lcs_percent: 0.5\n    - area_name: 下一步\n      pc_rect: [10, 10, 80, 30]\n      text: 下一步\n      lcs_percent: 0.5\n    - area_name: 剧变节点进度\n      pc_rect: [10, 10, 80, 30]\n    - area_name: 角色头像\n      pc_rect: [30, 30, 50, 50]\n    - area_name: 前次行动最佳记录\n      pc_rect: [10, 10, 120, 30]\n      text: 前次行动最佳记录\n      lcs_percent: 0.5\n    - area_name: 前次-关闭\n      pc_rect: [30, 30, 50, 50]\n    - area_name: 奖励入口\n      pc_rect: [10, 70, 20, 80]\n    - area_name: 全部领取\n      pc_rect: [70, 70, 80, 80]\n    - area_name: 领取奖励-界面\n      pc_rect: [10, 10, 120, 30]\n      text: 剧变节点奖励领取\n      lcs_percent: 0.5\n    - area_name: 领取奖励-确认\n      pc_rect: [10, 10, 80, 30]\n      text: 确认\n      lcs_percent: 0.5\n    - area_name: 领取奖励-关闭\n      pc_rect: [90, 70, 100, 80]\n    - area_name: 战斗结束-撤退\n      pc_rect: [10, 10, 80, 30]\n      text: 撤退\n      lcs_percent: 0.5\n    - area_name: 战斗结束-下一防线\n      pc_rect: [10, 10, 80, 30]\n      text: 下一防线\n      lcs_percent: 0.5\n    - area_name: 战斗结束-退出\n      pc_rect: [10, 10, 80, 30]\n      text: 退出\n      lcs_percent: 0.8\n    - area_name: 退出战斗\n      pc_rect: [10, 10, 80, 30]\n      text: 退出战斗\n      lcs_percent: 0.5\n- screen_id: shiyu_defense_select_3\n  screen_name: 式舆防卫战-三间选择\n  app_id: shiyu_defense\n  area_list:\n    - area_name: 本期最佳总分\n      id_mark: true\n      pc_rect: [10, 10, 80, 30]\n      text: 总分\n      lcs_percent: 0.5\n    - area_name: 确认\n      pc_rect: [10, 70, 20, 80]\n      text: 确认\n      lcs_percent: 0.5\n    - area_name: 第一间\n      pc_rect: [10, 10, 80, 30]\n    - area_name: 第二间\n      pc_rect: [10, 30, 80, 50]\n    - area_name: 第三间\n      pc_rect: [10, 50, 80, 70]\n    - area_name: 重置全部\n      pc_rect: [90, 70, 100, 80]\n    - area_name: 前往第一间\n      pc_rect: [10, 10, 80, 30]\n      text: 属性\n      lcs_percent: 0.5\n    - area_name: 前往第二间\n      pc_rect: [10, 30, 80, 50]\n      text: 属性\n      lcs_percent: 0.5\n    - area_name: 前往第三间\n      pc_rect: [10, 50, 80, 70]\n      text: 属性\n      lcs_percent: 0.5\n- screen_id: combat_simulation\n  screen_name: 实战模拟室\n  area_list:\n    - area_name: 预备编队\n      pc_rect: [10, 10, 80, 30]\n      text: 预备编队\n      lcs_percent: 0.5\n    - area_name: 下一步\n      pc_rect: [70, 80, 80, 90]\n    - area_name: 出战\n      pc_rect: [80, 80, 90, 90]\n- screen_id: battle\n  screen_name: 战斗画面\n  area_list:\n    - area_name: 菜单\n      pc_rect: [10, 10, 20, 20]\n    - area_name: 按键-普通攻击\n      pc_rect: [10, 10, 80, 30]\n      text: 普通攻击\n      lcs_percent: 0.5\n    - area_name: 按键-交互\n      pc_rect: [10, 10, 80, 30]\n      text: 交互\n      lcs_percent: 0.5\n    - area_name: 距离显示区域\n      pc_rect: [10, 60, 80, 90]\n    - area_name: 战斗结果-完成\n      pc_rect: [10, 10, 80, 30]\n      text: 完成\n      lcs_percent: 0.5\n    - area_name: 战斗结果-撤退\n      pc_rect: [10, 10, 80, 30]\n      text: 撤退\n      lcs_percent: 0.5\n    - area_name: 式舆防卫战-倒计时\n      pc_rect: [10, 40, 80, 60]\n      text: 倒计时\n      lcs_percent: 0.5\n    - area_name: 式舆防卫战-倒计时-精英\n      pc_rect: [10, 40, 80, 60]\n      text: 倒计时精英\n      lcs_percent: 0.5\n- screen_id: menu\n  screen_name: 菜单\n  area_list:\n    - area_name: 返回\n      pc_rect: [10, 10, 20, 20]");
+		File.WriteAllText(Path.Combine(text, "_od_merged.yml"), "- screen_id: shiyu_defense\n  screen_name: 式舆防卫战\n  app_id: shiyu_defense\n  area_list:\n    - area_name: 战报\n      id_mark: true\n      pc_rect: [10, 10, 80, 30]\n      text: 战报\n      lcs_percent: 0.5\n    - area_name: 节点区域\n      pc_rect: [0, 0, 100, 100]\n    - area_name: 节点-01\n      pc_rect: [10, 10, 80, 30]\n      text: 节点01\n      lcs_percent: 0.5\n    - area_name: 节点-05\n      pc_rect: [10, 10, 80, 30]\n      text: 节点05\n      lcs_percent: 0.5\n    - area_name: 下一步\n      pc_rect: [10, 10, 80, 30]\n      text: 下一步\n      lcs_percent: 0.5\n    - area_name: 剧变节点进度\n      pc_rect: [10, 10, 80, 30]\n    - area_name: 角色头像\n      pc_rect: [30, 30, 50, 50]\n    - area_name: 前次行动最佳记录\n      pc_rect: [10, 10, 120, 30]\n      text: 前次行动最佳记录\n      lcs_percent: 0.5\n    - area_name: 前次-关闭\n      pc_rect: [30, 30, 50, 50]\n    - area_name: 奖励入口\n      pc_rect: [10, 70, 20, 80]\n    - area_name: 全部领取\n      pc_rect: [70, 70, 80, 80]\n    - area_name: 领取奖励-界面\n      pc_rect: [10, 10, 120, 30]\n      text: 剧变节点奖励领取\n      lcs_percent: 0.5\n    - area_name: 领取奖励-确认\n      pc_rect: [10, 10, 80, 30]\n      text: 确认\n      lcs_percent: 0.5\n    - area_name: 领取奖励-关闭\n      pc_rect: [90, 70, 100, 80]\n    - area_name: 战斗结束-撤退\n      pc_rect: [10, 10, 80, 30]\n      text: 撤退\n      lcs_percent: 0.5\n    - area_name: 战斗结束-下一防线\n      pc_rect: [10, 10, 80, 30]\n      text: 下一防线\n      lcs_percent: 0.5\n    - area_name: 战斗结束-退出\n      pc_rect: [10, 10, 80, 30]\n      text: 退出\n      lcs_percent: 0.8\n    - area_name: 退出战斗\n      pc_rect: [10, 10, 80, 30]\n      text: 退出战斗\n      lcs_percent: 0.5\n- screen_id: shiyu_defense_select_3\n  screen_name: 式舆防卫战-三间选择\n  app_id: shiyu_defense\n  area_list:\n    - area_name: 本期最佳总分\n      id_mark: true\n      pc_rect: [10, 10, 80, 30]\n      text: 总分\n      lcs_percent: 0.5\n    - area_name: 确认\n      pc_rect: [10, 70, 20, 80]\n      text: 确认\n      lcs_percent: 0.5\n    - area_name: 第一间\n      pc_rect: [10, 10, 80, 30]\n    - area_name: 第二间\n      pc_rect: [10, 30, 80, 50]\n    - area_name: 第三间\n      pc_rect: [10, 50, 80, 70]\n    - area_name: 重置全部\n      pc_rect: [90, 70, 100, 80]\n    - area_name: 前往第一间\n      pc_rect: [10, 10, 80, 30]\n      text: 属性\n      lcs_percent: 0.5\n    - area_name: 前往第二间\n      pc_rect: [10, 30, 80, 50]\n      text: 属性\n      lcs_percent: 0.5\n    - area_name: 前往第三间\n      pc_rect: [10, 50, 80, 70]\n      text: 属性\n      lcs_percent: 0.5\n- screen_id: combat_simulation\n  screen_name: 实战模拟室\n  area_list:\n    - area_name: 预备编队\n      pc_rect: [10, 10, 80, 30]\n      text: 预备编队\n      lcs_percent: 0.5\n    - area_name: 下一步\n      pc_rect: [70, 80, 80, 90]\n    - area_name: 出战\n      pc_rect: [80, 80, 90, 90]\n- screen_id: battle\n  screen_name: 战斗画面\n  area_list:\n    - area_name: 菜单\n      pc_rect: [10, 10, 20, 20]\n    - area_name: 按键-普通攻击\n      pc_rect: [10, 10, 80, 30]\n      text: 普通攻击\n      lcs_percent: 0.5\n    - area_name: 按键-交互\n      pc_rect: [10, 10, 80, 30]\n      text: 交互\n      lcs_percent: 0.5\n    - area_name: 距离显示区域\n      pc_rect: [10, 60, 80, 90]\n    - area_name: 战斗结果-完成\n      pc_rect: [10, 10, 80, 30]\n      text: 完成\n      lcs_percent: 0.5\n    - area_name: 战斗结果-撤退\n      pc_rect: [10, 10, 80, 30]\n      text: 撤退\n      lcs_percent: 0.5\n    - area_name: 式舆防卫战-倒计时\n      pc_rect: [10, 40, 80, 60]\n      text: 倒计时\n      lcs_percent: 0.5\n    - area_name: 式舆防卫战-倒计时-精英\n      pc_rect: [10, 40, 80, 60]\n      text: 倒计时精英\n      lcs_percent: 0.5\n- screen_id: menu\n  screen_name: 菜单\n  area_list:\n    - area_name: 返回\n      pc_rect: [10, 10, 20, 20]");
 		if (writePipelines)
 		{
 			WriteShiyuDefensePipelineYaml(rootDirectory);
