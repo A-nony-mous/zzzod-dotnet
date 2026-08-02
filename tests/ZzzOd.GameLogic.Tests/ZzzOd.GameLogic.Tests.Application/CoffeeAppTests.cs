@@ -192,9 +192,20 @@ public sealed class CoffeeAppTests
 	[Theory]
 	[InlineData(new object[] { "咖啡店", "六分街 - 咖啡店" })]
 	[InlineData(new object[] { "汀曼咖啡", "澄辉坪 - 汀曼咖啡" })]
+	[InlineData(new object[] { "片刻闲", "布亚斯特城区 - 片刻闲" })]
 	public void CoffeeTransportPoint_NormalizesLegacyDotNetValues(string legacyValue, string pythonValue)
 	{
 		Assert.Equal(pythonValue, CoffeeTransportPoint.FromValue(legacyValue).Value);
+	}
+
+	[Fact]
+	public void CoffeeTransportPoint_BuyasteParsesByShortAndFullValue()
+	{
+		Assert.Equal(CoffeeTransportPoint.Buyaste, CoffeeTransportPoint.FromValue("片刻闲"));
+		Assert.Equal(CoffeeTransportPoint.Buyaste, CoffeeTransportPoint.FromValue("布亚斯特城区 - 片刻闲"));
+		Assert.Equal("布亚斯特城区", CoffeeTransportPoint.Buyaste.AreaName);
+		Assert.Equal("片刻闲", CoffeeTransportPoint.Buyaste.TransportPointName);
+		Assert.Contains(CoffeeTransportPoint.Buyaste, (IEnumerable<CoffeeTransportPoint>)CoffeeTransportPoint.All);
 	}
 
 	[Fact]
@@ -302,6 +313,23 @@ public sealed class CoffeeAppTests
 		{
 			Directory.Delete(text, recursive: true);
 		}
+	}
+
+	[Fact]
+	public void SelectionService_IsCoffeeForPlan_RejectsSyntheticBatteryPlan()
+	{
+		// 对应 Python _is_coffee_for_plan 的显式短路：合成电池计划不喝咖啡加成
+		ZzzOd.GameLogic.GameData.Coffee coffee = new ZzzOd.GameLogic.GameData.Coffee
+		{
+			CoffeeName = "浓缩咖啡",
+			MissionType = new ZzzOd.GameLogic.GameData.CompendiumMissionType { MissionTypeName = "合成电池" }
+		};
+		ChargePlanItem batteryPlan = new ChargePlanItem
+		{
+			CategoryName = "合成电池",
+			MissionTypeName = string.Empty
+		};
+		Assert.False(CoffeeSelectionService.IsCoffeeForPlan(coffee, batteryPlan));
 	}
 
 	[Fact]
@@ -528,6 +556,33 @@ public sealed class CoffeeAppTests
 			OperationRoundResult operationRoundResult = coffeeOperation.ChooseCoffee();
 			Assert.Equal(OperationRoundResultKind.Retry, operationRoundResult.Kind);
 			Assert.Equal(0, chargePlanConfig2.PlanList[0].RunTimes);
+		}
+		finally
+		{
+			Directory.Delete(text, recursive: true);
+		}
+	}
+
+	[Fact]
+	public void CoffeeOperation_MoveAndInteract_AtFailumeHeightsReturnsStatelessSuccess()
+	{
+		string text = CreateTempRoot();
+		try
+		{
+			using ZContext context = new ZContext(new OneDragonEnvironment(text));
+			CoffeeConfig config = new CoffeeConfig
+			{
+				TransportPoint = CoffeeTransportPoint.FailumeHeights.Value
+			};
+			CoffeeOperation operation = new CoffeeOperation(context, config, new ChargePlanConfig(), null, null, null, null, null, null, null, null, null, delegate
+			{
+				// 模拟交互成功。澄辉坪与六分街一样只返回无状态成功，
+				// 由「等待咖啡店加载」按传送点分支确认进入点单界面，避免状态边跳过该节点。
+				return new OperationRoundResult(OperationRoundResultKind.Success);
+			});
+			OperationRoundResult move = operation.MoveAndInteract();
+			Assert.True(move.IsSuccess);
+			Assert.Null(move.Status);
 		}
 		finally
 		{

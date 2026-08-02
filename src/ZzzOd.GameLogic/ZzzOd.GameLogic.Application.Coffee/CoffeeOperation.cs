@@ -154,7 +154,10 @@ public sealed class CoffeeOperation : ZOperation
 		{
 			return operationRoundResult;
 		}
-		return string.Equals(_config.TransportPoint, CoffeeTransportPoint.FailumeHeights.Value, StringComparison.Ordinal) ? RoundSuccess("对话点单") : operationRoundResult;
+		// 六分街/澄辉坪/布亚斯特均返回无状态成功，由「等待咖啡店加载」按传送点分支确认进入点单界面。
+		// 不能在交互后直接返回「对话点单」状态：C# 状态边会优先匹配而跳过「等待咖啡店加载」，
+		// 导致对话标题尚未出现时「对话选咖啡」误判「已喝过」。与 Python move_and_interact 一致。
+		return operationRoundResult;
 	}
 
 	/// <summary>
@@ -164,7 +167,14 @@ public sealed class CoffeeOperation : ZOperation
 	[OperationNode("等待咖啡店加载", NodeMaxRetryTimes = 10)]
 	public OperationRoundResult WaitCoffeeShop()
 	{
-		return RoundByFindArea(base.LastScreenshot, "咖啡店", "点单", RetryDelay, RetryDelay);
+		if (string.Equals(_config.TransportPoint, CoffeeTransportPoint.SixthStreet.Value, StringComparison.Ordinal))
+		{
+			// 六分街咖啡店：等点单按钮出现
+			return RoundByFindArea(base.LastScreenshot, "咖啡店", "点单", RetryDelay, RetryDelay);
+		}
+		// 澄辉坪汀曼咖啡 / 布亚斯特城区片刻闲：对话框标题会持续到对话结束，出现即进入对话点单分支
+		OperationRoundResult operationRoundResult = RoundByFindArea(base.LastScreenshot, "咖啡店", "对话框标题-汀曼大师", RetryDelay, RetryDelay);
+		return operationRoundResult.IsSuccess ? RoundSuccess("对话点单", null, TimeSpan.FromSeconds(3L)) : RoundRetry("等待对话框加载", null, RetryDelay);
 	}
 
 	/// <summary>
@@ -243,6 +253,7 @@ public sealed class CoffeeOperation : ZOperation
 	/// </summary>
 	[NodeFrom("点单")]
 	[NodeFrom("不占用点单确认")]
+	[NodeFrom("对话选咖啡", Status = "点单后跳过")]
 	[OperationNode("点单后跳过")]
 	public OperationRoundResult SkipAfterOrder()
 	{
@@ -277,18 +288,15 @@ public sealed class CoffeeOperation : ZOperation
 	}
 
 	/// <summary>
-	/// 处理澄辉坪店员对话点单。
+	/// 处理澄辉坪/布亚斯特店员对话点单。
 	/// </summary>
-	[NodeFrom("移动交互", Status = "对话点单")]
+	[NodeFrom("等待咖啡店加载", Status = "对话点单")]
 	[OperationNode("对话选咖啡", NodeMaxRetryTimes = 20)]
 	public OperationRoundResult DialogChooseCoffee()
 	{
+		// 标题会持续到对话结束，消失后按已喝过收尾
 		OperationRoundResult operationRoundResult = RoundByFindArea(base.LastScreenshot, "咖啡店", "对话框标题-汀曼大师");
 		if (!operationRoundResult.IsSuccess)
-		{
-			return RoundRetry("等待对话框加载", null, ShortDelay);
-		}
-		if (RoundByFindArea(base.LastScreenshot, "咖啡店", "对话框-明天再来").IsSuccess)
 		{
 			return RoundSuccess("已喝过", null, RetryDelay);
 		}
@@ -308,9 +316,15 @@ public sealed class CoffeeOperation : ZOperation
 		{
 			_chosenCoffee = value;
 			_hadCoffeeList.Add(text);
-			return RoundSuccess("已点单", null, RetryDelay);
+			// 布亚斯特城区片刻闲：首次点单后的动画可通过"点单后跳过"跳过
+			bool isBuyaste = string.Equals(_config.TransportPoint, CoffeeTransportPoint.Buyaste.Value, StringComparison.Ordinal);
+			return RoundSuccess(isBuyaste ? "点单后跳过" : "已点单", null, RetryDelay);
 		}
-		return RoundRetry("等待对话框", null, RetryDelay);
+		// 没有命中候选咖啡时说明当前是纯对话框，点击标题推进对话，不依赖具体台词
+		TimeSpan? successDelay2 = RetryDelay;
+		TimeSpan? retryDelay2 = RetryDelay;
+		OperationRoundResult clickTitle = RoundByFindAndClickArea(base.LastScreenshot, "咖啡店", "对话框标题-汀曼大师", null, successDelay2, retryDelay2);
+		return clickTitle.IsSuccess ? RoundWait("继续对话", null, RetryDelay) : clickTitle;
 	}
 
 	/// <summary>
