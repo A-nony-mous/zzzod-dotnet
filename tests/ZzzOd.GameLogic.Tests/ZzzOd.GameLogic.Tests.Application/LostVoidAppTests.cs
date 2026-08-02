@@ -321,22 +321,23 @@ public sealed class LostVoidAppTests
 			} into item
 			where item.Node != null
 			select item).ToDictionary(item => item.Node.Name, item => item.Method);
-		string[] source = new string[28]
+		string[] source = new string[29]
 		{
-			"初始化加载", "识别初始画面", "前往迷失之地-入口", "开始前等待入口加载", "识别悬赏委托完成进度", "矩阵行动-前往入口", "矩阵行动-点击预备编队",
+			"初始化加载", "识别初始画面", "前往迷失之地-入口", "选择迷失之地-入口", "开始前等待入口加载", "识别悬赏委托完成进度", "矩阵行动-前往入口", "矩阵行动-点击预备编队",
 			"矩阵行动-选择预备编队", "矩阵行动-选择代理人", "矩阵行动-点击协战代理人", "矩阵行动-等待代理人列表", "矩阵行动-选择协战代理人", "矩阵行动-开始挑战", "前往副本画面", "副本画面识别",
 			"打开调查战略列表", "选择调查战略", "选择周期增益", "下一步", "检查预备编队", "选择预备编队", "出战", "加载自动战斗配置", "层间移动", "通关后处理",
 			"打开悬赏委托", "全部领取", "完成后返回"
 		};
 		Assert.Equal(source.Order<string>(StringComparer.Ordinal), readOnlyDictionary.Keys.Order<string>(StringComparer.Ordinal));
-		string[] source2 = new string[37]
+		string[] source2 = new string[38]
 		{
 			Edge("初始化加载", "识别初始画面", success: true, "继续挑战"),
 			Edge("识别初始画面", "前往迷失之地-入口", success: true, "可前往快捷手册"),
 			Edge("识别初始画面", "前往迷失之地-入口", success: true, "未能识别当前画面"),
 			Edge("识别初始画面", "前往迷失之地-入口", success: true, "未识别初始画面"),
 			Edge("识别初始画面", "开始前等待入口加载", success: true, "可前往副本画面"),
-			Edge("前往迷失之地-入口", "开始前等待入口加载"),
+			Edge("前往迷失之地-入口", "选择迷失之地-入口"),
+			Edge("选择迷失之地-入口", "开始前等待入口加载"),
 			Edge("开始前等待入口加载", "识别悬赏委托完成进度"),
 			Edge("通关后处理", "识别悬赏委托完成进度"),
 			Edge("识别悬赏委托完成进度", "矩阵行动-前往入口", success: true, "继续挑战-矩阵行动"),
@@ -448,9 +449,9 @@ public sealed class LostVoidAppTests
 	}
 
 	[Fact]
-	public void EntryNavigation_RemovedManualOcrClickNodesInFavorOfScreenRoute()
+	public void EntryNavigation_RemovedLegacyManualOcrClickNodesInFavorOfScreenRoute()
 	{
-		string[] removedMethodNames = ["ClickPeriodInEntry", "MatrixGotoChallenge", "MatrixClickNextStep", "ClickRegularInMatrixExplore", "ClickTargetMissionInMatrixExplore", "IsMatrixExploreMission", "ClickEntryNavigation"];
+		string[] removedMethodNames = ["MatrixGotoChallenge", "MatrixClickNextStep", "ClickRegularInMatrixExplore", "ClickTargetMissionInMatrixExplore", "IsMatrixExploreMission", "ClickEntryNavigation"];
 		foreach (string methodName in removedMethodNames)
 		{
 			Assert.Null(typeof(LostVoidAppOperation).GetMethod(methodName, BindingFlags.Instance | BindingFlags.NonPublic));

@@ -123,11 +123,27 @@ internal sealed class LostVoidAppOperation : ZOperation
 	[OperationNode("前往迷失之地-入口")]
 	private async Task<OperationRoundResult> TransportToLostVoid()
 	{
-		return RoundByOperationResult(await new TransportByCompendium(base.ZContext, "作战", "零号空洞", "迷失之地").ExecuteAsync(_cancellationToken).ConfigureAwait(continueOnCapturedContext: false));
+		return RoundByOperationResult(await new TransportByCompendium(base.ZContext, "作战", "周期征讨", "迷失之地").ExecuteAsync(_cancellationToken).ConfigureAwait(continueOnCapturedContext: false));
+	}
+
+	[NodeFrom("前往迷失之地-入口")]
+	[OperationNode("选择迷失之地-入口", NodeMaxRetryTimes = 20)]
+	private OperationRoundResult ChooseLostVoidEntry()
+	{
+		OperationRoundResult result = RoundByOcrAndClick(base.LastScreenshot, "迷失之地", null, 0.5, null, OneSecond, OneSecond);
+		if (result.IsSuccess)
+		{
+			return RoundRetry("尝试进入迷失之地-入口", null, OneSecond);
+		}
+		if (string.Equals(result.Status, "找不到 迷失之地", StringComparison.Ordinal))
+		{
+			return WaitForLostVoidEntry();
+		}
+		return RoundRetry(result.Status, null, OneSecond);
 	}
 
 	[NodeFrom("识别初始画面", Status = "可前往副本画面")]
-	[NodeFrom("前往迷失之地-入口")]
+	[NodeFrom("选择迷失之地-入口")]
 	[OperationNode("开始前等待入口加载")]
 	private OperationRoundResult WaitLostVoidEntry()
 	{
