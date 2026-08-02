@@ -278,7 +278,7 @@ public sealed class CombatSimulation : CompendiumChallengeOperationBase
 				flag = true;
 				break;
 			}
-			if (StringUtils.FindBestMatchByDifflib(orderedName, ocrWords, 0.8).HasValue)
+			if (StringUtils.FindInListWithFuzzy(orderedName, ocrWords, 0.8).HasValue)
 			{
 				flag2 = true;
 			}

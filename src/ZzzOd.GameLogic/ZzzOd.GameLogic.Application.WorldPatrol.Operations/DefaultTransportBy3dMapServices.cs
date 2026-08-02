@@ -573,7 +573,7 @@ public sealed class DefaultTransportBy3dMapServices : ITransportBy3dMapServices
 				flag = true;
 				break;
 			}
-			if (StringUtils.FindBestMatchByDifflib(translateGameText(orderedName), ocrWords, threshold).HasValue)
+			if (StringUtils.FindInListWithFuzzy(translateGameText(orderedName), ocrWords, threshold).HasValue)
 			{
 				flag2 = true;
 			}
