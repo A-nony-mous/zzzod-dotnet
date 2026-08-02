@@ -77,7 +77,10 @@ public sealed class DefaultRandomPlayOperationServices : IRandomPlayOperationSer
 			beforeScreenshotPath = ActionLevelDebugEvidenceWriter.WriteScreenshot(text, "before", screen);
 			beforeSummary = GetMoveAndInteractRecognitionSummary(context, screen);
 		}
-		if (string.Equals(config.TransportPoint, RandomPlayTransportPoint.VideoStoreCounter.Value, StringComparison.Ordinal))
+		// 录像店-柜台 / 布亚斯特城区-录像店营业点：转向正东后前移再交互；澄辉坪-录像店营业点：传送落点已正对入口，直接交互
+		bool isEastTurn = string.Equals(config.TransportPoint, RandomPlayTransportPoint.VideoStoreCounter.Value, StringComparison.Ordinal)
+			|| string.Equals(config.TransportPoint, RandomPlayTransportPoint.BuyasteBusinessPoint.Value, StringComparison.Ordinal);
+		if (isEastTurn)
 		{
 			if (!(context.Controller is ZPcController controller))
 			{

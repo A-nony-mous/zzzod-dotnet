@@ -126,9 +126,32 @@ public sealed class RandomPlayOperation : ZOperation
 	}
 
 	/// <summary>
-	/// 等待经营页面加载。
+	/// 处理交互后的选项对话框。
 	/// </summary>
 	[NodeFrom("移动交互")]
+	[OperationNode("交互对话", NodeMaxRetryTimes = 10)]
+	public OperationRoundResult HandleInteractionDialog()
+	{
+		// 录像店-柜台交互后没有选项对话，直接交给经营画面加载节点
+		if (string.Equals(_config.TransportPoint, RandomPlayTransportPoint.VideoStoreCounter.Value, StringComparison.Ordinal))
+		{
+			return RoundSuccess();
+		}
+		// 录像店营业点交互后的选项对话框，优先选择"查看经营状况"
+		OperationResult operationResult = _services.ClickText(base.ZContext, base.LastScreenshot, "查看经营状况", "影像店营业", "右侧选项区域");
+		if (operationResult.IsSuccess)
+		{
+			return RoundSuccess(operationResult.Status, null, TimeSpan.FromSeconds(1L));
+		}
+		// (布亚斯特城区-录像店营业点)需要推进一次对话框，右侧选项区域才会出现"查看经营状况"
+		OperationResult dialogResult = _services.ClickArea(base.ZContext, "影像店营业", "对话框标题");
+		return dialogResult.IsSuccess ? RoundRetry("继续对话", null, TimeSpan.FromSeconds(1L)) : RoundByOperationResult(dialogResult);
+	}
+
+	/// <summary>
+	/// 等待经营页面加载。
+	/// </summary>
+	[NodeFrom("交互对话")]
 	[OperationNode("等待经营画面加载", NodeMaxRetryTimes = 10)]
 	public OperationRoundResult WaitRun()
 	{
@@ -142,11 +165,6 @@ public sealed class RandomPlayOperation : ZOperation
 		{
 			return RoundSuccess(operationResult.Status);
 		}
-		OperationResult operationResult2 = _services.ClickText(base.ZContext, base.LastScreenshot, "查看经营状况", "影像店营业", "右侧选项区域");
-		if (operationResult2.IsSuccess)
-		{
-			return RoundRetry(operationResult2.Status, null, TimeSpan.FromSeconds(1L));
-		}
 		return RoundRetry("等待经营画面", null, TimeSpan.FromSeconds(1L));
 	}
 
@@ -157,7 +175,15 @@ public sealed class RandomPlayOperation : ZOperation
 	[OperationNode("识别营业状态")]
 	public OperationRoundResult CheckRunning()
 	{
-		return _services.IsAreaVisible(base.ZContext, base.LastScreenshot, "影像店营业", "正在营业") ? RoundSuccess("正在营业") : RoundSuccess();
+		if (_services.IsAreaVisible(base.ZContext, base.LastScreenshot, "影像店营业", "正在营业"))
+		{
+			return RoundSuccess("正在营业");
+		}
+		if (_services.IsAreaVisible(base.ZContext, base.LastScreenshot, "影像店营业", "开始营业"))
+		{
+			return RoundSuccess();
+		}
+		return RoundRetry("等待营业状态", null, TimeSpan.FromSeconds(1L));
 	}
 
 	/// <summary>

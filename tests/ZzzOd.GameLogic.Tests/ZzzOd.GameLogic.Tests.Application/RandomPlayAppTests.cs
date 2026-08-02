@@ -260,6 +260,16 @@ public sealed class RandomPlayAppTests
 	}
 
 	[Fact]
+	public void TransportPoint_BuyasteParsesByShortAndFullValue()
+	{
+		Assert.Equal(RandomPlayTransportPoint.BuyasteBusinessPoint, RandomPlayTransportPoint.FromValue("布亚斯特城区 - 录像店营业点"));
+		Assert.Equal("布亚斯特城区", RandomPlayTransportPoint.BuyasteBusinessPoint.AreaName);
+		Assert.Equal("录像店营业点", RandomPlayTransportPoint.BuyasteBusinessPoint.TransportPointName);
+		Assert.Contains(RandomPlayTransportPoint.BuyasteBusinessPoint, (IEnumerable<RandomPlayTransportPoint>)RandomPlayTransportPoint.All);
+		Assert.Contains((IEnumerable<ConfigItem>)RandomPlayTransportPoint.Options, (Predicate<ConfigItem>)((ConfigItem option) => object.Equals(option.Value, RandomPlayTransportPoint.BuyasteBusinessPoint.Value)));
+	}
+
+	[Fact]
 	public void RunRecord_UsesAppIdAndGameRefreshOffset()
 	{
 		DateTimeOffset now = new DateTimeOffset(2026, 7, 6, 1, 0, 0, TimeSpan.Zero);
@@ -309,6 +319,7 @@ public sealed class RandomPlayAppTests
 			};
 			RecordingRandomPlayServices recordingRandomPlayServices = new RecordingRandomPlayServices();
 			recordingRandomPlayServices.VisibleAreas["影像店营业/经营状况"] = true;
+			recordingRandomPlayServices.VisibleAreas["影像店营业/开始营业"] = true;
 			recordingRandomPlayServices.VisibleAreas["影像店营业/选择宣传员"] = true;
 			recordingRandomPlayServices.VisibleAreas["影像店营业/上架筛选"] = true;
 			recordingRandomPlayServices.VisibleAreas["影像店营业/上架"] = true;
@@ -391,15 +402,17 @@ public sealed class RandomPlayAppTests
 			} into item
 			where item.Node != null
 			select item).ToDictionary(item => item.Node.Name, item => item.Method);
-		Assert.Equal(new string[18]
+		Assert.Equal(new string[19]
 		{
-			"传送", "移动交互", "等待经营画面加载", "识别营业状态", "关闭经营页面", "点击宣传员入口", "选择宣传员", "识别录像带主题", "点击录像带入口", "识别推荐上架",
+			"传送", "移动交互", "交互对话", "等待经营画面加载", "识别营业状态", "关闭经营页面", "点击宣传员入口", "选择宣传员", "识别录像带主题", "点击录像带入口", "识别推荐上架",
 			"上架筛选", "选择主题", "上架", "返回", "开始营业", "确认营业", "营业后确认", "返回大世界"
 		}, readOnlyDictionary.Keys);
 		Assert.True(readOnlyDictionary["传送"].GetCustomAttribute<OperationNodeAttribute>().IsStartNode);
 		Assert.Equal(10, readOnlyDictionary["移动交互"].GetCustomAttribute<OperationNodeAttribute>().NodeMaxRetryTimes);
+		Assert.Equal(10, readOnlyDictionary["交互对话"].GetCustomAttribute<OperationNodeAttribute>().NodeMaxRetryTimes);
 		Assert.Equal(10, readOnlyDictionary["等待经营画面加载"].GetCustomAttribute<OperationNodeAttribute>().NodeMaxRetryTimes);
 		Assert.Contains(readOnlyDictionary["传送"].GetCustomAttributes<NodeFromAttribute>(), (NodeFromAttribute edge) => edge.FromName == "等待经营画面加载" && !edge.Success);
+		Assert.Contains(readOnlyDictionary["等待经营画面加载"].GetCustomAttributes<NodeFromAttribute>(), (NodeFromAttribute edge) => edge.FromName == "交互对话");
 		Assert.Contains(readOnlyDictionary["关闭经营页面"].GetCustomAttributes<NodeFromAttribute>(), (NodeFromAttribute edge) => edge.FromName == "识别营业状态" && edge.Status == "正在营业");
 		Assert.Contains(readOnlyDictionary["上架筛选"].GetCustomAttributes<NodeFromAttribute>(), (NodeFromAttribute edge) => edge.FromName == "识别推荐上架" && edge.Status == "上架筛选");
 		Assert.Contains(readOnlyDictionary["返回"].GetCustomAttributes<NodeFromAttribute>(), (NodeFromAttribute edge) => edge.FromName == "上架筛选" && edge.Status == "已选择全部录像带");
