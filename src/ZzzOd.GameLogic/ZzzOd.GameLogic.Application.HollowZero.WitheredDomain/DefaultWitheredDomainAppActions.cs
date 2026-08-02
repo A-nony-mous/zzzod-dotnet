@@ -21,13 +21,13 @@ public sealed class DefaultWitheredDomainAppActions : IWitheredDomainAppActions
 	/// <inheritdoc />
 	public Task<OperationResult> TransportToEntryAsync(ZContext context, CancellationToken cancellationToken)
 	{
-		return new TransportByCompendium(context, "作战", "零号空洞", "枯萎之都").ExecuteAsync(cancellationToken);
+		return new TransportByCompendium(context, "作战", "周期征讨", "迷失之地").ExecuteAsync(cancellationToken);
 	}
 
 	/// <inheritdoc />
 	public Task<OperationResult> WaitEntryLoadingAsync(ZContext context, CancellationToken cancellationToken)
 	{
-		return new WitheredDomainFindAreaOperation(context, "等待入口加载", "零号空洞-入口", "街区", 20).ExecuteAsync(cancellationToken);
+		return new WitheredDomainChooseEntryOperation(context).ExecuteAsync(cancellationToken);
 	}
 
 	/// <inheritdoc />
