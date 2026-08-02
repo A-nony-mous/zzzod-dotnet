@@ -253,9 +253,12 @@ public sealed class EnterGameOperationTests : IDisposable
 	}
 
 	[Fact]
-	public void OpenGameProcessLauncher_UsesPythonBreakawayCreationFlag()
+	public void OpenGameProcessLauncher_DoesNotUseBreakawayCreationFlag()
 	{
-		Assert.Equal(16777216u, 16777216u);
+		// CREATE_BREAKAWAY_FROM_JOB (0x1000000) 在宿主进程位于未启用
+		// JOB_OBJECT_LIMIT_BREAKAWAY_OK 的 Job 中时会使 CreateProcessW 返回 ERROR_ACCESS_DENIED，
+		// 且本进程不创建任何 Job，因此启动游戏不得携带该标志。
+		Assert.Equal(0u, OpenGameProcessLauncher.CreationFlags);
 	}
 
 	[Fact]

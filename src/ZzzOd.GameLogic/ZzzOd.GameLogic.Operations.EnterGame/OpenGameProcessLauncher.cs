@@ -6,7 +6,9 @@ using System.Text;
 namespace ZzzOd.GameLogic.Operations.EnterGame;
 
 /// <summary>
-/// 按 BaselineParity <c>subprocess.Popen(..., creationflags=CREATE_BREAKAWAY_FROM_JOB)</c> 语义启动游戏命令。
+/// 启动游戏命令。不使用 <c>CREATE_BREAKAWAY_FROM_JOB</c>：宿主进程一旦位于未启用
+/// <c>JOB_OBJECT_LIMIT_BREAKAWAY_OK</c> 的 Job 对象中，该标志会让 <c>CreateProcessW</c>
+/// 直接返回 ERROR_ACCESS_DENIED，且本进程自身并不创建任何 Job 需要逃离。
 /// </summary>
 internal static class OpenGameProcessLauncher
 {
@@ -62,9 +64,9 @@ internal static class OpenGameProcessLauncher
 	}
 
 	/// <summary>
-	/// Windows <c>CREATE_BREAKAWAY_FROM_JOB</c> 标志。
+	/// Windows 进程创建标志：无附加标志。
 	/// </summary>
-	internal const uint CreationFlags = 16777216u;
+	internal const uint CreationFlags = 0u;
 
 	/// <summary>
 	/// 启动完整的 BaselineParity 等价命令行，并立即释放本进程持有的句柄。
@@ -80,7 +82,7 @@ internal static class OpenGameProcessLauncher
 		{
 			Size = (uint)Marshal.SizeOf<StartupInfo>()
 		};
-		if (!CreateProcess(null, commandLine, IntPtr.Zero, IntPtr.Zero, inheritHandles: false, 16777216u, IntPtr.Zero, null, ref startupInfo, out var processInformation))
+		if (!CreateProcess(null, commandLine, IntPtr.Zero, IntPtr.Zero, inheritHandles: false, CreationFlags, IntPtr.Zero, null, ref startupInfo, out var processInformation))
 		{
 			throw new Win32Exception(Marshal.GetLastWin32Error(), "无法启动游戏命令: " + command);
 		}
