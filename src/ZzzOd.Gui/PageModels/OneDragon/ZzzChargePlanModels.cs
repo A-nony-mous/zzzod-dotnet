@@ -59,13 +59,17 @@ internal sealed class ZzzChargePlanRowModel
 
     public string PlanTimesText { get; set; } = string.Empty;
 
+    public bool IsMissionTypeVisible => !string.Equals(Plan.CategoryName, "合成电池", StringComparison.Ordinal);
+
     public bool IsMissionVisible => string.Equals(Plan.CategoryName, "实战模拟室", StringComparison.Ordinal);
 
     public bool IsCardNumVisible => IsMissionVisible;
 
     public bool IsBuffVisible => string.Equals(Plan.CategoryName, "恶名狩猎", StringComparison.Ordinal);
 
-    public bool IsAutoBattleVisible => Plan.PredefinedTeamIndex == -1;
+    public bool IsTeamVisible => !string.Equals(Plan.CategoryName, "合成电池", StringComparison.Ordinal);
+
+    public bool IsAutoBattleVisible => !string.Equals(Plan.CategoryName, "合成电池", StringComparison.Ordinal) && Plan.PredefinedTeamIndex == -1;
 }
 
 internal sealed class ZzzChargePlanState

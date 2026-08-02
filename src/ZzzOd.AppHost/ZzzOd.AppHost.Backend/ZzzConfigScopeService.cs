@@ -1259,6 +1259,10 @@ internal sealed class ZzzConfigScopeService
 				case "plan_list":
 				case "history_list":
 					value = ConvertValue<List<ChargePlanItem>>(obj) ?? new List<ChargePlanItem>();
+					if (text2 == "plan_list" && value is List<ChargePlanItem> typedPlans)
+					{
+						ValidateChargePlanItems(typedPlans);
+					}
 					break;
 				case "restore_charge":
 				case "last_daily_reset_dt":
@@ -1299,6 +1303,26 @@ internal sealed class ZzzConfigScopeService
 			}
 			object obj = NormalizeYaml(value);
 			return (obj == null) ? default(T) : Deserializer.Deserialize<T>(Serializer.Serialize(obj));
+		}
+
+		/// <summary>
+		/// 校验体力计划项业务合法性（对应 Python charge_plan_config.validate_item）。
+		/// 合成电池等无 mission_type 的分类要求 mission_type_name 为空，防止写入非法计划。
+		/// </summary>
+		private static void ValidateChargePlanItems(IReadOnlyList<ChargePlanItem> plans)
+		{
+			if (plans == null)
+			{
+				return;
+			}
+			foreach (ChargePlanItem plan in plans)
+			{
+				bool hasMissionType = !string.IsNullOrWhiteSpace(plan.MissionTypeName);
+				if (plan.CategoryName == "合成电池" && hasMissionType)
+				{
+					throw new ZzzConfigValidationException("charge-plan", "plan_list", "合成电池 无 mission_type，mission_type_name 应为空");
+				}
+			}
 		}
 
 		private static object? NormalizeYaml(object? value)
