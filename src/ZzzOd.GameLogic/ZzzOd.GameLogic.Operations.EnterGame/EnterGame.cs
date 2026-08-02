@@ -586,6 +586,16 @@ public sealed class EnterGame : ZOperation
 
 	private OperationRoundResult? CheckScreenToInteract(Mat screen)
 	{
+		foreach (string areaName in new string[2] { "二周年自选奖励", "一周年自选奖励" })
+		{
+			TimeSpan? successDelay = null;
+			TimeSpan? retryDelay = null;
+			OperationRoundResult rewardResult = RoundByFindAndClickArea(screen, "打开游戏", areaName, null, successDelay, retryDelay);
+			if (rewardResult.IsSuccess)
+			{
+				return RoundWait(rewardResult.Status, null, _waitDelay);
+			}
+		}
 		IReadOnlyList<string> readOnlyList = new string[24]
 		{
 			"取消", "确认", "领取01", "已领取01", "领取02", "已领取02", "领取03", "已领取03", "领取60", "已领取60",
