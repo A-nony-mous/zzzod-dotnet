@@ -194,10 +194,10 @@ public sealed class WitheredDomainOcrEventSource : IHollowEventSource
 		{
 			if (!restrictToTopLine || item.Y - num < 20)
 			{
-				int? num2 = StringUtils.FindBestMatchByDifflib(item.Text, candidates);
-				if (num2.HasValue)
+				(int? First, int? Second) bestMatch = StringUtils.FindMostSimilar(candidates, [item.Text]);
+				if (bestMatch.First.HasValue)
 				{
-					return candidates[num2.Value];
+					return candidates[bestMatch.First.Value];
 				}
 			}
 		}

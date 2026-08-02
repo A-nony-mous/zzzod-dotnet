@@ -77,7 +77,12 @@ public sealed class WitheredDomainMapNavigator : IHollowMapNavigator
 			HollowZeroSpecialEvent.DoorBattleEntry.EventName
 		};
 		int top = ocrResultList.Min((OcrMatchResult result) => result.Y);
-		return SelectMapNodeClickPosition(nextNode, ocrResultList.Where((OcrMatchResult result) => result.Y - top < 20).FirstOrDefault((OcrMatchResult result) => StringUtils.FindBestMatchByDifflib(result.Text, entryOptions).HasValue)?.Center);
+		OcrMatchResult? entryOption = ocrResultList.Where((OcrMatchResult result) => result.Y - top < 20).FirstOrDefault(delegate(OcrMatchResult result)
+		{
+			(int? First, int? Second) bestMatch = StringUtils.FindMostSimilar(entryOptions, [result.Text]);
+			return bestMatch.First.HasValue;
+		});
+		return SelectMapNodeClickPosition(nextNode, entryOption?.Center);
 	}
 
 	internal static OneDragon.Core.Abstractions.Geometry.Point SelectMapNodeClickPosition(HollowZeroMapNode nextNode, OneDragon.Core.Abstractions.Geometry.Point? entryOptionCenter)
