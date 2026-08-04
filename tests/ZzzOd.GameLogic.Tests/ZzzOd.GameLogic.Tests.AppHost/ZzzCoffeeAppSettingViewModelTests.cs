@@ -119,6 +119,18 @@ public sealed class ZzzCoffeeAppSettingViewModelTests
     }
 
     [Fact]
+    public void CoffeeTransportPointOptions_IncludeBuyastePointThree()
+    {
+        (IZzzAppBackend backend, _) = CreateBackend();
+        ZzzCoffeeAppSettingViewModel viewModel = new(backend, 3, "one_dragon");
+
+        Assert.Equal(3, viewModel.TransportPointOptions.Count);
+        Assert.Equal("六分街 - 咖啡店", viewModel.TransportPointOptions[0].Value);
+        Assert.Equal("澄辉坪 - 汀曼咖啡", viewModel.TransportPointOptions[1].Value);
+        Assert.Equal("布亚斯特城区 - 片刻闲", viewModel.TransportPointOptions[2].Value);
+    }
+
+    [Fact]
     public void CoffeePageKeepsCompiledViewModelAndExistingControlNames()
     {
         (IZzzAppBackend backend, RecordingBackendProxy proxy) = CreateBackend();

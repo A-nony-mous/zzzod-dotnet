@@ -70,10 +70,9 @@ internal sealed class ZzzCoffeeAppSettingViewModel : ZzzConfigSectionViewModel
     protected override string? GroupId => _groupId;
 
     public IReadOnlyList<ZzzCoffeeSettingOption> TransportPointOptions { get; } =
-    [
-        new("六分街 - 咖啡店", "六分街 - 咖啡店"),
-        new("澄辉坪 - 汀曼咖啡", "澄辉坪 - 汀曼咖啡"),
-    ];
+        CoffeeTransportPoint.All
+            .Select(point => new ZzzCoffeeSettingOption($"{point.AreaName} - {point.TransportPointName}", point.Value))
+            .ToArray();
 
     public IReadOnlyList<ZzzCoffeeSettingOption> ChooseWayOptions { get; } =
     [
