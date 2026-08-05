@@ -2333,9 +2333,18 @@ public sealed class ZzzAppBackend : IZzzAppBackend, IZzzIntelBoardProgressBacken
 				ZzzRunState state = currentRunCore.State;
 				if ((uint)(state - 1) <= 3u)
 				{
-					return Task.FromResult(ZzzBackendResult<ZzzRunStatusDto>.Fail(ZzzBackendErrorCode.Conflict, "已有运行中的应用。"));
+					string conflictMessage = state == ZzzRunState.Stopping
+						? "上一轮运行仍在退出中，请稍后重试。"
+						: "已有运行中的应用。";
+					return Task.FromResult(ZzzBackendResult<ZzzRunStatusDto>.Fail(ZzzBackendErrorCode.Conflict, conflictMessage));
 				}
 				ZContext zContext = _runtime.EnsureContext();
+				// 旧应用仍在后台退出时拒绝启动，否则新应用会阻塞在串行调度队列中。
+				if (zContext.RunContext.IsPreviousApplicationUnwinding)
+				{
+					_logger.LogWarning("拒绝启动应用 {AppId}：上一轮运行仍在退出中", request.AppId);
+					return Task.FromResult(ZzzBackendResult<ZzzRunStatusDto>.Fail(ZzzBackendErrorCode.Conflict, "上一轮运行仍在退出中，请稍后重试。"));
+				}
 				_battleAssistantRuntimeSource.Attach(zContext);
 				if (!zContext.RunContext.IsAppRegistered(request.AppId))
 				{
