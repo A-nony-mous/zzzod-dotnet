@@ -12,6 +12,12 @@
              Height="132"
              HorizontalAlignment="Center"
              Stretch="Uniform" />
+      <TextBlock MaxWidth="440"
+                 HorizontalAlignment="Center"
+                 Text="Windows 会请求管理员权限，用于发现、激活、截图并控制游戏窗口。"
+                 TextAlignment="Center"
+                 TextWrapping="Wrap"
+                 Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
       <fa:FAProgressRing Width="32"
                          Height="32"
                          HorizontalAlignment="Center"
