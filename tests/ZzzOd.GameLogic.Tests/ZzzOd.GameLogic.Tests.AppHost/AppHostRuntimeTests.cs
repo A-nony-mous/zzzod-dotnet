@@ -537,6 +537,27 @@ public sealed class AppHostRuntimeTests
 	}
 
 	/// <summary>
+	/// 紧急停止返回后，即使旧 application 仍未退出，也应允许后续启动进入新的调度槽。
+	/// </summary>
+	[Fact]
+	public async Task BackendAllowsRestartWhileOldApplicationExitsLate()
+	{
+		using BackendHarness harness = BackendHarness.Create(ignoreCancellation: true);
+		ZzzBackendResult<ZzzRunStatusDto> started = await harness.Backend.StartRunAsync(new ZzzStartRunRequest("test-app"));
+		await harness.Application.Started.Task.WaitAsync(TimeSpan.FromSeconds(3L));
+
+		ZzzBackendResult<ZzzRunStatusDto> stopped = await harness.Backend.StopRunAsync();
+		ZzzBackendResult<ZzzRunStatusDto> restarted = await harness.Backend.StartRunAsync(new ZzzStartRunRequest("test-app"));
+
+		Assert.True(started.Success);
+		Assert.True(stopped.Success);
+		Assert.Equal(ZzzRunState.Cancelled, stopped.Value.State);
+		Assert.True(restarted.Success, restarted.Error);
+		Assert.NotEqual(ZzzBackendErrorCode.Conflict, restarted.ErrorCode);
+		harness.Application.AllowExit();
+	}
+
+	/// <summary>
 	/// 空运行目录应按 Python 初始化语义生成可用的 01 实例。
 	/// </summary>
 	[Fact]
