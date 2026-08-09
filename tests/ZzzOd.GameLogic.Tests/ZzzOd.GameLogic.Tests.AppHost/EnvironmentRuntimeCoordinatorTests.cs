@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Threading;
+using System.Threading.Channels;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging.Abstractions;
 using OneDragon.Core.Runtime;
@@ -12,6 +13,7 @@ using OpenCvSharp;
 using Xunit;
 using ZzzOd.AppHost.Backend;
 using ZzzOd.GameLogic.Context;
+using ZzzOd.Gui.Services.Dialogs;
 using ZzzOd.Gui.Services.RunIntent;
 using ZzzOd.Gui.Services.Windows;
 using GeometryRect = OneDragon.Core.Abstractions.Geometry.Rect;
@@ -30,23 +32,30 @@ public sealed class EnvironmentRuntimeCoordinatorTests
 
 		public ZzzGuiRunIntentService RunIntent { get; }
 
+		public ZzzDialogService DialogService { get; }
+
 		public RecordingClipboard Clipboard { get; }
 
 		public ZzzEnvironmentRuntimeCoordinator Coordinator { get; }
 
 		public int ReinitializeCalls { get; private set; }
 
-		private TestHarness(string runRoot, ZzzGlobalInputMonitor monitor, RecordingBackendProxy backendProxy, ZzzGuiRunIntentService runIntent, RecordingClipboard clipboard, ZzzEnvironmentRuntimeCoordinator coordinator)
+		private TestHarness(string runRoot, ZzzGlobalInputMonitor monitor, RecordingBackendProxy backendProxy, ZzzGuiRunIntentService runIntent, ZzzDialogService dialogService, RecordingClipboard clipboard, ZzzEnvironmentRuntimeCoordinator coordinator)
 		{
 			RunRoot = runRoot;
 			Monitor = monitor;
 			BackendProxy = backendProxy;
 			RunIntent = runIntent;
+			DialogService = dialogService;
 			Clipboard = clipboard;
 			Coordinator = coordinator;
 		}
 
-		public static TestHarness Create(bool copyScreenshot = false, bool patchedCaptureEnabled = false, IOverlayCapturer? overlayCapturer = null)
+		public static TestHarness Create(
+			bool copyScreenshot = false,
+			bool patchedCaptureEnabled = false,
+			IOverlayCapturer? overlayCapturer = null,
+			TimeSpan? runStateObservationTimeout = null)
 		{
 			string runRoot = CreateRunRoot();
 			IZzzAppBackend zzzAppBackend = DispatchProxy.Create<IZzzAppBackend, RecordingBackendProxy>();
@@ -55,14 +64,15 @@ public sealed class EnvironmentRuntimeCoordinatorTests
 			proxy.PatchedCaptureEnabled = patchedCaptureEnabled;
 			ZzzGlobalInputMonitor zzzGlobalInputMonitor = new ZzzGlobalInputMonitor();
 			ZzzGuiRunIntentService runIntent = new ZzzGuiRunIntentService();
+			ZzzDialogService dialogService = new ZzzDialogService();
 			RecordingClipboard clipboard = new RecordingClipboard();
 			TestHarness harness = null;
-			ZzzEnvironmentRuntimeCoordinator coordinator = new ZzzEnvironmentRuntimeCoordinator(zzzAppBackend, zzzGlobalInputMonitor, runIntent, clipboard, runRoot, delegate
+			ZzzEnvironmentRuntimeCoordinator coordinator = new ZzzEnvironmentRuntimeCoordinator(zzzAppBackend, zzzGlobalInputMonitor, runIntent, dialogService, clipboard, runRoot, delegate
 			{
 				harness.ReinitializeCalls++;
 				return ZzzBackendResult<bool>.Ok(value: true);
-			}, () => ZzzBackendResult<byte[]>.Ok(proxy.ScreenshotBytes), NullLogger<ZzzEnvironmentRuntimeCoordinator>.Instance, overlayCapturer);
-			harness = new TestHarness(runRoot, zzzGlobalInputMonitor, proxy, runIntent, clipboard, coordinator);
+			}, () => ZzzBackendResult<byte[]>.Ok(proxy.ScreenshotBytes), NullLogger<ZzzEnvironmentRuntimeCoordinator>.Instance, overlayCapturer, runStateObservationTimeout);
+			harness = new TestHarness(runRoot, zzzGlobalInputMonitor, proxy, runIntent, dialogService, clipboard, coordinator);
 			return harness;
 		}
 
@@ -80,6 +90,8 @@ public sealed class EnvironmentRuntimeCoordinatorTests
 
 		private static readonly ZzzConfigScopeDescriptorDto OverlayDescriptor = new ZzzConfigScopeDescriptorDto("overlay", "Overlay", InstanceBound: false, GroupBound: false, Writable: true, Array.Empty<ZzzConfigSettingDescriptorDto>());
 
+		private readonly Channel<ZzzBackendEvent> _events = Channel.CreateUnbounded<ZzzBackendEvent>();
+
 		public ZzzRunState State { get; set; } = ZzzRunState.Idle;
 
 		public string? ActiveAppId { get; set; }
@@ -87,6 +99,16 @@ public sealed class EnvironmentRuntimeCoordinatorTests
 		public bool CopyScreenshot { get; set; }
 
 		public bool PatchedCaptureEnabled { get; set; }
+
+		public ZzzBackendResult<ZzzRunStatusDto>? StartResult { get; set; }
+
+		public ZzzBackendResult<ZzzRunStatusDto>? PauseResult { get; set; }
+
+		public ZzzBackendResult<ZzzRunStatusDto>? ResumeResult { get; set; }
+
+		public Exception? StartException { get; set; }
+
+		public bool PublishRunEvents { get; set; }
 
 		public byte[] ScreenshotBytes { get; set; } = new byte[8] { 137, 80, 78, 71, 13, 10, 26, 10 };
 
@@ -119,6 +141,8 @@ public sealed class EnvironmentRuntimeCoordinatorTests
 				"ResumeRun" => Resume(), 
 				"StopRunAsync" => StopAsync(), 
 				"StartRunAsync" => StartAsync((ZzzStartRunRequest)args![0]!),
+					"SubscribeEvents" => _events.Reader,
+					"UnsubscribeEvents" => null,
 				"GetScreenshot" => ZzzBackendResult<ZzzScreenshotDto>.Ok(new ZzzScreenshotDto("image/png", ScreenshotBytes)), 
 				_ => throw new NotSupportedException(targetMethod.Name), 
 			};
@@ -164,15 +188,29 @@ public sealed class EnvironmentRuntimeCoordinatorTests
 		private ZzzBackendResult<ZzzRunStatusDto> Pause()
 		{
 			PauseCalls++;
+			if (PauseResult is not null)
+			{
+				return PauseResult;
+			}
+
 			State = ZzzRunState.Paused;
-			return ZzzBackendResult<ZzzRunStatusDto>.Ok(new ZzzRunStatusDto(State));
+			ZzzRunStatusDto status = new(State);
+			PublishRunStateIfEnabled(status);
+			return ZzzBackendResult<ZzzRunStatusDto>.Ok(status);
 		}
 
 		private ZzzBackendResult<ZzzRunStatusDto> Resume()
 		{
 			ResumeCalls++;
+			if (ResumeResult is not null)
+			{
+				return ResumeResult;
+			}
+
 			State = ZzzRunState.Running;
-			return ZzzBackendResult<ZzzRunStatusDto>.Ok(new ZzzRunStatusDto(State));
+			ZzzRunStatusDto status = new(State);
+			PublishRunStateIfEnabled(status);
+			return ZzzBackendResult<ZzzRunStatusDto>.Ok(status);
 		}
 
 		private Task<ZzzBackendResult<ZzzRunStatusDto>> StopAsync()
@@ -188,8 +226,32 @@ public sealed class EnvironmentRuntimeCoordinatorTests
 			StartedAppId = request.AppId;
 			StartedGroupId = request.GroupId;
 			StartedInstanceIndex = request.InstanceIndex;
+			if (StartException is not null)
+			{
+				throw StartException;
+			}
+			if (StartResult is not null)
+			{
+				return Task.FromResult(StartResult);
+			}
+
 			State = ZzzRunState.Starting;
-			return Task.FromResult(ZzzBackendResult<ZzzRunStatusDto>.Ok(new ZzzRunStatusDto(State)));
+			ZzzRunStatusDto status = new(State, request.AppId, request.AppId, request.InstanceIndex, request.GroupId, "request-started");
+			PublishRunStateIfEnabled(status);
+			return Task.FromResult(ZzzBackendResult<ZzzRunStatusDto>.Ok(status));
+		}
+
+		public void PublishRunState(ZzzRunStatusDto status)
+		{
+			_events.Writer.TryWrite(new ZzzBackendEvent("run.stateChanged", DateTimeOffset.UtcNow, status));
+		}
+
+		private void PublishRunStateIfEnabled(ZzzRunStatusDto status)
+		{
+			if (PublishRunEvents)
+			{
+				PublishRunState(status);
+			}
 		}
 	}
 
@@ -256,6 +318,143 @@ public sealed class EnvironmentRuntimeCoordinatorTests
 		Assert.Equal("scratch_card", harness.BackendProxy.StartedAppId);
 		Assert.Equal("one_dragon", harness.BackendProxy.StartedGroupId);
 		Assert.Null(harness.BackendProxy.StartedInstanceIndex);
+	}
+
+	[Fact]
+	public async Task InputMonitorPublishesOneF9ActionToTheCoordinator()
+	{
+		using TestHarness harness = TestHarness.Create();
+		harness.RunIntent.RegisterRunTarget(new object(), "coffee");
+		await harness.Coordinator.StartAsync(CancellationToken.None);
+
+		harness.Monitor.PublishForTest("f9");
+
+		Assert.True(SpinWait.SpinUntil(() => harness.BackendProxy.StartCalls == 1, TimeSpan.FromSeconds(3)));
+		Assert.Equal(1, harness.BackendProxy.StartCalls);
+	}
+
+	[Fact]
+	public async Task StartHotkeyShowsErrorWhenNoRunTargetExists()
+	{
+		using TestHarness harness = TestHarness.Create();
+		ZzzToastRequest? toast = null;
+		harness.DialogService.ToastRequested += (_, request) => toast = request;
+
+		await harness.Coordinator.HandleInputPressedForTestAsync("f9");
+
+		Assert.Equal(0, harness.BackendProxy.StartCalls);
+		Assert.NotNull(toast);
+		Assert.Equal("启动失败", toast.Title);
+		Assert.Equal("未选择运行应用。", toast.Message);
+		Assert.Equal(FluentAvalonia.UI.Controls.FAInfoBarSeverity.Error, toast.Severity);
+	}
+
+	[Theory]
+	[InlineData(ZzzBackendErrorCode.Conflict, "上一轮运行仍在退出中，请稍后重试。")]
+	[InlineData(ZzzBackendErrorCode.NotFound, "应用未注册 coffee")]
+	[InlineData(ZzzBackendErrorCode.Validation, "运行参数无效")]
+	public async Task StartHotkeyShowsBackendFailureWithoutChangingState(ZzzBackendErrorCode code, string message)
+	{
+		using TestHarness harness = TestHarness.Create();
+		harness.RunIntent.RegisterRunTarget(new object(), "coffee");
+		harness.BackendProxy.StartResult = ZzzBackendResult<ZzzRunStatusDto>.Fail(code, message);
+		ZzzToastRequest? toast = null;
+		harness.DialogService.ToastRequested += (_, request) => toast = request;
+
+		await harness.Coordinator.HandleInputPressedForTestAsync("f9");
+
+		Assert.Equal(ZzzRunState.Idle, harness.BackendProxy.State);
+		Assert.Equal(message, toast?.Message);
+	}
+
+	[Fact]
+	public async Task StartHotkeyShowsThrownBackendException()
+	{
+		using TestHarness harness = TestHarness.Create();
+		harness.RunIntent.RegisterRunTarget(new object(), "coffee");
+		harness.BackendProxy.StartException = new InvalidOperationException("backend disconnected");
+		ZzzToastRequest? toast = null;
+		harness.DialogService.ToastRequested += (_, request) => toast = request;
+
+		await harness.Coordinator.HandleInputPressedForTestAsync("f9");
+
+		Assert.Equal("backend disconnected", toast?.Message);
+		Assert.Equal(ZzzRunState.Idle, harness.BackendProxy.State);
+	}
+
+	[Theory]
+	[InlineData(ZzzRunState.Running, ZzzBackendErrorCode.Conflict, "当前没有运行中的应用。")]
+	[InlineData(ZzzRunState.Paused, ZzzBackendErrorCode.NotReady, "运行上下文未初始化。")]
+	public async Task PauseAndResumeFailuresShowErrorsWithoutChangingState(
+		ZzzRunState state,
+		ZzzBackendErrorCode code,
+		string message)
+	{
+		using TestHarness harness = TestHarness.Create();
+		harness.BackendProxy.State = state;
+		if (state == ZzzRunState.Running)
+		{
+			harness.BackendProxy.PauseResult = ZzzBackendResult<ZzzRunStatusDto>.Fail(code, message);
+		}
+		else
+		{
+			harness.BackendProxy.ResumeResult = ZzzBackendResult<ZzzRunStatusDto>.Fail(code, message);
+		}
+		ZzzToastRequest? toast = null;
+		harness.DialogService.ToastRequested += (_, request) => toast = request;
+
+		await harness.Coordinator.HandleInputPressedForTestAsync("f9");
+
+		Assert.Equal(state, harness.BackendProxy.State);
+		Assert.Equal(message, toast?.Message);
+	}
+
+	[Fact]
+	public async Task AcceptedStartWithoutStateEventShowsSynchronizationFailure()
+	{
+		using TestHarness harness = TestHarness.Create(runStateObservationTimeout: TimeSpan.FromMilliseconds(30));
+		harness.RunIntent.RegisterRunTarget(new object(), "coffee");
+		ZzzToastRequest? toast = null;
+		harness.DialogService.ToastRequested += (_, request) => toast = request;
+		await harness.Coordinator.StartAsync(CancellationToken.None);
+
+		await harness.Coordinator.HandleInputPressedForTestAsync("f9");
+
+		Assert.True(SpinWait.SpinUntil(() => toast?.Title == "运行状态同步失败", TimeSpan.FromSeconds(3)));
+		Assert.Equal(ZzzRunState.Starting, harness.BackendProxy.State);
+	}
+
+	[Fact]
+	public async Task AcceptedStartStateEventPreventsSynchronizationFailure()
+	{
+		using TestHarness harness = TestHarness.Create(runStateObservationTimeout: TimeSpan.FromMilliseconds(100));
+		harness.RunIntent.RegisterRunTarget(new object(), "coffee");
+		harness.BackendProxy.PublishRunEvents = true;
+		List<ZzzToastRequest> toasts = new();
+		harness.DialogService.ToastRequested += (_, request) => toasts.Add(request);
+		await harness.Coordinator.StartAsync(CancellationToken.None);
+
+		await harness.Coordinator.HandleInputPressedForTestAsync("f9");
+		await Task.Delay(200);
+
+		Assert.DoesNotContain(toasts, request => request.Title == "运行状态同步失败");
+	}
+
+	[Fact]
+	public async Task DelayedStateEventDoesNotCreateASecondSynchronizationWarning()
+	{
+		using TestHarness harness = TestHarness.Create(runStateObservationTimeout: TimeSpan.FromMilliseconds(30));
+		harness.RunIntent.RegisterRunTarget(new object(), "coffee");
+		List<ZzzToastRequest> toasts = new();
+		harness.DialogService.ToastRequested += (_, request) => toasts.Add(request);
+		await harness.Coordinator.StartAsync(CancellationToken.None);
+
+		await harness.Coordinator.HandleInputPressedForTestAsync("f9");
+		Assert.True(SpinWait.SpinUntil(() => toasts.Any(request => request.Title == "运行状态同步失败"), TimeSpan.FromSeconds(3)));
+		harness.BackendProxy.PublishRunState(new ZzzRunStatusDto(ZzzRunState.Running, "coffee", "咖啡店"));
+		await Task.Delay(100);
+
+		Assert.Single(toasts, request => request.Title == "运行状态同步失败");
 	}
 
 	[Fact]

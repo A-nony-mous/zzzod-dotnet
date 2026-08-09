@@ -608,6 +608,7 @@ public sealed class GuiParityAndFacadeTests
 		{
 			LastStartRequest = request;
 			_run = new ZzzRunStatusDto(ZzzRunState.Running, request.AppId, DisplayName(request.AppId), CurrentInstanceIndex(), request.GroupId ?? "default", null, null, 0.0, "已启动");
+				PublishEvent("run.stateChanged", _run);
 			return Task.FromResult(ZzzBackendResult<ZzzRunStatusDto>.Ok(_run));
 		}
 
@@ -617,6 +618,7 @@ public sealed class GuiParityAndFacadeTests
 			{
 				State = ZzzRunState.Paused
 			};
+				PublishEvent("run.stateChanged", _run);
 			return ZzzBackendResult<ZzzRunStatusDto>.Ok(_run);
 		}
 
@@ -626,12 +628,14 @@ public sealed class GuiParityAndFacadeTests
 			{
 				State = ZzzRunState.Running
 			};
+				PublishEvent("run.stateChanged", _run);
 			return ZzzBackendResult<ZzzRunStatusDto>.Ok(_run);
 		}
 
 		public Task<ZzzBackendResult<ZzzRunStatusDto>> StopRunAsync()
 		{
 			_run = new ZzzRunStatusDto(ZzzRunState.Cancelled);
+				PublishEvent("run.stateChanged", _run);
 			return Task.FromResult(ZzzBackendResult<ZzzRunStatusDto>.Ok(_run));
 		}
 
@@ -1110,21 +1114,25 @@ public sealed class GuiParityAndFacadeTests
 		{
 			FakeBackend fakeBackend = new FakeBackend();
 			ZzzRunPanel zzzRunPanel = new ZzzRunPanel(fakeBackend, "one_dragon");
+				zzzRunPanel.OnPageShown();
 			Assert.Equal("one_dragon", zzzRunPanel.SelectedAppId);
 			Assert.Equal("开始", zzzRunPanel.PrimaryActionText);
 			zzzRunPanel.InvokePrimaryActionAsync().GetAwaiter().GetResult();
+				Dispatcher.UIThread.RunJobs();
 			Assert.Equal("暂停", zzzRunPanel.PrimaryActionText);
 			Assert.Equal("一条龙", zzzRunPanel.DisplayedApp);
 			Assert.Equal("00", zzzRunPanel.DisplayedInstance);
 			Assert.Equal("0", zzzRunPanel.DisplayedDuration);
 			Assert.True(zzzRunPanel.StopActionEnabled);
 			fakeBackend.PauseRun();
-			zzzRunPanel.RefreshState();
+				zzzRunPanel.RefreshState();
 			Assert.Equal("继续", zzzRunPanel.PrimaryActionText);
 			fakeBackend.ResumeRun();
-			zzzRunPanel.RefreshState();
+				zzzRunPanel.RefreshState();
 			Assert.Equal("暂停", zzzRunPanel.PrimaryActionText);
 			zzzRunPanel.InvokeStopActionAsync().GetAwaiter().GetResult();
+				Dispatcher.UIThread.RunJobs();
+				zzzRunPanel.RefreshState();
 			Assert.Equal("开始", zzzRunPanel.PrimaryActionText);
 			Assert.False(zzzRunPanel.StopActionEnabled);
 		});

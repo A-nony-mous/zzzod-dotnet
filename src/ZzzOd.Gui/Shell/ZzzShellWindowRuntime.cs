@@ -98,8 +98,11 @@ public sealed class ZzzShellWindowRuntime : IZzzShellWindowRuntime
         Dispose();
     }
 
-    private void OnToastRequested(object? sender, ZzzToastRequest request) =>
-        Dispatcher.UIThread.Post(() => ShowToast(request.Title, request.Message, TimeSpan.FromSeconds(4), FAInfoBarSeverity.Informational));
+    private void OnToastRequested(object? sender, ZzzToastRequest request)
+    {
+        ZzzRunToast toast = CreateRequestToast(request);
+        Dispatcher.UIThread.Post(() => ShowToast(toast.Title, toast.Message, toast.Duration, toast.Severity));
+    }
 
     private void OnGlobalInputPressed(object? sender, string key) =>
         _overlayController.TryToggleFromHotkey(key);
@@ -174,6 +177,9 @@ public sealed class ZzzShellWindowRuntime : IZzzShellWindowRuntime
         _toastTimer.Interval = duration;
         _toastTimer.Start();
     }
+
+    internal static ZzzRunToast CreateRequestToast(ZzzToastRequest request) =>
+        new(request.Title, request.Message, request.Duration, request.Severity);
 
     internal static ZzzRunToast? CreateRunToast(ZzzRunStatusDto run)
     {

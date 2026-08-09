@@ -100,6 +100,8 @@ internal sealed class ZzzGlobalInputMonitor : IDisposable
         _ready?.Dispose();
     }
 
+    internal void PublishForTest(string key) => Publish(key);
+
     internal static string? NormalizeVirtualKey(uint virtualKey) => virtualKey switch
     {
         >= 0x41 and <= 0x5A => ((char)virtualKey).ToString().ToLowerInvariant(),

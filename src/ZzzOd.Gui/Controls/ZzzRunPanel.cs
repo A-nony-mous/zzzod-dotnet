@@ -140,8 +140,6 @@ internal sealed partial class ZzzRunPanel : UserControl, IZzzPageLifecycle
                 ShowError(result.Error ?? "停止失败。");
                 return;
             }
-
-            ApplyRun(result.Value);
         }
         finally
         {
@@ -248,6 +246,10 @@ internal sealed partial class ZzzRunPanel : UserControl, IZzzPageLifecycle
         }
 
         ZzzBackendResult<ZzzRunStatusDto> result;
+        if (current.Value.State is ZzzRunState.Starting or ZzzRunState.Stopping)
+        {
+            return;
+        }
         if (current.Value.State is ZzzRunState.Running)
         {
             result = _backend.PauseRun();
@@ -278,11 +280,8 @@ internal sealed partial class ZzzRunPanel : UserControl, IZzzPageLifecycle
 
         if (!result.Success || result.Value is null)
         {
-
-            return;
+            ShowError(result.Error ?? "运行请求失败。");
         }
-
-        ApplyRun(result.Value);
     }
 
     private async Task StartRequestedRunAsync()
@@ -302,10 +301,7 @@ internal sealed partial class ZzzRunPanel : UserControl, IZzzPageLifecycle
         if (!result.Success || result.Value is null)
         {
             ShowError(result.Error ?? "启动失败。");
-            return;
         }
-
-        ApplyRun(result.Value);
     }
 
     private void Refresh()

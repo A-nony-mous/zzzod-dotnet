@@ -178,6 +178,23 @@ public sealed class FrontierShellTests
     }
 
     [Fact]
+    public void DialogToastPreservesRequestedSeverityAndDuration()
+    {
+        ZzzToastRequest request = new(
+            "启动失败",
+            "真实错误",
+            TimeSpan.FromSeconds(6),
+            FAInfoBarSeverity.Error);
+
+        ZzzRunToast toast = ZzzShellWindowRuntime.CreateRequestToast(request);
+
+        Assert.Equal(request.Title, toast.Title);
+        Assert.Equal(request.Message, toast.Message);
+        Assert.Equal(request.Duration, toast.Duration);
+        Assert.Equal(request.Severity, toast.Severity);
+    }
+
+    [Fact]
     public void FrontierFactoryCreatesDedicatedRootRouteTypes()
     {
         GuiParityAndFacadeTests.RunOnUiThread(() =>

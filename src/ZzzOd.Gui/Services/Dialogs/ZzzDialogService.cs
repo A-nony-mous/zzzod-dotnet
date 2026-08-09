@@ -14,9 +14,15 @@ public interface IZzzDialogService
     FATeachingTip CreateTeachingTip(string title, string subtitle, Control? target = null);
 
     void ShowToast(string title, string message);
+
+    void ShowToast(string title, string message, TimeSpan duration, FAInfoBarSeverity severity);
 }
 
-public sealed record ZzzToastRequest(string Title, string Message);
+public sealed record ZzzToastRequest(
+    string Title,
+    string Message,
+    TimeSpan Duration,
+    FAInfoBarSeverity Severity);
 
 public sealed class ZzzDialogService : IZzzDialogService
 {
@@ -50,8 +56,11 @@ public sealed class ZzzDialogService : IZzzDialogService
         PreferredPlacement = FATeachingTipPlacementMode.Auto,
     };
 
-    public void ShowToast(string title, string message)
+    public void ShowToast(string title, string message) =>
+        ShowToast(title, message, TimeSpan.FromSeconds(4), FAInfoBarSeverity.Informational);
+
+    public void ShowToast(string title, string message, TimeSpan duration, FAInfoBarSeverity severity)
     {
-        ToastRequested?.Invoke(this, new ZzzToastRequest(title, message));
+        ToastRequested?.Invoke(this, new ZzzToastRequest(title, message, duration, severity));
     }
 }
