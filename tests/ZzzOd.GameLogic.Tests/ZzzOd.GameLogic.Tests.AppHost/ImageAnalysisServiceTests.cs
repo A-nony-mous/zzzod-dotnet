@@ -54,6 +54,57 @@ public sealed class ImageAnalysisServiceTests
 	}
 
 	[Fact]
+	public void ColorChannels_PreserveNamedRgbHsvAndYuvValues()
+	{
+		string text = CreateRoot();
+		try
+		{
+			using ZzzRuntimeManager runtime = new ZzzRuntimeManager(text, NullLogger<ZzzRuntimeManager>.Instance);
+			ZzzImageAnalysisService service = new ZzzImageAnalysisService(new ZzzRunRoot(text), runtime);
+			using Mat bgr = new Mat(1, 1, MatType.CV_8UC3, new Scalar(10, 20, 30));
+			ImageAnalysisColorChannels channels = service.GetColorChannels(bgr.ImEncode());
+			ImageAnalysisColorSpace rgb = Assert.Single(channels.Spaces, space => space.Name == "RGB");
+			ImageAnalysisColorSpace hsv = Assert.Single(channels.Spaces, space => space.Name == "HSV");
+			ImageAnalysisColorSpace yuv = Assert.Single(channels.Spaces, space => space.Name == "YUV");
+			using Mat rgbR = Cv2.ImDecode(rgb.Channels[0].ImageBytes, ImreadModes.Grayscale);
+			using Mat rgbG = Cv2.ImDecode(rgb.Channels[1].ImageBytes, ImreadModes.Grayscale);
+			using Mat rgbB = Cv2.ImDecode(rgb.Channels[2].ImageBytes, ImreadModes.Grayscale);
+			using Mat expectedHsv = new Mat();
+			using Mat expectedYuv = new Mat();
+			Cv2.CvtColor(bgr, expectedHsv, ColorConversionCodes.BGR2HSV);
+			Cv2.CvtColor(bgr, expectedYuv, ColorConversionCodes.BGR2YUV);
+			using Mat hsvH = Cv2.ImDecode(hsv.Channels[0].ImageBytes, ImreadModes.Grayscale);
+			using Mat yuvY = Cv2.ImDecode(yuv.Channels[0].ImageBytes, ImreadModes.Grayscale);
+
+			Assert.Equal(new[] { "R", "G", "B" }, rgb.Channels.Select(channel => channel.Name));
+			Assert.Equal(30, rgbR.At<byte>(0, 0));
+			Assert.Equal(20, rgbG.At<byte>(0, 0));
+			Assert.Equal(10, rgbB.At<byte>(0, 0));
+			Assert.Equal(expectedHsv.At<Vec3b>(0, 0).Item0, hsvH.At<byte>(0, 0));
+			Assert.Equal(expectedYuv.At<Vec3b>(0, 0).Item0, yuvY.At<byte>(0, 0));
+		}
+		finally
+		{
+			Directory.Delete(text, recursive: true);
+		}
+	}
+
+	[Fact]
+	public void AppBackend_RgbRecorderEncodingPreservesSemanticColor()
+	{
+		using Mat rgb = new Mat(1, 2, MatType.CV_8UC3);
+		rgb.Set(0, 0, new Vec3b(30, 20, 10));
+		rgb.Set(0, 1, new Vec3b(60, 50, 40));
+
+		ZzzWorldPatrolRecorderImageDto encoded = Assert.IsType<ZzzWorldPatrolRecorderImageDto>(ZzzAppBackend.EncodeRgbImage(rgb));
+		using Mat decodedBgr = Cv2.ImDecode(encoded.Bytes, ImreadModes.Color);
+
+		Assert.Equal("image/png", encoded.MediaType);
+		Assert.Equal(new Vec3b(10, 20, 30), decodedBgr.At<Vec3b>(0, 0));
+		Assert.Equal(new Vec3b(40, 50, 60), decodedBgr.At<Vec3b>(0, 1));
+	}
+
+	[Fact]
 	public void AxamlUsesRequiredFluentControlsAndNoDemoValues()
 	{
 		string text = FindWorkspaceRoot();

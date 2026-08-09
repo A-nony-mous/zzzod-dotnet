@@ -51,6 +51,30 @@ public sealed class WorldPatrolMiniMapTests
 	}
 
 	[Fact]
+	public void MiniMapWrapper_RgbIslandUsesRgbHsvYuvAndRangeContracts()
+	{
+		using Mat bgr = new Mat(1, 2, MatType.CV_8UC3);
+		bgr.Set(0, 0, new Vec3b(10, 80, 230));
+		bgr.Set(0, 1, new Vec3b(210, 40, 70));
+		using Mat rgb = WorldPatrolMiniMapWrapper.ConvertBgrToRgb(bgr);
+		using WorldPatrolMiniMapWrapper wrapper = new WorldPatrolMiniMapWrapper(rgb);
+		using Mat expectedHsv = new Mat();
+		using Mat expectedYuv = new Mat();
+		Cv2.CvtColor(rgb, expectedHsv, ColorConversionCodes.RGB2HSV);
+		Cv2.CvtColor(rgb, expectedYuv, ColorConversionCodes.RGB2YUV);
+		using Mat actualMask = new Mat();
+		using Mat expectedMask = new Mat();
+		Cv2.InRange(wrapper.Rgb, new Scalar(200, 60, 0), new Scalar(240, 100, 30), actualMask);
+		Cv2.InRange(rgb, new Scalar(200, 60, 0), new Scalar(240, 100, 30), expectedMask);
+
+		Assert.Equal(new Vec3b(230, 80, 10), wrapper.Rgb.At<Vec3b>(0, 0));
+		Assert.Equal(expectedHsv.At<Vec3b>(0, 0), wrapper.Hsv.At<Vec3b>(0, 0));
+		Assert.Equal(expectedYuv.At<Vec3b>(0, 1), wrapper.Yuv.At<Vec3b>(0, 1));
+		Assert.Equal(expectedMask.At<byte>(0, 0), actualMask.At<byte>(0, 0));
+		Assert.Equal(expectedMask.At<byte>(0, 1), actualMask.At<byte>(0, 1));
+	}
+
+	[Fact]
 	public void AngleCalculator_ReturnsDirectionFromViewMaskPixels()
 	{
 		using Mat mat = new Mat(120, 120, MatType.CV_8UC1, Scalar.Black);

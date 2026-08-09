@@ -1650,7 +1650,7 @@ public sealed class ZzzAppBackend : IZzzAppBackend, IZzzIntelBoardProgressBacken
 		return Cv2.CountNonZero(mat);
 	}
 
-	private static ZzzWorldPatrolRecorderImageDto? EncodeRgbImage(Mat? rgb)
+	internal static ZzzWorldPatrolRecorderImageDto? EncodeRgbImage(Mat? rgb)
 	{
 		if (rgb == null)
 		{
