@@ -2491,6 +2491,7 @@ public sealed class ZzzAppBackend : IZzzAppBackend, IZzzIntelBoardProgressBacken
 			{
 				_terminalState = (result.IsSuccess ? ZzzRunState.Succeeded : ZzzRunState.Failed);
 				_lastStatus = result.Status;
+				_lastError = result.IsSuccess ? null : result.Status;
 				_finishedAt = DateTimeOffset.UtcNow;
 				status = GetCurrentRunCore();
 			}
