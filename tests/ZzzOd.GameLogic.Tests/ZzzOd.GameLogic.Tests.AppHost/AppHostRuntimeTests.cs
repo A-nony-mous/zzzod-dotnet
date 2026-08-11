@@ -271,6 +271,7 @@ public sealed class AppHostRuntimeTests
 	public void RunRootResolverRejectsMissingArgumentValue()
 	{
 		Assert.Throws<ArgumentException>(() => ZzzRunRootResolver.Resolve(new string[] { "--run-root" }, null, AppContext.BaseDirectory));
+		Assert.Throws<ArgumentException>(() => ZzzRunRootResolver.Resolve(new string[] { "--run-root=" }, null, AppContext.BaseDirectory));
 	}
 
 	/// <summary>
