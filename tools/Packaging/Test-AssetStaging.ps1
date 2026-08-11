@@ -109,6 +109,8 @@ try {
     Assert-Equal 1 @($auditPlan.Audit | Where-Object { $_.State -eq "unclassified" -and $_.Path -eq "assets/新增.yml" }).Count "新增 YAML 未被审计为未分类。"
     Assert-Equal 4 @($auditPlan.Audit | Where-Object { $_.State -eq "excluded" }).Count "日志、缓存和聚合 YAML 未被审计为排除项。"
 
+    Write-TestFile $testRoot "bin/publish/assets/missing.yml" "historical publish copy"
+    Write-TestFile $testRoot "bin/publish/assets/legacy.merged.yml" "historical merged copy"
     Write-Rules $rulesPath (New-Rules @{ assets = "assets" } @((New-Category "missing-required" "assets" @("win-x64") @("missing.yml"))))
     Assert-ThrowsCode { & $StagingScript -WorkspaceRoot $testRoot -Output $outputPath -RulesPath $rulesPath -Rid "win-x64" -PlanOnly } "required-pattern-missing"
 
