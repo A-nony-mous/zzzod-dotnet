@@ -23,8 +23,12 @@ public sealed class ZzzAssetManifestValidator
     /// </summary>
     /// <param name="runRoot">运行根目录。</param>
     /// <param name="expectedRid">调用方要求的目标 RID，可为空。</param>
+    /// <param name="expectedSourceSummary">调用方要求的来源摘要，可为空。</param>
     /// <returns>校验结果。</returns>
-    public ZzzAssetManifestValidationResult Validate(string runRoot, string? expectedRid = null)
+    public ZzzAssetManifestValidationResult Validate(
+        string runRoot,
+        string? expectedRid = null,
+        string? expectedSourceSummary = null)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(runRoot);
         string fullRunRoot = Path.GetFullPath(runRoot);
@@ -53,7 +57,7 @@ public sealed class ZzzAssetManifestValidator
             return new ZzzAssetManifestValidationResult(fullRunRoot, null, issues);
         }
 
-        ValidateManifestHeader(manifest, expectedRid, issues);
+        ValidateManifestHeader(manifest, expectedRid, expectedSourceSummary, issues);
         Dictionary<string, ZzzAssetManifestFile> declaredFiles = ValidateDeclaredFiles(fullRunRoot, manifest, issues);
         ValidateManagedFileSet(fullRunRoot, manifest, declaredFiles, issues);
 		ValidateIndependentGameConfigs(fullRunRoot, manifest, issues);
@@ -63,6 +67,7 @@ public sealed class ZzzAssetManifestValidator
     private static void ValidateManifestHeader(
         ZzzAssetManifest manifest,
         string? expectedRid,
+		string? expectedSourceSummary,
         ICollection<ZzzAssetManifestIssue> issues)
     {
         if (manifest.SchemaVersion != ZzzAssetManifest.CurrentSchemaVersion)
@@ -79,6 +84,12 @@ public sealed class ZzzAssetManifestValidator
         {
             issues.Add(new ZzzAssetManifestIssue(ZzzAssetManifestIssueCode.RidMismatch, ManifestFileName, $"资源清单 RID 为 {manifest.Rid}，调用方要求 {expectedRid}。"));
         }
+
+		if (!string.IsNullOrWhiteSpace(expectedSourceSummary) &&
+			!string.Equals(manifest.SourceSummary, expectedSourceSummary, StringComparison.Ordinal))
+		{
+			issues.Add(new ZzzAssetManifestIssue(ZzzAssetManifestIssueCode.SourceSummaryMismatch, ManifestFileName, "资源清单来源摘要与调用方要求不一致。"));
+		}
 
         string[] paths = manifest.Files.Select(file => file.Path).ToArray();
         string[] ordinalSorted = paths.OrderBy(path => path, StringComparer.Ordinal).ToArray();

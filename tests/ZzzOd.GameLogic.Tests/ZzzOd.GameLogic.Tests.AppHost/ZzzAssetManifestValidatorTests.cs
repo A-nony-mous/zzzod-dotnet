@@ -51,6 +51,80 @@ public sealed class ZzzAssetManifestValidatorTests : IDisposable
     }
 
     /// <summary>
+    /// 同尺寸内容替换仍必须由 SHA-256 检出。
+    /// </summary>
+    [Fact]
+    public void Validate_ShouldReportSha256MismatchForSameSizeTampering()
+    {
+        WriteFile("assets/game_data/测试.yml", "内容");
+        long originalSize = new FileInfo(Path.Combine(_rootDirectory, "assets", "game_data", "测试.yml")).Length;
+        WriteManifest();
+        WriteFile("assets/game_data/测试.yml", "篡改");
+        Assert.Equal(originalSize, new FileInfo(Path.Combine(_rootDirectory, "assets", "game_data", "测试.yml")).Length);
+
+        ZzzAssetManifestValidationResult result = new ZzzAssetManifestValidator().Validate(_rootDirectory, "win-x64");
+
+        Assert.Contains(result.Issues, issue => issue.Code == ZzzAssetManifestIssueCode.Sha256Mismatch);
+    }
+
+    /// <summary>
+    /// 清单声明的文件缺失时必须阻断。
+    /// </summary>
+    [Fact]
+    public void Validate_ShouldReportMissingDeclaredFile()
+    {
+        WriteFile("assets/game_data/测试.yml", "内容");
+        WriteManifest();
+        File.Delete(Path.Combine(_rootDirectory, "assets", "game_data", "测试.yml"));
+
+        ZzzAssetManifestValidationResult result = new ZzzAssetManifestValidator().Validate(_rootDirectory, "win-x64");
+
+        Assert.Contains(result.Issues, issue => issue.Code == ZzzAssetManifestIssueCode.FileMissing && issue.Path == "assets/game_data/测试.yml");
+    }
+
+    /// <summary>
+    /// 调用方指定的 RID 与清单不一致时必须阻断。
+    /// </summary>
+    [Fact]
+    public void Validate_ShouldReportUnexpectedRid()
+    {
+        WriteFile("assets/game_data/测试.yml", "内容");
+        WriteManifest();
+
+        ZzzAssetManifestValidationResult result = new ZzzAssetManifestValidator().Validate(_rootDirectory, "win-arm64");
+
+        Assert.Contains(result.Issues, issue => issue.Code == ZzzAssetManifestIssueCode.RidMismatch);
+    }
+
+    /// <summary>
+    /// 清单来源摘要变化时调用方可作为完整性合同阻断。
+    /// </summary>
+    [Fact]
+    public void Validate_ShouldReportUnexpectedSourceSummary()
+    {
+        WriteFile("assets/game_data/测试.yml", "内容");
+        WriteManifest();
+
+        ZzzAssetManifestValidationResult result = new ZzzAssetManifestValidator().Validate(_rootDirectory, "win-x64", "OTHER-SOURCE-SUMMARY");
+
+        Assert.Contains(result.Issues, issue => issue.Code == ZzzAssetManifestIssueCode.SourceSummaryMismatch);
+    }
+
+    /// <summary>
+    /// 不支持的 schemaVersion 必须阻断。
+    /// </summary>
+    [Fact]
+    public void Validate_ShouldReportUnsupportedSchema()
+    {
+        WriteFile("assets/game_data/测试.yml", "内容");
+        WriteManifest(schemaVersion: ZzzAssetManifest.CurrentSchemaVersion + 1);
+
+        ZzzAssetManifestValidationResult result = new ZzzAssetManifestValidator().Validate(_rootDirectory, "win-x64");
+
+        Assert.Contains(result.Issues, issue => issue.Code == ZzzAssetManifestIssueCode.UnsupportedSchema);
+    }
+
+    /// <summary>
     /// 受管理目录的额外文件应阻断校验。
     /// </summary>
     [Fact]
@@ -78,6 +152,23 @@ public sealed class ZzzAssetManifestValidatorTests : IDisposable
         ZzzAssetManifestValidationResult result = new ZzzAssetManifestValidator().Validate(_rootDirectory, "win-x64");
 
         Assert.Contains(result.Issues, issue => issue.Code == ZzzAssetManifestIssueCode.AggregatedYaml && issue.Path == "assets/game_data/screen_info/_od_merged.yml");
+    }
+
+    /// <summary>
+    /// 旧自动战斗聚合文件即使被清单直接声明也必须阻断。
+    /// </summary>
+    [Fact]
+    public void Validate_ShouldRejectDeclaredLegacyMergedYaml()
+    {
+        WriteFile("assets/game_data/测试.yml", "内容");
+        WriteFile("config/auto_battle/测试.merged.yml", "scenes: []");
+        WriteManifest(
+            CreateManifestFile("assets/game_data/测试.yml"),
+            CreateManifestFile("config/auto_battle/测试.merged.yml"));
+
+        ZzzAssetManifestValidationResult result = new ZzzAssetManifestValidator().Validate(_rootDirectory, "win-x64");
+
+        Assert.Contains(result.Issues, issue => issue.Code == ZzzAssetManifestIssueCode.AggregatedYaml && issue.Path == "config/auto_battle/测试.merged.yml");
     }
 
     /// <summary>
@@ -166,9 +257,15 @@ public sealed class ZzzAssetManifestValidatorTests : IDisposable
         Assert.Contains(result.Issues, issue => issue.Code == ZzzAssetManifestIssueCode.CaseConflict);
     }
 
-    private void WriteManifest(params ZzzAssetManifestFile[]? files) => WriteManifest([], files);
+    private void WriteManifest(params ZzzAssetManifestFile[]? files) => WriteManifest([], ZzzAssetManifest.CurrentSchemaVersion, files);
 
-    private void WriteManifest(IReadOnlyList<string> mutablePaths, params ZzzAssetManifestFile[]? files)
+    private void WriteManifest(IReadOnlyList<string> mutablePaths, params ZzzAssetManifestFile[]? files) =>
+        WriteManifest(mutablePaths, ZzzAssetManifest.CurrentSchemaVersion, files);
+
+    private void WriteManifest(int schemaVersion, params ZzzAssetManifestFile[]? files) =>
+        WriteManifest([], schemaVersion, files);
+
+    private void WriteManifest(IReadOnlyList<string> mutablePaths, int schemaVersion, params ZzzAssetManifestFile[]? files)
     {
         ZzzAssetManifestFile[] actualFiles = files is { Length: > 0 }
             ? files
@@ -178,7 +275,7 @@ public sealed class ZzzAssetManifestValidatorTests : IDisposable
             ];
         ZzzAssetManifest manifest = new()
         {
-            SchemaVersion = ZzzAssetManifest.CurrentSchemaVersion,
+            SchemaVersion = schemaVersion,
             Rid = "win-x64",
             GeneratedSource = "workspace-root",
             SourceSummary = "SOURCE-SUMMARY",

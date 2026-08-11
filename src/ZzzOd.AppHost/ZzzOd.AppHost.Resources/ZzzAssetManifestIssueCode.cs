@@ -26,6 +26,11 @@ public enum ZzzAssetManifestIssueCode
     RidMismatch,
 
     /// <summary>
+    /// 清单来源摘要与调用方要求不一致。
+    /// </summary>
+    SourceSummaryMismatch,
+
+    /// <summary>
     /// 清单路径无效。
     /// </summary>
     InvalidPath,
