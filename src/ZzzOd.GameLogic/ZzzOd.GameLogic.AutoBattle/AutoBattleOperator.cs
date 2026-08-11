@@ -12,7 +12,6 @@ using OneDragon.Core.Operation;
 using OneDragon.Core.Runtime;
 using OneDragon.Core.Utils;
 using Serilog;
-using YamlDotNet.Serialization;
 using ZzzOd.GameLogic.AutoBattle.AtomicOp;
 
 namespace ZzzOd.GameLogic.AutoBattle;
@@ -50,8 +49,6 @@ public class AutoBattleOperator : IStateRecordUpdateListener
 
 	private readonly List<AutoBattleExecutionRecord> _executionRecords = new List<AutoBattleExecutionRecord>();
 
-	private readonly IDeserializer _yamlDeserializer = new DeserializerBuilder().IgnoreUnmatchedProperties().Build();
-
 	private readonly Dictionary<string, AutoBattleCondOpScene> _triggerToScene = new Dictionary<string, AutoBattleCondOpScene>(StringComparer.Ordinal);
 
 	private readonly Dictionary<int, double> _lastTriggerTime = new Dictionary<int, double>();
@@ -76,15 +73,11 @@ public class AutoBattleOperator : IStateRecordUpdateListener
 
 	private ExecutionInfo? _naturalCompletionPriorityProtection;
 
-	private string? _lastLoadedYamlPath;
+	private AutoBattleReferenceGraphSnapshot? _configurationSnapshot;
 
-	private string? _configurationYamlPath;
+	internal string? ConfigurationYamlPath => _configurationSnapshot?.ConfigurationYamlPath;
 
-	private readonly HashSet<string> _loadedYamlPaths = new(StringComparer.OrdinalIgnoreCase);
-
-	internal string? ConfigurationYamlPath => _configurationYamlPath;
-
-	internal IReadOnlyList<string> LoadedYamlPaths => _loadedYamlPaths.ToArray();
+	internal IReadOnlyList<string> LoadedYamlPaths => _configurationSnapshot?.LoadedYamlPaths ?? Array.Empty<string>();
 
 	internal string SourceFingerprint { get; private set; } = string.Empty;
 
@@ -191,16 +184,12 @@ public class AutoBattleOperator : IStateRecordUpdateListener
 	{
 		try
 		{
-			_lastLoadedYamlPath = null;
-			_configurationYamlPath = null;
-			_loadedYamlPaths.Clear();
 			// 与销毁流程保持一致的"先停后建"顺序：重新初始化前先停掉旧的运行状态，
 			// 避免旧场景循环、周期动作在新配置构建完成前继续基于旧数据运行。
 			StopRunning();
 			_ctx.StateRecordService.UnregisterOperator(this);
 			Load();
 			Build();
-			SourceFingerprint = GetSourceFingerprint(_loadedYamlPaths);
 			_ctx.StateRecordService.RegisterOperator(this);
 			_inited = true;
 			return (Success: true, Message: string.Empty);
@@ -208,7 +197,7 @@ public class AutoBattleOperator : IStateRecordUpdateListener
 		catch (Exception ex)
 		{
 			_inited = false;
-			string configPath = _lastLoadedYamlPath ?? ResolveYamlPath(_subDir, _templateName);
+			string configPath = ConfigurationYamlPath ?? ResolveYamlPath(_subDir, _templateName);
 			Log.Error(ex, "自动战斗初始化失败: ConfigPath={ConfigPath} 如果是共享配队文件请在群内提醒对应作者修复", configPath);
 			return (Success: false, Message: $"自动战斗配置 {configPath} 初始化失败: {ex.Message}");
 		}
@@ -518,13 +507,12 @@ public class AutoBattleOperator : IStateRecordUpdateListener
 
 	private void Load()
 	{
-		Dictionary<string, object> dictionary = LoadYamlConfig(_subDir, ResolveTemplateName());
-		_configurationYamlPath = _lastLoadedYamlPath;
-		LoadOtherInfo(dictionary.ToDictionary<KeyValuePair<string, object>, string, object>((KeyValuePair<string, object> pair) => pair.Key, (KeyValuePair<string, object> pair) => pair.Value ?? new object(), StringComparer.Ordinal));
-		Scenes = (from scene in AutoBattleCondOpScene.GetDictionaryList(dictionary, "scenes")
-			select new AutoBattleCondOpScene(scene)).ToList();
-		ValidateScenes(Scenes, _configurationYamlPath ?? string.Empty);
-		ExpandTemplates();
+		AutoBattleReferenceGraphSnapshot snapshot = new AutoBattleReferenceGraphLoader(_ctx.ZContext.Environment)
+			.Load(_subDir, ResolveTemplateName());
+		LoadOtherInfo(snapshot.Configuration.ToDictionary(pair => pair.Key, pair => pair.Value ?? new object(), StringComparer.Ordinal));
+		Scenes = snapshot.Scenes;
+		_configurationSnapshot = snapshot;
+		SourceFingerprint = snapshot.SourceFingerprint;
 	}
 
 	private void Build()
@@ -547,95 +535,6 @@ public class AutoBattleOperator : IStateRecordUpdateListener
 				NormalScene = scene;
 			}
 		}
-	}
-
-	private void ExpandTemplates()
-	{
-		for (int sceneIndex = 0; sceneIndex < Scenes.Count; sceneIndex++)
-		{
-			AutoBattleCondOpScene scene = Scenes[sceneIndex];
-			List<AutoBattleCondOpStateHandler> list = new List<AutoBattleCondOpStateHandler>();
-			for (int handlerIndex = 0; handlerIndex < scene.Handlers.Count; handlerIndex++)
-			{
-				list.AddRange(ExpandStateHandler(
-					scene.Handlers[handlerIndex],
-					[],
-					$"{_configurationYamlPath} -> scenes[{sceneIndex}].handlers[{handlerIndex}].state_template"));
-			}
-			scene.SetHandlers(list);
-		}
-	}
-
-	private List<AutoBattleCondOpStateHandler> ExpandStateHandler(AutoBattleCondOpStateHandler handler, List<string> stateHandlerTemplates, string referencePath)
-	{
-		if (!string.IsNullOrWhiteSpace(handler.StateTemplate))
-		{
-			if (stateHandlerTemplates.Contains(handler.StateTemplate, StringComparer.Ordinal))
-			{
-				throw new InvalidOperationException($"状态处理器模板循环引用: {string.Join(" -> ", stateHandlerTemplates.Append(handler.StateTemplate))}; {referencePath}");
-			}
-			stateHandlerTemplates.Add(handler.StateTemplate);
-			Dictionary<string, object> data = LoadYamlConfig("auto_battle_state_handler", handler.StateTemplate, referencePath);
-			string sourcePath = _lastLoadedYamlPath ?? referencePath;
-			List<AutoBattleCondOpStateHandler> list = new List<AutoBattleCondOpStateHandler>();
-			List<Dictionary<string, object>> handlers = AutoBattleCondOpScene.GetDictionaryList(data, "handlers");
-			for (int handlerIndex = 0; handlerIndex < handlers.Count; handlerIndex++)
-			{
-				list.AddRange(ExpandStateHandler(new AutoBattleCondOpStateHandler(handlers[handlerIndex]), stateHandlerTemplates, $"{sourcePath} -> handlers[{handlerIndex}].state_template"));
-			}
-			stateHandlerTemplates.RemoveAt(stateHandlerTemplates.Count - 1);
-			return list;
-		}
-		if (handler.SubHandlers.Count > 0)
-		{
-			List<AutoBattleCondOpStateHandler> list2 = new List<AutoBattleCondOpStateHandler>();
-			for (int handlerIndex = 0; handlerIndex < handler.SubHandlers.Count; handlerIndex++)
-			{
-				list2.AddRange(ExpandStateHandler(handler.SubHandlers[handlerIndex], stateHandlerTemplates, $"{referencePath} -> sub_handlers[{handlerIndex}].state_template"));
-			}
-			handler.SetSubHandlers(list2);
-		}
-		else if (handler.Operations.Count > 0)
-		{
-			List<OperationDef> list3 = new List<OperationDef>();
-			for (int operationIndex = 0; operationIndex < handler.Operations.Count; operationIndex++)
-			{
-				list3.AddRange(ExpandOperation(handler.Operations[operationIndex], [], $"{referencePath} -> operations[{operationIndex}].operation_template"));
-			}
-			handler.SetOperations(list3);
-		}
-		int num = 1;
-		List<AutoBattleCondOpStateHandler> list4 = new List<AutoBattleCondOpStateHandler>(num);
-		CollectionsMarshal.SetCount(list4, num);
-		CollectionsMarshal.AsSpan(list4)[0] = handler;
-		return list4;
-	}
-
-	private List<OperationDef> ExpandOperation(OperationDef operation, List<string> operationTemplates, string referencePath)
-	{
-		if (string.IsNullOrWhiteSpace(operation.OperationTemplate))
-		{
-			int num = 1;
-			List<OperationDef> list = new List<OperationDef>(num);
-			CollectionsMarshal.SetCount(list, num);
-			CollectionsMarshal.AsSpan(list)[0] = operation;
-			return list;
-		}
-		if (operationTemplates.Contains(operation.OperationTemplate, StringComparer.Ordinal))
-		{
-			throw new InvalidOperationException($"指令模板循环引用: {string.Join(" -> ", operationTemplates.Append(operation.OperationTemplate))}; {referencePath}");
-		}
-		operationTemplates.Add(operation.OperationTemplate);
-		Dictionary<string, object> data = LoadYamlConfig("auto_battle_operation", operation.OperationTemplate, referencePath);
-		string sourcePath = _lastLoadedYamlPath ?? referencePath;
-		List<OperationDef> list2 = new List<OperationDef>();
-		List<Dictionary<string, object>> operations = AutoBattleCondOpScene.GetDictionaryList(data, "operations");
-		for (int operationIndex = 0; operationIndex < operations.Count; operationIndex++)
-		{
-			list2.AddRange(ExpandOperation(new OperationDef(operations[operationIndex]), operationTemplates, $"{sourcePath} -> operations[{operationIndex}].operation_template"));
-		}
-		operationTemplates.RemoveAt(operationTemplates.Count - 1);
-		return list2;
 	}
 
 	private async Task RunNormalSceneLoopAsync(int generation, CancellationToken token)
@@ -840,20 +739,6 @@ public class AutoBattleOperator : IStateRecordUpdateListener
 		return FallbackTemplateName;
 	}
 
-	private Dictionary<string, object?> LoadYamlConfig(string subDir, string templateName, string? referencePath = null)
-	{
-		string text = ResolveYamlPath(subDir, templateName);
-		_lastLoadedYamlPath = text;
-		_loadedYamlPaths.Add(text);
-		if (!File.Exists(text))
-		{
-			string reference = string.IsNullOrWhiteSpace(referencePath) ? string.Empty : $"; 引用: {referencePath}";
-			throw new FileNotFoundException("未找到配置文件 " + subDir + "/" + templateName + reference, text);
-		}
-		object value = _yamlDeserializer.Deserialize<object>(File.ReadAllText(text));
-		return NormalizeDictionary(value);
-	}
-
 	private string ResolveYamlPath(string subDir, string templateName)
 	{
 		return ResolveYamlPath(_ctx.ZContext.Environment, subDir, templateName);
@@ -888,78 +773,9 @@ public class AutoBattleOperator : IStateRecordUpdateListener
 				}));
 	}
 
-	private static Dictionary<string, object?> NormalizeDictionary(object? value)
+	internal static bool IsSourceFingerprintCurrent(string sourceFingerprint, IEnumerable<string> paths)
 	{
-		if (value is IDictionary dictionary)
-		{
-			Dictionary<string, object> dictionary2 = new Dictionary<string, object>(StringComparer.Ordinal);
-			foreach (DictionaryEntry item in dictionary)
-			{
-				string key = Convert.ToString(item.Key, CultureInfo.InvariantCulture) ?? string.Empty;
-				dictionary2[key] = NormalizeValue(item.Value);
-			}
-			return dictionary2;
-		}
-		return new Dictionary<string, object>();
-	}
-
-	private static object? NormalizeValue(object? value)
-	{
-		if (value is IDictionary)
-		{
-			return NormalizeDictionary(value);
-		}
-		if (value is IEnumerable enumerable && !(enumerable is string))
-		{
-			List<object> list = new List<object>();
-			foreach (object item in enumerable)
-			{
-				list.Add(NormalizeValue(item));
-			}
-			return list;
-		}
-		return value;
-	}
-
-	private static void ValidateScenes(IReadOnlyList<AutoBattleCondOpScene> scenes, string sourcePath)
-	{
-		Dictionary<string, List<int>> triggerLocations = new Dictionary<string, List<int>>(StringComparer.Ordinal);
-		List<int> normalScenes = new List<int>();
-		for (int sceneIndex = 0; sceneIndex < scenes.Count; sceneIndex++)
-		{
-			AutoBattleCondOpScene scene = scenes[sceneIndex];
-			if (scene.Triggers.Count > 0)
-			{
-				foreach (string trigger in scene.Triggers.Where(trigger => !string.IsNullOrWhiteSpace(trigger)))
-				{
-					if (!triggerLocations.TryGetValue(trigger, out List<int>? locations))
-					{
-						locations = [];
-						triggerLocations.Add(trigger, locations);
-					}
-
-					locations.Add(sceneIndex);
-				}
-			}
-			else
-			{
-				normalScenes.Add(sceneIndex);
-			}
-		}
-
-		List<string> errors = triggerLocations
-			.Where(pair => pair.Value.Count > 1)
-			.Select(pair => $"重复 trigger '{pair.Key}': {string.Join(", ", pair.Value.Select(index => $"{sourcePath} -> scenes[{index}].triggers"))}")
-			.ToList();
-		if (normalScenes.Count > 1)
-		{
-			errors.Add($"多个无 trigger 场景: {string.Join(", ", normalScenes.Select(index => $"{sourcePath} -> scenes[{index}].triggers"))}");
-		}
-
-		if (errors.Count > 0)
-		{
-			throw new InvalidOperationException(string.Join(System.Environment.NewLine, errors));
-		}
+		return string.Equals(sourceFingerprint, GetSourceFingerprint(paths), StringComparison.Ordinal);
 	}
 
 	private static async Task DelayNoThrow(TimeSpan delay, CancellationToken token)

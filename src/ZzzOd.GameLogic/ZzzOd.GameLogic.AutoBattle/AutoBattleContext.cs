@@ -250,18 +250,12 @@ public class AutoBattleContext : IRunParticipant
 
 	public AutoBattleOperator InitAutoOp(string opName, string subDir = "auto_battle", bool forceReload = false)
 	{
-		if (ReplayRecorder != null)
-		{
-			StopReplayRecorder();
-		}
-		AutoOp = null;
-		_replayOpName = opName;
-		_replaySubDir = subDir;
 		string key = subDir + "-" + opName;
 		LogLegacyUseMergedFileWarningIfNeeded();
+		AutoBattleOperator selectedOperator;
 		if (!forceReload && _opCache.TryGetValue(key, out AutoBattleOperator value) && IsCachedOperatorCurrent(value))
 		{
-			AutoOp = value;
+			selectedOperator = value;
 		}
 		else
 		{
@@ -271,9 +265,16 @@ public class AutoBattleContext : IRunParticipant
 			{
 				throw new InvalidOperationException(message);
 			}
-			AutoOp = autoBattleOperator;
+			selectedOperator = autoBattleOperator;
 			_opCache[key] = autoBattleOperator;
 		}
+		if (ReplayRecorder != null)
+		{
+			StopReplayRecorder();
+		}
+		AutoOp = selectedOperator;
+		_replayOpName = opName;
+		_replaySubDir = subDir;
 		ConfigureReplayRecorder(AutoOp, opName, subDir);
 		_checkChainInterval = AutoOp.CheckChainInterval;
 		_checkQuickInterval = AutoOp.CheckQuickInterval;
@@ -288,10 +289,7 @@ public class AutoBattleContext : IRunParticipant
 
 	private static bool IsCachedOperatorCurrent(AutoBattleOperator autoOp)
 	{
-		return string.Equals(
-			autoOp.SourceFingerprint,
-			AutoBattleOperator.GetSourceFingerprint(autoOp.LoadedYamlPaths),
-			StringComparison.Ordinal);
+		return AutoBattleOperator.IsSourceFingerprintCurrent(autoOp.SourceFingerprint, autoOp.LoadedYamlPaths);
 	}
 
 	private void LogLegacyUseMergedFileWarningIfNeeded()

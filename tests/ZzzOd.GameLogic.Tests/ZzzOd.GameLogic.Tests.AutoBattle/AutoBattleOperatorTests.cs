@@ -415,6 +415,70 @@ public sealed class AutoBattleOperatorTests
 	}
 
 	[Fact]
+	public void ReferenceGraphLoader_LoadsExpandedClosureIntoStableSnapshot()
+	{
+		string root = CreateTempRoot();
+		try
+		{
+			WriteCondOpConfig(root);
+			AutoBattleReferenceGraphSnapshot snapshot = new AutoBattleReferenceGraphLoader(new OneDragonEnvironment(root))
+				.Load("auto_battle", "测试配置");
+
+			Assert.Equal("tester", snapshot.Configuration["author"]);
+			Assert.Single(snapshot.Scenes);
+			Assert.Single(snapshot.Scenes[0].Handlers);
+			Assert.Single(snapshot.Scenes[0].Handlers[0].Operations);
+			Assert.Equal("设置状态", snapshot.Scenes[0].Handlers[0].Operations[0].OpName);
+			Assert.Equal(
+				snapshot.LoadedYamlPaths.OrderBy(path => path, StringComparer.Ordinal),
+				snapshot.LoadedYamlPaths);
+			Assert.All(snapshot.LoadedYamlPaths, path => Assert.True(Path.IsPathFullyQualified(path)));
+			Assert.Equal(AutoBattleOperator.GetSourceFingerprint(snapshot.LoadedYamlPaths), snapshot.SourceFingerprint);
+		}
+		finally
+		{
+			Directory.Delete(root, recursive: true);
+		}
+	}
+
+	[Fact]
+	public void ReferenceGraphSnapshot_DetectsDependencyChangesAndKeepsLastVerifiedSnapshotOnFailure()
+	{
+		string root = CreateTempRoot();
+		try
+		{
+			WriteCondOpConfig(root);
+			AutoBattleReferenceGraphLoader loader = new(new OneDragonEnvironment(root));
+			AutoBattleReferenceGraphSnapshot first = loader.Load("auto_battle", "测试配置");
+			Dictionary<string, AutoBattleReferenceGraphSnapshot> cache = new(StringComparer.Ordinal)
+			{
+				["auto_battle-测试配置"] = first,
+			};
+
+			Assert.True(AutoBattleOperator.IsSourceFingerprintCurrent(first.SourceFingerprint, first.LoadedYamlPaths));
+
+			File.WriteAllText(
+				Path.Combine(root, "config", "auto_battle_state_handler", "测试状态模板.yml"),
+				"handlers:\n  - states: \"[自定义-触发, 0, 2]\"\n    debug_name: \"模板命中\"\n    interrupt_states: \"[自定义-中断, 0, 1]\"\n    operations:\n      - operation_template: \"设置命中\"");
+			Assert.False(AutoBattleOperator.IsSourceFingerprintCurrent(first.SourceFingerprint, first.LoadedYamlPaths));
+
+			File.WriteAllText(Path.Combine(root, "config", "auto_battle", "测试配置.yml"), "scenes:\n  - triggers: []\n    handlers:\n      - state_template: 不存在");
+			Assert.Throws<FileNotFoundException>(() => loader.Load("auto_battle", "测试配置"));
+			Assert.Same(first, cache["auto_battle-测试配置"]);
+
+			WriteCondOpConfig(root);
+			AutoBattleReferenceGraphSnapshot reloaded = loader.Load("auto_battle", "测试配置");
+			cache["auto_battle-测试配置"] = reloaded;
+			Assert.NotSame(first, cache["auto_battle-测试配置"]);
+			Assert.True(AutoBattleOperator.IsSourceFingerprintCurrent(reloaded.SourceFingerprint, reloaded.LoadedYamlPaths));
+		}
+		finally
+		{
+			Directory.Delete(root, recursive: true);
+		}
+	}
+
+	[Fact]
 	public void InitBeforeRunning_WhitespaceExpressionReturnsReadableFailure()
 	{
 		string root = CreateTempRoot();
