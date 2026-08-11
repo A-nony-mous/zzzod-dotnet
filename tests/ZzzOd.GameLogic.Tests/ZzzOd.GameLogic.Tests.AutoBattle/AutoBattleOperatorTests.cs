@@ -12,6 +12,7 @@ using Serilog;
 using Serilog.Core;
 using Serilog.Events;
 using Xunit;
+using Xunit.Abstractions;
 using ZzzOd.GameLogic.AutoBattle;
 using ZzzOd.GameLogic.Context;
 
@@ -19,6 +20,13 @@ namespace ZzzOd.GameLogic.Tests.AutoBattle;
 
 public sealed class AutoBattleOperatorTests
 {
+	private readonly ITestOutputHelper _output;
+
+	public AutoBattleOperatorTests(ITestOutputHelper output)
+	{
+		_output = output;
+	}
+
 	private sealed class RecordingAtomicOp : AtomicOp
 	{
 		private readonly bool _blockUntilStopped;
@@ -500,6 +508,77 @@ public sealed class AutoBattleOperatorTests
 
 			File.WriteAllText(mergedPath, "scenes: []");
 			AssertEquivalent(independent, new AutoBattleReferenceGraphLoader(environment).Load("auto_battle", "测试配置"));
+		}
+		finally
+		{
+			Directory.Delete(root, recursive: true);
+		}
+	}
+
+	[Fact]
+	public void AutoBattleLoadBenchmark_RecordsColdWarmLegacyAndFrameCounters()
+	{
+		string root = CreateTempRoot();
+		try
+		{
+			WriteCondOpConfig(root);
+			WriteMergedCondOpConfig(root);
+			AutoBattleReferenceGraphLoadCounters counters = new();
+			using ZContext context = new ZContext(new OneDragonEnvironment(root));
+			AutoBattleOperator autoBattleOperator = new(
+				context.AutoBattleContext,
+				"auto_battle",
+				"测试配置",
+				readFromMerged: false,
+				clock: null,
+				atomicOpFactory: null,
+				sceneDispatcher: null,
+				runNormalSceneLoop: true,
+				referenceGraphLoaderFactory: environment => new AutoBattleReferenceGraphLoader(environment, counters));
+
+			long memoryBeforeColdLoad = GC.GetTotalMemory(forceFullCollection: true);
+			var coldStopwatch = System.Diagnostics.Stopwatch.StartNew();
+			Assert.True(autoBattleOperator.InitBeforeRunning().Success);
+			coldStopwatch.Stop();
+			long snapshotBytes = Math.Max(0, GC.GetTotalMemory(forceFullCollection: true) - memoryBeforeColdLoad);
+			int coldFileOpenCount = counters.FileOpenCount;
+			int coldYamlParseCount = counters.YamlParseCount;
+
+			counters.Reset();
+			var legacyStopwatch = System.Diagnostics.Stopwatch.StartNew();
+			AutoBattleReferenceGraphSnapshot legacySnapshot = new AutoBattleReferenceGraphLoader(context.Environment, counters)
+				.LoadMergedForMigrationVerification("auto_battle", "测试配置");
+			legacyStopwatch.Stop();
+
+			counters.Reset();
+			var warmStopwatch = System.Diagnostics.Stopwatch.StartNew();
+			IReadOnlyList<string> warmLoadedPaths = autoBattleOperator.LoadedYamlPaths;
+			warmStopwatch.Stop();
+
+			Assert.True(coldStopwatch.Elapsed >= TimeSpan.Zero);
+			Assert.True(legacyStopwatch.Elapsed >= TimeSpan.Zero);
+			Assert.True(warmStopwatch.Elapsed >= TimeSpan.Zero);
+			Assert.Equal(3, coldFileOpenCount);
+			Assert.Equal(3, coldYamlParseCount);
+			Assert.Single(legacySnapshot.LoadedYamlPaths);
+			Assert.Equal(3, autoBattleOperator.LoadedYamlPaths.Count);
+			Assert.Equal(autoBattleOperator.LoadedYamlPaths, warmLoadedPaths);
+			Assert.True(snapshotBytes >= 0);
+			Assert.Equal(0, counters.FileOpenCount);
+			Assert.Equal(0, counters.DirectoryEnumerationCount);
+			Assert.Equal(0, counters.YamlParseCount);
+			_output.WriteLine($"coldMs={coldStopwatch.Elapsed.TotalMilliseconds:F3}; warmMs={warmStopwatch.Elapsed.TotalMilliseconds:F3}; legacyMergedMs={legacyStopwatch.Elapsed.TotalMilliseconds:F3}; coldFiles={coldFileOpenCount}; snapshotBytes={snapshotBytes}; legacyFiles={legacySnapshot.LoadedYamlPaths.Count}");
+
+			Assert.True(autoBattleOperator.StartRunningAsync());
+			counters.Reset();
+			autoBattleOperator.BatchUpdateStates([]);
+			autoBattleOperator.RunNormalSceneReplayTick();
+			autoBattleOperator.StopRunning();
+			Assert.Equal(0, counters.FileOpenCount);
+			Assert.Equal(0, counters.DirectoryEnumerationCount);
+			Assert.Equal(0, counters.YamlParseCount);
+			_output.WriteLine("frameFileOpenCount=0; frameDirectoryEnumerationCount=0; frameYamlParseCount=0");
+			autoBattleOperator.Dispose();
 		}
 		finally
 		{

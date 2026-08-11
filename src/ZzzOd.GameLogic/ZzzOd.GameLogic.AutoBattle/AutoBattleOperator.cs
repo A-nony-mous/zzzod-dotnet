@@ -45,6 +45,8 @@ public class AutoBattleOperator : IStateRecordUpdateListener
 
 	private readonly bool _runNormalSceneLoop;
 
+	private readonly Func<OneDragonEnvironment, AutoBattleReferenceGraphLoader> _referenceGraphLoaderFactory;
+
 	private readonly object _taskLock = new object();
 
 	private readonly List<AutoBattleExecutionRecord> _executionRecords = new List<AutoBattleExecutionRecord>();
@@ -169,6 +171,20 @@ public class AutoBattleOperator : IStateRecordUpdateListener
 		Func<OperationDef, OneDragon.Core.Operation.AtomicOp>? atomicOpFactory = null,
 		Action<Action>? sceneDispatcher = null,
 		bool runNormalSceneLoop = true)
+		: this(ctx, subDir, templateName, readFromMerged, clock, atomicOpFactory, sceneDispatcher, runNormalSceneLoop, null)
+	{
+	}
+
+	internal AutoBattleOperator(
+		AutoBattleContext ctx,
+		string subDir,
+		string templateName,
+		bool readFromMerged,
+		ICondOpClock? clock,
+		Func<OperationDef, OneDragon.Core.Operation.AtomicOp>? atomicOpFactory,
+		Action<Action>? sceneDispatcher,
+		bool runNormalSceneLoop,
+		Func<OneDragonEnvironment, AutoBattleReferenceGraphLoader>? referenceGraphLoaderFactory)
 	{
 		_ctx = ctx;
 		_subDir = subDir;
@@ -178,6 +194,7 @@ public class AutoBattleOperator : IStateRecordUpdateListener
 		_atomicOpFactory = atomicOpFactory ?? _ctx.AtomicOpFactory.GetAtomicOp;
 		_sceneDispatcher = sceneDispatcher;
 		_runNormalSceneLoop = runNormalSceneLoop;
+		_referenceGraphLoaderFactory = referenceGraphLoaderFactory ?? (environment => new AutoBattleReferenceGraphLoader(environment));
 	}
 
 	public (bool Success, string Message) InitBeforeRunning()
@@ -507,7 +524,7 @@ public class AutoBattleOperator : IStateRecordUpdateListener
 
 	private void Load()
 	{
-		AutoBattleReferenceGraphSnapshot snapshot = new AutoBattleReferenceGraphLoader(_ctx.ZContext.Environment)
+		AutoBattleReferenceGraphSnapshot snapshot = _referenceGraphLoaderFactory(_ctx.ZContext.Environment)
 			.Load(_subDir, ResolveTemplateName());
 		LoadOtherInfo(snapshot.Configuration.ToDictionary(pair => pair.Key, pair => pair.Value ?? new object(), StringComparer.Ordinal));
 		Scenes = snapshot.Scenes;

@@ -40,6 +40,31 @@ internal sealed class AutoBattleReferenceGraphSnapshot
 }
 
 /// <summary>
+/// 记录独立引用图加载期间的文件与解析操作次数。
+/// </summary>
+internal sealed class AutoBattleReferenceGraphLoadCounters
+{
+	public int FileOpenCount { get; private set; }
+
+	public int DirectoryEnumerationCount { get; private set; }
+
+	public int YamlParseCount { get; private set; }
+
+	public void RecordFileOpen() => FileOpenCount++;
+
+	public void RecordDirectoryEnumeration() => DirectoryEnumerationCount++;
+
+	public void RecordYamlParse() => YamlParseCount++;
+
+	public void Reset()
+	{
+		FileOpenCount = 0;
+		DirectoryEnumerationCount = 0;
+		YamlParseCount = 0;
+	}
+}
+
+/// <summary>
 /// 读取并展开自动战斗独立 YAML 引用图。
 /// </summary>
 internal sealed class AutoBattleReferenceGraphLoader
@@ -50,11 +75,16 @@ internal sealed class AutoBattleReferenceGraphLoader
 
 	private readonly HashSet<string> _loadedYamlPaths = new(StringComparer.OrdinalIgnoreCase);
 
+	private readonly AutoBattleReferenceGraphLoadCounters? _loadCounters;
+
 	private string? _lastLoadedYamlPath;
 
-	public AutoBattleReferenceGraphLoader(OneDragonEnvironment environment)
+	public AutoBattleReferenceGraphLoader(
+		OneDragonEnvironment environment,
+		AutoBattleReferenceGraphLoadCounters? loadCounters = null)
 	{
 		_environment = environment;
+		_loadCounters = loadCounters;
 	}
 
 	public AutoBattleReferenceGraphSnapshot Load(string subDir, string templateName)
@@ -206,7 +236,10 @@ internal sealed class AutoBattleReferenceGraphLoader
 			string reference = string.IsNullOrWhiteSpace(referencePath) ? string.Empty : $"; 引用: {referencePath}";
 			throw new FileNotFoundException("未找到配置文件 " + subDir + "/" + templateName + reference, path);
 		}
-		return NormalizeDictionary(_yamlDeserializer.Deserialize<object>(File.ReadAllText(path)));
+		_loadCounters?.RecordFileOpen();
+		string yaml = File.ReadAllText(path);
+		_loadCounters?.RecordYamlParse();
+		return NormalizeDictionary(_yamlDeserializer.Deserialize<object>(yaml));
 	}
 
 	private static Dictionary<string, object?> NormalizeDictionary(object? value)
