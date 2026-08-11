@@ -1,6 +1,8 @@
 using System.Security.Cryptography;
 using System.Text.Json;
+using Microsoft.Extensions.Logging.Abstractions;
 using Xunit;
+using ZzzOd.AppHost.Backend;
 using ZzzOd.AppHost.Resources;
 
 namespace ZzzOd.GameLogic.Tests.AppHost;
@@ -237,6 +239,66 @@ public sealed class ZzzAssetManifestValidatorTests : IDisposable
             writer);
 
         Assert.Equal("ManifestMissing: assets-manifest.json 未找到资源清单。" + Environment.NewLine, writer.ToString());
+    }
+
+    /// <summary>
+    /// 有效 staging 通过门禁后才允许创建运行时管理器。
+    /// </summary>
+    [Fact]
+    public void StartupGate_ShouldAllowRuntimeManagerForValidStaging()
+    {
+        WriteFile("assets/game_data/测试.yml", "内容");
+        WriteManifest();
+
+        ZzzAssetManifestValidationResult validation = new ZzzAssetManifestValidator().Validate(_rootDirectory, "win-x64");
+        ZzzValidatedRunRoot validatedRunRoot = ZzzAssetManifestStartupGate.CreateValidatedRunRoot(validation);
+        using ZzzRuntimeManager runtime = new(validatedRunRoot.Path, NullLogger<ZzzRuntimeManager>.Instance);
+
+        Assert.Equal(Path.GetFullPath(_rootDirectory), runtime.RunRoot);
+        Assert.False(runtime.HasContext);
+    }
+
+    /// <summary>
+    /// 缺失、哈希错误、聚合 YAML 和多余受管理文件都必须在创建运行时管理器前被门禁阻断。
+    /// </summary>
+    [Theory]
+    [InlineData("missing")]
+    [InlineData("hash-mismatch")]
+    [InlineData("aggregated-yaml")]
+    [InlineData("extra-managed-file")]
+    public void StartupGate_ShouldBlockInvalidStagingBeforeRuntimeManagerInitialization(string invalidKind)
+    {
+        WriteFile("assets/game_data/测试.yml", "内容");
+        WriteManifest();
+        switch (invalidKind)
+        {
+            case "missing":
+                File.Delete(Path.Combine(_rootDirectory, "assets-manifest.json"));
+                break;
+            case "hash-mismatch":
+                WriteFile("assets/game_data/测试.yml", "篡改");
+                break;
+            case "aggregated-yaml":
+                WriteFile("assets/game_data/screen_info/_od_merged.yml", "[]");
+                break;
+            case "extra-managed-file":
+                WriteFile("assets/game_data/新增.yml", "新增");
+                break;
+            default:
+                throw new ArgumentOutOfRangeException(nameof(invalidKind), invalidKind, null);
+        }
+
+        ZzzAssetManifestValidationResult validation = new ZzzAssetManifestValidator().Validate(_rootDirectory, "win-x64");
+        bool runtimeManagerCreated = false;
+
+        Assert.False(validation.IsValid);
+        Assert.Throws<InvalidOperationException>(() =>
+        {
+            ZzzValidatedRunRoot validatedRunRoot = ZzzAssetManifestStartupGate.CreateValidatedRunRoot(validation);
+            runtimeManagerCreated = true;
+            using ZzzRuntimeManager _ = new(validatedRunRoot.Path, NullLogger<ZzzRuntimeManager>.Instance);
+        });
+        Assert.False(runtimeManagerCreated);
     }
 
     /// <summary>
