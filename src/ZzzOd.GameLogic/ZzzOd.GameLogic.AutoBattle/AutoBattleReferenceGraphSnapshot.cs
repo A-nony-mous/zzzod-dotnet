@@ -61,7 +61,23 @@ internal sealed class AutoBattleReferenceGraphLoader
 	{
 		_loadedYamlPaths.Clear();
 		_lastLoadedYamlPath = null;
-		Dictionary<string, object?> configuration = LoadYamlConfig(subDir, templateName);
+		return LoadCore(() => LoadYamlConfig(subDir, templateName));
+	}
+
+	/// <summary>
+	/// 读取旧聚合主策略，仅用于迁移结构化对照测试。
+	/// </summary>
+	internal AutoBattleReferenceGraphSnapshot LoadMergedForMigrationVerification(string subDir, string templateName)
+	{
+		_loadedYamlPaths.Clear();
+		_lastLoadedYamlPath = null;
+		string path = Path.Combine(_environment.GetPathUnderWorkDir("config", subDir), templateName + ".merged.yml");
+		return LoadCore(() => LoadYamlFile(path, subDir, templateName));
+	}
+
+	private AutoBattleReferenceGraphSnapshot LoadCore(Func<Dictionary<string, object?>> loadConfiguration)
+	{
+		Dictionary<string, object?> configuration = loadConfiguration();
 		string configurationYamlPath = _lastLoadedYamlPath
 			?? throw new InvalidOperationException("未记录自动战斗主策略路径。");
 		List<AutoBattleCondOpScene> scenes = AutoBattleCondOpScene
@@ -177,7 +193,12 @@ internal sealed class AutoBattleReferenceGraphLoader
 
 	private Dictionary<string, object?> LoadYamlConfig(string subDir, string templateName, string? referencePath = null)
 	{
-		string path = Path.GetFullPath(AutoBattleOperator.ResolveYamlPath(_environment, subDir, templateName));
+		return LoadYamlFile(AutoBattleOperator.ResolveYamlPath(_environment, subDir, templateName), subDir, templateName, referencePath);
+	}
+
+	private Dictionary<string, object?> LoadYamlFile(string path, string subDir, string templateName, string? referencePath = null)
+	{
+		path = Path.GetFullPath(path);
 		_lastLoadedYamlPath = path;
 		_loadedYamlPaths.Add(path);
 		if (!File.Exists(path))

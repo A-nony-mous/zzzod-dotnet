@@ -479,6 +479,35 @@ public sealed class AutoBattleOperatorTests
 	}
 
 	[Fact]
+	public void ReferenceGraphLoader_MatchesLegacyMergedSnapshotWithoutUsingItInProduction()
+	{
+		string root = CreateTempRoot();
+		try
+		{
+			WriteCondOpConfig(root);
+			WriteMergedCondOpConfig(root);
+			OneDragonEnvironment environment = new OneDragonEnvironment(root);
+			AutoBattleReferenceGraphSnapshot independent = new AutoBattleReferenceGraphLoader(environment)
+				.Load("auto_battle", "测试配置");
+			AutoBattleReferenceGraphSnapshot merged = new AutoBattleReferenceGraphLoader(environment)
+				.LoadMergedForMigrationVerification("auto_battle", "测试配置");
+
+			AssertEquivalent(independent, merged);
+
+			string mergedPath = Path.Combine(root, "config", "auto_battle", "测试配置.merged.yml");
+			File.Delete(mergedPath);
+			AssertEquivalent(independent, new AutoBattleReferenceGraphLoader(environment).Load("auto_battle", "测试配置"));
+
+			File.WriteAllText(mergedPath, "scenes: []");
+			AssertEquivalent(independent, new AutoBattleReferenceGraphLoader(environment).Load("auto_battle", "测试配置"));
+		}
+		finally
+		{
+			Directory.Delete(root, recursive: true);
+		}
+	}
+
+	[Fact]
 	public void InitBeforeRunning_WhitespaceExpressionReturnsReadableFailure()
 	{
 		string root = CreateTempRoot();
@@ -899,6 +928,59 @@ public sealed class AutoBattleOperatorTests
 		return text;
 	}
 
+	private static void AssertEquivalent(AutoBattleReferenceGraphSnapshot expected, AutoBattleReferenceGraphSnapshot actual)
+	{
+		Assert.Equal(expected.Scenes.Count, actual.Scenes.Count);
+		for (int sceneIndex = 0; sceneIndex < expected.Scenes.Count; sceneIndex++)
+		{
+			AutoBattleCondOpScene expectedScene = expected.Scenes[sceneIndex];
+			AutoBattleCondOpScene actualScene = actual.Scenes[sceneIndex];
+			Assert.Equal(expectedScene.Priority, actualScene.Priority);
+			Assert.Equal(expectedScene.Triggers, actualScene.Triggers);
+			Assert.Equal(expectedScene.IntervalSeconds, actualScene.IntervalSeconds);
+			AssertEquivalent(expectedScene.Handlers, actualScene.Handlers);
+		}
+	}
+
+	private static void AssertEquivalent(IReadOnlyList<AutoBattleCondOpStateHandler> expected, IReadOnlyList<AutoBattleCondOpStateHandler> actual)
+	{
+		Assert.Equal(expected.Count, actual.Count);
+		for (int handlerIndex = 0; handlerIndex < expected.Count; handlerIndex++)
+		{
+			AutoBattleCondOpStateHandler expectedHandler = expected[handlerIndex];
+			AutoBattleCondOpStateHandler actualHandler = actual[handlerIndex];
+			Assert.Equal(expectedHandler.States, actualHandler.States);
+			Assert.Equal(expectedHandler.DisplayName, actualHandler.DisplayName);
+			Assert.Equal(expectedHandler.InterruptStates, actualHandler.InterruptStates);
+			AssertEquivalent(expectedHandler.SubHandlers, actualHandler.SubHandlers);
+			AssertEquivalent(expectedHandler.Operations, actualHandler.Operations);
+		}
+	}
+
+	private static void AssertEquivalent(IReadOnlyList<OperationDef> expected, IReadOnlyList<OperationDef> actual)
+	{
+		Assert.Equal(expected.Count, actual.Count);
+		for (int operationIndex = 0; operationIndex < expected.Count; operationIndex++)
+		{
+			OperationDef expectedOperation = expected[operationIndex];
+			OperationDef actualOperation = actual[operationIndex];
+			Assert.Equal(expectedOperation.OpName, actualOperation.OpName);
+			Assert.Equal(expectedOperation.Data, actualOperation.Data);
+			Assert.Equal(expectedOperation.PreDelay, actualOperation.PreDelay);
+			Assert.Equal(expectedOperation.PostDelay, actualOperation.PostDelay);
+			Assert.Equal(expectedOperation.Way, actualOperation.Way);
+			Assert.Equal(expectedOperation.Press, actualOperation.Press);
+			Assert.Equal(expectedOperation.Repeat, actualOperation.Repeat);
+			Assert.Equal(expectedOperation.Seconds, actualOperation.Seconds);
+			Assert.Equal(expectedOperation.State, actualOperation.State);
+			Assert.Equal(expectedOperation.StateList, actualOperation.StateList);
+			Assert.Equal(expectedOperation.SecondsAdd, actualOperation.SecondsAdd);
+			Assert.Equal(expectedOperation.Value, actualOperation.Value);
+			Assert.Equal(expectedOperation.Add, actualOperation.Add);
+			Assert.Equal(expectedOperation.AgentName, actualOperation.AgentName);
+		}
+	}
+
 	private static void WriteCondOpConfig(string rootDirectory)
 	{
 		string text = Path.Combine(rootDirectory, "config", "auto_battle");
@@ -910,6 +992,12 @@ public sealed class AutoBattleOperatorTests
 		File.WriteAllText(Path.Combine(text, "测试配置.yml"), "author: tester\nscenes:\n  - triggers: [\"自定义-触发\"]\n    priority: 5\n    interval: 0\n    handlers:\n      - state_template: \"测试状态模板\"");
 		File.WriteAllText(Path.Combine(text2, "测试状态模板.yml"), "handlers:\n  - states: \"[自定义-触发, 0, 1]\"\n    debug_name: \"模板命中\"\n    interrupt_states: \"[自定义-中断, 0, 1]\"\n    operations:\n      - operation_template: \"设置命中\"");
 		File.WriteAllText(Path.Combine(text3, "设置命中.yml"), "operations:\n  - op_name: \"设置状态\"\n    state: \"自定义-命中\"");
+	}
+
+	private static void WriteMergedCondOpConfig(string rootDirectory)
+	{
+		string path = Path.Combine(rootDirectory, "config", "auto_battle", "测试配置.merged.yml");
+		File.WriteAllText(path, "author: tester\nscenes:\n  - triggers: [\"自定义-触发\"]\n    priority: 5\n    interval: 0\n    handlers:\n      - states: \"[自定义-触发, 0, 1]\"\n        debug_name: \"模板命中\"\n        interrupt_states: \"[自定义-中断, 0, 1]\"\n        operations:\n          - op_name: \"设置状态\"\n            state: \"自定义-命中\"");
 	}
 
 	private static void WritePriorityConfig(string rootDirectory)
