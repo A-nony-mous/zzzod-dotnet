@@ -473,6 +473,7 @@ public sealed class AutoBattleOperatorTests
 			string config = Path.Combine(root, "config");
 			Directory.CreateDirectory(Path.Combine(config, "auto_battle"));
 			Directory.CreateDirectory(Path.Combine(config, "auto_battle_state_handler"));
+			Directory.CreateDirectory(Path.Combine(config, "auto_battle_operation"));
 			File.WriteAllText(Path.Combine(config, "auto_battle", "缺失.yml"), "scenes:\n  - triggers: []\n    handlers:\n      - state_template: 不存在");
 			using ZContext missingContext = new ZContext(new OneDragonEnvironment(root));
 			var missing = new AutoBattleOperator(missingContext.AutoBattleContext, "auto_battle", "缺失").InitBeforeRunning();
@@ -488,6 +489,15 @@ public sealed class AutoBattleOperatorTests
 			Assert.False(cycle.Success);
 			Assert.Contains("A -> B -> A", cycle.Message, StringComparison.Ordinal);
 			Assert.Contains("state_template", cycle.Message, StringComparison.Ordinal);
+
+			File.WriteAllText(Path.Combine(config, "auto_battle", "操作循环.yml"), "scenes:\n  - triggers: []\n    handlers:\n      - states: \"\"\n        operations:\n          - operation_template: 操作A");
+			File.WriteAllText(Path.Combine(config, "auto_battle_operation", "操作A.yml"), "operations:\n  - operation_template: 操作B");
+			File.WriteAllText(Path.Combine(config, "auto_battle_operation", "操作B.yml"), "operations:\n  - operation_template: 操作A");
+			using ZContext operationContext = new ZContext(new OneDragonEnvironment(root));
+			var operationCycle = new AutoBattleOperator(operationContext.AutoBattleContext, "auto_battle", "操作循环").InitBeforeRunning();
+			Assert.False(operationCycle.Success);
+			Assert.Contains("操作A -> 操作B -> 操作A", operationCycle.Message, StringComparison.Ordinal);
+			Assert.Contains("operation_template", operationCycle.Message, StringComparison.Ordinal);
 		}
 		finally
 		{
