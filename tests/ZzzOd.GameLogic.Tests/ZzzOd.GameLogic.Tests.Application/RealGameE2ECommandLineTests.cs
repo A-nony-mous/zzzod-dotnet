@@ -19,6 +19,7 @@ public sealed class RealGameE2ECommandLineTests
 		Assert.Equal("run-app", commandLine.Command);
 		Assert.Equal(["coffee"], commandLine.CommandArguments);
 		Assert.Equal(["--run-root", "D:\\staging"], commandLine.RunRootArguments);
+		Assert.Null(commandLine.InstanceConfigRoot);
 	}
 
 	/// <summary>
@@ -32,6 +33,21 @@ public sealed class RealGameE2ECommandLineTests
 		Assert.Equal("probe-click-point", commandLine.Command);
 		Assert.Equal(["coffee", "12", "34"], commandLine.CommandArguments);
 		Assert.Equal(["--run-root=D:\\staging"], commandLine.RunRootArguments);
+		Assert.Null(commandLine.InstanceConfigRoot);
+	}
+
+	/// <summary>
+	/// 显式实例配置目录不应占用子命令参数。
+	/// </summary>
+	[Fact]
+	public void Parse_SeparatesInstanceConfigRoot()
+	{
+		RealGameE2ECommandLine commandLine = RealGameE2ECommandLine.Parse(["prepare-only", "--instance-config-root", "D:\\config\\00", "--run-root=D:\\staging"]);
+
+		Assert.Equal("prepare-only", commandLine.Command);
+		Assert.Empty(commandLine.CommandArguments);
+		Assert.Equal(["--run-root=D:\\staging"], commandLine.RunRootArguments);
+		Assert.Equal("D:\\config\\00", commandLine.InstanceConfigRoot);
 	}
 
 	/// <summary>
@@ -53,5 +69,15 @@ public sealed class RealGameE2ECommandLineTests
 	public void Parse_RejectsMissingRunRootValue()
 	{
 		Assert.Throws<ArgumentException>(() => RealGameE2ECommandLine.Parse(["--run-root"]));
+	}
+
+	/// <summary>
+	/// 实例配置目录缺失值时应在解析阶段失败。
+	/// </summary>
+	[Fact]
+	public void Parse_RejectsMissingInstanceConfigRootValue()
+	{
+		Assert.Throws<ArgumentException>(() => RealGameE2ECommandLine.Parse(["prepare-only", "--instance-config-root"]));
+		Assert.Throws<ArgumentException>(() => RealGameE2ECommandLine.Parse(["prepare-only", "--instance-config-root="]));
 	}
 }

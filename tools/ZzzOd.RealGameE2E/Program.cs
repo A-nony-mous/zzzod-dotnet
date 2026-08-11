@@ -47,6 +47,7 @@ internal static class Program
         Directory.SetCurrentDirectory(rootDirectory);
         OneDragonEnvironment environment = new(rootDirectory);
         E2EAutomationProfile profile = E2EAutomationProfile.Load(environment);
+        ApplyInstanceConfigOverlay(commandLine.InstanceConfigRoot, rootDirectory, profile.InstanceIndex);
         E2EResourceValidationResult resources = new E2EResourceValidator().Validate(environment, profile);
 		resources.RunRootSource = runRootResolution.Source.ToString();
         string evidenceDirectory = profile.ResolveEvidenceOutputDirectory(environment);
@@ -54,6 +55,7 @@ internal static class Program
 
         return command switch
         {
+            "prepare-only" => RunPrepareOnly(profile, resources, evidenceDirectory),
             "preflight" => await RunPreflightAsync(environment, profile, resources, evidenceDirectory).ConfigureAwait(false),
             "run-app" => await RunAppAsync(environment, profile, resources, evidenceDirectory, commandLine.CommandArguments.FirstOrDefault()).ConfigureAwait(false),
             "run-app-f10" => await RunAppAsync(environment, profile, resources, evidenceDirectory, commandLine.CommandArguments.FirstOrDefault(), enableF10Stop: true).ConfigureAwait(false),
@@ -68,6 +70,80 @@ internal static class Program
             "benchmark-autobattle-load" => await RunAutoBattleLoadBenchmark(environment, profile, resources, commandLine.CommandArguments).ConfigureAwait(false),
             _ => Usage(command),
         };
+    }
+
+    /// <summary>
+    /// 执行不创建游戏上下文的 E2E 资源预检，并写入 evidence。
+    /// </summary>
+    /// <param name="profile">E2E 配置。</param>
+    /// <param name="resources">资源校验结果。</param>
+    /// <param name="evidenceDirectory">evidence 输出目录。</param>
+    /// <returns>资源完整时返回 0，否则返回 2。</returns>
+    private static int RunPrepareOnly(
+        E2EAutomationProfile profile,
+        E2EResourceValidationResult resources,
+        string evidenceDirectory)
+    {
+        DateTimeOffset startedAtUtc = DateTimeOffset.UtcNow;
+        RealGameEvidence evidence = RealGameEvidence.Create("prepare-only", Environment.CommandLine, profile, resources, startedAtUtc);
+        evidence.ResultStatus = resources.IsValid ? RealGameEvidenceStatus.Pass : RealGameEvidenceStatus.Blocked;
+        evidence.ResultMessage = resources.IsValid
+            ? "E2E resources are ready; game context was not created."
+            : resources.FailureSummary;
+        evidence.Finish(DateTimeOffset.UtcNow);
+        WriteEvidence(evidenceDirectory, "prepare-only.json", evidence);
+        Console.WriteLine(JsonSerializer.Serialize(evidence, JsonOptions));
+        return resources.IsValid ? 0 : 2;
+    }
+
+    /// <summary>
+    /// 将显式给出的实例配置复制到 staging 的可变实例目录。
+    /// </summary>
+    /// <param name="sourceRoot">实例配置源目录。</param>
+    /// <param name="runRoot">已解析的 staging 运行根。</param>
+    /// <param name="instanceIndex">E2E profile 选择的实例编号。</param>
+    private static void ApplyInstanceConfigOverlay(string? sourceRoot, string runRoot, int instanceIndex)
+    {
+        if (string.IsNullOrWhiteSpace(sourceRoot))
+        {
+            return;
+        }
+
+        if (!Path.IsPathFullyQualified(sourceRoot))
+        {
+            throw new ArgumentException("--instance-config-root 必须使用绝对路径。", nameof(sourceRoot));
+        }
+
+        string sourceFullPath = Path.GetFullPath(sourceRoot);
+        if (!Directory.Exists(sourceFullPath))
+        {
+            throw new DirectoryNotFoundException($"实例配置源目录不存在: {sourceFullPath}");
+        }
+
+        string configRoot = Path.GetFullPath(Path.Combine(runRoot, "config"));
+        string destinationRoot = Path.GetFullPath(Path.Combine(configRoot, instanceIndex.ToString("00")));
+        if (!destinationRoot.StartsWith(configRoot + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase))
+        {
+            throw new InvalidOperationException($"实例配置目标路径越出 staging config: {destinationRoot}");
+        }
+
+        if (string.Equals(sourceFullPath, destinationRoot, StringComparison.OrdinalIgnoreCase))
+        {
+            return;
+        }
+
+        if (Directory.Exists(destinationRoot))
+        {
+            Directory.Delete(destinationRoot, recursive: true);
+        }
+
+        foreach (string sourceFile in Directory.EnumerateFiles(sourceFullPath, "*", SearchOption.AllDirectories))
+        {
+            string relativePath = Path.GetRelativePath(sourceFullPath, sourceFile);
+            string destinationFile = Path.Combine(destinationRoot, relativePath);
+            Directory.CreateDirectory(Path.GetDirectoryName(destinationFile)!);
+            File.Copy(sourceFile, destinationFile);
+        }
     }
 
     private static int RunCaptureCurrent(
@@ -1097,6 +1173,8 @@ internal static class Program
     private static int Usage(string command)
     {
         Console.Error.WriteLine($"Unsupported command: {command}");
+        Console.Error.WriteLine("可选参数: --instance-config-root <绝对实例配置目录>，复制到 staging 的 config/<实例编号>。");
+        Console.Error.WriteLine("Usage: dotnet run --project zzzod-dotnet/tools/ZzzOd.RealGameE2E/ZzzOd.RealGameE2E.csproj -- --run-root <staging> prepare-only");
         Console.Error.WriteLine("Usage: dotnet run --project zzzod-dotnet/tools/ZzzOd.RealGameE2E/ZzzOd.RealGameE2E.csproj -- --run-root <staging> preflight");
         Console.Error.WriteLine("Usage: dotnet run --project zzzod-dotnet/tools/ZzzOd.RealGameE2E/ZzzOd.RealGameE2E.csproj -- run-app <app_id>");
         Console.Error.WriteLine("Usage: dotnet run --project zzzod-dotnet/tools/ZzzOd.RealGameE2E/ZzzOd.RealGameE2E.csproj -- run-app-f10 <app_id>");
@@ -1146,10 +1224,12 @@ internal static class Program
 /// <param name="Command">实机 E2E 子命令。</param>
 /// <param name="CommandArguments">子命令参数。</param>
 /// <param name="RunRootArguments">交给共享运行根解析器的参数。</param>
+/// <param name="InstanceConfigRoot">显式复制到 staging 的实例配置目录。</param>
 public sealed record RealGameE2ECommandLine(
     string Command,
     IReadOnlyList<string> CommandArguments,
-    IReadOnlyList<string> RunRootArguments)
+    IReadOnlyList<string> RunRootArguments,
+    string? InstanceConfigRoot)
 {
     /// <summary>
     /// 从完整命令行中提取 run-root 参数和 E2E 子命令。
@@ -1162,6 +1242,7 @@ public sealed record RealGameE2ECommandLine(
         List<string> runRootArguments = [];
         List<string> commandArguments = [];
         string? command = null;
+        string? instanceConfigRoot = null;
         for (int index = 0; index < args.Count; index++)
         {
             string argument = args[index];
@@ -1183,6 +1264,37 @@ public sealed record RealGameE2ECommandLine(
                 continue;
             }
 
+            if (string.Equals(argument, "--instance-config-root", StringComparison.Ordinal))
+            {
+                if (index + 1 >= args.Count || string.IsNullOrWhiteSpace(args[index + 1]))
+                {
+                    throw new ArgumentException("--instance-config-root 缺少路径参数。", nameof(args));
+                }
+
+                if (instanceConfigRoot is not null)
+                {
+                    throw new ArgumentException("--instance-config-root 只能指定一次。", nameof(args));
+                }
+
+                instanceConfigRoot = args[++index];
+                continue;
+            }
+
+            if (argument.StartsWith("--instance-config-root=", StringComparison.Ordinal))
+            {
+                if (instanceConfigRoot is not null)
+                {
+                    throw new ArgumentException("--instance-config-root 只能指定一次。", nameof(args));
+                }
+
+                instanceConfigRoot = argument["--instance-config-root=".Length..];
+                if (string.IsNullOrWhiteSpace(instanceConfigRoot))
+                {
+                    throw new ArgumentException("--instance-config-root 缺少路径参数。", nameof(args));
+                }
+                continue;
+            }
+
             if (command is null)
             {
                 command = argument.Trim().ToLowerInvariant();
@@ -1193,7 +1305,7 @@ public sealed record RealGameE2ECommandLine(
             }
         }
 
-        return new RealGameE2ECommandLine(command ?? "preflight", commandArguments, runRootArguments);
+        return new RealGameE2ECommandLine(command ?? "preflight", commandArguments, runRootArguments, instanceConfigRoot);
     }
 }
 
