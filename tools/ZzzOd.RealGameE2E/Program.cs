@@ -14,6 +14,7 @@ using OneDragon.Core.Windows.Platform;
 using OneDragon.Core.Yolo;
 using OpenCvSharp;
 using ZzzOd.AppHost;
+using ZzzOd.AppHost.E2E;
 using ZzzOd.GameLogic.Application;
 using ZzzOd.GameLogic.Context;
 using ZzzOd.GameLogic.Controller;
@@ -47,6 +48,7 @@ internal static class Program
         OneDragonEnvironment environment = new(rootDirectory);
         E2EAutomationProfile profile = E2EAutomationProfile.Load(environment);
         E2EResourceValidationResult resources = new E2EResourceValidator().Validate(environment, profile);
+		resources.RunRootSource = runRootResolution.Source.ToString();
         string evidenceDirectory = profile.ResolveEvidenceOutputDirectory(environment);
         Directory.CreateDirectory(evidenceDirectory);
 
@@ -60,10 +62,10 @@ internal static class Program
             "capture-current" => RunCaptureCurrent(environment, profile, resources, evidenceDirectory, commandLine.CommandArguments.FirstOrDefault()),
             "probe-key-j" => await RunProbeKeyJAsync(environment, profile, resources, evidenceDirectory, commandLine.CommandArguments.FirstOrDefault()).ConfigureAwait(false),
             "probe-click-point" => await RunProbeClickPointAsync(environment, profile, resources, evidenceDirectory, commandLine.CommandArguments),
-            "ocr-image" => RunOcrImage(environment, profile, commandLine.CommandArguments),
-            "recognize-image" => RunRecognizeImage(environment, profile, commandLine.CommandArguments),
-            "benchmark-flash-onnx" => RunFlashOnnxBenchmark(environment, profile, commandLine.CommandArguments),
-            "benchmark-autobattle-load" => await AutoBattleLoadBenchmark.RunAsync(environment, profile, commandLine.CommandArguments, JsonOptions).ConfigureAwait(false),
+            "ocr-image" => RunOcrImage(environment, profile, resources, commandLine.CommandArguments),
+            "recognize-image" => RunRecognizeImage(environment, profile, resources, commandLine.CommandArguments),
+            "benchmark-flash-onnx" => RunFlashOnnxBenchmark(environment, profile, resources, commandLine.CommandArguments),
+            "benchmark-autobattle-load" => await RunAutoBattleLoadBenchmark(environment, profile, resources, commandLine.CommandArguments).ConfigureAwait(false),
             _ => Usage(command),
         };
     }
@@ -126,8 +128,10 @@ internal static class Program
     private static int RunOcrImage(
         OneDragonEnvironment environment,
         E2EAutomationProfile profile,
+		E2EResourceValidationResult resources,
         IReadOnlyList<string> imagePaths)
     {
+		resources.EnsureValid();
         if (imagePaths.Count == 0)
         {
             return Usage("ocr-image requires at least one image path");
@@ -175,8 +179,10 @@ internal static class Program
     private static int RunRecognizeImage(
         OneDragonEnvironment environment,
         E2EAutomationProfile profile,
+		E2EResourceValidationResult resources,
         IReadOnlyList<string> imagePaths)
     {
+		resources.EnsureValid();
         if (imagePaths.Count == 0)
         {
             return Usage("recognize-image requires at least one image path");
@@ -231,8 +237,10 @@ internal static class Program
     private static int RunFlashOnnxBenchmark(
         OneDragonEnvironment environment,
         E2EAutomationProfile profile,
+		E2EResourceValidationResult resources,
         IReadOnlyList<string> args)
     {
+		resources.EnsureValid();
         string imagePath = args.Count > 0 && !string.IsNullOrWhiteSpace(args[0])
             ? Path.GetFullPath(args[0])
             : Path.Combine(
@@ -341,6 +349,16 @@ internal static class Program
         Console.WriteLine(JsonSerializer.Serialize(output, JsonOptions));
         return 0;
     }
+
+	private static async Task<int> RunAutoBattleLoadBenchmark(
+		OneDragonEnvironment environment,
+		E2EAutomationProfile profile,
+		E2EResourceValidationResult resources,
+		IReadOnlyList<string> args)
+	{
+		resources.EnsureValid();
+		return await AutoBattleLoadBenchmark.RunAsync(environment, profile, args, JsonOptions).ConfigureAwait(false);
+	}
 
     private static double[] Measure(int iterations, Action action)
     {
@@ -897,16 +915,19 @@ internal static class Program
         {
             evidence.ResultStatus = RealGameEvidenceStatus.Fail;
             evidence.ResultMessage = exception.ToString();
-            try
+            if (resources.IsValid)
             {
-                using ZContext context = CreateInitializedContext(environment, profile);
-                if (TryInitializeExistingGameWindow(context, evidence, out _, out _))
+                try
                 {
-                    evidence.CaptureReadiness = Capture(context, profile, evidenceDirectory, $"{appId}-exception");
+                    using ZContext context = CreateInitializedContext(environment, profile);
+                    if (TryInitializeExistingGameWindow(context, evidence, out _, out _))
+                    {
+                        evidence.CaptureReadiness = Capture(context, profile, evidenceDirectory, $"{appId}-exception");
+                    }
                 }
-            }
-            catch
-            {
+                catch
+                {
+                }
             }
             evidence.Finish(DateTimeOffset.UtcNow);
             WriteEvidence(evidenceDirectory, $"{appId}.json", evidence);
@@ -1245,6 +1266,11 @@ internal sealed class RealGameEvidence
     public string? GamePath { get; set; }
     public string? GameRegion { get; set; }
     public string? WindowTitle { get; set; }
+    public string RunRoot { get; set; } = string.Empty;
+    public string RunRootSource { get; set; } = string.Empty;
+    public int? ManifestSchemaVersion { get; set; }
+    public string ManifestRid { get; set; } = string.Empty;
+    public string ManifestSourceSummary { get; set; } = string.Empty;
     public string ConfigRoot { get; set; } = string.Empty;
     public string InstanceConfigRoot { get; set; } = string.Empty;
     public List<E2EEvidenceResourceSnapshot> Resources { get; set; } = [];
@@ -1274,6 +1300,11 @@ internal sealed class RealGameEvidence
             YoloUsed = UsesYolo(applicationId),
             AutoBattleUsed = UsesAutoBattle(applicationId),
             LogPath = Path.Combine(environment.WorkDirectory, ".log"),
+            RunRoot = resources.RunRoot,
+            RunRootSource = resources.RunRootSource,
+            ManifestSchemaVersion = resources.ManifestSchemaVersion,
+            ManifestRid = resources.ManifestRid,
+            ManifestSourceSummary = resources.ManifestSourceSummary,
             ConfigRoot = profile.ResolveConfigRoot(environment),
             InstanceConfigRoot = profile.ResolveInstanceConfigRoot(environment),
             Resources = resources.Items.Select(E2EEvidenceResourceSnapshot.From).ToList(),

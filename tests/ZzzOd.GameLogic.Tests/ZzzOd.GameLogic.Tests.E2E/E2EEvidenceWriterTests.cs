@@ -9,6 +9,7 @@ using OneDragon.Core.Runtime;
 using OneDragon.Core.Windows.Audio;
 using OpenCvSharp;
 using Xunit;
+using ZzzOd.AppHost.E2E;
 using ZzzOd.GameLogic.E2E;
 
 namespace ZzzOd.GameLogic.Tests.E2E;
@@ -29,6 +30,7 @@ public sealed class E2EEvidenceWriterTests : IDisposable
 	{
 		_rootDirectory = Path.Combine(Path.GetTempPath(), "zzzod-dotnet-tests", Guid.NewGuid().ToString("N"));
 		Directory.CreateDirectory(_rootDirectory);
+		E2EStagingTestFixture.CreateManifest(_rootDirectory);
 	}
 
 	[Fact]

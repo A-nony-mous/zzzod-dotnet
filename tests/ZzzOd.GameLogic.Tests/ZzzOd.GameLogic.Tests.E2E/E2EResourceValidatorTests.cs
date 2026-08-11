@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using OneDragon.Core.Runtime;
 using Xunit;
+using ZzzOd.AppHost.E2E;
 using ZzzOd.GameLogic.E2E;
 
 namespace ZzzOd.GameLogic.Tests.E2E;
@@ -18,6 +19,7 @@ public sealed class E2EResourceValidatorTests : IDisposable
 	{
 		_rootDirectory = Path.Combine(Path.GetTempPath(), "zzzod-dotnet-tests", Guid.NewGuid().ToString("N"));
 		Directory.CreateDirectory(_rootDirectory);
+		E2EStagingTestFixture.CreateManifest(_rootDirectory);
 	}
 
 	[Fact]
@@ -33,6 +35,10 @@ public sealed class E2EResourceValidatorTests : IDisposable
 		E2EResourceValidationResult e2EResourceValidationResult = new E2EResourceValidator().Validate(environment, profile);
 		Assert.True(e2EResourceValidationResult.IsValid);
 		Assert.Empty(e2EResourceValidationResult.MissingItems);
+		Assert.Equal(Path.GetFullPath(_rootDirectory), e2EResourceValidationResult.RunRoot);
+		Assert.Equal("E2E-TEST-STAGING", e2EResourceValidationResult.ManifestSourceSummary);
+		Assert.NotNull(e2EResourceValidationResult.ManifestSchemaVersion);
+		Assert.False(string.IsNullOrWhiteSpace(e2EResourceValidationResult.ManifestRid));
 		Assert.All(e2EResourceValidationResult.Items, delegate(E2EResourceValidationItem item)
 		{
 			Assert.Equal(E2EResourceStatus.Present, item.Status);
@@ -57,6 +63,24 @@ public sealed class E2EResourceValidatorTests : IDisposable
 		{
 			result.EnsureValid();
 		});
+	}
+
+	[Fact]
+	public void Validate_ShouldBlockManifestFailureBeforeCheckingResourceDirectories()
+	{
+		File.Delete(Path.Combine(_rootDirectory, "assets-manifest.json"));
+		OneDragonEnvironment environment = new OneDragonEnvironment(_rootDirectory);
+		E2EAutomationProfile profile = new E2EAutomationProfile
+		{
+			InstanceIndex = 3,
+			PythonReferenceRoot = "D:\\python-ref"
+		};
+
+		E2EResourceValidationResult result = new E2EResourceValidator().Validate(environment, profile);
+
+		E2EResourceValidationItem issue = Assert.Single(result.MissingItems);
+		Assert.Equal("manifest.ManifestMissing", issue.Id);
+		Assert.Equal("assets-manifest.json", issue.LocalPath);
 	}
 
 	private void CreateRequiredResourceTree(int instanceIndex)

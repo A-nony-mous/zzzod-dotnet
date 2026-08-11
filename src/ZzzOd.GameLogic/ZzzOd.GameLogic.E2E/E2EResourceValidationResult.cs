@@ -15,6 +15,31 @@ public sealed class E2EResourceValidationResult
 	public IReadOnlyList<E2EResourceValidationItem> Items { get; }
 
 	/// <summary>
+	/// 解析运行根的来源。
+	/// </summary>
+	public string RunRootSource { get; set; } = string.Empty;
+
+	/// <summary>
+	/// 已校验的规范化运行根。
+	/// </summary>
+	public string RunRoot { get; set; } = string.Empty;
+
+	/// <summary>
+	/// 资源清单 schema 版本。
+	/// </summary>
+	public int? ManifestSchemaVersion { get; set; }
+
+	/// <summary>
+	/// 资源清单 RID。
+	/// </summary>
+	public string ManifestRid { get; set; } = string.Empty;
+
+	/// <summary>
+	/// 资源清单来源摘要。
+	/// </summary>
+	public string ManifestSourceSummary { get; set; } = string.Empty;
+
+	/// <summary>
 	/// 缺失项。
 	/// </summary>
 	public IReadOnlyList<E2EResourceValidationItem> MissingItems => Items.Where((E2EResourceValidationItem item) => item.Status == E2EResourceStatus.Missing).ToArray();
