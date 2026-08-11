@@ -551,49 +551,56 @@ public class AutoBattleOperator : IStateRecordUpdateListener
 
 	private void ExpandTemplates()
 	{
-		foreach (AutoBattleCondOpScene scene in Scenes)
+		for (int sceneIndex = 0; sceneIndex < Scenes.Count; sceneIndex++)
 		{
+			AutoBattleCondOpScene scene = Scenes[sceneIndex];
 			List<AutoBattleCondOpStateHandler> list = new List<AutoBattleCondOpStateHandler>();
-			foreach (AutoBattleCondOpStateHandler handler in scene.Handlers)
+			for (int handlerIndex = 0; handlerIndex < scene.Handlers.Count; handlerIndex++)
 			{
-				list.AddRange(ExpandStateHandler(handler, new HashSet<string>()));
+				list.AddRange(ExpandStateHandler(
+					scene.Handlers[handlerIndex],
+					[],
+					$"{_configurationYamlPath} -> scenes[{sceneIndex}].handlers[{handlerIndex}].state_template"));
 			}
 			scene.SetHandlers(list);
 		}
 	}
 
-	private List<AutoBattleCondOpStateHandler> ExpandStateHandler(AutoBattleCondOpStateHandler handler, HashSet<string> stateHandlerTemplates)
+	private List<AutoBattleCondOpStateHandler> ExpandStateHandler(AutoBattleCondOpStateHandler handler, List<string> stateHandlerTemplates, string referencePath)
 	{
 		if (!string.IsNullOrWhiteSpace(handler.StateTemplate))
 		{
-			if (!stateHandlerTemplates.Add(handler.StateTemplate))
+			if (stateHandlerTemplates.Contains(handler.StateTemplate, StringComparer.Ordinal))
 			{
-				throw new InvalidOperationException("状态处理器模板循环引用 " + handler.StateTemplate);
+				throw new InvalidOperationException($"状态处理器模板循环引用: {string.Join(" -> ", stateHandlerTemplates.Append(handler.StateTemplate))}; {referencePath}");
 			}
-			Dictionary<string, object> data = LoadYamlConfig("auto_battle_state_handler", handler.StateTemplate);
+			stateHandlerTemplates.Add(handler.StateTemplate);
+			Dictionary<string, object> data = LoadYamlConfig("auto_battle_state_handler", handler.StateTemplate, referencePath);
+			string sourcePath = _lastLoadedYamlPath ?? referencePath;
 			List<AutoBattleCondOpStateHandler> list = new List<AutoBattleCondOpStateHandler>();
-			foreach (Dictionary<string, object> dictionary in AutoBattleCondOpScene.GetDictionaryList(data, "handlers"))
+			List<Dictionary<string, object>> handlers = AutoBattleCondOpScene.GetDictionaryList(data, "handlers");
+			for (int handlerIndex = 0; handlerIndex < handlers.Count; handlerIndex++)
 			{
-				list.AddRange(ExpandStateHandler(new AutoBattleCondOpStateHandler(dictionary), stateHandlerTemplates));
+				list.AddRange(ExpandStateHandler(new AutoBattleCondOpStateHandler(handlers[handlerIndex]), stateHandlerTemplates, $"{sourcePath} -> handlers[{handlerIndex}].state_template"));
 			}
-			stateHandlerTemplates.Remove(handler.StateTemplate);
+			stateHandlerTemplates.RemoveAt(stateHandlerTemplates.Count - 1);
 			return list;
 		}
 		if (handler.SubHandlers.Count > 0)
 		{
 			List<AutoBattleCondOpStateHandler> list2 = new List<AutoBattleCondOpStateHandler>();
-			foreach (AutoBattleCondOpStateHandler subHandler in handler.SubHandlers)
+			for (int handlerIndex = 0; handlerIndex < handler.SubHandlers.Count; handlerIndex++)
 			{
-				list2.AddRange(ExpandStateHandler(subHandler, stateHandlerTemplates));
+				list2.AddRange(ExpandStateHandler(handler.SubHandlers[handlerIndex], stateHandlerTemplates, $"{referencePath} -> sub_handlers[{handlerIndex}].state_template"));
 			}
 			handler.SetSubHandlers(list2);
 		}
 		else if (handler.Operations.Count > 0)
 		{
 			List<OperationDef> list3 = new List<OperationDef>();
-			foreach (OperationDef operation in handler.Operations)
+			for (int operationIndex = 0; operationIndex < handler.Operations.Count; operationIndex++)
 			{
-				list3.AddRange(ExpandOperation(operation, new HashSet<string>()));
+				list3.AddRange(ExpandOperation(handler.Operations[operationIndex], [], $"{referencePath} -> operations[{operationIndex}].operation_template"));
 			}
 			handler.SetOperations(list3);
 		}
@@ -604,7 +611,7 @@ public class AutoBattleOperator : IStateRecordUpdateListener
 		return list4;
 	}
 
-	private List<OperationDef> ExpandOperation(OperationDef operation, HashSet<string> operationTemplates)
+	private List<OperationDef> ExpandOperation(OperationDef operation, List<string> operationTemplates, string referencePath)
 	{
 		if (string.IsNullOrWhiteSpace(operation.OperationTemplate))
 		{
@@ -614,17 +621,20 @@ public class AutoBattleOperator : IStateRecordUpdateListener
 			CollectionsMarshal.AsSpan(list)[0] = operation;
 			return list;
 		}
-		if (!operationTemplates.Add(operation.OperationTemplate))
+		if (operationTemplates.Contains(operation.OperationTemplate, StringComparer.Ordinal))
 		{
-			throw new InvalidOperationException("指令模板循环引用 " + operation.OperationTemplate);
+			throw new InvalidOperationException($"指令模板循环引用: {string.Join(" -> ", operationTemplates.Append(operation.OperationTemplate))}; {referencePath}");
 		}
-		Dictionary<string, object> data = LoadYamlConfig("auto_battle_operation", operation.OperationTemplate);
+		operationTemplates.Add(operation.OperationTemplate);
+		Dictionary<string, object> data = LoadYamlConfig("auto_battle_operation", operation.OperationTemplate, referencePath);
+		string sourcePath = _lastLoadedYamlPath ?? referencePath;
 		List<OperationDef> list2 = new List<OperationDef>();
-		foreach (Dictionary<string, object> dictionary in AutoBattleCondOpScene.GetDictionaryList(data, "operations"))
+		List<Dictionary<string, object>> operations = AutoBattleCondOpScene.GetDictionaryList(data, "operations");
+		for (int operationIndex = 0; operationIndex < operations.Count; operationIndex++)
 		{
-			list2.AddRange(ExpandOperation(new OperationDef(dictionary), operationTemplates));
+			list2.AddRange(ExpandOperation(new OperationDef(operations[operationIndex]), operationTemplates, $"{sourcePath} -> operations[{operationIndex}].operation_template"));
 		}
-		operationTemplates.Remove(operation.OperationTemplate);
+		operationTemplates.RemoveAt(operationTemplates.Count - 1);
 		return list2;
 	}
 
@@ -830,14 +840,15 @@ public class AutoBattleOperator : IStateRecordUpdateListener
 		return FallbackTemplateName;
 	}
 
-	private Dictionary<string, object?> LoadYamlConfig(string subDir, string templateName)
+	private Dictionary<string, object?> LoadYamlConfig(string subDir, string templateName, string? referencePath = null)
 	{
 		string text = ResolveYamlPath(subDir, templateName);
 		_lastLoadedYamlPath = text;
 		_loadedYamlPaths.Add(text);
 		if (!File.Exists(text))
 		{
-			throw new FileNotFoundException("未找到配置文件 " + subDir + "/" + templateName, text);
+			string reference = string.IsNullOrWhiteSpace(referencePath) ? string.Empty : $"; 引用: {referencePath}";
+			throw new FileNotFoundException("未找到配置文件 " + subDir + "/" + templateName + reference, text);
 		}
 		object value = _yamlDeserializer.Deserialize<object>(File.ReadAllText(text));
 		return NormalizeDictionary(value);
