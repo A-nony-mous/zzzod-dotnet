@@ -104,6 +104,37 @@ public sealed class ZzzAssetManifestValidatorTests : IDisposable
     }
 
     /// <summary>
+    /// 声明的独立画面文件必须能构建完整索引。
+    /// </summary>
+    [Fact]
+    public void Validate_ShouldRejectInvalidIndependentScreenConfig()
+    {
+        WriteFile("assets/game_data/screen_info/错误.yml", "screen_name: 错误画面\narea_list: []");
+        WriteManifest(CreateManifestFile("assets/game_data/screen_info/错误.yml"));
+
+        ZzzAssetManifestValidationResult result = new ZzzAssetManifestValidator().Validate(_rootDirectory, "win-x64");
+
+        Assert.Contains(result.Issues, issue => issue.Code == ZzzAssetManifestIssueCode.GameConfigInvalid && issue.Path == "assets/game_data/screen_info");
+    }
+
+    /// <summary>
+    /// 自动战斗主策略引用缺失模板时必须阻断 staging。
+    /// </summary>
+    [Fact]
+    public void Validate_ShouldRejectMissingAutoBattleReference()
+    {
+        WriteFile("assets/game_data/screen_info/battle.yml", "screen_id: battle\nscreen_name: 战斗\narea_list: []");
+        WriteFile("config/auto_battle/测试.yml", "scenes:\n  - triggers: []\n    handlers:\n      - state_template: 缺失模板");
+        WriteManifest(
+            CreateManifestFile("assets/game_data/screen_info/battle.yml"),
+            CreateManifestFile("config/auto_battle/测试.yml"));
+
+        ZzzAssetManifestValidationResult result = new ZzzAssetManifestValidator().Validate(_rootDirectory, "win-x64");
+
+        Assert.Contains(result.Issues, issue => issue.Code == ZzzAssetManifestIssueCode.GameConfigInvalid && issue.Path == "config/auto_battle/测试.yml");
+    }
+
+    /// <summary>
     /// 绝对路径、父级越界和仅大小写不同的重复路径应返回稳定问题代码。
     /// </summary>
     [Fact]

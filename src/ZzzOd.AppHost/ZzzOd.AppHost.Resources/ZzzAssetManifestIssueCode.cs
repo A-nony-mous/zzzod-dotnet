@@ -51,6 +51,11 @@ public enum ZzzAssetManifestIssueCode
     ExcludedRuntimeFile,
 
     /// <summary>
+    /// 独立游戏配置或引用闭包无效。
+    /// </summary>
+    GameConfigInvalid,
+
+    /// <summary>
     /// 清单文件不存在。
     /// </summary>
     FileMissing,

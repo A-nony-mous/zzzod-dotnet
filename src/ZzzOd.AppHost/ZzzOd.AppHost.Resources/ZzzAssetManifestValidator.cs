@@ -1,6 +1,8 @@
 using System.Security.Cryptography;
 using System.Text.Json;
 using System.Text.RegularExpressions;
+using OneDragon.Core.Runtime;
+using ZzzOd.GameLogic.Config;
 
 namespace ZzzOd.AppHost.Resources;
 
@@ -54,6 +56,7 @@ public sealed class ZzzAssetManifestValidator
         ValidateManifestHeader(manifest, expectedRid, issues);
         Dictionary<string, ZzzAssetManifestFile> declaredFiles = ValidateDeclaredFiles(fullRunRoot, manifest, issues);
         ValidateManagedFileSet(fullRunRoot, manifest, declaredFiles, issues);
+		ValidateIndependentGameConfigs(fullRunRoot, manifest, issues);
         return new ZzzAssetManifestValidationResult(fullRunRoot, manifest, issues);
     }
 
@@ -206,6 +209,53 @@ public sealed class ZzzAssetManifestValidator
             }
         }
     }
+
+	private static void ValidateIndependentGameConfigs(
+		string runRoot,
+		ZzzAssetManifest manifest,
+		ICollection<ZzzAssetManifestIssue> issues)
+	{
+		bool includesScreenInfo = manifest.Files.Any(file =>
+			file.Path.StartsWith("assets/game_data/screen_info/", StringComparison.Ordinal));
+		string[] autoBattleTemplates = manifest.Files
+			.Select(file => file.Path)
+			.Where(path => path.StartsWith("config/auto_battle/", StringComparison.Ordinal))
+			.Select(path => path["config/auto_battle/".Length..])
+			.Where(path => !path.Contains('/', StringComparison.Ordinal))
+			.Select(GetAutoBattleTemplateName)
+			.Where(name => name is not null)
+			.Cast<string>()
+			.Distinct(StringComparer.Ordinal)
+			.ToArray();
+		if (!includesScreenInfo && autoBattleTemplates.Length == 0)
+		{
+			return;
+		}
+
+		IReadOnlyList<ZzzGameConfigValidationIssue> configIssues = new ZzzGameConfigValidator().Validate(
+			new OneDragonEnvironment(runRoot),
+			includesScreenInfo,
+			autoBattleTemplates);
+		foreach (ZzzGameConfigValidationIssue issue in configIssues)
+		{
+			issues.Add(new ZzzAssetManifestIssue(ZzzAssetManifestIssueCode.GameConfigInvalid, issue.Path, issue.Message));
+		}
+	}
+
+	private static string? GetAutoBattleTemplateName(string path)
+	{
+		if (path.EndsWith(".merged.yml", StringComparison.OrdinalIgnoreCase))
+		{
+			return null;
+		}
+		if (path.EndsWith(".sample.yml", StringComparison.OrdinalIgnoreCase))
+		{
+			return path[..^".sample.yml".Length];
+		}
+		return path.EndsWith(".yml", StringComparison.OrdinalIgnoreCase)
+			? path[..^".yml".Length]
+			: null;
+	}
 
     private static IEnumerable<string> EnumerateFilesWithoutLinks(string root)
     {
