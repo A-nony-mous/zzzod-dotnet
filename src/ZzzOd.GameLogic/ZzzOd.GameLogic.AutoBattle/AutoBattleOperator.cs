@@ -86,6 +86,8 @@ public class AutoBattleOperator : IStateRecordUpdateListener
 
 	internal IReadOnlyList<string> LoadedYamlPaths => _loadedYamlPaths.ToArray();
 
+	internal string SourceFingerprint { get; private set; } = string.Empty;
+
 	private Task? _normalSceneLoopTask;
 
 	private Task? _periodicLoopTask;
@@ -198,6 +200,7 @@ public class AutoBattleOperator : IStateRecordUpdateListener
 			_ctx.StateRecordService.UnregisterOperator(this);
 			Load();
 			Build();
+			SourceFingerprint = GetSourceFingerprint(_loadedYamlPaths);
 			_ctx.StateRecordService.RegisterOperator(this);
 			_inited = true;
 			return (Success: true, Message: string.Empty);
@@ -856,6 +859,22 @@ public class AutoBattleOperator : IStateRecordUpdateListener
 		string pathUnderWorkDir = environment.GetPathUnderWorkDir("config", subDir);
 		string yamlPath = Path.Combine(pathUnderWorkDir, templateName + ".yml");
 		return File.Exists(yamlPath) ? yamlPath : Path.Combine(pathUnderWorkDir, templateName + ".sample.yml");
+	}
+
+	internal static string GetSourceFingerprint(IEnumerable<string> paths)
+	{
+		return string.Join(
+			"|",
+			paths
+				.Select(Path.GetFullPath)
+				.OrderBy(path => path, StringComparer.Ordinal)
+				.Select(path =>
+				{
+					FileInfo fileInfo = new FileInfo(path);
+					return fileInfo.Exists
+						? $"{path}:{fileInfo.LastWriteTimeUtc.Ticks}:{fileInfo.Length}"
+						: $"{path}:missing";
+				}));
 	}
 
 	private static Dictionary<string, object?> NormalizeDictionary(object? value)

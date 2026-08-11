@@ -84,6 +84,19 @@ public sealed class BattleAssistantConfigProviderTests : IDisposable
 	}
 
 	[Fact]
+	public void AutoBattleOperator_SourceFingerprintChangesWhenIndependentFileChanges()
+	{
+		string path = Path.Combine(_rootDirectory, "config", "auto_battle", "指纹.yml");
+		Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+		File.WriteAllText(path, "scenes: []");
+		string original = AutoBattleOperator.GetSourceFingerprint([path]);
+		File.AppendAllText(path, "\nintroduction: 更新");
+		string changed = AutoBattleOperator.GetSourceFingerprint([path]);
+
+		Assert.NotEqual(original, changed);
+	}
+
+	[Fact]
 	public void AutoBattleConfigProvider_DeletesOnlyPlainYamlWithPythonMissingOkSemantics()
 	{
 		string text = Path.Combine(_rootDirectory, "config", "auto_battle");

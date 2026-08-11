@@ -248,7 +248,7 @@ public class AutoBattleContext : IRunParticipant
 		AtomicOpFactory = new AtomicOpFactory(this);
 	}
 
-	public AutoBattleOperator InitAutoOp(string opName, string subDir = "auto_battle")
+	public AutoBattleOperator InitAutoOp(string opName, string subDir = "auto_battle", bool forceReload = false)
 	{
 		if (ReplayRecorder != null)
 		{
@@ -259,7 +259,7 @@ public class AutoBattleContext : IRunParticipant
 		_replaySubDir = subDir;
 		string key = subDir + "-" + opName;
 		LogLegacyUseMergedFileWarningIfNeeded();
-		if (_opCache.TryGetValue(key, out AutoBattleOperator value))
+		if (!forceReload && _opCache.TryGetValue(key, out AutoBattleOperator value) && IsCachedOperatorCurrent(value))
 		{
 			AutoOp = value;
 		}
@@ -284,6 +284,14 @@ public class AutoBattleContext : IRunParticipant
 		TargetContext.InitAutoOp(AutoOp);
 		TargetContext.ResetDistanceCheckInterval();
 		return AutoOp;
+	}
+
+	private static bool IsCachedOperatorCurrent(AutoBattleOperator autoOp)
+	{
+		return string.Equals(
+			autoOp.SourceFingerprint,
+			AutoBattleOperator.GetSourceFingerprint(autoOp.LoadedYamlPaths),
+			StringComparison.Ordinal);
 	}
 
 	private void LogLegacyUseMergedFileWarningIfNeeded()
