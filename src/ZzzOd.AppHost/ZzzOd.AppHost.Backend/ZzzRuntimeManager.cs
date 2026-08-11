@@ -9,6 +9,7 @@ using OneDragon.Core.Logging;
 using OneDragon.Core.Runtime;
 using OpenCvSharp;
 using ZzzOd.AppHost.Notifications;
+using ZzzOd.AppHost.Resources;
 using ZzzOd.GameLogic.Application;
 using ZzzOd.GameLogic.Application.Notify;
 using ZzzOd.GameLogic.Config;
@@ -46,6 +47,11 @@ public sealed class ZzzRuntimeManager : IDisposable
 	public string RunRoot { get; }
 
 	/// <summary>
+	/// 启动时已校验的资源清单来源摘要。
+	/// </summary>
+	public string ManifestSourceSummary { get; }
+
+	/// <summary>
 	/// 当前实例编号。
 	/// </summary>
 	public int ActiveInstanceIndex { get; private set; }
@@ -77,7 +83,22 @@ public sealed class ZzzRuntimeManager : IDisposable
 	/// <param name="logger">日志。</param>
 	/// <param name="pushNotificationService">生产推送服务。</param>
 	public ZzzRuntimeManager(string runRoot, ILogger<ZzzRuntimeManager> logger, IZzzPushNotificationService? pushNotificationService = null)
-		: this(runRoot, logger, null, pushNotificationService, null)
+		: this(runRoot, logger, null, pushNotificationService, null, string.Empty)
+	{
+	}
+
+	internal ZzzRuntimeManager(
+		ZzzValidatedRunRoot validatedRunRoot,
+		ILogger<ZzzRuntimeManager> logger,
+		ZzzLogFanOutLoggerProvider logProvider,
+		IZzzPushNotificationService? pushNotificationService = null)
+		: this(
+			validatedRunRoot.Path,
+			logger,
+			null,
+			pushNotificationService,
+			logProvider.WriteSerilogEvent,
+			validatedRunRoot.ManifestSourceSummary)
 	{
 	}
 
@@ -86,7 +107,7 @@ public sealed class ZzzRuntimeManager : IDisposable
 		ILogger<ZzzRuntimeManager> logger,
 		ZzzLogFanOutLoggerProvider logProvider,
 		IZzzPushNotificationService? pushNotificationService = null)
-		: this(runRoot, logger, null, pushNotificationService, logProvider.WriteSerilogEvent)
+		: this(runRoot, logger, null, pushNotificationService, logProvider.WriteSerilogEvent, string.Empty)
 	{
 	}
 
@@ -98,7 +119,7 @@ public sealed class ZzzRuntimeManager : IDisposable
 	/// <param name="contextFactory">上下文工厂。</param>
 	/// <param name="pushNotificationService">生产推送服务。</param>
 	internal ZzzRuntimeManager(string runRoot, ILogger<ZzzRuntimeManager> logger, Func<int, ZContext>? contextFactory, IZzzPushNotificationService? pushNotificationService = null)
-		: this(runRoot, logger, contextFactory, pushNotificationService, null)
+		: this(runRoot, logger, contextFactory, pushNotificationService, null, string.Empty)
 	{
 	}
 
@@ -107,9 +128,11 @@ public sealed class ZzzRuntimeManager : IDisposable
 		ILogger<ZzzRuntimeManager> logger,
 		Func<int, ZContext>? contextFactory,
 		IZzzPushNotificationService? pushNotificationService,
-		Action<Serilog.Events.LogEvent>? coreLogSink)
+		Action<Serilog.Events.LogEvent>? coreLogSink,
+		string manifestSourceSummary)
 	{
 		RunRoot = Path.GetFullPath(runRoot);
+		ManifestSourceSummary = manifestSourceSummary;
 		_logger = logger;
 		_contextFactory = contextFactory;
 		_pushNotificationService = ((pushNotificationService == null) ? null : new AppHostPushNotificationAdapter(pushNotificationService));

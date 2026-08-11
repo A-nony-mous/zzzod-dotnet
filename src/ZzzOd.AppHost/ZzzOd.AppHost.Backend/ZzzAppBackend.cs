@@ -188,7 +188,7 @@ public sealed class ZzzAppBackend : IZzzAppBackend, IZzzIntelBoardProgressBacken
 	{
 		ZContext zContext = _runtime.TryGetContext();
 		string version = typeof(ZzzAppBackend).Assembly.GetName().Version?.ToString() ?? "0.0.0";
-		return ZzzBackendResult<ZzzHealthDto>.Ok(new ZzzHealthDto(_mode, version, _runtime.RunRoot, _apiOptions.Enabled, zContext?.ReadyForApplication ?? false, _runtime.ActiveInstanceIndex));
+		return ZzzBackendResult<ZzzHealthDto>.Ok(new ZzzHealthDto(_mode, version, _runtime.RunRoot, _apiOptions.Enabled, zContext?.ReadyForApplication ?? false, _runtime.ActiveInstanceIndex, _runtime.ManifestSourceSummary));
 	}
 
 	/// <inheritdoc />

@@ -17,6 +17,7 @@ using OneDragon.Core.Runtime;
 using Xunit;
 using ZzzOd.AppHost;
 using ZzzOd.AppHost.Backend;
+using ZzzOd.AppHost.Resources;
 using ZzzOd.GameLogic.Context;
 using ZzzOd.Gui.Controls;
 using ZzzOd.Gui.Services.RunIntent;
@@ -28,6 +29,36 @@ namespace ZzzOd.GameLogic.Tests.AppHost;
 /// </summary>
 public sealed class AppHostRuntimeTests
 {
+	[Fact]
+	public void RuntimeManager_UsesValidatedRunRootAndExposesManifestSummaryInHealth()
+	{
+		string runRoot = Path.Combine(Path.GetTempPath(), "zzzod-validated-run-root", Guid.NewGuid().ToString("N"));
+		Directory.CreateDirectory(runRoot);
+		ZzzBackendEventBus eventBus = new();
+		using ZzzLogFanOutLoggerProvider logProvider = new(new ZzzRunRoot(runRoot), eventBus);
+		using ZzzRuntimeManager runtime = new(
+			new ZzzValidatedRunRoot(runRoot, "MANIFEST-SUMMARY"),
+			NullLogger<ZzzRuntimeManager>.Instance,
+			logProvider);
+		using ZzzBattleAssistantRuntimeSource runtimeSource = new();
+		ZzzAppBackend backend = new(
+			runtime,
+			eventBus,
+			runtimeSource,
+			logProvider,
+			new ZzzHostModeOptions(ZzzHostMode.ApiOnly),
+			new ZzzApiOptions(),
+			NullLogger<ZzzAppBackend>.Instance);
+
+		ZzzHealthDto health = Assert.IsType<ZzzHealthDto>(backend.GetHealth().Value);
+		Assert.Equal(Path.GetFullPath(runRoot), runtime.RunRoot);
+		Assert.Equal("MANIFEST-SUMMARY", runtime.ManifestSourceSummary);
+		Assert.Equal(runtime.RunRoot, health.RunRoot);
+		Assert.Equal("MANIFEST-SUMMARY", health.ManifestSourceSummary);
+
+		Directory.Delete(runRoot, recursive: true);
+	}
+
 	private sealed class BackendHarness : IDisposable
 	{
 		public string RunRoot { get; }

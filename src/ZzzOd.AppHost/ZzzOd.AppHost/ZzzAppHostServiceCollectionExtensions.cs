@@ -25,6 +25,28 @@ public static class ZzzAppHostServiceCollectionExtensions
 	public static IServiceCollection AddZzzAppHost(this IServiceCollection services, string runRoot, ZzzHostMode mode)
 	{
 		string fullRoot = Path.GetFullPath(runRoot);
+		return AddZzzAppHostCore(services, fullRoot, mode, string.Empty);
+	}
+
+	/// <summary>
+	/// 使用已经校验的运行根注册 ZZZ 共享宿主服务。
+	/// </summary>
+	/// <param name="services">服务集合。</param>
+	/// <param name="validatedRunRoot">已校验的运行根。</param>
+	/// <param name="mode">宿主模式。</param>
+	/// <returns>服务集合。</returns>
+	public static IServiceCollection AddZzzAppHost(this IServiceCollection services, ZzzValidatedRunRoot validatedRunRoot, ZzzHostMode mode)
+	{
+		ArgumentNullException.ThrowIfNull(validatedRunRoot);
+		return AddZzzAppHostCore(
+			services,
+			Path.GetFullPath(validatedRunRoot.Path),
+			mode,
+			validatedRunRoot.ManifestSourceSummary);
+	}
+
+	private static IServiceCollection AddZzzAppHostCore(IServiceCollection services, string fullRoot, ZzzHostMode mode, string manifestSourceSummary)
+	{
 		ZzzApiOptions implementationInstance = ZzzApiOptions.LoadOrCreate(fullRoot);
 		services.AddSingleton(implementationInstance);
 		services.AddSingleton(new ZzzHostModeOptions(mode));
@@ -39,7 +61,7 @@ public static class ZzzAppHostServiceCollectionExtensions
 		services.AddSingleton<ZzzLogFanOutLoggerProvider>();
 		services.AddSingleton((Func<IServiceProvider, ILoggerProvider>)((IServiceProvider sp) => sp.GetRequiredService<ZzzLogFanOutLoggerProvider>()));
 		services.AddSingleton((IServiceProvider sp) => new ZzzRuntimeManager(
-			fullRoot,
+			new ZzzValidatedRunRoot(fullRoot, manifestSourceSummary),
 			sp.GetRequiredService<ILogger<ZzzRuntimeManager>>(),
 			sp.GetRequiredService<ZzzLogFanOutLoggerProvider>(),
 			sp.GetRequiredService<IZzzPushNotificationService>()));

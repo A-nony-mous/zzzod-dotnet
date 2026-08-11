@@ -11,6 +11,7 @@ if (!manifestValidation.IsValid)
     ZzzAssetManifestStartupGate.WriteIssues(manifestValidation.Issues, Console.Error);
     return 3;
 }
+ZzzValidatedRunRoot validatedRunRoot = ZzzAssetManifestStartupGate.CreateValidatedRunRoot(manifestValidation);
 using ZzzRuntimeLock? runtimeLock = ZzzRuntimeLock.TryAcquire(runRoot);
 if (runtimeLock is null)
 {
@@ -21,7 +22,7 @@ if (runtimeLock is null)
 WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
 builder.Logging.ClearProviders();
 builder.Logging.AddConsole();
-builder.Services.AddZzzAppHost(runRoot, ZzzHostMode.ApiOnly);
+builder.Services.AddZzzAppHost(validatedRunRoot, ZzzHostMode.ApiOnly);
 builder.Services.AddZzzApiServices();
 
 ZzzApiOptions apiOptions = ZzzApiOptions.LoadOrCreate(runRoot);

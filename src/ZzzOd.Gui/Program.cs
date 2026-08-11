@@ -39,6 +39,7 @@ internal static class Program
 			ZzzAssetManifestStartupGate.WriteIssues(manifestValidation.Issues, Console.Error);
 			return 3;
 		}
+		ZzzValidatedRunRoot validatedRunRoot = ZzzAssetManifestStartupGate.CreateValidatedRunRoot(manifestValidation);
         using ZzzRuntimeLock? runtimeLock = AcquireRuntimeLock(runRoot, args);
         if (runtimeLock is null)
         {
@@ -56,7 +57,7 @@ internal static class Program
             .ConfigureLogging(logging => logging.AddConsole())
             .ConfigureServices(services =>
             {
-                services.AddZzzAppHost(runRoot, ZzzHostMode.Gui);
+				services.AddZzzAppHost(validatedRunRoot, ZzzHostMode.Gui);
                 services.AddZzzGuiApiServer();
                 services.AddSingleton<ZzzOverlayController>();
                 services.AddSingleton<ZzzAvaloniaOverlayCapturer>();
