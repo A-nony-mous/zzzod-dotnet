@@ -1,3 +1,5 @@
+using System.Text.Json;
+using Microsoft.Extensions.DependencyInjection;
 using ZzzOd.Api;
 using ZzzOd.AppHost;
 using ZzzOd.AppHost.Backend;
@@ -28,6 +30,14 @@ builder.Services.AddZzzApiServices();
 ZzzApiOptions apiOptions = ZzzApiOptions.LoadOrCreate(runRoot);
 builder.Services.AddZzzApiCors(apiOptions);
 builder.WebHost.UseUrls($"http://{apiOptions.ListenAddress}:{apiOptions.Port}");
+
+if (args.Any(argument => string.Equals(argument, "--health-once", StringComparison.Ordinal)))
+{
+    using WebApplication healthApp = builder.Build();
+    ZzzBackendResult<ZzzHealthDto> health = healthApp.Services.GetRequiredService<IZzzAppBackend>().GetHealth();
+    Console.WriteLine(JsonSerializer.Serialize(health.Value));
+    return health.Success ? 0 : 1;
+}
 
 WebApplication app = builder.Build();
 app.UseZzzApiCors(apiOptions);

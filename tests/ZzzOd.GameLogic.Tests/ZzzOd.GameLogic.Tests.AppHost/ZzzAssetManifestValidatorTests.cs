@@ -157,6 +157,25 @@ public sealed class ZzzAssetManifestValidatorTests : IDisposable
     }
 
     /// <summary>
+    /// ApiHost 与一条龙运行时状态不应被当作发布资源。
+    /// </summary>
+    [Fact]
+    public void Validate_ShouldAllowMutableHostRuntimeConfigOutsideManifest()
+    {
+        WriteFile("assets/game_data/测试.yml", "内容");
+        WriteFile("config/api_host.json", "{}");
+        WriteFile("config/one_dragon.yml", "instance_idx: 1");
+        WriteManifest(
+            ["config/api_host.json", "config/one_dragon.yml"],
+            ["assets", "config"],
+            CreateManifestFile("assets/game_data/测试.yml"));
+
+        ZzzAssetManifestValidationResult result = new ZzzAssetManifestValidator().Validate(_rootDirectory, "win-x64");
+
+        Assert.True(result.IsValid);
+    }
+
+    /// <summary>
     /// 聚合 YAML 即使未在清单中声明也应阻断校验。
     /// </summary>
     [Fact]

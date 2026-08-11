@@ -1,4 +1,5 @@
 using Avalonia;
+using System.Text.Json;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -85,6 +86,14 @@ internal static class Program
                     provider.GetRequiredService<ZzzEnvironmentRuntimeCoordinator>());
             })
             .Build();
+
+        if (args.Any(argument => string.Equals(argument, "--readiness-once", StringComparison.Ordinal)))
+        {
+            ZzzDashboardReadinessResult readiness = host.Services.GetRequiredService<ZzzDashboardReadinessService>().Check();
+            ZzzBackendResult<ZzzHealthDto> health = host.Services.GetRequiredService<IZzzAppBackend>().GetHealth();
+            Console.WriteLine(JsonSerializer.Serialize(new { Health = health.Value, Readiness = readiness }));
+            return readiness.Ready ? 0 : 2;
+        }
 
         App.Host = host;
         App.RunRoot = runRoot;

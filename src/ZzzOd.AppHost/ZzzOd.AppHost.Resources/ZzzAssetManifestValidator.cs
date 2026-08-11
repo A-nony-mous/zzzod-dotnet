@@ -349,9 +349,11 @@ public sealed class ZzzAssetManifestValidator
     {
         string normalized = NormalizePath(path);
         string[] segments = normalized.Split('/');
-        return normalized.StartsWith("config/", StringComparison.OrdinalIgnoreCase) &&
-            (segments.Skip(1).Any(segment => int.TryParse(segment, out _)) ||
-             normalized.Contains(".local.", StringComparison.OrdinalIgnoreCase));
+        return normalized.Equals("config/api_host.json", StringComparison.OrdinalIgnoreCase) ||
+            normalized.Equals("config/one_dragon.yml", StringComparison.OrdinalIgnoreCase) ||
+            (normalized.StartsWith("config/", StringComparison.OrdinalIgnoreCase) &&
+             (segments.Skip(1).Any(segment => int.TryParse(segment, out _)) ||
+              normalized.Contains(".local.", StringComparison.OrdinalIgnoreCase)));
     }
 
     private static string GetPathUnderRunRoot(string runRoot, string relativePath)

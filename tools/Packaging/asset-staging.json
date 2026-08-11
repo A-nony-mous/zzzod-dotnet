@@ -11,6 +11,8 @@
   ],
   "mutablePaths": [
     "custom/**",
+    "config/api_host.json",
+    "config/one_dragon.yml",
     "config/[0-9]*/**",
     "config/*/app_run_record/**",
     "config/**/*.local.*",
