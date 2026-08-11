@@ -70,6 +70,8 @@ public class AutoBattleContext : IRunParticipant
 
 	private readonly Dictionary<string, AutoBattleOperator> _opCache = new Dictionary<string, AutoBattleOperator>(StringComparer.Ordinal);
 
+	private bool _legacyUseMergedFileWarningLogged;
+
 	private OneDragon.Core.Screen.ScreenArea? _checkDistanceArea;
 
 	private OneDragon.Core.Screen.ScreenArea? _normalAttackArea;
@@ -256,24 +258,21 @@ public class AutoBattleContext : IRunParticipant
 		_replayOpName = opName;
 		_replaySubDir = subDir;
 		string key = subDir + "-" + opName;
-		bool useMergedFile = _ctx.BattleAssistantConfig.UseMergedFile;
-		if (useMergedFile && _opCache.TryGetValue(key, out AutoBattleOperator value))
+		LogLegacyUseMergedFileWarningIfNeeded();
+		if (_opCache.TryGetValue(key, out AutoBattleOperator value))
 		{
 			AutoOp = value;
 		}
 		else
 		{
-			AutoBattleOperator autoBattleOperator = new AutoBattleOperator(this, subDir, opName, useMergedFile);
+			AutoBattleOperator autoBattleOperator = new AutoBattleOperator(this, subDir, opName);
 			var (flag, message) = autoBattleOperator.InitBeforeRunning();
 			if (!flag)
 			{
 				throw new InvalidOperationException(message);
 			}
 			AutoOp = autoBattleOperator;
-			if (useMergedFile)
-			{
-				_opCache[key] = autoBattleOperator;
-			}
+			_opCache[key] = autoBattleOperator;
 		}
 		ConfigureReplayRecorder(AutoOp, opName, subDir);
 		_checkChainInterval = AutoOp.CheckChainInterval;
@@ -285,6 +284,17 @@ public class AutoBattleContext : IRunParticipant
 		TargetContext.InitAutoOp(AutoOp);
 		TargetContext.ResetDistanceCheckInterval();
 		return AutoOp;
+	}
+
+	private void LogLegacyUseMergedFileWarningIfNeeded()
+	{
+		if (_legacyUseMergedFileWarningLogged || !_ctx.BattleAssistantConfig.LegacyUseMergedFileWasSpecified)
+		{
+			return;
+		}
+
+		_legacyUseMergedFileWarningLogged = true;
+		_ctx.Logger.Warning("已忽略过时配置 use_merged_file，自动战斗固定读取独立 YAML 文件。");
 	}
 
 	public void StartAutoBattle()
@@ -475,8 +485,7 @@ public class AutoBattleContext : IRunParticipant
 			?? AutoBattleOperator.ResolveYamlPath(
 				_ctx.Environment,
 				subDir,
-				opName,
-				_ctx.BattleAssistantConfig.UseMergedFile);
+				opName);
 		BattleReplayConfigurationSnapshot configurationSnapshot = new(
 			_ctx.Environment.WorkDirectory,
 			configurationPath,

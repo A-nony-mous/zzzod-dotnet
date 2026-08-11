@@ -38,8 +38,6 @@ public class AutoBattleOperator : IStateRecordUpdateListener
 
 	private readonly string _templateName;
 
-	private readonly bool _readFromMerged;
-
 	private readonly ICondOpClock _clock;
 
 	private readonly Func<OperationDef, OneDragon.Core.Operation.AtomicOp> _atomicOpFactory;
@@ -171,7 +169,7 @@ public class AutoBattleOperator : IStateRecordUpdateListener
 		AutoBattleContext ctx,
 		string subDir,
 		string templateName,
-		bool readFromMerged = true,
+		bool readFromMerged = false,
 		ICondOpClock? clock = null,
 		Func<OperationDef, OneDragon.Core.Operation.AtomicOp>? atomicOpFactory = null,
 		Action<Action>? sceneDispatcher = null,
@@ -180,7 +178,7 @@ public class AutoBattleOperator : IStateRecordUpdateListener
 		_ctx = ctx;
 		_subDir = subDir;
 		_templateName = templateName;
-		_readFromMerged = readFromMerged;
+		_ = readFromMerged;
 		_clock = clock ?? new SystemCondOpClock();
 		_atomicOpFactory = atomicOpFactory ?? _ctx.AtomicOpFactory.GetAtomicOp;
 		_sceneDispatcher = sceneDispatcher;
@@ -844,27 +842,20 @@ public class AutoBattleOperator : IStateRecordUpdateListener
 
 	private string ResolveYamlPath(string subDir, string templateName)
 	{
-		return ResolveYamlPath(_ctx.ZContext.Environment, subDir, templateName, _readFromMerged);
+		return ResolveYamlPath(_ctx.ZContext.Environment, subDir, templateName);
 	}
 
 	internal static string ResolveYamlPath(
 		OneDragonEnvironment environment,
 		string subDir,
 		string templateName,
-		bool readFromMerged)
+		bool readFromMerged = false)
 	{
 		ArgumentNullException.ThrowIfNull(environment);
+		_ = readFromMerged;
 		string pathUnderWorkDir = environment.GetPathUnderWorkDir("config", subDir);
-		if (readFromMerged)
-		{
-			string text = Path.Combine(pathUnderWorkDir, templateName + ".merged.yml");
-			if (File.Exists(text))
-			{
-				return text;
-			}
-		}
-		string text2 = Path.Combine(pathUnderWorkDir, templateName + ".yml");
-		return File.Exists(text2) ? text2 : Path.Combine(pathUnderWorkDir, templateName + ".sample.yml");
+		string yamlPath = Path.Combine(pathUnderWorkDir, templateName + ".yml");
+		return File.Exists(yamlPath) ? yamlPath : Path.Combine(pathUnderWorkDir, templateName + ".sample.yml");
 	}
 
 	private static Dictionary<string, object?> NormalizeDictionary(object? value)

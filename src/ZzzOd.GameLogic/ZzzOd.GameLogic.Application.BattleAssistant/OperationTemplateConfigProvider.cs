@@ -47,6 +47,10 @@ public sealed class OperationTemplateConfigProvider
 	private static string? TryGetOperationTemplateName(string root, string path)
 	{
 		string relativePath = Path.GetRelativePath(root, path);
+		if (relativePath.EndsWith(".merged.yml", StringComparison.OrdinalIgnoreCase))
+		{
+			return null;
+		}
 		string text2;
 		if (relativePath.EndsWith(".sample.yml", StringComparison.OrdinalIgnoreCase))
 		{

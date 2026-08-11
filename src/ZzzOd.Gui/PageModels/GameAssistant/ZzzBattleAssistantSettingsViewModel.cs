@@ -95,12 +95,6 @@ internal sealed class ZzzBattleAssistantSettingsViewModel : ZzzPageViewModel
         set => _battle.AutoUltimateEnabled = value;
     }
 
-    public bool UseMergedFile
-    {
-        get => _battle.UseMergedFile;
-        set => _battle.UseMergedFile = value;
-    }
-
     public bool FlashClassifierGpu
     {
         get => _model.FlashClassifierGpu;
@@ -260,7 +254,6 @@ internal sealed class ZzzBattleAssistantSettingsViewModel : ZzzPageViewModel
         OnPropertyChanged(nameof(SelectedAutoBattleConfig));
         OnPropertyChanged(nameof(SelectedDodgeConfig));
         OnPropertyChanged(nameof(AutoUltimateEnabled));
-        OnPropertyChanged(nameof(UseMergedFile));
         OnPropertyChanged(nameof(FlashClassifierGpu));
         OnPropertyChanged(nameof(ScreenshotInterval));
         OnPropertyChanged(nameof(SelectedControlMethod));
@@ -282,7 +275,6 @@ internal sealed class ZzzBattleAssistantSettingsViewModel : ZzzPageViewModel
         private static readonly ZzzConfigField AutoBattleConfigField = new("auto_battle_config", typeof(string), "全配队通用");
         private static readonly ZzzConfigField DodgeAssistantConfigField = new("dodge_assistant_config", typeof(string), "闪避");
         private static readonly ZzzConfigField AutoUltimateEnabledField = new("auto_ultimate_enabled", typeof(bool), false);
-        private static readonly ZzzConfigField UseMergedFileField = new("use_merged_file", typeof(bool), true);
         private static readonly ZzzConfigField ScreenshotIntervalField = new("screenshot_interval", typeof(double), 0.02d);
         private static readonly ZzzConfigField ControlMethodField = new("control_method", typeof(string), BattleAssistantConfig.ControlMethodKeyboard);
         private static readonly IReadOnlyList<ZzzConfigField> FieldList =
@@ -290,7 +282,6 @@ internal sealed class ZzzBattleAssistantSettingsViewModel : ZzzPageViewModel
             AutoBattleConfigField,
             DodgeAssistantConfigField,
             AutoUltimateEnabledField,
-            UseMergedFileField,
             ScreenshotIntervalField,
             ControlMethodField,
         ];
@@ -306,7 +297,6 @@ internal sealed class ZzzBattleAssistantSettingsViewModel : ZzzPageViewModel
         public string AutoBattleConfig { get => GetValue<string>(AutoBattleConfigField); set => SetValue(AutoBattleConfigField, value); }
         public string DodgeAssistantConfig { get => GetValue<string>(DodgeAssistantConfigField); set => SetValue(DodgeAssistantConfigField, value); }
         public bool AutoUltimateEnabled { get => GetValue<bool>(AutoUltimateEnabledField); set => SetValue(AutoUltimateEnabledField, value); }
-        public bool UseMergedFile { get => GetValue<bool>(UseMergedFileField); set => SetValue(UseMergedFileField, value); }
         public double ScreenshotInterval { get => GetValue<double>(ScreenshotIntervalField); set => SetValue(ScreenshotIntervalField, value); }
         public string ControlMethod { get => GetValue<string>(ControlMethodField); set => SetValue(ControlMethodField, value); }
 

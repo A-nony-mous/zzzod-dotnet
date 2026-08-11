@@ -291,7 +291,7 @@ public sealed class ConfigTests : IDisposable
 		Assert.Equal(0.02, battleAssistantConfig.ScreenshotInterval);
 		Assert.Equal("keyboard", battleAssistantConfig.ControlMethod);
 		Assert.Equal("全配队通用", battleAssistantConfig.AutoBattleConfig);
-		Assert.True(battleAssistantConfig.UseMergedFile);
+		Assert.False(battleAssistantConfig.UseMergedFile);
 		Assert.False(battleAssistantConfig.AutoUltimateEnabled);
 	}
 

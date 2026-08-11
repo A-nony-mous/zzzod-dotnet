@@ -111,19 +111,6 @@
                                 IsEnabled="{Binding BattleValuesAvailable}" />
                 </fa:FASettingsExpanderItem.Footer>
               </fa:FASettingsExpanderItem>
-              <fa:FASettingsExpanderItem Content="使用合并配置文件"
-                                           Description="关闭用于调试模板文件 正常开启即可">
-                <fa:FASettingsExpanderItem.IconSource>
-                  <fa:FAFontIconSource Glyph="&#xE7FC;" />
-                </fa:FASettingsExpanderItem.IconSource>
-                <fa:FASettingsExpanderItem.Footer>
-                  <ToggleSwitch x:Name="MergedFileToggle"
-                                OnContent="开"
-                                OffContent="关"
-                                IsChecked="{Binding UseMergedFile, Mode=TwoWay}"
-                                IsEnabled="{Binding BattleValuesAvailable}" />
-                </fa:FASettingsExpanderItem.Footer>
-              </fa:FASettingsExpanderItem>
           </ItemsControl>
           </Border>
           <Border x:Name="DodgeAssistantSettingsPanel"

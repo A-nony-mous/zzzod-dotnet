@@ -6,6 +6,7 @@ using OneDragon.Core.Configuration;
 using OneDragon.Core.Runtime;
 using Xunit;
 using ZzzOd.GameLogic.Application.BattleAssistant;
+using ZzzOd.GameLogic.AutoBattle;
 using ZzzOd.GameLogic.Config;
 
 namespace ZzzOd.GameLogic.Tests.Application;
@@ -27,7 +28,7 @@ public sealed class BattleAssistantConfigProviderTests : IDisposable
 		Assert.Contains((IEnumerable<BattleAssistantSettingField>)BattleAssistantSettings.Fields, (Predicate<BattleAssistantSettingField>)((BattleAssistantSettingField field) => field.Key == "screenshot_interval" && field.DefaultValue.Equals(0.02)));
 		Assert.Contains((IEnumerable<BattleAssistantSettingField>)BattleAssistantSettings.Fields, (Predicate<BattleAssistantSettingField>)((BattleAssistantSettingField field) => field.Key == "control_method" && field.DefaultValue.Equals("keyboard")));
 		Assert.Contains((IEnumerable<BattleAssistantSettingField>)BattleAssistantSettings.Fields, (Predicate<BattleAssistantSettingField>)((BattleAssistantSettingField field) => field.Key == "auto_battle_config" && field.DefaultValue.Equals("全配队通用")));
-		Assert.Contains((IEnumerable<BattleAssistantSettingField>)BattleAssistantSettings.Fields, (Predicate<BattleAssistantSettingField>)((BattleAssistantSettingField field) => field.Key == "use_merged_file" && field.DefaultValue.Equals(true)));
+		Assert.DoesNotContain((IEnumerable<BattleAssistantSettingField>)BattleAssistantSettings.Fields, (Predicate<BattleAssistantSettingField>)((BattleAssistantSettingField field) => field.Key == "use_merged_file"));
 		Assert.Contains((IEnumerable<BattleAssistantSettingField>)BattleAssistantSettings.Fields, (Predicate<BattleAssistantSettingField>)((BattleAssistantSettingField field) => field.Key == "auto_ultimate_enabled" && field.DefaultValue.Equals(false)));
 	}
 
@@ -38,6 +39,7 @@ public sealed class BattleAssistantConfigProviderTests : IDisposable
 		Directory.CreateDirectory(Path.Combine(path, "agent", "anby"));
 		File.WriteAllText(Path.Combine(path, "基础攻击.yml"), "operations: []");
 		File.WriteAllText(Path.Combine(path, "agent", "anby", "连招.sample.yml"), "operations: []");
+		File.WriteAllText(Path.Combine(path, "失效.merged.yml"), "operations: []");
 		File.WriteAllText(Path.Combine(path, "ignored.txt"), "");
 		OperationTemplateConfigProvider operationTemplateConfigProvider = new OperationTemplateConfigProvider(new OneDragonEnvironment(_rootDirectory));
 		IReadOnlyList<ConfigItem> operationTemplateConfigList = operationTemplateConfigProvider.GetOperationTemplateConfigList();
@@ -46,7 +48,7 @@ public sealed class BattleAssistantConfigProviderTests : IDisposable
 	}
 
 	[Fact]
-	public void AutoBattleConfigProvider_ListsTopLevelYamlAndMergedConfigs()
+	public void AutoBattleConfigProvider_ListsOnlyIndependentYamlConfigs()
 	{
 		string path = Path.Combine(_rootDirectory, "config", "auto_battle");
 		Directory.CreateDirectory(Path.Combine(path, "nested"));
@@ -56,8 +58,29 @@ public sealed class BattleAssistantConfigProviderTests : IDisposable
 		File.WriteAllText(Path.Combine(path, "nested", "不应列出.yml"), "scenes: []");
 		AutoBattleConfigProvider autoBattleConfigProvider = new AutoBattleConfigProvider(new OneDragonEnvironment(_rootDirectory));
 		IReadOnlyList<ConfigItem> autoBattleOpConfigList = autoBattleConfigProvider.GetAutoBattleOpConfigList("auto_battle");
-		Assert.Equal<object>((IEnumerable<object>?)new object[3] { "全配队通用", "安比", "比利" }, autoBattleOpConfigList.Select((ConfigItem option) => option.Value));
+		Assert.Equal<object>((IEnumerable<object>?)new object[2] { "全配队通用", "安比" }, autoBattleOpConfigList.Select((ConfigItem option) => option.Value));
 		Assert.EndsWith(Path.Combine("config", "auto_battle", "全配队通用.yml"), autoBattleConfigProvider.GetAutoBattleConfigFilePath("auto_battle", "全配队通用"), StringComparison.Ordinal);
+	}
+
+	[Fact]
+	public void AutoBattleOperator_UsesYamlThenSampleAndIgnoresMergedFiles()
+	{
+		string directory = Path.Combine(_rootDirectory, "config", "auto_battle");
+		Directory.CreateDirectory(directory);
+		OneDragonEnvironment environment = new OneDragonEnvironment(_rootDirectory);
+		File.WriteAllText(Path.Combine(directory, "测试.merged.yml"), "scenes: []");
+		File.WriteAllText(Path.Combine(directory, "测试.sample.yml"), "scenes: []");
+
+		string samplePath = AutoBattleOperator.ResolveYamlPath(environment, "auto_battle", "测试", readFromMerged: true);
+		string sameSamplePath = AutoBattleOperator.ResolveYamlPath(environment, "auto_battle", "测试", readFromMerged: false);
+		File.WriteAllText(Path.Combine(directory, "测试.yml"), "scenes: []");
+		string yamlPath = AutoBattleOperator.ResolveYamlPath(environment, "auto_battle", "测试", readFromMerged: false);
+
+		Assert.EndsWith("测试.sample.yml", samplePath, StringComparison.Ordinal);
+		Assert.Equal(samplePath, sameSamplePath);
+		Assert.EndsWith("测试.yml", yamlPath, StringComparison.Ordinal);
+		Assert.DoesNotContain(".merged.yml", samplePath, StringComparison.OrdinalIgnoreCase);
+		Assert.DoesNotContain(".merged.yml", yamlPath, StringComparison.OrdinalIgnoreCase);
 	}
 
 	[Fact]
@@ -99,6 +122,7 @@ public sealed class BattleAssistantConfigProviderTests : IDisposable
 		Assert.Equal("xbox", battleAssistantConfig.ControlMethod);
 		Assert.Equal("比利-测试", battleAssistantConfig.AutoBattleConfig);
 		Assert.False(battleAssistantConfig.UseMergedFile);
+		Assert.True(battleAssistantConfig.LegacyUseMergedFileWasSpecified);
 		Assert.True(battleAssistantConfig.AutoUltimateEnabled);
 	}
 

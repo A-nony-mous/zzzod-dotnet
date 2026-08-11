@@ -1401,7 +1401,7 @@ public sealed class GuiParityAndFacadeTests
 		string path2 = Path.Combine(text, "样例.sample.yml");
 		File.WriteAllText(path, "scenes: []");
 		File.WriteAllText(path2, "scenes: []");
-		File.WriteAllText(Path.Combine(text2, "智能格挡.merged.yml"), "scenes: []");
+		File.WriteAllText(Path.Combine(text2, "智能格挡.sample.yml"), "scenes: []");
 		ZzzBackendResult<ZzzBattleAssistantConfigCatalogDto> battleAssistantConfigCatalog = backendHarness.Backend.GetBattleAssistantConfigCatalog();
 		Assert.True(battleAssistantConfigCatalog.Success, battleAssistantConfigCatalog.Error);
 		Assert.Equal(new string[2] { "可删", "样例" }, battleAssistantConfigCatalog.Value.AutoBattle);

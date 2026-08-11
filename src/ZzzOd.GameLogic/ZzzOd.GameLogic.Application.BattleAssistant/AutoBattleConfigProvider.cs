@@ -93,9 +93,7 @@ public sealed class AutoBattleConfigProvider
 		}
 		if (fileName.EndsWith(".merged.yml", StringComparison.OrdinalIgnoreCase))
 		{
-			string text = fileName;
-			int length = ".merged.yml".Length;
-			return text.Substring(0, text.Length - length);
+			return null;
 		}
 		object result;
 		if (!fileName.EndsWith(".yml", StringComparison.OrdinalIgnoreCase))

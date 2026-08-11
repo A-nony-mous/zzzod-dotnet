@@ -20,6 +20,8 @@ public sealed class BattleAssistantConfig : IApplicationConfig
 
 	private string _controlMethod = "keyboard";
 
+	private bool _useMergedFile;
+
 	[YamlMember(Alias = "dodge_assistant_config", ApplyNamingConventions = false)]
 	public string DodgeAssistantConfig { get; set; } = "闪避";
 
@@ -43,7 +45,17 @@ public sealed class BattleAssistantConfig : IApplicationConfig
 	public string AutoBattleConfig { get; set; } = "全配队通用";
 
 	[YamlMember(Alias = "use_merged_file", ApplyNamingConventions = false)]
-	public bool UseMergedFile { get; set; } = true;
+	public bool UseMergedFile
+	{
+		get => _useMergedFile;
+		set
+		{
+			_useMergedFile = value;
+			LegacyUseMergedFileWasSpecified = true;
+		}
+	}
+
+	internal bool LegacyUseMergedFileWasSpecified { get; private set; }
 
 	[YamlMember(Alias = "auto_ultimate_enabled", ApplyNamingConventions = false)]
 	public bool AutoUltimateEnabled { get; set; }
