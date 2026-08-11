@@ -26,6 +26,8 @@ param(
 
     [string] $SourceRunRoot,
 
+    [string] $ExistingRunRoot,
+
     [string] $StagingScript = (Join-Path $PSScriptRoot '..\Packaging\Invoke-AssetStaging.ps1'),
 
     [string] $StagingRulesPath = (Join-Path $PSScriptRoot '..\Packaging\asset-staging.json'),
@@ -270,11 +272,15 @@ if ([string]::IsNullOrWhiteSpace($MetadataPath)) {
 $resolvedMetadataPath = Resolve-AbsolutePath -Path $MetadataPath
 $resolvedControlTreePath = if ([string]::IsNullOrWhiteSpace($ControlTreePath)) { $null } else { Resolve-AbsolutePath -Path $ControlTreePath }
 
-if ([string]::IsNullOrWhiteSpace($SourceRunRoot)) {
-    throw '-SourceRunRoot is required.'
+if ([string]::IsNullOrWhiteSpace($SourceRunRoot) -and [string]::IsNullOrWhiteSpace($ExistingRunRoot)) {
+    throw 'Either -SourceRunRoot or -ExistingRunRoot is required.'
+}
+if (-not [string]::IsNullOrWhiteSpace($SourceRunRoot) -and -not [string]::IsNullOrWhiteSpace($ExistingRunRoot)) {
+    throw '-SourceRunRoot and -ExistingRunRoot cannot be used together.'
 }
 
-$resolvedSourceRunRoot = Resolve-AbsolutePath -Path $SourceRunRoot -MustExist
+$usingExistingRunRoot = -not [string]::IsNullOrWhiteSpace($ExistingRunRoot)
+$resolvedSourceRunRoot = Resolve-AbsolutePath -Path $(if ($usingExistingRunRoot) { $ExistingRunRoot } else { $SourceRunRoot }) -MustExist
 $sourceConfigPath = Join-Path $resolvedSourceRunRoot 'config'
 $sourceAssetsPath = Join-Path $resolvedSourceRunRoot 'assets'
 if (-not (Test-Path -LiteralPath $sourceConfigPath -PathType Container) -or -not (Test-Path -LiteralPath $sourceAssetsPath -PathType Container)) {
@@ -285,8 +291,8 @@ if (Test-PathInside -Candidate $resolvedWorkRoot -Parent $resolvedSourceRunRoot)
     throw 'WorkRoot must stay outside SourceRunRoot.'
 }
 
-$resolvedStagingScript = Resolve-AbsolutePath -Path $StagingScript -MustExist
-$resolvedStagingRulesPath = Resolve-AbsolutePath -Path $StagingRulesPath -MustExist
+$resolvedStagingScript = if ($usingExistingRunRoot) { $null } else { Resolve-AbsolutePath -Path $StagingScript -MustExist }
+$resolvedStagingRulesPath = if ($usingExistingRunRoot) { $null } else { Resolve-AbsolutePath -Path $StagingRulesPath -MustExist }
 $sourceInventoryBefore = if ($State -eq 'data') { @(Get-FileInventory -Root $sourceConfigPath) } else { @() }
 $sourceAssetsInventoryBefore = @(Get-FileInventory -Root $sourceAssetsPath)
 
@@ -294,7 +300,7 @@ $sessionId = '{0}-{1}' -f (Get-Date -Format 'yyyyMMdd-HHmmss'), ([Guid]::NewGuid
 $sessionRoot = Join-Path $resolvedWorkRoot $sessionId
 $snapshotRoot = Join-Path $sessionRoot 'source-snapshot'
 $snapshotConfigPath = Join-Path $snapshotRoot 'config'
-$runRoot = Join-Path $sessionRoot 'run-root'
+$runRoot = if ($usingExistingRunRoot) { $resolvedSourceRunRoot } else { Join-Path $sessionRoot 'run-root' }
 $runConfigPath = Join-Path $runRoot 'config'
 $stagingResult = $null
 $stagingManifestPath = $null
@@ -312,16 +318,25 @@ $failureMessage = $null
 
 try {
     New-Item -ItemType Directory -Force -Path $sessionRoot | Out-Null
-    $stagingResult = & $resolvedStagingScript `
-        -WorkspaceRoot $resolvedSourceRunRoot `
-        -Output $runRoot `
-        -RulesPath $resolvedStagingRulesPath `
-        -Rid $StagingRid | ConvertFrom-Json
-    $stagingManifestPath = [string]$stagingResult.ManifestPath
+    if ($usingExistingRunRoot) {
+        $stagingManifestPath = Join-Path $runRoot 'assets-manifest.json'
+    }
+    else {
+        $stagingResult = & $resolvedStagingScript `
+            -WorkspaceRoot $resolvedSourceRunRoot `
+            -Output $runRoot `
+            -RulesPath $resolvedStagingRulesPath `
+            -Rid $StagingRid | ConvertFrom-Json
+        $stagingManifestPath = [string]$stagingResult.ManifestPath
+    }
     if ([string]::IsNullOrWhiteSpace($stagingManifestPath) -or -not (Test-Path -LiteralPath $stagingManifestPath -PathType Leaf)) {
         throw 'The staging entry did not produce assets-manifest.json.'
     }
     $stagingManifest = Get-Content -LiteralPath $stagingManifestPath -Raw | ConvertFrom-Json
+
+    if ($State -eq 'data' -and $usingExistingRunRoot) {
+        throw '-State data cannot use -ExistingRunRoot because capture would modify the supplied staging config.'
+    }
 
     if ($State -eq 'data') {
         New-Item -ItemType Directory -Force -Path $snapshotRoot | Out-Null
@@ -447,7 +462,7 @@ finally {
         error = $failureMessage
         runRoot = [ordered]@{
             path = $runRoot
-            temporary = $true
+            temporary = -not $usingExistingRunRoot
             sourceRunRoot = $resolvedSourceRunRoot
             sourceConfigPath = $sourceConfigPath
             readOnlySnapshotPath = if ($State -eq 'data') { $snapshotConfigPath } else { $null }
