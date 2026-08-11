@@ -2677,6 +2677,23 @@ public sealed class GuiParityAndFacadeTests
 	}
 
 	/// <summary>
+	/// 已存在的 manifest 被篡改时首页预检查应使用独立阻断代码。
+	/// </summary>
+	[Fact]
+	public void HomePreFlightBlocksInvalidManifestWithDedicatedIssueCode()
+	{
+		using BackendHarness backendHarness = BackendHarness.Create();
+		File.WriteAllText(Path.Combine(backendHarness.RunRoot, "assets-manifest.json"), "{}");
+		ZzzDashboardReadinessService readinessService = new(backendHarness.Backend, new ZzzRunRoot(backendHarness.RunRoot));
+
+		ZzzDashboardReadinessResult readiness = readinessService.Check();
+
+		Assert.False(readiness.Ready);
+		Assert.Contains(readiness.Issues, issue => issue.Code == ZzzDashboardReadinessIssueCode.ManifestInvalid);
+		Assert.Contains(readiness.Issues, issue => issue.Code == ZzzDashboardReadinessIssueCode.OptionalModelMissing);
+	}
+
+	/// <summary>
 	/// 首页预检查应要求选中模型目录同时具有 labels.csv 和 model.onnx。
 	/// </summary>
 	[Fact]

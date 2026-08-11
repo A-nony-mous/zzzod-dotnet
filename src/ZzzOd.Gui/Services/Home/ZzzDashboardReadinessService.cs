@@ -1,5 +1,6 @@
 using ZzzOd.AppHost;
 using ZzzOd.AppHost.Backend;
+using ZzzOd.AppHost.Resources;
 
 namespace ZzzOd.Gui.Services.Home;
 
@@ -8,22 +9,38 @@ public sealed class ZzzDashboardReadinessService
     private readonly IZzzAppBackend _backend;
     private readonly string _runRoot;
 
-    public ZzzDashboardReadinessService(IZzzAppBackend backend, ZzzRunRoot runRoot)
+    private readonly ZzzAssetManifestValidator _manifestValidator;
+
+    public ZzzDashboardReadinessService(IZzzAppBackend backend, ZzzRunRoot runRoot, ZzzAssetManifestValidator? manifestValidator = null)
     {
         _backend = backend;
         _runRoot = runRoot.Path;
+        _manifestValidator = manifestValidator ?? new ZzzAssetManifestValidator();
     }
 
     public ZzzDashboardReadinessResult Check()
     {
         List<ZzzDashboardReadinessIssue> issues = [];
+		string manifestPath = Path.Combine(_runRoot, "assets-manifest.json");
+		if (File.Exists(manifestPath))
+		{
+			ZzzAssetManifestValidationResult manifestValidation = _manifestValidator.Validate(_runRoot);
+			if (!manifestValidation.IsValid)
+			{
+				issues.Add(new ZzzDashboardReadinessIssue(
+					$"资源清单校验失败: {string.Join("; ", manifestValidation.Issues.Select(issue => issue.Message))}",
+					"settings",
+					ZzzDashboardReadinessIssueCode.ManifestInvalid));
+			}
+		}
         ZzzBackendResult<ZzzConfigScopeValuesDto> account = _backend.GetConfigScope("instance");
         string gamePath = ReadString(account, "game_path");
         if (string.IsNullOrWhiteSpace(gamePath))
         {
             issues.Add(new ZzzDashboardReadinessIssue(
                 "未设置游戏路径 - 请在「账户管理 → 多账户管理 → 当前账户设置」中配置",
-                "accounts"));
+                "accounts",
+                ZzzDashboardReadinessIssueCode.AccountGamePathMissing));
         }
 
         ZzzBackendResult<ZzzConfigScopeValuesDto> model = _backend.GetConfigScope("model");
@@ -35,7 +52,8 @@ public sealed class ZzzDashboardReadinessService
         {
             issues.Add(new ZzzDashboardReadinessIssue(
                 "闪光识别模型未下载 - 请在「设置 → 资源下载」中下载",
-                "settings-resource-download"));
+                "settings-resource-download",
+                ZzzDashboardReadinessIssueCode.OptionalModelMissing));
         }
 
         return new ZzzDashboardReadinessResult(issues.Count == 0, issues);
@@ -49,4 +67,14 @@ public sealed class ZzzDashboardReadinessService
 
 public sealed record ZzzDashboardReadinessResult(bool Ready, IReadOnlyList<ZzzDashboardReadinessIssue> Issues);
 
-public sealed record ZzzDashboardReadinessIssue(string Message, string TargetNavigationKey);
+public enum ZzzDashboardReadinessIssueCode
+{
+    ManifestInvalid,
+    AccountGamePathMissing,
+    OptionalModelMissing,
+}
+
+public sealed record ZzzDashboardReadinessIssue(
+    string Message,
+    string TargetNavigationKey,
+    ZzzDashboardReadinessIssueCode Code);
