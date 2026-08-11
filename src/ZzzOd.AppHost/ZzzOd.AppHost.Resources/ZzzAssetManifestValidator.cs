@@ -202,7 +202,7 @@ public sealed class ZzzAssetManifestValidator
                     continue;
                 }
 
-                if (IsExcludedRuntimePath(relativePath))
+                if (IsExcludedRuntimePath(relativePath) && !IsApprovedMutableRuntimePath(relativePath))
                 {
                     issues.Add(new ZzzAssetManifestIssue(ZzzAssetManifestIssueCode.ExcludedRuntimeFile, relativePath, "受管理目录中出现运行态缓存、日志、用户数据或 custom 文件。"));
                     continue;
@@ -293,7 +293,7 @@ public sealed class ZzzAssetManifestValidator
     }
 
     private static bool IsMutablePath(string path, IReadOnlyList<string> patterns) =>
-        patterns.Any(pattern => GlobMatches(path, pattern));
+        IsApprovedMutableRuntimePath(path) || patterns.Any(pattern => GlobMatches(path, pattern));
 
     private static bool GlobMatches(string path, string pattern)
     {

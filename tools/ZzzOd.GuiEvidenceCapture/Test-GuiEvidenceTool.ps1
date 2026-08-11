@@ -5,8 +5,10 @@ $ErrorActionPreference = 'Stop'
 $toolPath = Join-Path $PSScriptRoot 'Capture-GuiEvidence.ps1'
 $captureProgramPath = Join-Path $PSScriptRoot 'Program.cs'
 $dpiHelperPath = Join-Path $PSScriptRoot 'GuiEvidenceDpi.ps1'
-$changeEvidenceRoot = Resolve-Path (Join-Path $PSScriptRoot '..\..\..\openspec\changes\fluentdesign-avalonia-260709\evidence')
-$baselineScriptsRoot = Resolve-Path (Join-Path $PSScriptRoot '..\..\..\openspec\evidence\gui-parity-fluent-baseline\scripts')
+$legacyEntryRoots = @(
+    Join-Path $PSScriptRoot '..\..\..\openspec\changes\fluentdesign-avalonia-260709\evidence'
+    Join-Path $PSScriptRoot '..\..\..\openspec\evidence\gui-parity-fluent-baseline\scripts'
+) | Where-Object { Test-Path -LiteralPath $_ -PathType Container }
 
 $errors = $null
 $tokens = $null
@@ -27,9 +29,9 @@ $requiredTokens = @(
     "Start-Sleep -Seconds `$SettleSeconds",
     "Remove-Item Env:\ZZZOD_GUI_EVIDENCE_RUN_STATE",
     "sourceConfigUnchanged",
-    "asset-snapshot-cache",
     "sourceAssetsUnchanged",
-    "assetSnapshotUnchanged",
+    "-WorkspaceRoot `$resolvedSourceRunRoot",
+    "assets-manifest.json",
     "simulatedRunState = `$false"
 )
 foreach ($requiredToken in $requiredTokens) {
@@ -60,7 +62,10 @@ $forbiddenTokens = @(
     'local-secret',
     'app_list:',
     'plan_list:',
-    'instance_list:'
+    'instance_list:',
+    'AssetSourceRunRoot',
+    'asset-snapshot-cache',
+    'New-Item -ItemType Junction'
 )
 foreach ($forbiddenToken in $forbiddenTokens) {
     if ($toolText.Contains($forbiddenToken, [StringComparison]::OrdinalIgnoreCase)) {
@@ -84,10 +89,9 @@ if ($captureProgramText.Contains('CaptureInteropHelper.CreateSharpDXTexture2D(fr
     throw 'Capture program still casts the CsWinRT surface through legacy RCW interop.'
 }
 
-$legacyScripts = @(
-    Get-ChildItem -LiteralPath $changeEvidenceRoot -File -Filter '*.ps1'
-    Get-ChildItem -LiteralPath $baselineScriptsRoot -File -Filter '*.ps1'
-) | Where-Object { $_.Name -ne 'Test-GuiEvidenceTool.ps1' }
+$legacyScripts = @($legacyEntryRoots | ForEach-Object {
+    Get-ChildItem -LiteralPath $_ -File -Filter '*.ps1'
+}) | Where-Object { $_.Name -ne 'Test-GuiEvidenceTool.ps1' }
 
 foreach ($legacyScript in $legacyScripts) {
     $legacyText = Get-Content -Raw -LiteralPath $legacyScript.FullName

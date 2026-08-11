@@ -142,6 +142,21 @@ public sealed class ZzzAssetManifestValidatorTests : IDisposable
     }
 
     /// <summary>
+    /// 实例目录属于可变数据，运行时写入不应被误报为受管理资源。
+    /// </summary>
+    [Fact]
+    public void Validate_ShouldAllowMutableInstanceConfigOutsideManifest()
+    {
+        WriteFile("assets/game_data/测试.yml", "内容");
+        WriteFile("config/01/game.yml", "game_path: C:/ZenlessZoneZero.exe");
+        WriteManifest(["config/[0-9]*/**"], ["assets", "config"], CreateManifestFile("assets/game_data/测试.yml"));
+
+        ZzzAssetManifestValidationResult result = new ZzzAssetManifestValidator().Validate(_rootDirectory, "win-x64");
+
+        Assert.True(result.IsValid);
+    }
+
+    /// <summary>
     /// 聚合 YAML 即使未在清单中声明也应阻断校验。
     /// </summary>
     [Fact]
@@ -324,10 +339,16 @@ public sealed class ZzzAssetManifestValidatorTests : IDisposable
     private void WriteManifest(IReadOnlyList<string> mutablePaths, params ZzzAssetManifestFile[]? files) =>
         WriteManifest(mutablePaths, ZzzAssetManifest.CurrentSchemaVersion, files);
 
+    private void WriteManifest(IReadOnlyList<string> mutablePaths, IReadOnlyList<string> managedRoots, params ZzzAssetManifestFile[]? files) =>
+        WriteManifest(mutablePaths, managedRoots, ZzzAssetManifest.CurrentSchemaVersion, files);
+
     private void WriteManifest(int schemaVersion, params ZzzAssetManifestFile[]? files) =>
         WriteManifest([], schemaVersion, files);
 
     private void WriteManifest(IReadOnlyList<string> mutablePaths, int schemaVersion, params ZzzAssetManifestFile[]? files)
+        => WriteManifest(mutablePaths, ["assets"], schemaVersion, files);
+
+    private void WriteManifest(IReadOnlyList<string> mutablePaths, IReadOnlyList<string> managedRoots, int schemaVersion, params ZzzAssetManifestFile[]? files)
     {
         ZzzAssetManifestFile[] actualFiles = files is { Length: > 0 }
             ? files
@@ -341,7 +362,7 @@ public sealed class ZzzAssetManifestValidatorTests : IDisposable
             Rid = "win-x64",
             GeneratedSource = "workspace-root",
             SourceSummary = "SOURCE-SUMMARY",
-            ManagedRoots = ["assets"],
+            ManagedRoots = managedRoots,
             MutablePaths = mutablePaths,
             Files = actualFiles,
         };

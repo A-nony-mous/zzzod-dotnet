@@ -26,7 +26,11 @@ param(
 
     [string] $SourceRunRoot,
 
-    [string] $AssetSourceRunRoot,
+    [string] $StagingScript = (Join-Path $PSScriptRoot '..\Packaging\Invoke-AssetStaging.ps1'),
+
+    [string] $StagingRulesPath = (Join-Path $PSScriptRoot '..\Packaging\asset-staging.json'),
+
+    [string] $StagingRid = 'win-x64',
 
     [string] $CaptureProject = (Join-Path $PSScriptRoot 'ZzzOd.GuiEvidenceCapture.csproj'),
 
@@ -195,40 +199,25 @@ if ([string]::IsNullOrWhiteSpace($MetadataPath)) {
 $resolvedMetadataPath = Resolve-AbsolutePath -Path $MetadataPath
 $resolvedControlTreePath = if ([string]::IsNullOrWhiteSpace($ControlTreePath)) { $null } else { Resolve-AbsolutePath -Path $ControlTreePath }
 
-$resolvedSourceRunRoot = $null
-$sourceConfigPath = $null
-$sourceInventoryBefore = @()
-if ($State -eq 'data') {
-    if ([string]::IsNullOrWhiteSpace($SourceRunRoot)) {
-        throw '-SourceRunRoot is required when -State data is used.'
-    }
-
-    $resolvedSourceRunRoot = Resolve-AbsolutePath -Path $SourceRunRoot -MustExist
-    $sourceConfigPath = Join-Path $resolvedSourceRunRoot 'config'
-    if (-not (Test-Path -LiteralPath $sourceConfigPath -PathType Container)) {
-        throw "The data source does not contain a config directory: $sourceConfigPath"
-    }
-
-    if (Test-PathInside -Candidate $resolvedWorkRoot -Parent $resolvedSourceRunRoot) {
-        throw 'WorkRoot must stay outside SourceRunRoot.'
-    }
-
-    $sourceInventoryBefore = @(Get-FileInventory -Root $sourceConfigPath)
+if ([string]::IsNullOrWhiteSpace($SourceRunRoot)) {
+    throw '-SourceRunRoot is required.'
 }
 
-$resolvedAssetSourceRunRoot = $null
-$sourceAssetsPath = $null
-$sourceAssetsInventoryBefore = @()
-$sourceAssetsDigest = $null
-if (-not [string]::IsNullOrWhiteSpace($AssetSourceRunRoot)) {
-    $resolvedAssetSourceRunRoot = Resolve-AbsolutePath -Path $AssetSourceRunRoot -MustExist
-    $sourceAssetsPath = Join-Path $resolvedAssetSourceRunRoot 'assets'
-    if (-not (Test-Path -LiteralPath $sourceAssetsPath -PathType Container)) {
-        throw "The asset source does not contain an assets directory: $sourceAssetsPath"
-    }
-    $sourceAssetsInventoryBefore = @(Get-FileInventory -Root $sourceAssetsPath)
-    $sourceAssetsDigest = Get-InventoryDigest -Inventory $sourceAssetsInventoryBefore
+$resolvedSourceRunRoot = Resolve-AbsolutePath -Path $SourceRunRoot -MustExist
+$sourceConfigPath = Join-Path $resolvedSourceRunRoot 'config'
+$sourceAssetsPath = Join-Path $resolvedSourceRunRoot 'assets'
+if (-not (Test-Path -LiteralPath $sourceConfigPath -PathType Container) -or -not (Test-Path -LiteralPath $sourceAssetsPath -PathType Container)) {
+    throw "The staging source must contain config and assets directories: $resolvedSourceRunRoot"
 }
+
+if (Test-PathInside -Candidate $resolvedWorkRoot -Parent $resolvedSourceRunRoot) {
+    throw 'WorkRoot must stay outside SourceRunRoot.'
+}
+
+$resolvedStagingScript = Resolve-AbsolutePath -Path $StagingScript -MustExist
+$resolvedStagingRulesPath = Resolve-AbsolutePath -Path $StagingRulesPath -MustExist
+$sourceInventoryBefore = if ($State -eq 'data') { @(Get-FileInventory -Root $sourceConfigPath) } else { @() }
+$sourceAssetsInventoryBefore = @(Get-FileInventory -Root $sourceAssetsPath)
 
 $sessionId = '{0}-{1}' -f (Get-Date -Format 'yyyyMMdd-HHmmss'), ([Guid]::NewGuid().ToString('N'))
 $sessionRoot = Join-Path $resolvedWorkRoot $sessionId
@@ -236,9 +225,9 @@ $snapshotRoot = Join-Path $sessionRoot 'source-snapshot'
 $snapshotConfigPath = Join-Path $snapshotRoot 'config'
 $runRoot = Join-Path $sessionRoot 'run-root'
 $runConfigPath = Join-Path $runRoot 'config'
-$runAssetsPath = Join-Path $runRoot 'assets'
-$assetSnapshotPath = $null
-$assetSnapshotInventoryBefore = @()
+$stagingResult = $null
+$stagingManifestPath = $null
+$stagingManifest = $null
 $process = $null
 $captureResult = $null
 $actualPixelSize = $null
@@ -249,7 +238,17 @@ $initializedInventory = @()
 $failureMessage = $null
 
 try {
-    New-Item -ItemType Directory -Force -Path $runRoot | Out-Null
+    New-Item -ItemType Directory -Force -Path $sessionRoot | Out-Null
+    $stagingResult = & $resolvedStagingScript `
+        -WorkspaceRoot $resolvedSourceRunRoot `
+        -Output $runRoot `
+        -RulesPath $resolvedStagingRulesPath `
+        -Rid $StagingRid | ConvertFrom-Json
+    $stagingManifestPath = [string]$stagingResult.ManifestPath
+    if ([string]::IsNullOrWhiteSpace($stagingManifestPath) -or -not (Test-Path -LiteralPath $stagingManifestPath -PathType Leaf)) {
+        throw 'The staging entry did not produce assets-manifest.json.'
+    }
+    $stagingManifest = Get-Content -LiteralPath $stagingManifestPath -Raw | ConvertFrom-Json
 
     if ($State -eq 'data') {
         New-Item -ItemType Directory -Force -Path $snapshotRoot | Out-Null
@@ -268,36 +267,6 @@ try {
         if (-not (Compare-FileInventory -Before $snapshotInventory -After $runInventory)) {
             throw 'The temporary run root does not match the read-only config snapshot.'
         }
-    }
-
-    if ($null -ne $sourceAssetsPath) {
-        $assetCacheRoot = Join-Path $resolvedWorkRoot 'asset-snapshot-cache'
-        $assetSnapshotPath = Join-Path $assetCacheRoot $sourceAssetsDigest
-        if (-not (Test-Path -LiteralPath $assetSnapshotPath -PathType Container)) {
-            New-Item -ItemType Directory -Force -Path $assetCacheRoot | Out-Null
-            $candidatePath = "$assetSnapshotPath.$([Guid]::NewGuid().ToString('N')).tmp"
-            try {
-                Copy-Item -LiteralPath $sourceAssetsPath -Destination $candidatePath -Recurse
-                $candidateInventory = @(Get-FileInventory -Root $candidatePath)
-                if ((Get-InventoryDigest -Inventory $candidateInventory) -ne $sourceAssetsDigest) {
-                    throw 'The copied assets snapshot does not match the source inventory.'
-                }
-                Move-Item -LiteralPath $candidatePath -Destination $assetSnapshotPath
-            }
-            finally {
-                if (Test-Path -LiteralPath $candidatePath) {
-                    Remove-Item -LiteralPath $candidatePath -Recurse -Force
-                }
-            }
-        }
-
-        $assetSnapshotInventoryBefore = @(Get-FileInventory -Root $assetSnapshotPath)
-        if ((Get-InventoryDigest -Inventory $assetSnapshotInventoryBefore) -ne $sourceAssetsDigest) {
-            Remove-Item -LiteralPath $assetSnapshotPath -Recurse -Force
-            throw 'The cached assets snapshot does not match the source inventory.'
-        }
-
-        New-Item -ItemType Junction -Path $runAssetsPath -Target $assetSnapshotPath | Out-Null
     }
 
     if (-not $PrepareOnly) {
@@ -374,25 +343,8 @@ finally {
     else {
         $true
     }
-    $sourceAssetsInventoryAfter = if ($null -ne $sourceAssetsPath) { @(Get-FileInventory -Root $sourceAssetsPath) } else { @() }
-    $sourceAssetsUnchanged = if ($null -ne $sourceAssetsPath) {
-        Compare-FileInventory -Before $sourceAssetsInventoryBefore -After $sourceAssetsInventoryAfter
-    }
-    else {
-        $true
-    }
-    $assetSnapshotInventoryAfter = if ($null -ne $assetSnapshotPath -and (Test-Path -LiteralPath $assetSnapshotPath)) {
-        @(Get-FileInventory -Root $assetSnapshotPath)
-    }
-    else {
-        @()
-    }
-    $assetSnapshotUnchanged = if ($null -ne $assetSnapshotPath) {
-        Compare-FileInventory -Before $assetSnapshotInventoryBefore -After $assetSnapshotInventoryAfter
-    }
-    else {
-        $true
-    }
+    $sourceAssetsInventoryAfter = @(Get-FileInventory -Root $sourceAssetsPath)
+    $sourceAssetsUnchanged = Compare-FileInventory -Before $sourceAssetsInventoryBefore -After $sourceAssetsInventoryAfter
 
     $manifest = [ordered]@{
         schema = 'zzzod-gui-evidence-capture.v1'
@@ -424,15 +376,17 @@ finally {
             initializedFiles = $initializedInventory
         }
         assets = [ordered]@{
-            sourceRunRoot = $resolvedAssetSourceRunRoot
+            sourceRunRoot = $resolvedSourceRunRoot
             sourcePath = $sourceAssetsPath
             sourceFileCount = $sourceAssetsInventoryBefore.Count
-            sourceDigest = $sourceAssetsDigest
             sourceUnchanged = $sourceAssetsUnchanged
-            snapshotPath = $assetSnapshotPath
-            snapshotFileCount = $assetSnapshotInventoryBefore.Count
-            snapshotUnchanged = $assetSnapshotUnchanged
-            runRootJunction = if ($null -ne $assetSnapshotPath) { $runAssetsPath } else { $null }
+            stagingScript = $resolvedStagingScript
+            stagingRulesPath = $resolvedStagingRulesPath
+            stagingRid = $StagingRid
+            stagingManifestPath = $stagingManifestPath
+            manifestSchemaVersion = if ($null -eq $stagingManifest) { $null } else { $stagingManifest.schemaVersion }
+            manifestRid = if ($null -eq $stagingManifest) { $null } else { $stagingManifest.rid }
+            manifestSourceSummary = if ($null -eq $stagingManifest) { $null } else { $stagingManifest.sourceSummary }
         }
         prohibitedDataInjection = [ordered]@{
             exampleApplications = $false
@@ -452,26 +406,7 @@ finally {
     if (-not $sourceAssetsUnchanged) {
         throw "Source assets changed during capture: $sourceAssetsPath"
     }
-    if (-not $assetSnapshotUnchanged) {
-        if ($null -ne $assetSnapshotPath -and (Test-Path -LiteralPath $assetSnapshotPath)) {
-            Remove-Item -LiteralPath $assetSnapshotPath -Recurse -Force
-        }
-        throw "Cached assets snapshot changed during capture: $assetSnapshotPath"
-    }
-
     if (-not $KeepSession -and (Test-Path -LiteralPath $sessionRoot)) {
-        if (-not [string]::IsNullOrWhiteSpace($runAssetsPath) -and (Test-Path -LiteralPath $runAssetsPath)) {
-            $assetsItem = Get-Item -LiteralPath $runAssetsPath -Force
-            if (($assetsItem.Attributes -band [IO.FileAttributes]::ReparsePoint) -ne 0) {
-                & cmd.exe /d /c rmdir $runAssetsPath
-                if ($LASTEXITCODE -ne 0) {
-                    throw "Failed to remove temporary assets junction: $runAssetsPath"
-                }
-            }
-            else {
-                Remove-Item -LiteralPath $runAssetsPath -Recurse -Force
-            }
-        }
         Get-ChildItem -LiteralPath $sessionRoot -Recurse -File -ErrorAction SilentlyContinue |
             ForEach-Object { $_.IsReadOnly = $false }
         Remove-Item -LiteralPath $sessionRoot -Recurse -Force
