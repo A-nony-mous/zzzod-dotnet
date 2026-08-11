@@ -453,6 +453,110 @@ public sealed class ChargePlanAppTests
 	}
 
 	[Fact]
+	public async Task ChargePlanOperation_StartResetsTransientStateSkippedPlansAndDailyRunCounts()
+	{
+		string rootDirectory = CreateTempRoot();
+		try
+		{
+			using ZContext context = new ZContext(new OneDragonEnvironment(rootDirectory));
+			context.AttachController(new ReadyController());
+			DateTimeOffset now = new DateTimeOffset(2026, 8, 11, 12, 0, 0, TimeSpan.Zero);
+			ChargePlanItem plan = new ChargePlanItem
+			{
+				CategoryName = "区域巡防",
+				MissionTypeName = "定期清剿",
+				RunTimes = 3,
+				PlanTimes = 3,
+				Skipped = true
+			};
+			ChargePlanConfig config = new ChargePlanConfig
+			{
+				DailyResetPlanTimes = true,
+				LastDailyResetDt = "20260810",
+				DoubleReward = true,
+				PlanList = new List<ChargePlanItem>(1) { plan }
+			};
+			ChargePlanItem temporaryPlan = new ChargePlanItem
+			{
+				CategoryName = "实战模拟室",
+				MissionTypeName = "基础材料"
+			};
+			ChargePlanOperation operation = new ChargePlanOperation(
+				context,
+				config,
+				new ChargePlanRunRecord(),
+				resourceReader: (ZContext _) => new ChargePlanResourceReading(0, 0, 0),
+				doubleRewardPlanAsync: (ZContext _, int _) => Task.FromResult(ChargePlanDoubleRewardResult.WithPlan(temporaryPlan)),
+				now: () => now);
+
+			Assert.Equal("查看双倍活动", operation.CheckBatteryCharge().Status);
+			Assert.True((await operation.CheckDoubleRewardEvent()).IsSuccess);
+
+			Assert.True(operation.StartChargePlan().IsSuccess);
+			Assert.False(plan.Skipped);
+			Assert.Equal(0, plan.RunTimes);
+			Assert.Equal("20260811", config.LastDailyResetDt);
+			Assert.Equal("查看双倍活动", operation.CheckBatteryCharge().Status);
+			Assert.True(operation.FindNextPlan().IsSuccess);
+			Assert.Equal(ChargePlanOperation.StatusRoundFinished, operation.CheckBeforeTransport().Status);
+		}
+		finally
+		{
+			Directory.Delete(rootDirectory, recursive: true);
+		}
+	}
+
+	[Fact]
+	public void ChargePlanOperation_SkipsUnaffordablePlanAndContinuesWithNextCandidate()
+	{
+		string rootDirectory = CreateTempRoot();
+		try
+		{
+			using ZContext context = new ZContext(new OneDragonEnvironment(rootDirectory));
+			context.AttachController(new ReadyController());
+			ChargePlanItem firstPlan = new ChargePlanItem
+			{
+				PlanId = "first",
+				CategoryName = "区域巡防",
+				MissionTypeName = "定期清剿",
+				PlanTimes = 1
+			};
+			ChargePlanItem secondPlan = new ChargePlanItem
+			{
+				PlanId = "second",
+				CategoryName = "区域巡防",
+				MissionTypeName = "定期清剿",
+				PlanTimes = 1
+			};
+			ChargePlanConfig config = new ChargePlanConfig
+			{
+				Loop = false,
+				SkipPlan = true,
+				PlanList = new List<ChargePlanItem>(2) { firstPlan, secondPlan }
+			};
+			ChargePlanOperation operation = new ChargePlanOperation(
+				context,
+				config,
+				new ChargePlanRunRecord(),
+				resourceReader: (ZContext _) => new ChargePlanResourceReading(0, 0, 0));
+
+			operation.StartChargePlan();
+			operation.CheckBatteryCharge();
+			Assert.True(operation.FindNextPlan().IsSuccess);
+			Assert.Equal(ChargePlanOperation.StatusFindNextPlan, operation.CheckBeforeTransport().Status);
+			Assert.True(firstPlan.Skipped);
+			Assert.True(operation.FindNextPlan().IsSuccess);
+			Assert.Equal(ChargePlanOperation.StatusFindNextPlan, operation.CheckBeforeTransport().Status);
+			Assert.True(secondPlan.Skipped);
+			Assert.Equal(ChargePlanOperation.StatusRoundFinished, operation.FindNextPlan().Status);
+		}
+		finally
+		{
+			Directory.Delete(rootDirectory, recursive: true);
+		}
+	}
+
+	[Fact]
 	public void ChargePlanOperation_ReadResourcesCropsThreeFixedFieldsFromResourceBar()
 	{
 		OpenCvTestRuntime.RequireAvailable();
