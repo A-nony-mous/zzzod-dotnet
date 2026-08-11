@@ -1,0 +1,100 @@
+{
+  "schemaVersion": 1,
+  "generator": "Invoke-AssetStaging.ps1",
+  "sourceRoots": {
+    "assets": "assets",
+    "config": "config"
+  },
+  "managedRoots": [
+    "assets",
+    "config"
+  ],
+  "mutablePaths": [
+    "custom/**",
+    "config/[0-9]*/**",
+    "config/*/app_run_record/**",
+    "config/**/*.local.*",
+    "assets/**/.install/**",
+    "assets/**/uv_cache/**",
+    "assets/**/*.log",
+    "assets/**/*.cache"
+  ],
+  "categories": [
+    {
+      "name": "static-assets",
+      "sourceRoot": "assets",
+      "include": [
+        "**/*"
+      ],
+      "exclude": [
+        "**/.install/**",
+        "**/uv_cache/**",
+        "**/*.log",
+        "**/*.cache",
+        "**/_od_merged.yml",
+        "**/merged.yml",
+        "**/*.merged.yml"
+      ],
+      "required": [
+        "game_data/screen_info/*.yml",
+        "template/**/*"
+      ],
+      "rids": [
+        "win-x64"
+      ]
+    },
+    {
+      "name": "config-baseline",
+      "sourceRoot": "config",
+      "include": [
+        "project.yml",
+        "model.yml",
+        "pip.yml",
+        "zzz_one_dragon.yml",
+        "redemption_codes.sample.yml",
+        "auto_battle/**/*.yml",
+        "auto_battle_operation/**/*.yml",
+        "auto_battle_state_handler/**/*.yml",
+        "dodge/**/*.yml",
+        "lost_void_challenge/**/*.yml",
+        "hollow_zero_challenge/**/*.yml",
+        "world_patrol_route/**/*.yml",
+        "world_patrol_route_list/**/*.yml",
+        "driver_disc_data/**/*.yml",
+        "key_sim/**/*.yml"
+      ],
+      "exclude": [
+        "**/merged.yml",
+        "**/*.merged.yml",
+        "**/*.log",
+        "**/*.cache"
+      ],
+      "required": [
+        "auto_battle/*.sample.yml",
+        "auto_battle_operation/**/*.sample.yml",
+        "auto_battle_state_handler/**/*.sample.yml"
+      ],
+      "rids": [
+        "win-x64"
+      ]
+    },
+    {
+      "name": "config-json-baseline",
+      "sourceRoot": "config",
+      "include": [
+        "*.json",
+        "*.sample.json"
+      ],
+      "exclude": [
+        "api_host.json",
+        "**/*.local.json",
+        "**/*.log",
+        "**/*.cache"
+      ],
+      "required": [],
+      "rids": [
+        "win-x64"
+      ]
+    }
+  ]
+}
