@@ -13,6 +13,7 @@ using OneDragon.Core.Screen;
 using OneDragon.Core.Windows.Platform;
 using OneDragon.Core.Yolo;
 using OpenCvSharp;
+using ZzzOd.AppHost;
 using ZzzOd.GameLogic.Application;
 using ZzzOd.GameLogic.Context;
 using ZzzOd.GameLogic.Controller;
@@ -38,8 +39,10 @@ internal static class Program
         Console.InputEncoding = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false);
         WindowsDpiAwareness.TryEnablePerMonitorDpiAwareness();
 
-        string command = args.Length == 0 ? "preflight" : args[0].Trim().ToLowerInvariant();
-        string rootDirectory = ResolveRootDirectory();
+        RealGameE2ECommandLine commandLine = RealGameE2ECommandLine.Parse(args);
+        ZzzRunRootResolution runRootResolution = ZzzRunRootResolver.Resolve(commandLine.RunRootArguments);
+        string command = commandLine.Command;
+        string rootDirectory = runRootResolution.RunRoot.Path;
         Directory.SetCurrentDirectory(rootDirectory);
         OneDragonEnvironment environment = new(rootDirectory);
         E2EAutomationProfile profile = E2EAutomationProfile.Load(environment);
@@ -50,47 +53,20 @@ internal static class Program
         return command switch
         {
             "preflight" => await RunPreflightAsync(environment, profile, resources, evidenceDirectory).ConfigureAwait(false),
-            "run-app" => await RunAppAsync(environment, profile, resources, evidenceDirectory, args.Skip(1).FirstOrDefault()).ConfigureAwait(false),
-            "run-app-f10" => await RunAppAsync(environment, profile, resources, evidenceDirectory, args.Skip(1).FirstOrDefault(), enableF10Stop: true).ConfigureAwait(false),
-            "run-app-current-f10" => await RunAppAsync(environment, profile, resources, evidenceDirectory, args.Skip(1).FirstOrDefault(), enableF10Stop: true, keepCurrentScreen: true).ConfigureAwait(false),
+            "run-app" => await RunAppAsync(environment, profile, resources, evidenceDirectory, commandLine.CommandArguments.FirstOrDefault()).ConfigureAwait(false),
+            "run-app-f10" => await RunAppAsync(environment, profile, resources, evidenceDirectory, commandLine.CommandArguments.FirstOrDefault(), enableF10Stop: true).ConfigureAwait(false),
+            "run-app-current-f10" => await RunAppAsync(environment, profile, resources, evidenceDirectory, commandLine.CommandArguments.FirstOrDefault(), enableF10Stop: true, keepCurrentScreen: true).ConfigureAwait(false),
             "run-auto-battle-f10" => await RunAppAsync(environment, profile, resources, evidenceDirectory, "auto_battle", enableF10Stop: true, keepCurrentScreen: true).ConfigureAwait(false),
-            "capture-current" => RunCaptureCurrent(environment, profile, resources, evidenceDirectory, args.Skip(1).FirstOrDefault()),
-            "probe-key-j" => await RunProbeKeyJAsync(environment, profile, resources, evidenceDirectory, args.Skip(1).FirstOrDefault()).ConfigureAwait(false),
-            "probe-click-point" => await RunProbeClickPointAsync(environment, profile, resources, evidenceDirectory, args.Skip(1).ToArray()).ConfigureAwait(false),
-            "ocr-image" => RunOcrImage(environment, profile, args.Skip(1).ToArray()),
-            "recognize-image" => RunRecognizeImage(environment, profile, args.Skip(1).ToArray()),
-            "benchmark-flash-onnx" => RunFlashOnnxBenchmark(environment, profile, args.Skip(1).ToArray()),
-            "benchmark-autobattle-load" => await AutoBattleLoadBenchmark.RunAsync(environment, profile, args.Skip(1).ToArray(), JsonOptions).ConfigureAwait(false),
+            "capture-current" => RunCaptureCurrent(environment, profile, resources, evidenceDirectory, commandLine.CommandArguments.FirstOrDefault()),
+            "probe-key-j" => await RunProbeKeyJAsync(environment, profile, resources, evidenceDirectory, commandLine.CommandArguments.FirstOrDefault()).ConfigureAwait(false),
+            "probe-click-point" => await RunProbeClickPointAsync(environment, profile, resources, evidenceDirectory, commandLine.CommandArguments),
+            "ocr-image" => RunOcrImage(environment, profile, commandLine.CommandArguments),
+            "recognize-image" => RunRecognizeImage(environment, profile, commandLine.CommandArguments),
+            "benchmark-flash-onnx" => RunFlashOnnxBenchmark(environment, profile, commandLine.CommandArguments),
+            "benchmark-autobattle-load" => await AutoBattleLoadBenchmark.RunAsync(environment, profile, commandLine.CommandArguments, JsonOptions).ConfigureAwait(false),
             _ => Usage(command),
         };
     }
-
-    private static string ResolveRootDirectory()
-    {
-        string currentDirectory = Path.GetFullPath(Directory.GetCurrentDirectory());
-        if (IsWorkspaceRoot(currentDirectory))
-        {
-            return currentDirectory;
-        }
-
-        DirectoryInfo? directory = new(AppContext.BaseDirectory);
-        while (directory is not null)
-        {
-            if (IsWorkspaceRoot(directory.FullName))
-            {
-                return directory.FullName;
-            }
-
-            directory = directory.Parent;
-        }
-
-        throw new DirectoryNotFoundException("未找到包含 config、assets 和 zzzod-dotnet 的工作区根目录。");
-    }
-
-    private static bool IsWorkspaceRoot(string path) =>
-        Directory.Exists(Path.Combine(path, "config"))
-        && Directory.Exists(Path.Combine(path, "assets"))
-        && Directory.Exists(Path.Combine(path, "zzzod-dotnet"));
 
     private static int RunCaptureCurrent(
         OneDragonEnvironment environment,
@@ -1100,7 +1076,7 @@ internal static class Program
     private static int Usage(string command)
     {
         Console.Error.WriteLine($"Unsupported command: {command}");
-        Console.Error.WriteLine("Usage: dotnet run --project zzzod-dotnet/tools/ZzzOd.RealGameE2E/ZzzOd.RealGameE2E.csproj -- preflight");
+        Console.Error.WriteLine("Usage: dotnet run --project zzzod-dotnet/tools/ZzzOd.RealGameE2E/ZzzOd.RealGameE2E.csproj -- --run-root <staging> preflight");
         Console.Error.WriteLine("Usage: dotnet run --project zzzod-dotnet/tools/ZzzOd.RealGameE2E/ZzzOd.RealGameE2E.csproj -- run-app <app_id>");
         Console.Error.WriteLine("Usage: dotnet run --project zzzod-dotnet/tools/ZzzOd.RealGameE2E/ZzzOd.RealGameE2E.csproj -- run-app-f10 <app_id>");
         Console.Error.WriteLine("Usage: dotnet run --project zzzod-dotnet/tools/ZzzOd.RealGameE2E/ZzzOd.RealGameE2E.csproj -- run-app-current-f10 <app_id>");
@@ -1140,6 +1116,63 @@ internal static class Program
     {
         char[] invalid = Path.GetInvalidFileNameChars();
         return new string(text.Select(ch => invalid.Contains(ch) ? '_' : ch).ToArray());
+    }
+}
+
+/// <summary>
+/// 实机 E2E 命令和运行根参数解析结果。
+/// </summary>
+/// <param name="Command">实机 E2E 子命令。</param>
+/// <param name="CommandArguments">子命令参数。</param>
+/// <param name="RunRootArguments">交给共享运行根解析器的参数。</param>
+public sealed record RealGameE2ECommandLine(
+    string Command,
+    IReadOnlyList<string> CommandArguments,
+    IReadOnlyList<string> RunRootArguments)
+{
+    /// <summary>
+    /// 从完整命令行中提取 run-root 参数和 E2E 子命令。
+    /// </summary>
+    /// <param name="args">进程命令行参数。</param>
+    /// <returns>拆分后的命令行。</returns>
+    public static RealGameE2ECommandLine Parse(IReadOnlyList<string> args)
+    {
+        ArgumentNullException.ThrowIfNull(args);
+        List<string> runRootArguments = [];
+        List<string> commandArguments = [];
+        string? command = null;
+        for (int index = 0; index < args.Count; index++)
+        {
+            string argument = args[index];
+            if (string.Equals(argument, "--run-root", StringComparison.Ordinal))
+            {
+                if (index + 1 >= args.Count)
+                {
+                    throw new ArgumentException("--run-root 缺少路径参数。", nameof(args));
+                }
+
+                runRootArguments.Add(argument);
+                runRootArguments.Add(args[++index]);
+                continue;
+            }
+
+            if (argument.StartsWith("--run-root=", StringComparison.Ordinal))
+            {
+                runRootArguments.Add(argument);
+                continue;
+            }
+
+            if (command is null)
+            {
+                command = argument.Trim().ToLowerInvariant();
+            }
+            else
+            {
+                commandArguments.Add(argument);
+            }
+        }
+
+        return new RealGameE2ECommandLine(command ?? "preflight", commandArguments, runRootArguments);
     }
 }
 

@@ -1,5 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <ItemGroup>
+    <ProjectReference Include="..\..\src\ZzzOd.AppHost\ZzzOd.AppHost.csproj" />
     <ProjectReference Include="..\..\src\ZzzOd.GameLogic\ZzzOd.GameLogic.csproj" />
     <ProjectReference Include="..\..\..\od-dotnet\src\OneDragon.Core.Abstractions\OneDragon.Core.Abstractions.csproj" />
     <ProjectReference Include="..\..\..\od-dotnet\src\OneDragon.Core\OneDragon.Core.csproj" />
