@@ -523,7 +523,7 @@ public class AutoBattleOperator : IStateRecordUpdateListener
 		LoadOtherInfo(dictionary.ToDictionary<KeyValuePair<string, object>, string, object>((KeyValuePair<string, object> pair) => pair.Key, (KeyValuePair<string, object> pair) => pair.Value ?? new object(), StringComparer.Ordinal));
 		Scenes = (from scene in AutoBattleCondOpScene.GetDictionaryList(dictionary, "scenes")
 			select new AutoBattleCondOpScene(scene)).ToList();
-		ValidateScenes(Scenes);
+		ValidateScenes(Scenes, _configurationYamlPath ?? string.Empty);
 		ExpandTemplates();
 	}
 
@@ -910,30 +910,44 @@ public class AutoBattleOperator : IStateRecordUpdateListener
 		return value;
 	}
 
-	private static void ValidateScenes(IReadOnlyList<AutoBattleCondOpScene> scenes)
+	private static void ValidateScenes(IReadOnlyList<AutoBattleCondOpScene> scenes, string sourcePath)
 	{
-		HashSet<string> hashSet = new HashSet<string>(StringComparer.Ordinal);
-		bool flag = false;
-		foreach (AutoBattleCondOpScene scene in scenes)
+		Dictionary<string, List<int>> triggerLocations = new Dictionary<string, List<int>>(StringComparer.Ordinal);
+		List<int> normalScenes = new List<int>();
+		for (int sceneIndex = 0; sceneIndex < scenes.Count; sceneIndex++)
 		{
+			AutoBattleCondOpScene scene = scenes[sceneIndex];
 			if (scene.Triggers.Count > 0)
 			{
-				foreach (string trigger in scene.Triggers)
+				foreach (string trigger in scene.Triggers.Where(trigger => !string.IsNullOrWhiteSpace(trigger)))
 				{
-					if (!hashSet.Add(trigger))
+					if (!triggerLocations.TryGetValue(trigger, out List<int>? locations))
 					{
-						throw new InvalidOperationException("状态 " + trigger + " 在多个场景中重复使用");
+						locations = [];
+						triggerLocations.Add(trigger, locations);
 					}
+
+					locations.Add(sceneIndex);
 				}
 			}
 			else
 			{
-				if (flag)
-				{
-					throw new InvalidOperationException("多个场景都没有触发器");
-				}
-				flag = true;
+				normalScenes.Add(sceneIndex);
 			}
+		}
+
+		List<string> errors = triggerLocations
+			.Where(pair => pair.Value.Count > 1)
+			.Select(pair => $"重复 trigger '{pair.Key}': {string.Join(", ", pair.Value.Select(index => $"{sourcePath} -> scenes[{index}].triggers"))}")
+			.ToList();
+		if (normalScenes.Count > 1)
+		{
+			errors.Add($"多个无 trigger 场景: {string.Join(", ", normalScenes.Select(index => $"{sourcePath} -> scenes[{index}].triggers"))}");
+		}
+
+		if (errors.Count > 0)
+		{
+			throw new InvalidOperationException(string.Join(System.Environment.NewLine, errors));
 		}
 	}
 

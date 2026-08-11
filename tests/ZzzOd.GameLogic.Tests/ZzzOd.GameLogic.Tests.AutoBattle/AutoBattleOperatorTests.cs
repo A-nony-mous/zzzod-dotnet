@@ -438,6 +438,33 @@ public sealed class AutoBattleOperatorTests
 	}
 
 	[Fact]
+	public void InitBeforeRunning_ReportsAllSceneTriggerConflictsWithYamlPaths()
+	{
+		string root = CreateTempRoot();
+		try
+		{
+			string directory = Path.Combine(root, "config", "auto_battle");
+			Directory.CreateDirectory(directory);
+			File.WriteAllText(Path.Combine(directory, "冲突.yml"), "scenes:\n  - triggers: [\"重复\"]\n    handlers: []\n  - triggers: [\"重复\"]\n    handlers: []\n  - triggers: []\n    handlers: []\n  - triggers: []\n    handlers: []");
+			using ZContext context = new ZContext(new OneDragonEnvironment(root));
+			AutoBattleOperator op = new AutoBattleOperator(context.AutoBattleContext, "auto_battle", "冲突");
+
+			var result = op.InitBeforeRunning();
+
+			Assert.False(result.Success);
+			Assert.Contains("冲突.yml", result.Message, StringComparison.Ordinal);
+			Assert.Contains("scenes[0].triggers", result.Message, StringComparison.Ordinal);
+			Assert.Contains("scenes[1].triggers", result.Message, StringComparison.Ordinal);
+			Assert.Contains("scenes[2].triggers", result.Message, StringComparison.Ordinal);
+			Assert.Contains("scenes[3].triggers", result.Message, StringComparison.Ordinal);
+		}
+		finally
+		{
+			Directory.Delete(root, recursive: true);
+		}
+	}
+
+	[Fact]
 	public async Task BatchUpdateStates_TriggersDslSceneAndExecutesOperation()
 	{
 		string rootDirectory = CreateTempRoot();
