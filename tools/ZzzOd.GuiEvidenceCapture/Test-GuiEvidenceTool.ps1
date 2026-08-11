@@ -32,6 +32,10 @@ $requiredTokens = @(
     "sourceAssetsUnchanged",
     "-WorkspaceRoot `$resolvedSourceRunRoot",
     "assets-manifest.json",
+    "Set-GuiHealthApiConfig",
+    "Wait-GuiHealth",
+    "manifestSourceSummary",
+    "GUI health run-root does not match staging",
     "simulatedRunState = `$false"
 )
 foreach ($requiredToken in $requiredTokens) {
@@ -73,6 +77,54 @@ foreach ($forbiddenToken in $forbiddenTokens) {
     }
 }
 
+$negativeTestRoot = Join-Path ([IO.Path]::GetTempPath()) ("zzzod-gui-evidence-negative-" + [Guid]::NewGuid().ToString('N'))
+try {
+    New-Item -ItemType Directory -Force -Path $negativeTestRoot | Out-Null
+    $invalidRulesPath = Join-Path $negativeTestRoot 'asset-staging.invalid.json'
+    $markerPath = Join-Path $negativeTestRoot 'gui-started.marker'
+    $markerCommandPath = Join-Path $negativeTestRoot 'gui-started.cmd'
+    $metadataPath = Join-Path $negativeTestRoot 'capture-manifest.json'
+    $workspaceRoot = (Resolve-Path (Join-Path $PSScriptRoot '..\..\..')).Path
+    Set-Content -LiteralPath $invalidRulesPath -Value '{ invalid json' -Encoding utf8NoBOM
+    Set-Content -LiteralPath $markerCommandPath -Value "@echo launched>$markerPath" -Encoding ascii
+
+    $failure = $null
+    try {
+        & $toolPath `
+            -State empty `
+            -ExePath $markerCommandPath `
+            -Page home `
+            -OutputPath (Join-Path $negativeTestRoot 'unexpected.png') `
+            -MetadataPath $metadataPath `
+            -SourceRunRoot $workspaceRoot `
+            -StagingRulesPath $invalidRulesPath `
+            -WorkRoot (Join-Path $negativeTestRoot 'work') `
+            -SettleSeconds 0
+    }
+    catch {
+        $failure = $_
+    }
+
+    if ($null -eq $failure) {
+        throw 'Invalid staging rules unexpectedly allowed GUI evidence capture to continue.'
+    }
+    if (Test-Path -LiteralPath $markerPath) {
+        throw 'GUI process started after staging failed.'
+    }
+    if (-not (Test-Path -LiteralPath $metadataPath -PathType Leaf)) {
+        throw 'Failed staging did not write capture metadata.'
+    }
+    $negativeManifest = Get-Content -LiteralPath $metadataPath -Raw | ConvertFrom-Json
+    if ($negativeManifest.status -ne 'failed' -or $null -ne $negativeManifest.guiHealth) {
+        throw 'Failed staging capture metadata has an unexpected status or GUI health result.'
+    }
+}
+finally {
+    if (Test-Path -LiteralPath $negativeTestRoot -PathType Container) {
+        Remove-Item -LiteralPath $negativeTestRoot -Recurse -Force
+    }
+}
+
 $captureProgramText = Get-Content -Raw -LiteralPath $captureProgramPath
 $requiredInteropTokens = @(
     'MarshalInspectable<IDirect3DSurface>.FromManaged(surface)',
@@ -107,4 +159,5 @@ foreach ($legacyScript in $legacyScripts) {
     prohibitedTokens = 0
     csWinRtAbiInterop = $true
     dpiFormulaCases = $dpiCases.Count
+    failedStagingBlockedGui = $true
 } | ConvertTo-Json -Depth 3

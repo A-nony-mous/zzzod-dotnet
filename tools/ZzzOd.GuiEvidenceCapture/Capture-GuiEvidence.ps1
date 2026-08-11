@@ -45,6 +45,9 @@ param(
     [ValidateRange(0, 30)]
     [int] $SettleSeconds = 5,
 
+    [ValidateRange(0, 65535)]
+    [int] $GuiHealthPort = 0,
+
     [switch] $PrepareOnly,
 
     [switch] $KeepSession
@@ -166,6 +169,74 @@ function Set-EvidenceEnvironment {
     Remove-Item Env:\ZZZOD_GUI_EVIDENCE_RUN_APP -ErrorAction SilentlyContinue
 }
 
+function Get-AvailableTcpPort {
+    $listener = [System.Net.Sockets.TcpListener]::new([System.Net.IPAddress]::Loopback, 0)
+    try {
+        $listener.Start()
+        return ([System.Net.IPEndPoint]$listener.LocalEndpoint).Port
+    }
+    finally {
+        $listener.Stop()
+    }
+}
+
+function Set-GuiHealthApiConfig {
+    param(
+        [Parameter(Mandatory)]
+        [string] $RunRoot,
+
+        [Parameter(Mandatory)]
+        [int] $Port
+    )
+
+    [ordered]@{
+        enabled = $true
+        listenAddress = '127.0.0.1'
+        port = $Port
+        token = ''
+        corsOrigins = @()
+        startWithGui = $true
+    } | ConvertTo-Json | Set-Content -LiteralPath (Join-Path $RunRoot 'config\api_host.json') -Encoding utf8NoBOM
+}
+
+function Wait-GuiHealth {
+    param(
+        [Parameter(Mandatory)]
+        [int] $Port,
+
+        [Parameter(Mandatory)]
+        [string] $ExpectedRunRoot,
+
+        [Parameter(Mandatory)]
+        [string] $ExpectedManifestSourceSummary
+    )
+
+    $endpoint = "http://127.0.0.1:$Port/api/health"
+    for ($attempt = 0; $attempt -lt 30; $attempt++) {
+        try {
+            $health = Invoke-RestMethod -Uri $endpoint -TimeoutSec 1
+            $healthRunRoot = [IO.Path]::GetFullPath([string]$health.runRoot)
+            if (-not [string]::Equals($healthRunRoot, [IO.Path]::GetFullPath($ExpectedRunRoot), [StringComparison]::OrdinalIgnoreCase)) {
+                throw "GUI health run-root does not match staging: expected=$ExpectedRunRoot, actual=$healthRunRoot"
+            }
+            if (-not [string]::Equals([string]$health.manifestSourceSummary, $ExpectedManifestSourceSummary, [StringComparison]::Ordinal)) {
+                throw "GUI health manifest summary does not match staging: expected=$ExpectedManifestSourceSummary, actual=$($health.manifestSourceSummary)"
+            }
+            return [ordered]@{
+                endpoint = $endpoint
+                runRoot = $healthRunRoot
+                manifestSourceSummary = [string]$health.manifestSourceSummary
+            }
+        }
+        catch {
+            if ($attempt -eq 29) {
+                throw "GUI health check failed: $($_.Exception.Message)"
+            }
+            Start-Sleep -Milliseconds 500
+        }
+    }
+}
+
 function Clear-EvidenceEnvironment {
     @(
         'ZZZOD_GUI_EVIDENCE_SIZE',
@@ -233,6 +304,8 @@ $captureResult = $null
 $actualPixelSize = $null
 $dynamicExpectedPixelSize = $null
 $dpiScale = $null
+$guiHealth = $null
+$resolvedGuiHealthPort = $null
 $status = if ($PrepareOnly) { 'prepared' } else { 'pending' }
 $initializedInventory = @()
 $failureMessage = $null
@@ -272,6 +345,8 @@ try {
     if (-not $PrepareOnly) {
         New-Item -ItemType Directory -Force -Path (Split-Path -Parent $resolvedOutputPath) | Out-Null
         Set-EvidenceEnvironment
+        $resolvedGuiHealthPort = if ($GuiHealthPort -gt 0) { $GuiHealthPort } else { Get-AvailableTcpPort }
+        Set-GuiHealthApiConfig -RunRoot $runRoot -Port $resolvedGuiHealthPort
 
         $process = Start-Process `
             -FilePath $resolvedExePath `
@@ -282,6 +357,11 @@ try {
         if ($SettleSeconds -gt 0) {
             Start-Sleep -Seconds $SettleSeconds
         }
+
+        $guiHealth = Wait-GuiHealth `
+            -Port $resolvedGuiHealthPort `
+            -ExpectedRunRoot $runRoot `
+            -ExpectedManifestSourceSummary ([string]$stagingManifest.sourceSummary)
 
         $captureArguments = @(
             'run',
@@ -363,6 +443,7 @@ finally {
         output = $resolvedOutputPath
         controlTree = if ([string]::IsNullOrWhiteSpace($ControlTreePath)) { $null } else { $resolvedControlTreePath }
         capture = $captureResult
+        guiHealth = $guiHealth
         error = $failureMessage
         runRoot = [ordered]@{
             path = $runRoot
@@ -387,6 +468,7 @@ finally {
             manifestSchemaVersion = if ($null -eq $stagingManifest) { $null } else { $stagingManifest.schemaVersion }
             manifestRid = if ($null -eq $stagingManifest) { $null } else { $stagingManifest.rid }
             manifestSourceSummary = if ($null -eq $stagingManifest) { $null } else { $stagingManifest.sourceSummary }
+            guiHealthPort = $resolvedGuiHealthPort
         }
         prohibitedDataInjection = [ordered]@{
             exampleApplications = $false
