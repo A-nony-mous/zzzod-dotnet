@@ -1,9 +1,16 @@
 using ZzzOd.Api;
 using ZzzOd.AppHost;
 using ZzzOd.AppHost.Backend;
+using ZzzOd.AppHost.Resources;
 
 ZzzRunRootResolution runRootResolution = ZzzRunRootResolver.Resolve(args);
 string runRoot = runRootResolution.RunRoot.Path;
+ZzzAssetManifestValidationResult manifestValidation = ZzzAssetManifestStartupGate.Validate(runRoot);
+if (!manifestValidation.IsValid)
+{
+    ZzzAssetManifestStartupGate.WriteIssues(manifestValidation.Issues, Console.Error);
+    return 3;
+}
 using ZzzRuntimeLock? runtimeLock = ZzzRuntimeLock.TryAcquire(runRoot);
 if (runtimeLock is null)
 {

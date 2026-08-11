@@ -7,6 +7,7 @@ using OneDragon.Core.Windows.Platform;
 using ZzzOd.Api;
 using ZzzOd.AppHost;
 using ZzzOd.AppHost.Backend;
+using ZzzOd.AppHost.Resources;
 using ZzzOd.Gui.Overlay;
 using ZzzOd.Gui.Services.Dialogs;
 using ZzzOd.Gui.Services.Home;
@@ -32,6 +33,12 @@ internal static class Program
 
         ZzzRunRootResolution runRootResolution = ZzzRunRootResolver.Resolve(args);
         string runRoot = runRootResolution.RunRoot.Path;
+		ZzzAssetManifestValidationResult manifestValidation = ZzzAssetManifestStartupGate.Validate(runRoot);
+		if (!manifestValidation.IsValid)
+		{
+			ZzzAssetManifestStartupGate.WriteIssues(manifestValidation.Issues, Console.Error);
+			return 3;
+		}
         using ZzzRuntimeLock? runtimeLock = AcquireRuntimeLock(runRoot, args);
         if (runtimeLock is null)
         {

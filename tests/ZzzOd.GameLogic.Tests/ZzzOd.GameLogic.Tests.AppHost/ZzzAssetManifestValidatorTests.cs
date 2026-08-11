@@ -135,6 +135,20 @@ public sealed class ZzzAssetManifestValidatorTests : IDisposable
     }
 
     /// <summary>
+    /// 启动入口输出稳定问题代码，供 GUI 与 ApiHost 直接显示阻断原因。
+    /// </summary>
+    [Fact]
+    public void StartupGate_ShouldWriteStableIssueCode()
+    {
+        using StringWriter writer = new();
+        ZzzAssetManifestStartupGate.WriteIssues(
+            [new ZzzAssetManifestIssue(ZzzAssetManifestIssueCode.ManifestMissing, "assets-manifest.json", "未找到资源清单。")],
+            writer);
+
+        Assert.Equal("ManifestMissing: assets-manifest.json 未找到资源清单。" + Environment.NewLine, writer.ToString());
+    }
+
+    /// <summary>
     /// 绝对路径、父级越界和仅大小写不同的重复路径应返回稳定问题代码。
     /// </summary>
     [Fact]
