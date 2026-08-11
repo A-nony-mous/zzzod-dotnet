@@ -46,6 +46,11 @@ public enum ZzzAssetManifestIssueCode
     AggregatedYaml,
 
     /// <summary>
+    /// 清单或受管理目录包含禁止进入 staging 的运行态文件。
+    /// </summary>
+    ExcludedRuntimeFile,
+
+    /// <summary>
     /// 清单文件不存在。
     /// </summary>
     FileMissing,

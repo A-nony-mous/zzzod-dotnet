@@ -106,6 +106,11 @@ public sealed class ZzzAssetManifestValidator
                 issues.Add(new ZzzAssetManifestIssue(ZzzAssetManifestIssueCode.AggregatedYaml, path, "聚合 YAML 不允许进入资源清单。"));
             }
 
+            if (IsExcludedRuntimePath(path))
+            {
+                issues.Add(new ZzzAssetManifestIssue(ZzzAssetManifestIssueCode.ExcludedRuntimeFile, path, "运行态缓存、日志、用户数据和 custom 文件不允许进入资源清单。"));
+            }
+
             if (string.IsNullOrWhiteSpace(file.Category))
             {
                 issues.Add(new ZzzAssetManifestIssue(ZzzAssetManifestIssueCode.UnknownCategory, path, "资源清单文件缺少分类。"));
@@ -177,14 +182,20 @@ public sealed class ZzzAssetManifestValidator
             foreach (string absolutePath in EnumerateFilesWithoutLinks(absoluteRoot))
             {
                 string relativePath = NormalizePath(Path.GetRelativePath(runRoot, absolutePath));
-                if (IsMutablePath(relativePath, manifest.MutablePaths))
-                {
-                    continue;
-                }
-
                 if (IsAggregatedYaml(relativePath))
                 {
                     issues.Add(new ZzzAssetManifestIssue(ZzzAssetManifestIssueCode.AggregatedYaml, relativePath, "受管理目录中出现聚合 YAML。"));
+                    continue;
+                }
+
+                if (IsExcludedRuntimePath(relativePath))
+                {
+                    issues.Add(new ZzzAssetManifestIssue(ZzzAssetManifestIssueCode.ExcludedRuntimeFile, relativePath, "受管理目录中出现运行态缓存、日志、用户数据或 custom 文件。"));
+                    continue;
+                }
+
+                if (IsMutablePath(relativePath, manifest.MutablePaths) && IsApprovedMutableRuntimePath(relativePath))
+                {
                     continue;
                 }
 
@@ -251,6 +262,36 @@ public sealed class ZzzAssetManifestValidator
         path.EndsWith("/_od_merged.yml", StringComparison.OrdinalIgnoreCase) ||
         path.EndsWith("/merged.yml", StringComparison.OrdinalIgnoreCase) ||
         path.EndsWith(".merged.yml", StringComparison.OrdinalIgnoreCase);
+
+    private static bool IsExcludedRuntimePath(string path)
+    {
+        string normalized = NormalizePath(path);
+        string[] segments = normalized.Split('/');
+        return normalized.EndsWith(".log", StringComparison.OrdinalIgnoreCase) ||
+            normalized.EndsWith(".cache", StringComparison.OrdinalIgnoreCase) ||
+			(normalized.StartsWith("config/", StringComparison.OrdinalIgnoreCase) &&
+			 segments.Skip(1).Any(segment => int.TryParse(segment, out _))) ||
+            segments.Any(segment => segment.Equals("custom", StringComparison.OrdinalIgnoreCase) ||
+                segment.Equals("cache", StringComparison.OrdinalIgnoreCase) ||
+                segment.Equals("caches", StringComparison.OrdinalIgnoreCase) ||
+                segment.Equals("uv_cache", StringComparison.OrdinalIgnoreCase) ||
+                segment.Equals(".install", StringComparison.OrdinalIgnoreCase) ||
+                segment.Equals("log", StringComparison.OrdinalIgnoreCase) ||
+                segment.Equals("logs", StringComparison.OrdinalIgnoreCase) ||
+                segment.Equals("app_run_record", StringComparison.OrdinalIgnoreCase) ||
+                segment.Equals("account", StringComparison.OrdinalIgnoreCase) ||
+                segment.Equals("accounts", StringComparison.OrdinalIgnoreCase) ||
+                segment.Equals("user_data", StringComparison.OrdinalIgnoreCase));
+    }
+
+    private static bool IsApprovedMutableRuntimePath(string path)
+    {
+        string normalized = NormalizePath(path);
+        string[] segments = normalized.Split('/');
+        return normalized.StartsWith("config/", StringComparison.OrdinalIgnoreCase) &&
+            (segments.Skip(1).Any(segment => int.TryParse(segment, out _)) ||
+             normalized.Contains(".local.", StringComparison.OrdinalIgnoreCase));
+    }
 
     private static string GetPathUnderRunRoot(string runRoot, string relativePath)
     {

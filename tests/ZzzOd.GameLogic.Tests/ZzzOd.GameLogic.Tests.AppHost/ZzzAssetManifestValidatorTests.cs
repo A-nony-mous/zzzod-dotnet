@@ -81,6 +81,29 @@ public sealed class ZzzAssetManifestValidatorTests : IDisposable
     }
 
     /// <summary>
+    /// 运行态文件即使由 mutablePaths 声明也不得混入 staging。
+    /// </summary>
+    [Theory]
+    [InlineData("assets/cache/state.bin")]
+    [InlineData("assets/runtime.log")]
+    [InlineData("assets/custom/override.yml")]
+    [InlineData("config/1/battle_assistant.yml")]
+    [InlineData("config/auto_battle/app_run_record/latest.yml")]
+    public void Validate_ShouldRejectExcludedRuntimeFiles(string excludedPath)
+    {
+        WriteFile("assets/game_data/测试.yml", "内容");
+        WriteFile(excludedPath, "运行态数据");
+        WriteManifest(
+            ["assets/**", "config/**"],
+            CreateManifestFile("assets/game_data/测试.yml"),
+            CreateManifestFile(excludedPath));
+
+        ZzzAssetManifestValidationResult result = new ZzzAssetManifestValidator().Validate(_rootDirectory, "win-x64");
+
+        Assert.Contains(result.Issues, issue => issue.Code == ZzzAssetManifestIssueCode.ExcludedRuntimeFile && issue.Path == excludedPath);
+    }
+
+    /// <summary>
     /// 绝对路径、父级越界和仅大小写不同的重复路径应返回稳定问题代码。
     /// </summary>
     [Fact]
@@ -98,22 +121,15 @@ public sealed class ZzzAssetManifestValidatorTests : IDisposable
         Assert.Contains(result.Issues, issue => issue.Code == ZzzAssetManifestIssueCode.CaseConflict);
     }
 
-    private void WriteManifest(params ZzzAssetManifestFile[]? files)
+    private void WriteManifest(params ZzzAssetManifestFile[]? files) => WriteManifest([], files);
+
+    private void WriteManifest(IReadOnlyList<string> mutablePaths, params ZzzAssetManifestFile[]? files)
     {
         ZzzAssetManifestFile[] actualFiles = files is { Length: > 0 }
             ? files
             :
             [
-                new ZzzAssetManifestFile
-                {
-                    Path = "assets/game_data/测试.yml",
-                    Category = "static-assets",
-                    Required = true,
-                    Rids = ["win-x64"],
-                    Size = new FileInfo(Path.Combine(_rootDirectory, "assets", "game_data", "测试.yml")).Length,
-                    Sha256 = GetSha256("assets/game_data/测试.yml"),
-                    GeneratedSource = "workspace-root",
-                },
+                CreateManifestFile("assets/game_data/测试.yml"),
             ];
         ZzzAssetManifest manifest = new()
         {
@@ -122,12 +138,23 @@ public sealed class ZzzAssetManifestValidatorTests : IDisposable
             GeneratedSource = "workspace-root",
             SourceSummary = "SOURCE-SUMMARY",
             ManagedRoots = ["assets"],
-            MutablePaths = [],
+            MutablePaths = mutablePaths,
             Files = actualFiles,
         };
         string path = Path.Combine(_rootDirectory, "assets-manifest.json");
         File.WriteAllText(path, JsonSerializer.Serialize(manifest));
     }
+
+    private ZzzAssetManifestFile CreateManifestFile(string relativePath) => new()
+    {
+        Path = relativePath,
+        Category = "static-assets",
+        Required = true,
+        Rids = ["win-x64"],
+        Size = new FileInfo(Path.Combine(_rootDirectory, relativePath.Replace('/', Path.DirectorySeparatorChar))).Length,
+        Sha256 = GetSha256(relativePath),
+        GeneratedSource = "workspace-root",
+    };
 
     private void WriteFile(string relativePath, string content)
     {
