@@ -143,7 +143,13 @@ try {
     Write-Rules $rulesPath (New-Rules @{ assets = "assets" } @((New-Category "stage" "assets" @("win-x64"))))
     [IO.Directory]::CreateDirectory($outputPath) | Out-Null
     Write-TestFile $outputPath "obsolete.yml" "obsolete"
-    & $StagingScript -WorkspaceRoot $testRoot -Output $outputPath -RulesPath $rulesPath -Rid "win-x64" | Out-Null
+    $stagingOutput = & $StagingScript -WorkspaceRoot $testRoot -Output $outputPath -RulesPath $rulesPath -Rid "win-x64" | ConvertFrom-Json
+    Assert-Equal ([IO.Path]::GetFullPath($outputPath)) $stagingOutput.StagingPath "staging 输出路径不正确。"
+    Assert-Equal (Join-Path ([IO.Path]::GetFullPath($outputPath)) "assets-manifest.json") $stagingOutput.ManifestPath "staging manifest 路径不正确。"
+    Assert-Equal "win-x64" $stagingOutput.Rid "staging RID 不正确。"
+    if ([string]::IsNullOrWhiteSpace($stagingOutput.SourceSummary)) {
+        throw "staging 输出缺少来源摘要。"
+    }
     if (Test-Path -LiteralPath (Join-Path $outputPath "obsolete.yml")) {
         throw "clean staging 保留了旧文件。"
     }
