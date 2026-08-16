@@ -1092,6 +1092,254 @@ public sealed class AutoBattleOperatorTests
 		}
 	}
 
+	[Fact]
+	public void ShuangFanOperationSamples_ExpandToDodgeAttackSwitch()
+	{
+		string root = CreateTempRoot();
+		try
+		{
+			CopyGroup8SampleClosure(root);
+			string config = Path.Combine(root, "config", "auto_battle");
+			Directory.CreateDirectory(config);
+			File.WriteAllText(Path.Combine(config, "双反上一个.yml"), "author: tester\nscenes:\n  - triggers: []\n    handlers:\n      - states: \"\"\n        operations:\n          - operation_template: \"双反-上一个\"");
+			File.WriteAllText(Path.Combine(config, "双反下一个.yml"), "author: tester\nscenes:\n  - triggers: []\n    handlers:\n      - states: \"\"\n        operations:\n          - operation_template: \"双反-下一个\"");
+			AutoBattleReferenceGraphLoader loader = new AutoBattleReferenceGraphLoader(new OneDragonEnvironment(root));
+			foreach ((string name, string switchOp) in new[]
+			{
+				("双反上一个", "按键-切换角色-上一个"),
+				("双反下一个", "按键-切换角色-下一个"),
+			})
+			{
+				IReadOnlyList<OperationDef> operations = loader.Load("auto_battle", name).Scenes[0].Handlers[0].Operations;
+				Assert.Equal(3, operations.Count);
+				Assert.Equal("按键-闪避", operations[0].OpName);
+				Assert.Equal(0.1, operations[0].PostDelay);
+				Assert.Equal("按键-普通攻击", operations[1].OpName);
+				Assert.Equal(0.02, operations[1].PostDelay);
+				Assert.Equal(switchOp, operations[2].OpName);
+				Assert.Equal(0d, operations[2].PostDelay);
+			}
+		}
+		finally
+		{
+			Directory.Delete(root, recursive: true);
+		}
+	}
+
+	[Fact]
+	public void ShuangFanTemplateMingpo_ExpandsHandlersWithSwitchAndState()
+	{
+		string root = CreateTempRoot();
+		try
+		{
+			CopyGroup8SampleClosure(root);
+			string config = Path.Combine(root, "config", "auto_battle");
+			Directory.CreateDirectory(config);
+			File.WriteAllText(Path.Combine(config, "双反命破.yml"), "author: tester\nscenes:\n  - triggers: []\n    handlers:\n      - state_template: \"双反模板-命破\"");
+			AutoBattleReferenceGraphSnapshot snapshot = new AutoBattleReferenceGraphLoader(new OneDragonEnvironment(root))
+				.Load("auto_battle", "双反命破");
+			IReadOnlyList<AutoBattleCondOpStateHandler> handlers = snapshot.Scenes[0].Handlers;
+			Assert.Equal(2, handlers.Count);
+			Assert.Equal("[后台-2-命破]", handlers[0].States);
+			Assert.Equal(4, handlers[0].Operations.Count);
+			Assert.Equal("按键-闪避", handlers[0].Operations[0].OpName);
+			Assert.Equal("按键-普通攻击", handlers[0].Operations[1].OpName);
+			Assert.Equal("按键-切换角色-上一个", handlers[0].Operations[2].OpName);
+			Assert.Equal("设置状态", handlers[0].Operations[3].OpName);
+			Assert.Equal(new[] { "自定义-黄光切人" }, handlers[0].Operations[3].Data);
+			Assert.Equal("[后台-1-命破]", handlers[1].States);
+			Assert.Equal(4, handlers[1].Operations.Count);
+			Assert.Equal("按键-切换角色-下一个", handlers[1].Operations[2].OpName);
+			Assert.Equal("设置状态", handlers[1].Operations[3].OpName);
+		}
+		finally
+		{
+			Directory.Delete(root, recursive: true);
+		}
+	}
+
+	[Fact]
+	public void VivianEnhancedSpecialCombination_ExpandsNestedFiveAAssetFall()
+	{
+		string root = CreateTempRoot();
+		try
+		{
+			CopyGroup8SampleClosure(root);
+			string config = Path.Combine(root, "config", "auto_battle");
+			Directory.CreateDirectory(config);
+			File.WriteAllText(Path.Combine(config, "薇薇安展开.yml"), "author: tester\nscenes:\n  - triggers: []\n    handlers:\n      - states: \"\"\n        operations:\n          - operation_template: \"薇薇安-强化特殊技合轴\"");
+			IReadOnlyList<OperationDef> operations = new AutoBattleReferenceGraphLoader(new OneDragonEnvironment(root))
+				.Load("auto_battle", "薇薇安展开").Scenes[0].Handlers[0].Operations;
+			Assert.Equal(9, operations.Count);
+			Assert.Equal("设置状态", operations[0].OpName);
+			Assert.Equal("自定义-动作不打断", operations[0].State);
+			Assert.Equal(2.0, operations[0].Seconds);
+			Assert.Equal("按键-特殊攻击", operations[1].OpName);
+			Assert.Equal(0.1, operations[1].PostDelay);
+			Assert.Equal(10, operations[1].Repeat);
+			Assert.Equal("设置状态", operations[2].OpName);
+			Assert.Equal("自定义-合轴时间", operations[2].State);
+			Assert.Equal("等待秒数", operations[3].OpName);
+			Assert.Equal(1.0, operations[3].Seconds);
+			Assert.Equal("设置状态", operations[4].OpName);
+			Assert.Equal("自定义-动作不打断", operations[4].State);
+			Assert.Equal(2.5, operations[4].Seconds);
+			Assert.Equal("按键-普通攻击", operations[5].OpName);
+			Assert.Equal(0.1, operations[5].PostDelay);
+			Assert.Equal(5, operations[5].Repeat);
+			Assert.Equal("设置状态", operations[6].OpName);
+			Assert.Equal("自定义-合轴时间", operations[6].State);
+			Assert.Equal("等待秒数", operations[7].OpName);
+			Assert.Equal(2.0, operations[7].Seconds);
+			Assert.Equal("按键-闪避", operations[8].OpName);
+			Assert.Equal(0.2, operations[8].PostDelay);
+		}
+		finally
+		{
+			Directory.Delete(root, recursive: true);
+		}
+	}
+
+	[Fact]
+	public void RotationEmergencyAllAgents_ExpandsFullClosureWithVelinaAndRemielleBranches()
+	{
+		string root = CreateTempRoot();
+		try
+		{
+			CopyConfigTree(root, "config/auto_battle_operation");
+			CopyConfigTree(root, "config/auto_battle_state_handler");
+			string config = Path.Combine(root, "config", "auto_battle");
+			Directory.CreateDirectory(config);
+			File.WriteAllText(Path.Combine(config, "轮换紧急.yml"), "author: tester\nscenes:\n  - triggers: []\n    handlers:\n      - state_template: \"轮换-紧急-全角色\"");
+			AutoBattleReferenceGraphSnapshot snapshot = new AutoBattleReferenceGraphLoader(new OneDragonEnvironment(root))
+				.Load("auto_battle", "轮换紧急");
+			IReadOnlyList<AutoBattleCondOpStateHandler> handlers = snapshot.Scenes[0].Handlers;
+			Assert.Equal(10, handlers.Count);
+			Assert.Equal("[自定义-琉音-投诉]{3,99} & [自定义-失衡时间,-10,15]", handlers[0].States);
+
+			AutoBattleCondOpStateHandler? remielle = FindHandler(handlers, "蕾米埃尔虚曜满点切入");
+			Assert.NotNull(remielle);
+			Assert.Equal("[蕾米埃尔-虚曜]{3,3} & ![前台-蕾米埃尔]", remielle.States);
+			Assert.Single(remielle.Operations);
+			Assert.Equal("按键-切换角色", remielle.Operations[0].OpName);
+			Assert.Equal("蕾米埃尔", remielle.Operations[0].AgentName);
+
+			AutoBattleCondOpStateHandler? velina = FindHandler(handlers, "维琳娜紧急切入");
+			Assert.NotNull(velina);
+			Assert.Equal("![前台-维琳娜]", velina.States);
+			Assert.Equal(2, velina.SubHandlers.Count);
+			AutoBattleCondOpStateHandler highFengHua = velina.SubHandlers[0];
+			Assert.Equal("[维琳娜-风华]{85,135}", highFengHua.States);
+			Assert.Equal("[按键可用-快速支援]", highFengHua.InterruptStates);
+			Assert.Equal("按键-切换角色", highFengHua.Operations[0].OpName);
+			Assert.Equal("维琳娜", highFengHua.Operations[0].AgentName);
+			Assert.Equal(17, highFengHua.Operations.Count);
+			Assert.Equal("设置状态", highFengHua.Operations[1].OpName);
+			Assert.Equal("自定义-动作不打断", highFengHua.Operations[1].State);
+			Assert.Equal(3.0, highFengHua.Operations[1].Seconds);
+			AutoBattleCondOpStateHandler lowFengHua = velina.SubHandlers[1];
+			Assert.Equal("[维琳娜-风华]{0,84} & [维琳娜-特殊技可用]", lowFengHua.States);
+			Assert.Equal("按键-切换角色", lowFengHua.Operations[0].OpName);
+			Assert.Equal("维琳娜", lowFengHua.Operations[0].AgentName);
+			Assert.Equal(6, lowFengHua.Operations.Count);
+			Assert.Equal("设置状态", lowFengHua.Operations[1].OpName);
+			Assert.Equal("自定义-动作不打断", lowFengHua.Operations[1].State);
+			Assert.Equal(1.5, lowFengHua.Operations[1].Seconds);
+		}
+		finally
+		{
+			Directory.Delete(root, recursive: true);
+		}
+	}
+
+	[Fact]
+	public async Task VelinaFengHuaBoundary_Low84_ExecutesEnhancedSpecialCombination()
+	{
+		string root = CreateTempRoot();
+		try
+		{
+			CopyGroup8SampleClosure(root);
+			string config = Path.Combine(root, "config", "auto_battle");
+			Directory.CreateDirectory(config);
+			File.WriteAllText(Path.Combine(config, "维琳娜低风华.yml"), "author: tester\nscenes:\n  - triggers: [\"自定义-维琳娜触发\"]\n    priority: 5\n    interval: 0\n    handlers:\n      - state_template: \"速切模板-维琳娜\"");
+			using ZContext zctx = new ZContext(new OneDragonEnvironment(root));
+			List<string> executed = new();
+			AutoBattleOperator op = new(
+				zctx.AutoBattleContext,
+				"auto_battle",
+				"维琳娜低风华",
+				readFromMerged: false,
+				atomicOpFactory: opDef =>
+				{
+					if (opDef.OpName is "设置状态" or "清除状态")
+					{
+						return zctx.AutoBattleContext.AtomicOpFactory.GetAtomicOp(opDef);
+					}
+					return new RecordingNamedOp(executed, opDef.OpName ?? "?");
+				});
+			Assert.True(op.InitBeforeRunning().Success);
+			op.StartRunningAsync();
+			zctx.AutoBattleContext.StateRecordService.UpdateState(new StateRecord("前台-维琳娜", Now()));
+			zctx.AutoBattleContext.StateRecordService.UpdateState(new StateRecord("维琳娜-特殊技可用", Now()));
+			zctx.AutoBattleContext.StateRecordService.UpdateState(new StateRecord("维琳娜-风华", Now(), value: 84));
+			zctx.AutoBattleContext.StateRecordService.UpdateState(new StateRecord("自定义-维琳娜触发", Now()));
+			await WaitUntilStateAsync(zctx, "自定义-合轴时间");
+			await WaitUntilIdle(op);
+			op.StopRunning();
+
+			Assert.Contains("按键-特殊攻击", executed);
+			Assert.DoesNotContain("按键-普通攻击-按下", executed);
+			Assert.True(zctx.AutoBattleContext.StateRecordService.GetStateRecorder("自定义-合轴时间").LastRecordTime > 0.0);
+		}
+		finally
+		{
+			Directory.Delete(root, recursive: true);
+		}
+	}
+
+	[Fact]
+	public async Task VelinaFengHuaBoundary_High85_ExecutesLongAttackSequence()
+	{
+		string root = CreateTempRoot();
+		try
+		{
+			CopyGroup8SampleClosure(root);
+			string config = Path.Combine(root, "config", "auto_battle");
+			Directory.CreateDirectory(config);
+			File.WriteAllText(Path.Combine(config, "维琳娜高风华.yml"), "author: tester\nscenes:\n  - triggers: [\"自定义-维琳娜触发\"]\n    priority: 5\n    interval: 0\n    handlers:\n      - state_template: \"速切模板-维琳娜\"");
+			using ZContext zctx = new ZContext(new OneDragonEnvironment(root));
+			List<string> executed = new();
+			AutoBattleOperator op = new(
+				zctx.AutoBattleContext,
+				"auto_battle",
+				"维琳娜高风华",
+				readFromMerged: false,
+				atomicOpFactory: opDef =>
+				{
+					if (opDef.OpName is "设置状态" or "清除状态")
+					{
+						return zctx.AutoBattleContext.AtomicOpFactory.GetAtomicOp(opDef);
+					}
+					return new RecordingNamedOp(executed, opDef.OpName ?? "?");
+				});
+			Assert.True(op.InitBeforeRunning().Success);
+			op.StartRunningAsync();
+			zctx.AutoBattleContext.StateRecordService.UpdateState(new StateRecord("前台-维琳娜", Now()));
+			zctx.AutoBattleContext.StateRecordService.UpdateState(new StateRecord("维琳娜-风华", Now(), value: 85));
+			zctx.AutoBattleContext.StateRecordService.UpdateState(new StateRecord("自定义-维琳娜触发", Now()));
+			await WaitUntilExecutedAsync(executed, "按键-普通攻击-按下");
+			await WaitUntilIdle(op);
+			op.StopRunning();
+
+			Assert.Contains("按键-普通攻击-按下", executed);
+			Assert.DoesNotContain("按键-特殊攻击", executed);
+		}
+		finally
+		{
+			Directory.Delete(root, recursive: true);
+		}
+	}
+
 	private sealed class RecordingNamedOp : AtomicOp
 	{
 		private readonly List<string> _log;
@@ -1149,6 +1397,19 @@ public sealed class AutoBattleOperatorTests
 		Assert.Fail("state " + stateName + " was not written");
 	}
 
+	private static async Task WaitUntilExecutedAsync(List<string> executed, string marker)
+	{
+		for (int i = 0; i < 60; i++)
+		{
+			if (executed.Contains(marker))
+			{
+				return;
+			}
+			await Task.Delay(50);
+		}
+		Assert.Fail("op " + marker + " was not executed");
+	}
+
 	private static async Task WaitUntilExecutionRecordAsync(AutoBattleOperator op, string @event, string trigger)
 	{
 		for (int i = 0; i < 40; i++)
@@ -1193,6 +1454,53 @@ public sealed class AutoBattleOperatorTests
 			File.Copy(Path.Combine(source, "config", "auto_battle_operation", name + ".sample.yml"), Path.Combine(operationDir, name + ".sample.yml"));
 		}
 		File.Copy(Path.Combine(source, "config", "auto_battle_state_handler", "速切模板-简.sample.yml"), Path.Combine(handlerDir, "速切模板-简.sample.yml"));
+	}
+
+	private static void CopyGroup8SampleClosure(string rootDirectory)
+	{
+		string source = FindConfigSourceRoot();
+		string operationDir = Path.Combine(rootDirectory, "config", "auto_battle_operation");
+		string handlerDir = Path.Combine(rootDirectory, "config", "auto_battle_state_handler");
+		Directory.CreateDirectory(operationDir);
+		Directory.CreateDirectory(handlerDir);
+		foreach (string name in new[] { "双反-上一个", "双反-下一个", "维琳娜-终结技", "维琳娜-特殊攻击", "维琳娜-闪A", "维琳娜-支援攻击", "维琳娜-连携攻击", "维琳娜-长按普攻", "维琳娜-强化特殊技合轴", "维琳娜-普通攻击", "通用-闪避-左", "薇薇安-强化特殊技合轴", "薇薇安-5A悬落" })
+		{
+			File.Copy(Path.Combine(source, "config", "auto_battle_operation", name + ".sample.yml"), Path.Combine(operationDir, name + ".sample.yml"));
+		}
+		foreach (string name in new[] { "速切模板-维琳娜", "双反模板-命破" })
+		{
+			File.Copy(Path.Combine(source, "config", "auto_battle_state_handler", name + ".sample.yml"), Path.Combine(handlerDir, name + ".sample.yml"));
+		}
+	}
+
+	private static void CopyConfigTree(string rootDirectory, string relativeDir)
+	{
+		string source = Path.Combine(FindConfigSourceRoot(), relativeDir);
+		string target = Path.Combine(rootDirectory, relativeDir);
+		foreach (string file in Directory.EnumerateFiles(source, "*.yml", SearchOption.AllDirectories))
+		{
+			string relativePath = Path.GetRelativePath(source, file);
+			string destination = Path.Combine(target, relativePath);
+			Directory.CreateDirectory(Path.GetDirectoryName(destination)!);
+			File.Copy(file, destination);
+		}
+	}
+
+	private static AutoBattleCondOpStateHandler? FindHandler(IReadOnlyList<AutoBattleCondOpStateHandler> handlers, string displayName)
+	{
+		foreach (AutoBattleCondOpStateHandler handler in handlers)
+		{
+			if (handler.DisplayName == displayName)
+			{
+				return handler;
+			}
+			AutoBattleCondOpStateHandler? found = FindHandler(handler.SubHandlers, displayName);
+			if (found != null)
+			{
+				return found;
+			}
+		}
+		return null;
 	}
 
 	private static void AssertEquivalent(AutoBattleReferenceGraphSnapshot expected, AutoBattleReferenceGraphSnapshot actual)
