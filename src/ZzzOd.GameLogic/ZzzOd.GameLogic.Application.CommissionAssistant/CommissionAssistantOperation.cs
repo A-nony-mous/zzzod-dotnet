@@ -159,6 +159,11 @@ public sealed class CommissionAssistantOperation : ZOperation
 		{
 			return RoundWait(operationResultExplore.Status, null, TimeSpan.FromSeconds(1L));
 		}
+		OperationResult operationResultBattleMenu = _services.CheckBattleMenu(base.ZContext, base.LastScreenshot);
+		if (operationResultBattleMenu.IsSuccess)
+		{
+			return RoundWait(operationResultBattleMenu.Status, null, TimeSpan.FromSeconds(1L));
+		}
 		OperationResult operationResult3 = _services.CheckGameTutorial(base.ZContext, base.LastScreenshot);
 		if (operationResult3.IsSuccess)
 		{

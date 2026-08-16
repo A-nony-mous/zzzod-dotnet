@@ -456,6 +456,12 @@ public sealed class CommissionAssistantAppTests
 
 		public int CheckBattleStateCount { get; private set; }
 
+		public int DoDialogClickCount { get; private set; }
+
+		public bool ExploreDomainMenuDetected { get; set; }
+
+		public bool BattleMenuDetected { get; set; }
+
 		public bool FishingDetected { get; set; }
 
 		public OperationResult HollowResult { get; set; } = new OperationResult(IsSuccess: false, "未在空洞中");
@@ -549,7 +555,12 @@ public sealed class CommissionAssistantAppTests
 
 		public OperationResult CheckExploreDomainMenu(ZContext context, Mat? screen)
 		{
-			return new OperationResult(IsSuccess: false, "未处于勘域菜单");
+			return ExploreDomainMenuDetected ? new OperationResult(IsSuccess: true, "在勘域中, 不自动点击鼠标") : new OperationResult(IsSuccess: false, "未处于勘域菜单");
+		}
+
+		public OperationResult CheckBattleMenu(ZContext context, Mat? screen)
+		{
+			return BattleMenuDetected ? new OperationResult(IsSuccess: true, "在空洞自由行动场景中, 不自动点击鼠标") : new OperationResult(IsSuccess: false, "未处于战斗菜单");
 		}
 
 		public OperationResult CheckGameTutorial(ZContext context, Mat? screen)
@@ -569,6 +580,7 @@ public sealed class CommissionAssistantAppTests
 
 		public OperationResult DoDialogClick(ZContext context, CommissionAssistantConfig config, CommissionAssistantRuntimeState state, Mat? screen, bool checkCenterWords)
 		{
+			DoDialogClickCount++;
 			return new OperationResult(IsSuccess: false, "未知画面");
 		}
 
@@ -885,6 +897,77 @@ public sealed class CommissionAssistantAppTests
 	}
 
 	[Fact]
+	public void Operation_StoryMode_BlocksBattleMenuWithZeroClicksAndOneSecondWait()
+	{
+		string text = CreateTempRoot();
+		try
+		{
+			using ZContext zContext = new ZContext(new OneDragonEnvironment(text));
+			zContext.AttachController(new ReadyController());
+			RecordingCommissionAssistantServices services = new RecordingCommissionAssistantServices
+			{
+				BattleMenuDetected = true
+			};
+			CommissionAssistantOperation commissionAssistantOperation = new CommissionAssistantOperation(zContext, new CommissionAssistantConfig(), new CommissionAssistantRuntimeState(), services);
+			OperationRoundResult operationRoundResult = commissionAssistantOperation.StoryMode();
+			Assert.Equal(OperationRoundResultKind.Wait, operationRoundResult.Kind);
+			Assert.Equal("在空洞自由行动场景中, 不自动点击鼠标", operationRoundResult.Status);
+			Assert.Equal(TimeSpan.FromSeconds(1L), operationRoundResult.Delay);
+			Assert.Equal(0, services.DoDialogClickCount);
+		}
+		finally
+		{
+			Directory.Delete(text, recursive: true);
+		}
+	}
+
+	[Fact]
+	public void Operation_StoryMode_BlocksExploreDomainMenuWithZeroClicks()
+	{
+		string text = CreateTempRoot();
+		try
+		{
+			using ZContext zContext = new ZContext(new OneDragonEnvironment(text));
+			zContext.AttachController(new ReadyController());
+			RecordingCommissionAssistantServices services = new RecordingCommissionAssistantServices
+			{
+				ExploreDomainMenuDetected = true
+			};
+			CommissionAssistantOperation commissionAssistantOperation = new CommissionAssistantOperation(zContext, new CommissionAssistantConfig(), new CommissionAssistantRuntimeState(), services);
+			OperationRoundResult operationRoundResult = commissionAssistantOperation.StoryMode();
+			Assert.Equal(OperationRoundResultKind.Wait, operationRoundResult.Kind);
+			Assert.Equal("在勘域中, 不自动点击鼠标", operationRoundResult.Status);
+			Assert.Equal(TimeSpan.FromSeconds(1L), operationRoundResult.Delay);
+			Assert.Equal(0, services.DoDialogClickCount);
+		}
+		finally
+		{
+			Directory.Delete(text, recursive: true);
+		}
+	}
+
+	[Fact]
+	public void Operation_StoryMode_FallsThroughToDialogClickWhenNoGuardMatches()
+	{
+		string text = CreateTempRoot();
+		try
+		{
+			using ZContext zContext = new ZContext(new OneDragonEnvironment(text));
+			zContext.AttachController(new ReadyController());
+			RecordingCommissionAssistantServices services = new RecordingCommissionAssistantServices();
+			CommissionAssistantOperation commissionAssistantOperation = new CommissionAssistantOperation(zContext, new CommissionAssistantConfig(), new CommissionAssistantRuntimeState(), services);
+			OperationRoundResult operationRoundResult = commissionAssistantOperation.StoryMode();
+			Assert.Equal(OperationRoundResultKind.Retry, operationRoundResult.Kind);
+			Assert.Equal("未知画面", operationRoundResult.Status);
+			Assert.Equal(1, services.DoDialogClickCount);
+		}
+		finally
+		{
+			Directory.Delete(text, recursive: true);
+		}
+	}
+
+	[Fact]
 	public void Operation_TreatsHollowProcessingResultAsPythonWait()
 	{
 		string text = CreateTempRoot();
@@ -1013,6 +1096,98 @@ public sealed class CommissionAssistantAppTests
 		OperationResult operationResult = defaultCommissionAssistantOperationServices.ClickDialogConfirm(zContext, null);
 		Assert.False(operationResult.IsSuccess);
 		Assert.Equal("未获取截图", operationResult.Status);
+	}
+
+	[Fact]
+	public void DefaultServices_CheckBattleMenu_DetectsBattleMenuTemplateArea()
+	{
+		if (!CanUseOpenCv())
+		{
+			return;
+		}
+		string text = CreateTempRoot();
+		try
+		{
+			WriteCommissionAssistantBattleMenuScreenInfo(text);
+			using Mat template = CreateBattleMenuTemplate();
+			SaveBattleMenuTemplate(text, template);
+			using ZContext zContext = new ZContext(new OneDragonEnvironment(text));
+			zContext.AttachController(new ReadyController());
+			zContext.ScreenContext.Reload(fromMemory: false, fromSeparatedFiles: true);
+			using Mat screen = CreateScreenWithBattleMenu(template);
+			DefaultCommissionAssistantOperationServices defaultCommissionAssistantOperationServices = new DefaultCommissionAssistantOperationServices();
+			OperationResult operationResult = defaultCommissionAssistantOperationServices.CheckBattleMenu(zContext, screen);
+			Assert.True(operationResult.IsSuccess);
+			Assert.Equal("在空洞自由行动场景中, 不自动点击鼠标", operationResult.Status);
+		}
+		finally
+		{
+			Directory.Delete(text, recursive: true);
+		}
+	}
+
+	[Fact]
+	public void DefaultServices_CheckBattleMenu_ReturnsFalseWhenTemplateNotPresent()
+	{
+		if (!CanUseOpenCv())
+		{
+			return;
+		}
+		string text = CreateTempRoot();
+		try
+		{
+			WriteCommissionAssistantBattleMenuScreenInfo(text);
+			using ZContext zContext = new ZContext(new OneDragonEnvironment(text));
+			zContext.AttachController(new ReadyController());
+			zContext.ScreenContext.Reload(fromMemory: false, fromSeparatedFiles: true);
+			using Mat screen = new Mat(1080, 1920, MatType.CV_8UC3, Scalar.Black);
+			DefaultCommissionAssistantOperationServices defaultCommissionAssistantOperationServices = new DefaultCommissionAssistantOperationServices();
+			OperationResult operationResult = defaultCommissionAssistantOperationServices.CheckBattleMenu(zContext, screen);
+			Assert.False(operationResult.IsSuccess);
+			Assert.Equal("未处于战斗菜单", operationResult.Status);
+		}
+		finally
+		{
+			Directory.Delete(text, recursive: true);
+		}
+	}
+
+	[Fact]
+	public void DefaultServices_CheckBattleMenu_ReturnsScreenshotFailureWithoutScreen()
+	{
+		using ZContext zContext = new ZContext(new OneDragonEnvironment("test_project", "test_user_id"));
+		zContext.AttachController(new ReadyController());
+		DefaultCommissionAssistantOperationServices defaultCommissionAssistantOperationServices = new DefaultCommissionAssistantOperationServices();
+		OperationResult operationResult = defaultCommissionAssistantOperationServices.CheckBattleMenu(zContext, null);
+		Assert.False(operationResult.IsSuccess);
+		Assert.Equal("未获取截图", operationResult.Status);
+	}
+
+	[Fact]
+	public void ScreenContext_BattleMenuAreaExposesRectTemplateAndGamepadKey()
+	{
+		string text = CreateTempRoot();
+		try
+		{
+			WriteCommissionAssistantBattleMenuScreenInfo(text);
+			using ZContext zContext = new ZContext(new OneDragonEnvironment(text));
+			zContext.AttachController(new ReadyController());
+			zContext.ScreenContext.Reload(fromMemory: false, fromSeparatedFiles: true);
+			OneDragon.Core.Screen.ScreenArea area = zContext.ScreenContext.GetArea("委托助手", "战斗-菜单");
+			Assert.NotNull(area);
+			Assert.Equal(58, area.PcRect.X1);
+			Assert.Equal(40, area.PcRect.Y1);
+			Assert.Equal(142, area.PcRect.X2);
+			Assert.Equal(110, area.PcRect.Y2);
+			Assert.Equal("battle", area.TemplateSubDir);
+			Assert.Equal("btn_menu", area.TemplateId);
+			Assert.Equal("menu", area.GamepadKey);
+			Assert.True(area.IdMark);
+		}
+		finally
+		{
+			Directory.Delete(text, recursive: true);
+		}
 	}
 
 	[Fact]
@@ -1916,6 +2091,46 @@ public sealed class CommissionAssistantAppTests
 		string text = Path.Combine(rootDirectory, "assets", "game_data", "screen_info");
 		Directory.CreateDirectory(text);
 		File.WriteAllText(Path.Combine(text, "commission_assistant.yml"), "screen_id: commission_assistant\nscreen_name: 委托助手\napp_id: commission_assistant\narea_list:\n- area_name: 文本-剧情右上角\n  pc_rect:\n  - 1680\n  - 20\n  - 1840\n  - 165\n- area_name: 右侧选项区域\n  pc_rect:\n  - 1500\n  - 280\n  - 1860\n  - 760\n- area_name: 中间选项区域\n  pc_rect:\n  - 760\n  - 480\n  - 1160\n  - 600\n- area_name: 对话框内容\n  pc_rect:\n  - 580\n  - 790\n  - 1340\n  - 1010\n- area_name: 对话框确认\n  pc_rect:\n  - 1022\n  - 544\n  - 1238\n  - 750\n  text: 确认\n  lcs_percent: 1.0\n- area_name: 按钮-自动\n  pc_rect:\n  - 1686\n  - 186\n  - 1838\n  - 242\n  text: 自动\n  lcs_percent: 0.5\n- area_name: 玩法引导\n  pc_rect:\n  - 342\n  - 213\n  - 565\n  - 285\n- area_name: 标题-短信\n  pc_rect:\n  - 412\n  - 148\n  - 616\n  - 218\n  text: knock knock\n  lcs_percent: 0.5\n- area_name: 区域-短信-文本框\n  pc_rect:\n  - 790\n  - 314\n  - 1474\n  - 920\n- area_name: 按钮-短信-关闭\n  pc_rect:\n  - 1462\n  - 130\n  - 1580\n  - 246\n  text: 关闭\n  lcs_percent: 0.5\n- area_name: 左上角返回\n  pc_rect:\n  - 82\n  - 13\n  - 150\n  - 90\n  text: 返回\n  lcs_percent: 1.0");
+	}
+
+	private static void WriteCommissionAssistantBattleMenuScreenInfo(string rootDirectory)
+	{
+		string text = Path.Combine(rootDirectory, "assets", "game_data", "screen_info");
+		Directory.CreateDirectory(text);
+		File.WriteAllText(Path.Combine(text, "commission_assistant.yml"), "screen_id: commission_assistant\nscreen_name: 委托助手\napp_id: commission_assistant\narea_list:\n- area_name: 战斗-菜单\n  id_mark: true\n  pc_rect:\n  - 58\n  - 40\n  - 142\n  - 110\n  text: ''\n  lcs_percent: 0.5\n  template_sub_dir: battle\n  template_id: btn_menu\n  template_match_threshold: 0.7\n  color_range: null\n  goto_list: []\n  gamepad_key: menu");
+	}
+
+	private static void SaveBattleMenuTemplate(string rootDirectory, Mat raw)
+	{
+		string path = Path.Combine(rootDirectory, "assets", "template", "battle", "btn_menu");
+		Directory.CreateDirectory(path);
+		Cv2.ImWrite(Path.Combine(path, "raw.png"), raw);
+		using Mat mask = new Mat(raw.Size(), MatType.CV_8UC1, Scalar.White);
+		Cv2.ImWrite(Path.Combine(path, "mask.png"), mask);
+	}
+
+	private static Mat CreateBattleMenuTemplate()
+	{
+		Mat mat = new Mat(new Size(84, 70), MatType.CV_8UC3, Scalar.Black);
+		Cv2.Rectangle(mat, new OpenCvSharp.Rect(4, 4, 24, 18), new Scalar(255.0, 255.0, 255.0), -1);
+		Cv2.Circle(mat, new OpenCvSharp.Point(45, 18), 11, new Scalar(40.0, 220.0, 255.0), -1);
+		Cv2.Line(mat, new OpenCvSharp.Point(8, 52), new OpenCvSharp.Point(56, 40), new Scalar(255.0, 80.0, 30.0), 4);
+		Cv2.PutText(mat, "BM", new OpenCvSharp.Point(9, 36), HersheyFonts.HersheySimplex, 0.8, new Scalar(150.0, 255.0, 80.0), 2);
+		return mat;
+	}
+
+	private static Mat CreateScreenWithBattleMenu(Mat template)
+	{
+		Mat mat = new Mat(1080, 1920, MatType.CV_8UC3, new Scalar(15.0, 20.0, 25.0));
+		using Mat region = new Mat(mat, new OpenCvSharp.Rect(58, 40, template.Width, template.Height));
+		template.CopyTo(region);
+		return mat;
+	}
+
+	private static bool CanUseOpenCv()
+	{
+		OpenCvTestRuntime.RequireAvailable();
+		return true;
 	}
 
 	private static void WriteFishingScreenInfo(string rootDirectory)

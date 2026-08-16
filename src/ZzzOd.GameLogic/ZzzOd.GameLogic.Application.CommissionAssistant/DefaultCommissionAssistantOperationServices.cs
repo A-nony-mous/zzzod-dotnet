@@ -345,6 +345,20 @@ public sealed class DefaultCommissionAssistantOperationServices : ICommissionAss
 	}
 
 	/// <inheritdoc />
+	public OperationResult CheckBattleMenu(ZContext context, Mat? screen)
+	{
+		if (screen == null)
+		{
+			return new OperationResult(IsSuccess: false, "未获取截图");
+		}
+		if (ScreenUtils.FindArea(context, screen, "委托助手", "战斗-菜单") == FindAreaResultEnum.True)
+		{
+			return new OperationResult(IsSuccess: true, "在空洞自由行动场景中, 不自动点击鼠标");
+		}
+		return new OperationResult(IsSuccess: false, "未处于战斗菜单");
+	}
+
+	/// <inheritdoc />
 	public OperationResult CheckGameTutorial(ZContext context, Mat? screen)
 	{
 		if (screen == null)

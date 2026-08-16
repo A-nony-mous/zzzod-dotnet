@@ -62,6 +62,9 @@ public interface ICommissionAssistantOperationServices
 	/// <summary>检测勘域菜单是否打开（在勘域中避免自动点击）。</summary>
 	OperationResult CheckExploreDomainMenu(ZContext context, Mat? screen);
 
+	/// <summary>检测战斗菜单是否打开（在空洞自由行动场景中避免自动点击）。</summary>
+	OperationResult CheckBattleMenu(ZContext context, Mat? screen);
+
 	/// <summary>检查玩法引导。</summary>
 	OperationResult CheckGameTutorial(ZContext context, Mat? screen);
 
