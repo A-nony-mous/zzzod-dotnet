@@ -4,11 +4,13 @@ using System.IO;
 using System.Runtime.CompilerServices;
 using OneDragon.Core.Operation;
 using OneDragon.Core.Runtime;
+using OneDragon.Core.Template;
 using OpenCvSharp;
 using Xunit;
 using ZzzOd.GameLogic.AutoBattle;
 using ZzzOd.GameLogic.Context;
 using ZzzOd.GameLogic.GameData;
+using ZzzOd.GameLogic.Tests.TestSupport;
 
 namespace ZzzOd.GameLogic.Tests.AutoBattle;
 
@@ -52,13 +54,63 @@ public sealed class AgentStateCheckerTests
 	[Fact]
 	public void CountByColorRange_UsesConnectedComponentsAndAreaThreshold()
 	{
+		// 对齐 Python dilate：2×2 全一核单次膨胀，3×3 方块膨胀为 4×4=16，单像素膨胀为 2×2=4
 		using Mat mat = new Mat(20, 20, MatType.CV_8UC3, new Scalar(0.0, 0.0, 0.0));
 		Cv2.Rectangle(mat, new Rect(1, 1, 3, 3), new Scalar(0.0, 0.0, 255.0), -1);
 		Cv2.Rectangle(mat, new Rect(12, 12, 3, 3), new Scalar(0.0, 0.0, 255.0), -1);
 		mat.Set(10, 1, new Vec3b(0, 0, byte.MaxValue));
-		AgentStateDef stateDef = new AgentStateDef("红块", AgentStateCheckWay.COLOR_RANGE_EXIST, "", connectCnt: 30, lowerColor: new int[3] { 200, 0, 0 }, upperColor: new int[3] { 255, 50, 50 });
+		AgentStateDef stateDef = new AgentStateDef("红块", AgentStateCheckWay.COLOR_RANGE_EXIST, "", connectCnt: 10, lowerColor: new int[3] { 200, 0, 0 }, upperColor: new int[3] { 255, 50, 50 });
 		int actual = AgentStateChecker.CountByColorRange(mat, stateDef);
 		Assert.Equal(2, actual);
+	}
+
+	[Fact]
+	public void ResolveJaneSahofuJump_MatchesReferenceParameters()
+	{
+		AgentStateDef resolved = AgentStateChecker.ResolveStateDef(new AgentStateDef("简-萨霍夫跳"));
+		Assert.Equal(AgentStateCheckWay.COLOR_RANGE_EXIST, resolved.CheckWay);
+		Assert.Equal("jane_attack", resolved.TemplateId);
+		Assert.Equal(5, resolved.ConnectCnt);
+		Assert.Equal(new int[3] { 0, 255, 255 }, resolved.HsvColor);
+		Assert.Equal(new int[3] { 10, 100, 150 }, resolved.HsvColorDiff);
+		Assert.Null(resolved.LowerColor);
+		Assert.Null(resolved.UpperColor);
+	}
+
+	[Fact]
+	public void ExistsByColorRange_JaneSahofuJumpHitInHsvRange()
+	{
+		// 纯红 BGR(0,0,255) → HSV(0,255,255)，落在 jane_attack (0,255,255)±(10,100,150) 内
+		using Mat mat = new Mat(10, 10, MatType.CV_8UC3, new Scalar(0.0, 0.0, 0.0));
+		Cv2.Rectangle(mat, new Rect(2, 2, 3, 3), new Scalar(0.0, 0.0, 255.0), -1);
+		AgentStateDef stateDef = AgentStateChecker.ResolveStateDef(new AgentStateDef("简-萨霍夫跳"));
+		Assert.Equal(1, AgentStateChecker.ExistsByColorRange(mat, stateDef));
+	}
+
+	[Fact]
+	public void ExistsByColorRange_JaneSahofuJumpConnectCnt5Boundary()
+	{
+		// 2×2 膨胀后面积：单像素→4(<5 不触发)，两相邻像素→6(≥5 触发)
+		AgentStateDef stateDef = AgentStateChecker.ResolveStateDef(new AgentStateDef("简-萨霍夫跳"));
+		using Mat single = new Mat(10, 10, MatType.CV_8UC3, new Scalar(0.0, 0.0, 0.0));
+		single.Set(5, 5, new Vec3b(0, 0, byte.MaxValue));
+		Assert.Equal(0, AgentStateChecker.ExistsByColorRange(single, stateDef));
+		using Mat pair = new Mat(10, 10, MatType.CV_8UC3, new Scalar(0.0, 0.0, 0.0));
+		pair.Set(5, 5, new Vec3b(0, 0, byte.MaxValue));
+		pair.Set(6, 5, new Vec3b(0, 0, byte.MaxValue));
+		Assert.Equal(1, AgentStateChecker.ExistsByColorRange(pair, stateDef));
+	}
+
+	[Fact]
+	public void CountByColorRange_JaneSahofuJumpColorRangeFiltersBySaturationAndValue()
+	{
+		// 纯红 3×3 命中(S=255,V=255)；灰色 S=0、深红 V=100 均越出 (0,255,255)±(10,100,150)
+		AgentStateDef stateDef = AgentStateChecker.ResolveStateDef(new AgentStateDef("简-萨霍夫跳"));
+		using Mat mat = new Mat(10, 10, MatType.CV_8UC3, new Scalar(0.0, 0.0, 0.0));
+		Cv2.Rectangle(mat, new Rect(1, 1, 3, 3), new Scalar(0.0, 0.0, 255.0), -1);
+		mat.Set(8, 8, new Vec3b(100, 100, 100));
+		mat.Set(7, 8, new Vec3b(0, 0, 100));
+		Assert.Equal(1, AgentStateChecker.CountByColorRange(mat, stateDef));
 	}
 
 	[Fact]
@@ -124,7 +176,8 @@ public sealed class AgentStateCheckerTests
 	{
 		using Mat mat = new Mat(5, 5, MatType.CV_8UC3, new Scalar(0.0, 0.0, 0.0));
 		mat.Set(2, 2, new Vec3b(200, 20, 20));
-		AgentStateDef stateDef = new AgentStateDef("通道最大值", AgentStateCheckWay.COLOR_RANGE_EXIST, "", new int[] { 150 }, new int[] { 255 }, null, null, 9);
+		// 对齐 Python 2×2 膨胀：单像素膨胀为 2×2=4，connect_cnt 需 ≤4
+		AgentStateDef stateDef = new AgentStateDef("通道最大值", AgentStateCheckWay.COLOR_RANGE_EXIST, "", new int[] { 150 }, new int[] { 255 }, null, null, 4);
 		using Mat mat2 = new Mat(3, 3, MatType.CV_8UC3, new Scalar(10.0, 20.0, 30.0));
 		mat2.Set(0, 0, new Vec3b(40, 40, 40));
 		mat2.Set(0, 1, new Vec3b(40, 40, 40));
@@ -246,6 +299,55 @@ public sealed class AgentStateCheckerTests
 		Assert.NotNull(stateRecord);
 		Assert.Equal(0, stateRecord.Value);
 		Assert.True(stateRecord.IsClear);
+	}
+
+	[Fact]
+	public void ProductionTemplateIndex_DiscoversJaneAttack31Template()
+	{
+		OpenCvTestRuntime.RequireAvailable();
+		string workspaceRoot = FindWorkspaceRoot();
+		string runRoot = Path.Combine(Path.GetTempPath(), "zzzod-agent-state-template-tests", Guid.NewGuid().ToString("N"));
+		try
+		{
+			CopyDirectory(Path.Combine(workspaceRoot, "config"), Path.Combine(runRoot, "config"));
+			using ZContext zContext = new ZContext(new OneDragonEnvironment(runRoot, workspaceRoot));
+			TemplateInfo template = Assert.IsType<TemplateInfo>(zContext.TemplateLoader.GetTemplate("agent_state", "jane_attack_3_1"));
+			using (template)
+			{
+				Assert.False(template.Raw?.Empty() ?? true, "jane_attack_3_1 raw.png 必须可被模板加载器读取");
+				Assert.False(template.Mask?.Empty() ?? true, "jane_attack_3_1 mask.png 必须可被模板加载器读取");
+			}
+		}
+		finally
+		{
+			if (Directory.Exists(runRoot))
+			{
+				Directory.Delete(runRoot, recursive: true);
+			}
+		}
+	}
+
+	private static string FindWorkspaceRoot()
+	{
+		for (DirectoryInfo directoryInfo = new DirectoryInfo(AppContext.BaseDirectory); directoryInfo != null; directoryInfo = directoryInfo.Parent)
+		{
+			if (Directory.Exists(Path.Combine(directoryInfo.FullName, "assets")) && Directory.Exists(Path.Combine(directoryInfo.FullName, "zzzod-dotnet")))
+			{
+				return directoryInfo.FullName;
+			}
+		}
+		throw new DirectoryNotFoundException("未找到 zzz-od-dotnet 工作区根目录。");
+	}
+
+	private static void CopyDirectory(string sourceDirectory, string targetDirectory)
+	{
+		foreach (string item in Directory.EnumerateFiles(sourceDirectory, "*", SearchOption.AllDirectories))
+		{
+			string relativePath = Path.GetRelativePath(sourceDirectory, item);
+			string text = Path.Combine(targetDirectory, relativePath);
+			Directory.CreateDirectory(Path.GetDirectoryName(text));
+			File.Copy(item, text, overwrite: true);
+		}
 	}
 
 	private static string CreateTempRoot()

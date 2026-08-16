@@ -949,6 +949,168 @@ public sealed class AutoBattleOperatorTests
 		}
 	}
 
+	[Fact]
+	public void JaneSahofuJumpSample_ExpandsToFullPressReleaseSequence()
+	{
+		string root = CreateTempRoot();
+		try
+		{
+			CopyJaneSampleClosure(root);
+			string config = Path.Combine(root, "config", "auto_battle");
+			Directory.CreateDirectory(config);
+			File.WriteAllText(Path.Combine(config, "简展开配置.yml"), "author: tester\nscenes:\n  - triggers: []\n    handlers:\n      - states: \"\"\n        operations:\n          - operation_template: \"简-萨霍夫跳\"");
+			AutoBattleReferenceGraphSnapshot snapshot = new AutoBattleReferenceGraphLoader(new OneDragonEnvironment(root))
+				.Load("auto_battle", "简展开配置");
+			IReadOnlyList<OperationDef> operations = snapshot.Scenes[0].Handlers[0].Operations;
+			Assert.Equal(15, operations.Count);
+			Assert.Equal("设置状态", operations[0].OpName);
+			Assert.Equal("自定义-简-萨霍夫跳合轴", operations[0].State);
+			Assert.Equal(3.0, operations[0].Seconds);
+			for (int i = 0; i < 6; i++)
+			{
+				Assert.Equal("按键-普通攻击-按下", operations[1 + i * 2].OpName);
+				Assert.Equal("等待秒数", operations[2 + i * 2].OpName);
+				Assert.Equal(0.5, operations[2 + i * 2].Seconds);
+			}
+			Assert.Equal("按键-普通攻击-松开", operations[13].OpName);
+			Assert.Equal("等待秒数", operations[14].OpName);
+			Assert.Equal(1.0, operations[14].Seconds);
+		}
+		finally
+		{
+			Directory.Delete(root, recursive: true);
+		}
+	}
+
+	[Fact]
+	public void QuickSwitchTemplateJane_ExpandsAllTenSubHandlers()
+	{
+		string root = CreateTempRoot();
+		try
+		{
+			CopyJaneSampleClosure(root);
+			string config = Path.Combine(root, "config", "auto_battle");
+			Directory.CreateDirectory(config);
+			File.WriteAllText(Path.Combine(config, "速切简配置.yml"), "author: tester\nscenes:\n  - triggers: []\n    handlers:\n      - state_template: \"速切模板-简\"");
+			AutoBattleReferenceGraphSnapshot snapshot = new AutoBattleReferenceGraphLoader(new OneDragonEnvironment(root))
+				.Load("auto_battle", "速切简配置");
+			AutoBattleCondOpStateHandler rootHandler = snapshot.Scenes[0].Handlers[0];
+			Assert.Equal("[前台-简]", rootHandler.States);
+			Assert.Equal("[前台-能量, 0, 0.1] & ![前台-简]", rootHandler.InterruptStates);
+			Assert.Equal(10, rootHandler.SubHandlers.Count);
+
+			AutoBattleCondOpStateHandler redFlash = rootHandler.SubHandlers[2];
+			Assert.Equal("[自定义-红光闪避, 0, 1]", redFlash.States);
+			Assert.Equal(2, redFlash.SubHandlers.Count);
+			Assert.Equal("[自定义-简-萨霍夫跳合轴, -3, 0]", redFlash.SubHandlers[0].States);
+			Assert.Equal("萨霍夫跳中松开普攻", redFlash.SubHandlers[0].DisplayName);
+			Assert.Single(redFlash.SubHandlers[0].Operations);
+			Assert.Equal("按键-普通攻击-松开", redFlash.SubHandlers[0].Operations[0].OpName);
+			IReadOnlyList<OperationDef> flashA = redFlash.SubHandlers[1].Operations;
+			Assert.Equal(6, flashA.Count);
+			Assert.Equal("设置状态", flashA[0].OpName);
+			Assert.Equal("自定义-动作不打断", flashA[0].State);
+			Assert.Equal(1.0, flashA[0].Seconds);
+			Assert.Equal("按键-移动-左-按下", flashA[1].OpName);
+			Assert.Equal("按键-闪避", flashA[2].OpName);
+			Assert.Equal(0.2, flashA[2].PostDelay);
+			Assert.Equal("按键-移动-左-松开", flashA[3].OpName);
+			Assert.Equal("按键-普通攻击", flashA[4].OpName);
+			Assert.Equal(33, flashA[4].Repeat);
+			Assert.Equal(0.1, flashA[4].PostDelay);
+			Assert.Equal("设置状态", flashA[5].OpName);
+			Assert.Equal("自定义-异常-物理", flashA[5].State);
+			Assert.Equal(114, flashA[5].Add);
+
+			AutoBattleCondOpStateHandler sahofu = rootHandler.SubHandlers[7];
+			Assert.Equal("[简-狂热心流]{0, 50} & [简-萨霍夫跳]", sahofu.States);
+			Assert.Equal(16, sahofu.Operations.Count);
+			Assert.Equal("按键-普通攻击-松开", sahofu.Operations[13].OpName);
+			Assert.Equal("设置状态", sahofu.Operations[14].OpName);
+			Assert.Equal("自定义-合轴时间", sahofu.Operations[14].State);
+
+			AutoBattleCondOpStateHandler fallback = rootHandler.SubHandlers[9];
+			Assert.Equal("", fallback.States);
+			Assert.Single(fallback.Operations);
+			Assert.Equal("按键-普通攻击", fallback.Operations[0].OpName);
+			Assert.Equal(5, fallback.Operations[0].Repeat);
+			Assert.Equal(0.1, fallback.Operations[0].PostDelay);
+		}
+		finally
+		{
+			Directory.Delete(root, recursive: true);
+		}
+	}
+
+	[Fact]
+	public async Task JaneSahofuJumpSample_ExecutesSequenceAndWritesStates()
+	{
+		string root = CreateTempRoot();
+		try
+		{
+			CopyJaneSampleClosure(root);
+			string config = Path.Combine(root, "config", "auto_battle");
+			Directory.CreateDirectory(config);
+			File.WriteAllText(Path.Combine(config, "简执行配置.yml"), "author: tester\nscenes:\n  - triggers: [\"自定义-简触发\"]\n    priority: 5\n    interval: 0\n    handlers:\n      - states: \"[自定义-简触发, 0, 1]\"\n        operations:\n          - operation_template: \"简-萨霍夫跳合轴\"");
+			using ZContext zctx = new ZContext(new OneDragonEnvironment(root));
+			List<string> executed = new();
+			AutoBattleOperator op = new(
+				zctx.AutoBattleContext,
+				"auto_battle",
+				"简执行配置",
+				readFromMerged: false,
+				atomicOpFactory: opDef =>
+				{
+					if (opDef.OpName is "设置状态" or "清除状态")
+					{
+						return zctx.AutoBattleContext.AtomicOpFactory.GetAtomicOp(opDef);
+					}
+					return new RecordingNamedOp(executed, opDef.OpName ?? "?");
+				});
+			Assert.True(op.InitBeforeRunning().Success);
+			op.StartRunningAsync();
+			zctx.AutoBattleContext.StateRecordService.UpdateState(new StateRecord("自定义-简触发", Now()));
+			await WaitUntilStateAsync(zctx, "自定义-合轴时间");
+			await WaitUntilIdle(op);
+			op.StopRunning();
+
+			Assert.True(zctx.AutoBattleContext.StateRecordService.GetStateRecorder("自定义-简-萨霍夫跳合轴").LastRecordTime > 0.0);
+			Assert.True(zctx.AutoBattleContext.StateRecordService.GetStateRecorder("自定义-合轴时间").LastRecordTime > 0.0);
+			List<string> expected = new();
+			for (int i = 0; i < 6; i++)
+			{
+				expected.Add("按键-普通攻击-按下");
+				expected.Add("等待秒数");
+			}
+			expected.Add("按键-普通攻击-松开");
+			expected.Add("等待秒数");
+			Assert.Equal(expected, executed);
+		}
+		finally
+		{
+			Directory.Delete(root, recursive: true);
+		}
+	}
+
+	private sealed class RecordingNamedOp : AtomicOp
+	{
+		private readonly List<string> _log;
+
+		private readonly string _name;
+
+		public RecordingNamedOp(List<string> log, string name)
+			: base(name, asyncOp: false)
+		{
+			_log = log;
+			_name = name;
+		}
+
+		public override void Execute()
+		{
+			_log.Add(_name);
+		}
+	}
+
 	private static async Task WaitUntilIdle(AutoBattleOperator op)
 	{
 		for (int i = 0; i < 20; i++)
@@ -1005,6 +1167,32 @@ public sealed class AutoBattleOperatorTests
 		string text = Path.Combine(Path.GetTempPath(), "zzzod-dotnet-tests", Guid.NewGuid().ToString("N"));
 		Directory.CreateDirectory(text);
 		return text;
+	}
+
+	private static string FindConfigSourceRoot()
+	{
+		for (DirectoryInfo directoryInfo = new DirectoryInfo(AppContext.BaseDirectory); directoryInfo != null; directoryInfo = directoryInfo.Parent)
+		{
+			if (File.Exists(Path.Combine(directoryInfo.FullName, "config", "auto_battle_operation", "简-萨霍夫跳.sample.yml")))
+			{
+				return directoryInfo.FullName;
+			}
+		}
+		throw new DirectoryNotFoundException("未找到含同步简采样配置的仓库根目录。");
+	}
+
+	private static void CopyJaneSampleClosure(string rootDirectory)
+	{
+		string source = FindConfigSourceRoot();
+		string operationDir = Path.Combine(rootDirectory, "config", "auto_battle_operation");
+		string handlerDir = Path.Combine(rootDirectory, "config", "auto_battle_state_handler");
+		Directory.CreateDirectory(operationDir);
+		Directory.CreateDirectory(handlerDir);
+		foreach (string name in new[] { "简-萨霍夫跳", "简-萨霍夫跳合轴", "简-普通攻击", "简-终结技", "简-格挡攻击", "简-闪A", "简-连携攻击", "简-强化特殊攻击", "通用-闪避-左" })
+		{
+			File.Copy(Path.Combine(source, "config", "auto_battle_operation", name + ".sample.yml"), Path.Combine(operationDir, name + ".sample.yml"));
+		}
+		File.Copy(Path.Combine(source, "config", "auto_battle_state_handler", "速切模板-简.sample.yml"), Path.Combine(handlerDir, "速切模板-简.sample.yml"));
 	}
 
 	private static void AssertEquivalent(AutoBattleReferenceGraphSnapshot expected, AutoBattleReferenceGraphSnapshot actual)

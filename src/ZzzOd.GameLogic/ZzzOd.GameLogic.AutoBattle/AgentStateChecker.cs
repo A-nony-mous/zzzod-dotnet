@@ -319,11 +319,16 @@ public static class AgentStateChecker
 		return mat;
 	}
 
-	private static Mat Dilate(Mat mask, int iterations)
+	private static Mat Dilate(Mat mask, int kernelSize)
 	{
+		if (kernelSize == 0)
+		{
+			return mask;
+		}
+		// 对齐 Python cv2_utils.dilate：k×k 全一核、单次迭代，而不是 3×3 多迭代
 		Mat mat = new Mat();
-		using Mat mat2 = Cv2.GetStructuringElement(MorphShapes.Rect, new Size(3, 3));
-		Cv2.Dilate(mask, mat, mat2, null, iterations);
+		using Mat mat2 = Cv2.GetStructuringElement(MorphShapes.Rect, new Size(kernelSize, kernelSize));
+		Cv2.Dilate(mask, mat, mat2, null, 1);
 		return mat;
 	}
 
@@ -562,7 +567,7 @@ public static class AgentStateChecker
 			"苍角-涡流" => new AgentStateDef(stateDef.StateName, AgentStateCheckWay.COLOR_RANGE_CONNECT, "soukaku", new int[3] { 0, 220, 220 }, new int[3] { 175, 255, 255 }, null, null, 15), 
 			"朱鸢-子弹数" => new AgentStateDef(stateDef.StateName, AgentStateCheckWay.COLOR_RANGE_CONNECT, "zhu_yuan", new int[3] { 240, 60, 0 }, new int[3] { 255, 180, 20 }, null, null, 5), 
 			"青衣-电压" => new AgentStateDef(stateDef.StateName, AgentStateCheckWay.BACKGROUND_GRAY_RANGE_LENGTH, "qingyi", new int[] { 0 }, new int[] { 70 }), 
-			"简-萨霍夫跳" => new AgentStateDef(stateDef.StateName, AgentStateCheckWay.COLOR_RANGE_EXIST, "jane_attack", new int[3] { 100, 20, 20 }, new int[3] { 255, 255, 255 }, null, null, 20), 
+			"简-萨霍夫跳" => new AgentStateDef(stateDef.StateName, AgentStateCheckWay.COLOR_RANGE_EXIST, "jane_attack", null, null, new int[3] { 0, 255, 255 }, new int[3] { 10, 100, 150 }, 5),
 			"简-狂热心流" => new AgentStateDef(stateDef.StateName, AgentStateCheckWay.FOREGROUND_COLOR_RANGE_LENGTH, "jane_red", new int[3] { 200, 20, 20 }, new int[3] { 255, 255, 255 }, null, null, 10), 
 			"赛斯-意气" => new AgentStateDef(stateDef.StateName, AgentStateCheckWay.BACKGROUND_GRAY_RANGE_LENGTH, "seth_lowell", new int[] { 0 }, new int[] { 10 }), 
 			"柏妮思-燃点" => new AgentStateDef(stateDef.StateName, AgentStateCheckWay.FOREGROUND_COLOR_RANGE_LENGTH, "burnice_white", null, null, new int[3] { 20, 255, 255 }, new int[3] { 20, 200, 100 }),
