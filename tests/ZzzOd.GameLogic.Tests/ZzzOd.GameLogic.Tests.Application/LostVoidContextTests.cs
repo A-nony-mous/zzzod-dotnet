@@ -63,7 +63,7 @@ public sealed class LostVoidContextTests
 
 		public Queue<LostVoidRunLevelFrame> NonBattleFrames { get; init; } = new Queue<LostVoidRunLevelFrame>(new LostVoidRunLevelFrame[] { new LostVoidRunLevelFrame(InNormalWorld: true) });
 
-		public LostVoidAfterInteractState AfterInteractState { get; init; } = new LostVoidAfterInteractState(InNormalWorld: false);
+		public LostVoidAfterInteractState AfterInteractState { get; set; } = new LostVoidAfterInteractState(InNormalWorld: false);
 
 		public LostVoidBattleState BattleState { get; init; } = new LostVoidBattleState(CurrentFrameInBattle: false);
 
@@ -75,7 +75,7 @@ public sealed class LostVoidContextTests
 
 		public OperationResult AppendPriorityResult { get; init; } = new OperationResult(IsSuccess: true, "非战斗区域");
 
-		public LostVoidTryInteractResult TryInteractResult { get; init; } = LostVoidTryInteractResult.Success("交互成功");
+		public LostVoidTryInteractResult TryInteractResult { get; set; } = LostVoidTryInteractResult.Success("交互成功");
 
 		public LostVoidInteractResult InteractResult { get; init; } = LostVoidInteractResult.Success("进入下层");
 
@@ -100,6 +100,8 @@ public sealed class LostVoidContextTests
 		public int NonBattleFrameCallCount { get; private set; }
 
 		public int AppendAgentTypePriorityCallCount { get; private set; }
+
+		public int MoveAfterInteractCallCount { get; private set; }
 
 		public bool CurrentFrameBattleEncounter { get; init; }
 
@@ -195,6 +197,7 @@ public sealed class LostVoidContextTests
 
 		public void MoveAfterInteract(LostVoidRunLevel operation, LostVoidInteractTarget? currentTarget)
 		{
+			MoveAfterInteractCallCount++;
 		}
 
 		public void StartAutoBattle(LostVoidRunLevel operation)
@@ -544,8 +547,11 @@ public sealed class LostVoidContextTests
 
 	private sealed class RecordingButtonController : IButtonController
 	{
+		public List<(string Key, string Kind, TimeSpan? PressTime)> Calls { get; } = new List<(string Key, string Kind, TimeSpan? PressTime)>();
+
 		public void Tap(string key)
 		{
+			Calls.Add((key, "tap", null));
 		}
 
 		public void TapCombo(IReadOnlyList<string> keys)
@@ -554,14 +560,17 @@ public sealed class LostVoidContextTests
 
 		public void Press(string key, TimeSpan? pressTime = null)
 		{
+			Calls.Add((key, "press", pressTime));
 		}
 
 		public void Release(string key)
 		{
+			Calls.Add((key, "release", null));
 		}
 
 		public void Reset()
 		{
+			Calls.Clear();
 		}
 	}
 
@@ -1970,6 +1979,197 @@ public sealed class LostVoidContextTests
 	}
 
 	[Fact]
+	public async Task RunLevel_LockedTargetWinsWhenCurrentTargetDriftsAfterInteract()
+	{
+		string rootDirectory = CreateTempRoot();
+		try
+		{
+			using ZContext context = new ZContext(new OneDragonEnvironment(rootDirectory));
+			ScriptedLostVoidRunLevelRuntime runtime = new ScriptedLostVoidRunLevelRuntime();
+			LostVoidRunLevel operation = new LostVoidRunLevel(context, new LostVoidRunRecord(new LostVoidConfig()), "挚交会谈", runtime);
+			LostVoidInteractTarget targetA = new LostVoidInteractTarget("玛琳", "感叹号", isNpc: true);
+			LostVoidInteractTarget targetB = new LostVoidInteractTarget("奥菲莉亚", "感叹号", isNpc: true);
+			runtime.TryInteractResult = LostVoidTryInteractResult.Wait("交互", targetA);
+			OperationRoundResult first = await InvokeTryInteractAsync(operation);
+			Assert.Equal(OperationRoundResultKind.Wait, first.Kind);
+			Assert.Same(targetA, GetPrivateField<LostVoidInteractTarget?>(operation, "_lockedInteractTarget"));
+			runtime.TryInteractResult = LostVoidTryInteractResult.Wait("交互", targetB);
+			OperationRoundResult second = await InvokeTryInteractAsync(operation);
+			Assert.Equal(OperationRoundResultKind.Wait, second.Kind);
+			Assert.Same(targetB, operation.InteractTarget);
+			Assert.Same(targetA, GetPrivateField<LostVoidInteractTarget?>(operation, "_lockedInteractTarget"));
+			runtime.AfterInteractState = new LostVoidAfterInteractState(InNormalWorld: true);
+			OperationRoundResult after = await InvokeAfterInteractAsync(operation);
+			Assert.True(after.IsSuccess);
+			Assert.Equal("感叹号:玛琳", operation.InteractedTargetKeyList.Single());
+			Assert.DoesNotContain("感叹号:奥菲莉亚", operation.InteractedTargetKeyList);
+			Assert.Null(GetPrivateField<LostVoidInteractTarget?>(operation, "_lockedInteractTarget"));
+		}
+		finally
+		{
+			Directory.Delete(rootDirectory, recursive: true);
+		}
+	}
+
+	[Fact]
+	public async Task RunLevel_LockRetainedWhenInteractNotCompleted()
+	{
+		string rootDirectory = CreateTempRoot();
+		try
+		{
+			using ZContext context = new ZContext(new OneDragonEnvironment(rootDirectory));
+			ScriptedLostVoidRunLevelRuntime runtime = new ScriptedLostVoidRunLevelRuntime();
+			LostVoidRunLevel operation = new LostVoidRunLevel(context, new LostVoidRunRecord(new LostVoidConfig()), "挚交会谈", runtime);
+			LostVoidInteractTarget targetA = new LostVoidInteractTarget("玛琳", "感叹号", isNpc: true);
+			runtime.TryInteractResult = LostVoidTryInteractResult.Wait("交互", targetA);
+			await InvokeTryInteractAsync(operation);
+			Assert.Same(targetA, GetPrivateField<LostVoidInteractTarget?>(operation, "_lockedInteractTarget"));
+			runtime.AfterInteractState = new LostVoidAfterInteractState(InNormalWorld: false);
+			OperationRoundResult after = await InvokeAfterInteractAsync(operation);
+			Assert.Equal(OperationRoundResultKind.Retry, after.Kind);
+			Assert.Equal("等待画面返回", after.Status);
+			Assert.Same(targetA, GetPrivateField<LostVoidInteractTarget?>(operation, "_lockedInteractTarget"));
+			Assert.Empty(operation.InteractedTargetKeyList);
+			Assert.Equal(0, runtime.MoveAfterInteractCallCount);
+		}
+		finally
+		{
+			Directory.Delete(rootDirectory, recursive: true);
+		}
+	}
+
+	[Fact]
+	public async Task RunLevel_DuplicateObjectMovesAwayThenFailsWithoutLocking()
+	{
+		string rootDirectory = CreateTempRoot();
+		try
+		{
+			using ZContext context = new ZContext(new OneDragonEnvironment(rootDirectory));
+			ScriptedLostVoidRunLevelRuntime runtime = new ScriptedLostVoidRunLevelRuntime();
+			LostVoidRunLevel operation = new LostVoidRunLevel(context, new LostVoidRunRecord(new LostVoidConfig()), "挚交会谈", runtime);
+			LostVoidInteractTarget targetA = new LostVoidInteractTarget("玛琳", "感叹号", isNpc: true);
+			runtime.TryInteractResult = LostVoidTryInteractResult.Fail("重复交互对象", targetA);
+			OperationRoundResult result = await InvokeTryInteractAsync(operation);
+			Assert.Equal(OperationRoundResultKind.Fail, result.Kind);
+			Assert.Equal("重复交互对象", result.Status);
+			Assert.Equal(1, runtime.MoveAfterInteractCallCount);
+			Assert.Null(GetPrivateField<LostVoidInteractTarget?>(operation, "_lockedInteractTarget"));
+		}
+		finally
+		{
+			Directory.Delete(rootDirectory, recursive: true);
+		}
+	}
+
+	[Fact]
+	public async Task RunLevel_MalinCompletesSupplementEncounterVisitCategory()
+	{
+		string rootDirectory = CreateTempRoot();
+		try
+		{
+			using ZContext context = new ZContext(new OneDragonEnvironment(rootDirectory));
+			ScriptedLostVoidRunLevelRuntime runtime = new ScriptedLostVoidRunLevelRuntime();
+			LostVoidRunLevel operation = new LostVoidRunLevel(context, new LostVoidRunRecord(new LostVoidConfig()), "挚交会谈", runtime);
+			LostVoidInteractTarget malin = new LostVoidInteractTarget("玛琳", "感叹号", isNpc: true);
+			runtime.TryInteractResult = LostVoidTryInteractResult.Wait("交互", malin);
+			await InvokeTryInteractAsync(operation);
+			runtime.AfterInteractState = new LostVoidAfterInteractState(InNormalWorld: true);
+			OperationRoundResult after = await InvokeAfterInteractAsync(operation);
+			Assert.True(after.IsSuccess);
+			Assert.Equal("感叹号:玛琳", operation.InteractedTargetKeyList.Single());
+			Assert.Contains("偶遇事件", operation.HadBeenList);
+			Assert.Null(GetPrivateField<LostVoidInteractTarget?>(operation, "_lockedInteractTarget"));
+		}
+		finally
+		{
+			Directory.Delete(rootDirectory, recursive: true);
+		}
+	}
+
+	[Fact]
+	public async Task ScreenRunLevelRuntime_EntryLayerSkipsDuplicateInteractGuard()
+	{
+		string rootDirectory = CreateTempRoot();
+		try
+		{
+			WriteLostVoidInteractOcrScreenYaml(rootDirectory);
+			using ZContext context = new ZContext(new OneDragonEnvironment(rootDirectory, rootDirectory));
+			using TestScreenshotController controller = new TestScreenshotController();
+			context.AttachController(controller);
+			SequenceOcrMatcher matcher = new SequenceOcrMatcher(new IReadOnlyList<OcrMatchResult>[2]
+			{
+				new OcrMatchResult[] { Ocr("交互") },
+				new OcrMatchResult[] { Ocr("玛琳") }
+			});
+			context.OcrService.Matcher = matcher;
+			context.ScreenContext.Reload();
+			LostVoidRunLevel operation = new LostVoidRunLevel(context, new LostVoidRunRecord(new LostVoidConfig()), "入口");
+			using Mat screen = new Mat(new Size(320, 240), MatType.CV_8UC3, Scalar.Black);
+			LostVoidTryInteractResult result = await ScreenLostVoidRunLevelRuntime.Instance.TryInteractAsync(operation, null, new string[1] { "感叹号:玛琳" }, interactAttempted: false, screen, CancellationToken.None);
+			Assert.Equal(LostVoidTryInteractKind.Retry, result.Kind);
+			Assert.Equal("未接入ZZZ控制器", result.Status);
+			Assert.Equal(2, matcher.OcrCallCount);
+		}
+		finally
+		{
+			Directory.Delete(rootDirectory, recursive: true);
+		}
+	}
+
+	[Fact]
+	public async Task ScreenRunLevelRuntime_NonEntryDuplicateInteractFails()
+	{
+		string rootDirectory = CreateTempRoot();
+		try
+		{
+			WriteLostVoidInteractOcrScreenYaml(rootDirectory);
+			using ZContext context = new ZContext(new OneDragonEnvironment(rootDirectory, rootDirectory));
+			using TestScreenshotController controller = new TestScreenshotController();
+			context.AttachController(controller);
+			SequenceOcrMatcher matcher = new SequenceOcrMatcher(new IReadOnlyList<OcrMatchResult>[2]
+			{
+				new OcrMatchResult[] { Ocr("交互") },
+				new OcrMatchResult[] { Ocr("玛琳") }
+			});
+			context.OcrService.Matcher = matcher;
+			context.ScreenContext.Reload();
+			LostVoidRunLevel operation = new LostVoidRunLevel(context, new LostVoidRunRecord(new LostVoidConfig()), "挚交会谈");
+			using Mat screen = new Mat(new Size(320, 240), MatType.CV_8UC3, Scalar.Black);
+			LostVoidTryInteractResult result = await ScreenLostVoidRunLevelRuntime.Instance.TryInteractAsync(operation, null, new string[1] { "感叹号:玛琳" }, interactAttempted: false, screen, CancellationToken.None);
+			Assert.Equal(LostVoidTryInteractKind.Fail, result.Kind);
+			Assert.Equal("重复交互对象", result.Status);
+			Assert.NotNull(result.Target);
+			Assert.Equal("玛琳", result.Target.Name);
+			Assert.Equal(2, matcher.OcrCallCount);
+		}
+		finally
+		{
+			Directory.Delete(rootDirectory, recursive: true);
+		}
+	}
+
+	[Fact]
+	public void ScreenRunLevelRuntime_OpheliaEntryFallbackMovesBackAndFlagsTalked()
+	{
+		string rootDirectory = CreateTempRoot();
+		try
+		{
+			using ZContext context = new ZContext(new OneDragonEnvironment(rootDirectory));
+			RecordingButtonController buttons = new RecordingButtonController();
+			context.AttachController(new ZPcController(new GameConfig(), null, 1920, 1080, null, new RecordingInputController(buttons), null, buttons, null, null, skipForegroundActivation: true));
+			LostVoidRunLevel operation = new LostVoidRunLevel(context, new LostVoidRunRecord(new LostVoidConfig()), "入口");
+			LostVoidInteractTarget ophelia = new LostVoidInteractTarget("奥菲莉亚", "感叹号", isNpc: true);
+			ScreenLostVoidRunLevelRuntime.Instance.MoveAfterInteract(operation, ophelia);
+			Assert.True(operation.AoFeiLiYaTalked);
+			Assert.Contains(buttons.Calls, call => call.Key == "s" && call.Kind == "press" && call.PressTime == TimeSpan.FromSeconds(2));
+		}
+		finally
+		{
+			Directory.Delete(rootDirectory, recursive: true);
+		}
+	}
+
+	[Fact]
 	public async Task ScreenRunLevelRuntime_RestartForRetryAsync_RunsRestartInBattle()
 	{
 		string rootDirectory = CreateTempRoot();
@@ -3042,6 +3242,20 @@ public sealed class LostVoidContextTests
 		return await task;
 	}
 
+	private static async Task<OperationRoundResult> InvokeTryInteractAsync(LostVoidRunLevel operation)
+	{
+		MethodInfo method = typeof(LostVoidRunLevel).GetMethod("TryInteractAsync", BindingFlags.Instance | BindingFlags.NonPublic);
+		Task<OperationRoundResult> task = Assert.IsAssignableFrom<Task<OperationRoundResult>>(method.Invoke(operation, null));
+		return await task;
+	}
+
+	private static async Task<OperationRoundResult> InvokeAfterInteractAsync(LostVoidRunLevel operation)
+	{
+		MethodInfo method = typeof(LostVoidRunLevel).GetMethod("AfterInteractAsync", BindingFlags.Instance | BindingFlags.NonPublic);
+		Task<OperationRoundResult> task = Assert.IsAssignableFrom<Task<OperationRoundResult>>(method.Invoke(operation, null));
+		return await task;
+	}
+
 	private static async Task<OperationRoundResult> InvokeHandleFindTargetFailAsync(LostVoidRunLevel operation)
 	{
 		MethodInfo method = typeof(LostVoidRunLevel).GetMethod("HandleFindTargetFailAsync", BindingFlags.Instance | BindingFlags.NonPublic);
@@ -3121,6 +3335,11 @@ public sealed class LostVoidContextTests
 		target.GetType().GetField(fieldName, BindingFlags.Instance | BindingFlags.NonPublic).SetValue(target, value);
 	}
 
+	private static T GetPrivateField<T>(object target, string fieldName)
+	{
+		return (T)target.GetType().GetField(fieldName, BindingFlags.Instance | BindingFlags.NonPublic).GetValue(target);
+	}
+
 	private static void WriteLostVoidData(string rootDirectory)
 	{
 		string[] buffer = new string[5];
@@ -3169,6 +3388,14 @@ public sealed class LostVoidContextTests
 		string text = Path.Combine(rootDirectory, "assets", "game_data", "screen_info");
 		Directory.CreateDirectory(text);
 		File.WriteAllText(Path.Combine(text, "_od_merged.yml"), "- screen_id: battle\n  screen_name: 战斗画面\n  area_list:\n    - area_name: 按键-普通攻击\n      pc_rect: [0, 0, 100, 100]\n    - area_name: 按键-交互\n      pc_rect: [0, 0, 100, 100]\n- screen_id: lost_void_common\n  screen_name: 迷失之地-通用选择\n  app_id: lost_void\n  area_list:\n    - area_name: 按钮-确定\n      id_mark: true\n      pc_rect: [0, 0, 100, 40]\n      text: 确定\n    - area_name: 区域-标题\n      pc_rect: [0, 40, 200, 80]\n- screen_id: lost_void_gear\n  screen_name: 迷失之地-武备选择\n  app_id: lost_void\n  area_list:\n    - area_name: 按钮-携带\n      id_mark: true\n      pc_rect: [0, 0, 100, 40]\n      text: 携带\n- screen_id: lost_void_result\n  screen_name: 迷失之地-挑战结果\n  app_id: lost_void\n  area_list:\n    - area_name: 按钮-完成\n      id_mark: true\n      pc_rect: [0, 0, 100, 40]\n      text: 完成\n- screen_id: lost_void_battle_fail\n  screen_name: 迷失之地-战斗失败\n  app_id: lost_void\n  area_list:\n    - area_name: 按钮-撤退\n      id_mark: true\n      pc_rect: [0, 0, 100, 40]\n      text: 撤退");
+	}
+
+	private static void WriteLostVoidInteractOcrScreenYaml(string rootDirectory)
+	{
+		string text = Path.Combine(rootDirectory, "assets", "game_data", "screen_info");
+		Directory.CreateDirectory(text);
+		File.WriteAllText(Path.Combine(text, "battle.yml"), "screen_id: battle\nscreen_name: 战斗画面\narea_list:\n  - area_name: 按键-交互\n    pc_rect: [0, 0, 100, 100]\n    text: 交互\n    lcs_percent: 0.5");
+		File.WriteAllText(Path.Combine(text, "lost_void_normal_world.yml"), "screen_id: lost_void_normal_world\nscreen_name: 迷失之地-大世界\napp_id: lost_void\narea_list:\n  - area_name: 区域-交互文本\n    pc_rect: [0, 0, 200, 80]");
 	}
 
 	private static void WriteLostVoidCommonSelectionScreenYaml(string rootDirectory)

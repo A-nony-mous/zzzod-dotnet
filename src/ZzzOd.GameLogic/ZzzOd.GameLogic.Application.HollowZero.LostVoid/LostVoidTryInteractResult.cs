@@ -19,8 +19,8 @@ public sealed record LostVoidTryInteractResult(LostVoidTryInteractKind Kind, str
 		return new LostVoidTryInteractResult(LostVoidTryInteractKind.Success, status);
 	}
 
-	public static LostVoidTryInteractResult Fail(string status)
+	public static LostVoidTryInteractResult Fail(string status, LostVoidInteractTarget? target = null)
 	{
-		return new LostVoidTryInteractResult(LostVoidTryInteractKind.Fail, status);
+		return new LostVoidTryInteractResult(LostVoidTryInteractKind.Fail, status, target);
 	}
 }

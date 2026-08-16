@@ -194,12 +194,12 @@ public sealed class ScreenLostVoidRunLevelRuntime : ILostVoidRunLevelRuntime
 			Thread.Sleep(TimeSpan.FromMilliseconds(500L));
 			using Mat mat = Screenshot(operation.GameContext);
 			LostVoidInteractTarget lostVoidInteractTarget = ((mat == null) ? null : MatchCurrentInteractTarget(operation.GameContext, mat));
-			if (lostVoidInteractTarget != null)
+			if (lostVoidInteractTarget != null && !string.Equals(operation.RegionType, "入口", StringComparison.Ordinal))
 			{
 				string interactTargetKey = operation.GetInteractTargetKey(lostVoidInteractTarget);
 				if (interactedTargetKeys.Contains<string>(interactTargetKey, StringComparer.Ordinal))
 				{
-					return Task.FromResult(LostVoidTryInteractResult.Fail("重复交互对象"));
+					return Task.FromResult(LostVoidTryInteractResult.Fail("重复交互对象", lostVoidInteractTarget));
 				}
 			}
 			if (!(operation.GameContext.Controller is IZzzControllerActions zzzControllerActions))
@@ -331,7 +331,7 @@ public sealed class ScreenLostVoidRunLevelRuntime : ILostVoidRunLevelRuntime
 		bool challengeResultTitleFound = FindArea(operation.GameContext, screen, "迷失之地-挑战结果", "标题-挑战结果");
 		bool challengeResultConfirmAvailable = challengeResultTitleFound && FindArea(operation.GameContext, screen, "迷失之地-挑战结果", "按钮-确定");
 		bool challengeResultFinishAvailable = challengeResultTitleFound && FindArea(operation.GameContext, screen, "迷失之地-挑战结果", "按钮-完成");
-		return Task.FromResult(new LostVoidAfterInteractState(inNormalWorld, challengeResultConfirmAvailable, challengeResultFinishAvailable));
+		return Task.FromResult(new LostVoidAfterInteractState(inNormalWorld, challengeResultConfirmAvailable, challengeResultFinishAvailable, challengeResultTitleFound));
 	}
 
 	public void MoveAfterInteract(LostVoidRunLevel operation, LostVoidInteractTarget? currentTarget)
@@ -342,10 +342,38 @@ public sealed class ScreenLostVoidRunLevelRuntime : ILostVoidRunLevelRuntime
 		}
 		if (string.Equals(operation.RegionType, "入口", StringComparison.Ordinal))
 		{
-			operation.GameContext.AutoBattleContext.MoveS(press: true, TimeSpan.FromSeconds(2L), release: true);
-			if (currentTarget.IsNpc && string.Equals(currentTarget.Name, "神出鬼没的研究员", StringComparison.Ordinal))
+			if (currentTarget.IsNpc)
 			{
-				operation.GameContext.AutoBattleContext.MoveD(press: true, TimeSpan.FromMilliseconds(500L), release: true);
+				bool defaultMoveBack = false;
+				if (string.Equals(currentTarget.Name, "奥菲莉亚", StringComparison.Ordinal) && !operation.AoFeiLiYaTalked)
+				{
+					operation.AoFeiLiYaTalked = true;
+					if (!DetectEntryWithInteract(operation))
+					{
+						// 开局右侧只有一个 NPC，交互完正常后退。
+						defaultMoveBack = true;
+					}
+					else
+					{
+						// 两个 NPC 靠在一起时的寻路逻辑：先与奥菲莉亚贴贴，再左转利用交互机制与蕾交互。
+						operation.GameContext.AutoBattleContext.MoveW(press: true, TimeSpan.FromMilliseconds(300L), release: true);
+						Thread.Sleep(TimeSpan.FromMilliseconds(200L));
+						operation.GameContext.AutoBattleContext.MoveA(press: true, TimeSpan.FromMilliseconds(100L), release: true);
+					}
+				}
+				else if (string.Equals(currentTarget.Name, "神出鬼没的研究员", StringComparison.Ordinal))
+				{
+					// 研究员交互后往右一点方便走到白点位置。
+					operation.GameContext.AutoBattleContext.MoveD(press: true, TimeSpan.FromMilliseconds(500L), release: true);
+				}
+				else
+				{
+					defaultMoveBack = true;
+				}
+				if (defaultMoveBack)
+				{
+					operation.GameContext.AutoBattleContext.MoveS(press: true, TimeSpan.FromSeconds(2L), release: true);
+				}
 			}
 		}
 		else if (string.Equals(operation.RegionType, "挚交会谈", StringComparison.Ordinal))
@@ -816,5 +844,25 @@ public sealed class ScreenLostVoidRunLevelRuntime : ILostVoidRunLevelRuntime
 			select item.ClassName into label
 			where label.Length <= 5 || !ignoreList.Contains<string>(label.Substring(5), StringComparer.Ordinal)
 			select label).ToArray();
+	}
+
+	/// <summary>
+	/// 重新截图并识别当前画面是否还有交互对象（入口层双 NPC 场景下判断是否要与蕾交互）。
+	/// </summary>
+	private static bool DetectEntryWithInteract(LostVoidRunLevel operation)
+	{
+		LostVoidDetector? detector = operation.GameContext.LostVoid.Detector;
+		if (detector == null)
+		{
+			return false;
+		}
+		using Mat screen = Screenshot(operation.GameContext);
+		if (screen == null)
+		{
+			return false;
+		}
+		IReadOnlyList<string>? labelList = BuildLabelList(detector, operation.HadBeenList);
+		YoloDetectFrameResult detectResult = detector.Run(screen, 0.6f, 0.5f, null, labelList, null, null, LostVoidDetector.OverlaySourceNavigation);
+		return detector.IsFrameWith(detectResult, LostVoidDetector.ClassInteract);
 	}
 }

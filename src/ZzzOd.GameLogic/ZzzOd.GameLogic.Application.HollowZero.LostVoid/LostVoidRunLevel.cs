@@ -104,11 +104,16 @@ public sealed class LostVoidRunLevel : ZOperation
 
 	private readonly List<string> _interactedTargetKeyList = new List<string>();
 
+	private LostVoidInteractTarget? _lockedInteractTarget;
+
 	public string RegionType { get; private set; }
 
 	public ZContext GameContext => base.ZContext;
 
 	public LostVoidInteractTarget? InteractTarget { get; private set; }
+
+	/// <summary>入口层是否已与奥菲莉亚对话过（用于两个 NPC 靠在一起时判断当前交互对象）。</summary>
+	public bool AoFeiLiYaTalked { get; internal set; }
 
 	public bool BossPreBattle => _bossPreBattle;
 
@@ -206,17 +211,28 @@ public sealed class LostVoidRunLevel : ZOperation
 		return target.Icon + ":" + target.Name;
 	}
 
-	public void RecordAfterInteract(bool inNormalWorld)
+	public void RecordAfterInteract(bool inNormalWorld, bool challengeResult, bool nextLevel)
 	{
-		if (InteractTarget != null)
+		LostVoidInteractTarget completedInteractTarget = _lockedInteractTarget ?? InteractTarget;
+		if (inNormalWorld || challengeResult || nextLevel)
 		{
-			string interactTargetKey = GetInteractTargetKey(InteractTarget);
-			if (!_interactedTargetKeyList.Contains<string>(interactTargetKey, StringComparer.Ordinal))
+			if (completedInteractTarget != null)
 			{
-				_interactedTargetKeyList.Add(interactTargetKey);
+				string interactTargetKey = GetInteractTargetKey(completedInteractTarget);
+				if (!_interactedTargetKeyList.Contains<string>(interactTargetKey, StringComparer.Ordinal))
+				{
+					_interactedTargetKeyList.Add(interactTargetKey);
+				}
+				if (_lockedInteractTarget != null
+					&& string.Equals(_lockedInteractTarget.Name, "玛琳", StringComparison.Ordinal)
+					&& !_hadBeenList.Contains<string>("偶遇事件", StringComparer.Ordinal))
+				{
+					_hadBeenList.Add("偶遇事件");
+				}
 			}
+			_lockedInteractTarget = null;
 		}
-		if (inNormalWorld && InteractTarget != null && string.Equals(InteractTarget.Name, "奥菲莉亚", StringComparison.Ordinal))
+		if (inNormalWorld && completedInteractTarget != null && string.Equals(completedInteractTarget.Name, "奥菲莉亚", StringComparison.Ordinal))
 		{
 			base.ZContext.LostVoid.HadInteractedOpheliaOnCurrentLevel = true;
 		}
@@ -433,9 +449,25 @@ public sealed class LostVoidRunLevel : ZOperation
 	[OperationNode("尝试交互")]
 	private async Task<OperationRoundResult> TryInteractAsync()
 	{
+		bool wasAttempted = _interactAttempted;
 		LostVoidTryInteractResult result = await _runtime.TryInteractAsync(this, InteractTarget, _interactedTargetKeyList, _interactAttempted, base.LastScreenshot, _cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
 		InteractTarget = result.Target ?? InteractTarget;
 		_interactAttempted = result.InteractAttempted;
+		if (result.Kind == LostVoidTryInteractKind.Wait)
+		{
+			if (!wasAttempted)
+			{
+				_lockedInteractTarget = null;
+			}
+			if (result.Target != null && _lockedInteractTarget == null)
+			{
+				_lockedInteractTarget = result.Target;
+			}
+		}
+		else if (result.Kind == LostVoidTryInteractKind.Fail && string.Equals(result.Status, "重复交互对象", StringComparison.Ordinal))
+		{
+			_runtime.MoveAfterInteract(this, InteractTarget);
+		}
 		LostVoidTryInteractKind kind = result.Kind;
 		if (1 == 0)
 		{
@@ -493,7 +525,7 @@ public sealed class LostVoidRunLevel : ZOperation
 	private async Task<OperationRoundResult> AfterInteractAsync()
 	{
 		LostVoidAfterInteractState state = await _runtime.GetAfterInteractStateAsync(this, InteractTarget, base.LastScreenshot, _cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
-		RecordAfterInteract(state.InNormalWorld);
+		RecordAfterInteract(state.InNormalWorld, state.ChallengeResultTitleFound, InteractTarget?.IsEntry == true);
 		if (state.InNormalWorld)
 		{
 			if (!_bossPreBattle || InteractTarget == null || InteractTarget.AfterBattle)
