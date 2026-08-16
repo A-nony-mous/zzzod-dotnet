@@ -5,6 +5,7 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using OneDragon.Core.Events;
+using OneDragon.Core.Ocr;
 using OneDragon.Core.Runtime;
 using OneDragon.Core.Screen;
 using OpenCvSharp;
@@ -58,6 +59,7 @@ public sealed class ImageAnalysisPipelineRunner
 		Mat mat = screen.Clone();
 		Mat mat2 = null;
 		Point[][] contours = Array.Empty<Point[]>();
+		IReadOnlyList<OcrMatchResult> ocrResults = Array.Empty<OcrMatchResult>();
 		int offsetX = 0;
 		int offsetY = 0;
 		try
@@ -105,6 +107,10 @@ public sealed class ImageAnalysisPipelineRunner
 						Cv2.CvtColor(mat, mat7, ColorConversionCodes.BGR2HSV);
 						Mat mat8 = new Mat();
 						Cv2.InRange(mat7, new Scalar(Math.Clamp(array[0] - array2[0], 0, 179), Math.Clamp(array[1] - array2[1], 0, 255), Math.Clamp(array[2] - array2[2], 0, 255)), new Scalar(Math.Clamp(array[0] + array2[0], 0, 179), Math.Clamp(array[1] + array2[1], 0, 255), Math.Clamp(array[2] + array2[2], 0, 255)), mat8);
+						Mat mat9 = new Mat();
+						Cv2.BitwiseAnd(mat, mat, mat9, mat8);
+						mat.Dispose();
+						mat = mat9;
 						mat2?.Dispose();
 						mat2 = mat8;
 					}
@@ -140,6 +146,19 @@ public sealed class ImageAnalysisPipelineRunner
 						}
 						mat2.Dispose();
 						mat2 = mat6;
+						Mat mat10 = new Mat();
+						Cv2.BitwiseAnd(mat, mat, mat10, mat2);
+						mat.Dispose();
+						mat = mat10;
+					}
+					break;
+				}
+				case "OCR识别":
+				{
+					ocrResults = context.OcrService.GetOcrResultListWithoutOverlayVision(mat);
+					if (Bool(item, "draw_text_box", true))
+					{
+						context.OcrService.PublishOverlayCropResults(ocrResults, screen.Width, screen.Height, offsetX, offsetY);
 					}
 					break;
 				}
@@ -185,7 +204,7 @@ public sealed class ImageAnalysisPipelineRunner
 				return new ImageAnalysisContour(contour, new Rect(rect.X + offsetX, rect.Y + offsetY, rect.Width, rect.Height), Cv2.ContourArea(contour));
 			}).ToArray();
 			PublishContourVision(context, pipelineName, pipelinePath, screen, contours2);
-			return ImageAnalysisPipelineRunResult.Success(pipelinePath, contours2);
+			return ImageAnalysisPipelineRunResult.Success(pipelinePath, contours2, ocrResults);
 		}
 		catch (Exception ex2)
 		{
@@ -274,6 +293,19 @@ public sealed class ImageAnalysisPipelineRunner
 			return defaultValue;
 		}
 		return Convert.ToDouble(value, CultureInfo.InvariantCulture);
+	}
+
+	private static bool Bool(ImageAnalysisPipelineStep step, string key, bool defaultValue)
+	{
+		if (!step.Params.TryGetValue(key, out object value) || value == null)
+		{
+			return defaultValue;
+		}
+		if (value is bool boolean)
+		{
+			return boolean;
+		}
+		return bool.TryParse(Convert.ToString(value, CultureInfo.InvariantCulture), out bool parsed) ? parsed : defaultValue;
 	}
 
 	private static int[] IntTuple(ImageAnalysisPipelineStep step, string key)

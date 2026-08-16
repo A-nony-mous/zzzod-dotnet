@@ -1,14 +1,17 @@
 using System;
 using System.Globalization;
+using System.Linq;
 using System.Threading.Tasks;
 using OneDragon.Core.Abstractions.Operations;
 using OneDragon.Core.Operations;
 using OneDragon.Core.Screen;
 using OneDragon.Core.Utils;
+using OneDragon.Core.Ocr;
 using OpenCvSharp;
 using ZzzOd.GameLogic.Context;
 using ZzzOd.GameLogic.Operations;
 using ZzzOd.GameLogic.Operations.Compendium;
+using ZzzOd.GameLogic.Vision;
 
 namespace ZzzOd.GameLogic.Application.ChargePlan;
 
@@ -55,6 +58,8 @@ public sealed class ChargePlanOperation : ZOperation
 	private readonly Func<ZContext, Task<OperationResult>> _doubleRewardTransportAsync;
 
 	private readonly Func<DateTimeOffset> _now;
+
+	private string? _resourceReadingFailure;
 
 	private int _batteryCharge;
 
@@ -145,10 +150,11 @@ public sealed class ChargePlanOperation : ZOperation
 	[OperationNode("识别电量")]
 	public OperationRoundResult CheckBatteryCharge()
 	{
+		_resourceReadingFailure = null;
 		ChargePlanResourceReading? reading = _resourceReader(base.ZContext);
 		if (reading == null)
 		{
-			return RoundRetry("未识别到电量", null, TimeSpan.FromSeconds(1L));
+			return RoundRetry(_resourceReadingFailure ?? "未识别到电量", null, TimeSpan.FromSeconds(1L));
 		}
 		_batteryCharge = reading.BatteryCharge;
 		_backupBatteryCharge = reading.BackupBatteryCharge;
@@ -450,46 +456,46 @@ public sealed class ChargePlanOperation : ZOperation
 	{
 		if (base.LastScreenshot == null)
 		{
+			_resourceReadingFailure = "电量检测截图缺失";
 			return null;
 		}
 		return ReadResourcesFromCompendium(context, base.LastScreenshot);
 	}
 
-	private static ChargePlanResourceReading? ReadResourcesFromCompendium(ZContext context, Mat screen)
+	private ChargePlanResourceReading? ReadResourcesFromCompendium(ZContext context, Mat screen)
 	{
-		OneDragon.Core.Screen.ScreenArea area = context.ScreenContext.GetArea("快捷手册", "资源栏");
-		if (area == null)
+		ImageAnalysisPipelineRunResult pipeline = new ImageAnalysisPipelineRunner().Run(context, "电量检测", screen);
+		if (!pipeline.IsSuccess)
 		{
+			_resourceReadingFailure = pipeline.Status;
 			return null;
 		}
-		using Mat part = CvImageUtils.Crop(screen, area.Rect);
-		System.Collections.Generic.IReadOnlyList<int> lower = area.ColorRangeLower;
-		System.Collections.Generic.IReadOnlyList<int> upper = area.ColorRangeUpper;
-		using Mat mask = CreateRgbRangeMask(part, lower, upper);
-		using Mat colored = new Mat();
-		Cv2.CvtColor(mask, colored, ColorConversionCodes.GRAY2RGB);
-		// 整栏文字检测会被图标、分隔线和“/240”干扰，导致漏识或串位；
-		// 资源栏右对齐、数字变长向左推移，三个字段按电量 3 位、储蓄电量 4 位、以太电池 3 位的上限预留，互不串入，
-		// 因此按固定偏移切成三个互不相交的字段后分别做单行识别。
-		(int X1, int Y1, int X2, int Y2)[] fieldOffsets = new (int, int, int, int)[3]
+		return ParseBatteryChargeOcr(pipeline.OcrResults);
+	}
+
+	internal static ChargePlanResourceReading ParseBatteryChargeOcr(IReadOnlyList<OcrMatchResult>? ocrResults)
+	{
+		int[] fieldCenters = { 173, 348, 485 };
+		(double X, int Value)?[] slotValues = new (double, int)?[fieldCenters.Length];
+		foreach (OcrMatchResult result in ocrResults ?? Array.Empty<OcrMatchResult>())
 		{
-			(75, 8, 225, 72),
-			(275, 8, 410, 72),
-			(425, 8, 535, 72),
-		};
-		int?[] values = new int?[3];
-		for (int i = 0; i < fieldOffsets.Length; i++)
-		{
-			(int x1, int y1, int x2, int y2) = fieldOffsets[i];
-			using Mat field = new Mat(colored, new OpenCvSharp.Rect(x1, y1, x2 - x1, y2 - y1));
-			string text = context.OcrService.RunOcrSingleLine(field, null, strictOneLine: true);
-			values[i] = StringUtils.GetPositiveDigits(text);
+			int? value = StringUtils.GetPositiveDigits((result.Text ?? string.Empty).Split('/')[0]);
+			if (!value.HasValue)
+			{
+				continue;
+			}
+			double center = result.X + result.Width / 2d;
+			int slot = Enumerable.Range(0, fieldCenters.Length).MinBy(index => Math.Abs(center - fieldCenters[index]));
+			double distance = Math.Abs(center - fieldCenters[slot]);
+			if (!slotValues[slot].HasValue || distance < Math.Abs(slotValues[slot]!.Value.X - fieldCenters[slot]))
+			{
+				slotValues[slot] = (center, value.Value);
+			}
 		}
-		if (!values[0].HasValue || !values[1].HasValue || !values[2].HasValue)
-		{
-			return null;
-		}
-		return new ChargePlanResourceReading(values[0].Value, values[1].Value, values[2].Value);
+		return new ChargePlanResourceReading(
+			slotValues[0] is { } first ? first.Value : 0,
+			slotValues[1] is { } second ? second.Value : 0,
+			slotValues[2] is { } third ? third.Value : 0);
 	}
 
 	internal static Mat CreateRgbRangeMask(Mat image, System.Collections.Generic.IReadOnlyList<int> lower, System.Collections.Generic.IReadOnlyList<int> upper)

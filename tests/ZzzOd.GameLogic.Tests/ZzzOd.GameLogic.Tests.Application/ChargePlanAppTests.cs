@@ -15,6 +15,7 @@ using Xunit;
 using ZzzOd.GameLogic.Application.ChargePlan;
 using ZzzOd.GameLogic.Context;
 using ZzzOd.GameLogic.Tests.TestSupport;
+using ZzzOd.GameLogic.Vision;
 
 namespace ZzzOd.GameLogic.Tests.Application;
 
@@ -77,6 +78,39 @@ public sealed class ChargePlanAppTests
 		{
 			string text = RunOcrSingleLine(image, threshold);
 			return new OcrMatchResult[] { new OcrMatchResult(0.99, 0, 0, image.Width, image.Height, text) };
+		}
+	}
+
+	private sealed class FixedOcrMatcher(IReadOnlyList<OcrMatchResult> results) : IOcrMatcher
+	{
+		public void UpdateUseGpu(bool useGpu)
+		{
+		}
+
+		public bool IsUseGpu() => false;
+
+		public bool InitModel(string? proxyUrl = null, string? ghProxyUrl = null, bool skipIfExisted = true, Action<double, string>? progressCallback = null) => true;
+
+		public string RunOcrSingleLine(Mat image, double? threshold = null, bool strictOneLine = true) => string.Concat(results.OrderBy(result => result.X).Select(result => result.Text));
+
+		public IReadOnlyDictionary<string, MatchResultList> RunOcr(Mat image, double? threshold = null, double mergeLineDistance = -1.0)
+		{
+			Dictionary<string, MatchResultList> map = new Dictionary<string, MatchResultList>(StringComparer.Ordinal);
+			foreach (OcrMatchResult result in Ocr(image, threshold.GetValueOrDefault(), mergeLineDistance))
+			{
+				if (!map.TryGetValue(result.Text, out MatchResultList? list))
+				{
+					list = new MatchResultList(onlyBest: false);
+					map[result.Text] = list;
+				}
+				list.Append(result, autoMerge: false);
+			}
+			return map;
+		}
+
+		public IReadOnlyList<OcrMatchResult> Ocr(Mat image, double threshold = 0.0, double mergeLineDistance = -1.0)
+		{
+			return results.Select(result => new OcrMatchResult(result.Confidence, result.X, result.Y, result.Width, result.Height, result.Text)).ToArray();
 		}
 	}
 
@@ -557,23 +591,22 @@ public sealed class ChargePlanAppTests
 	}
 
 	[Fact]
-	public void ChargePlanOperation_ReadResourcesCropsThreeFixedFieldsFromResourceBar()
+	public void ChargePlanOperation_ReadResourcesUsesBatteryPipelineAndAnchoredOcr()
 	{
 		OpenCvTestRuntime.RequireAvailable();
 		string text = CreateTempRoot();
 		try
 		{
 			WriteChargePlanScreenInfo(text);
+			WriteBatteryPipeline(text);
 			using ZContext zContext = new ZContext(new OneDragonEnvironment(text));
 			zContext.ScreenContext.Reload();
-			SizeAwareSingleLineMatcher sizeAwareSingleLineMatcher = new SizeAwareSingleLineMatcher((int width, int height) => (width, height) switch
+			zContext.OcrService.Matcher = new FixedOcrMatcher(new OcrMatchResult[]
 			{
-				(150, 64) => "100",
-				(135, 64) => "2400",
-				(110, 64) => "300",
-				_ => "999",
+				new OcrMatchResult(0.99, 150, 10, 46, 20, "100/240"),
+				new OcrMatchResult(0.99, 310, 10, 76, 20, "2400/2400"),
+				new OcrMatchResult(0.99, 460, 10, 50, 20, "300")
 			});
-			zContext.OcrService.Matcher = sizeAwareSingleLineMatcher;
 			ChargePlanOperation chargePlanOperation = new ChargePlanOperation(zContext, new ChargePlanConfig(), new ChargePlanRunRecord());
 			using Mat screen = new Mat(1080, 1920, MatType.CV_8UC3, Scalar.Black);
 			ChargePlanResourceReading? actual = chargePlanOperation.ReadResourcesForTesting(screen);
@@ -581,7 +614,50 @@ public sealed class ChargePlanAppTests
 			Assert.Equal(100, actual.BatteryCharge);
 			Assert.Equal(2400, actual.BackupBatteryCharge);
 			Assert.Equal(300, actual.EtherBattery);
-			Assert.Equal((110, 64), sizeAwareSingleLineMatcher.LastSize);
+		}
+		finally
+		{
+			Directory.Delete(text, recursive: true);
+		}
+	}
+
+	[Fact]
+	public void ChargePlanOperation_ParseBatteryChargeUsesLeftSideAndNearestCandidate()
+	{
+		ChargePlanResourceReading reading = ChargePlanOperation.ParseBatteryChargeOcr(new OcrMatchResult[]
+		{
+			new OcrMatchResult(0.99, 140, 0, 66, 20, "129/240"),
+			new OcrMatchResult(0.99, 315, 0, 66, 20, "2400/2400"),
+			new OcrMatchResult(0.99, 425, 0, 40, 20, "999"),
+			new OcrMatchResult(0.99, 455, 0, 60, 20, "300")
+		});
+
+		Assert.Equal(129, reading.BatteryCharge);
+		Assert.Equal(2400, reading.BackupBatteryCharge);
+		Assert.Equal(300, reading.EtherBattery);
+		Assert.Equal(new ChargePlanResourceReading(0, 0, 0), ChargePlanOperation.ParseBatteryChargeOcr(Array.Empty<OcrMatchResult>()));
+	}
+
+	[Fact]
+	public void ImageAnalysisPipelineRunner_ReportsMissingAndMalformedBatteryPipeline()
+	{
+		OpenCvTestRuntime.RequireAvailable();
+		string text = CreateTempRoot();
+		try
+		{
+			WriteChargePlanScreenInfo(text);
+			using ZContext context = new ZContext(new OneDragonEnvironment(text));
+			context.ScreenContext.Reload();
+			using Mat screen = new Mat(1080, 1920, MatType.CV_8UC3, Scalar.Black);
+			ImageAnalysisPipelineRunResult missing = new ImageAnalysisPipelineRunner().Run(context, "电量检测", screen);
+			Assert.False(missing.IsSuccess);
+			Assert.Contains("图像分析流水线缺失", missing.Status);
+
+			WriteBatteryPipeline(text);
+			File.WriteAllText(Path.Combine(text, "assets", "image_analysis_pipelines", "电量检测.yml"), "- step: 不存在的步骤\n");
+			ImageAnalysisPipelineRunResult malformed = new ImageAnalysisPipelineRunner().Run(context, "电量检测", screen);
+			Assert.False(malformed.IsSuccess);
+			Assert.Contains("图像分析步骤未支持", malformed.Status);
 		}
 		finally
 		{
@@ -787,6 +863,13 @@ public sealed class ChargePlanAppTests
 	{
 		string text = Path.Combine(rootDirectory, "assets", "game_data", "screen_info");
 		Directory.CreateDirectory(text);
-		File.WriteAllText(Path.Combine(text, "_od_merged.yml"), "- screen_id: compendium_train\n  screen_name: \"快捷手册\"\n  area_list:\n    - area_name: \"怪物卡双倍剩余次数\"\n      pc_rect: [30, 50, 70, 70]\n    - area_name: \"资源栏\"\n      pc_rect: [1220, 35, 1770, 110]\n      color_range: [[208, 208, 208], [255, 255, 255]]");
+		File.WriteAllText(Path.Combine(text, "compendium.yml"), "screen_id: compendium\nscreen_name: 快捷手册\narea_list:\n  - area_name: 怪物卡双倍剩余次数\n    pc_rect: [30, 50, 70, 70]\n  - area_name: 资源栏\n    pc_rect: [1220, 35, 1770, 110]\n    color_range: [[208, 208, 208], [255, 255, 255]]\n  - area_name: 以太电池\n    pc_rect: [1220, 35, 1770, 110]\n");
+	}
+
+	private static void WriteBatteryPipeline(string rootDirectory)
+	{
+		string text = Path.Combine(rootDirectory, "assets", "image_analysis_pipelines");
+		Directory.CreateDirectory(text);
+		File.WriteAllText(Path.Combine(text, "电量检测.yml"), "- step: 按区域裁剪\n  params:\n    screen_name: 快捷手册\n    area_name: 以太电池\n- step: HSV 范围过滤\n  params:\n    hsv_color: [160, 0, 255]\n    hsv_diff: [20, 10, 100]\n- step: OCR识别\n  params:\n    draw_text_box: false\n");
 	}
 }
