@@ -2235,7 +2235,20 @@ public sealed class LostVoidContextTests
 			Assert.True(result.IsSuccess);
 			Assert.Equal("通关", result.Status);
 			Assert.Equal("入口", result.Data);
-			Assert.Equal<List<string>>(new List<string>(7) { "等待加载", "确认大世界", "非战斗详细识别", "移动:0000-感叹号:True:False", "保存错误信息:执行超时", "停止自动战斗", "失败退出空洞" }, runtime.Calls);
+			// 移动节点超时统一路由到"处理寻路失败或阵亡"：共享 3 次重开预算，
+			// 前 3 次返回"准备重试"回到等待加载，第 4 次耗尽预算进入"准备最终退出"。
+			Assert.Equal<List<string>>(new List<string>(19)
+			{
+				"等待加载", "确认大世界", "非战斗详细识别", "移动:0000-感叹号:True:False",
+				"等待加载", "确认大世界", "非战斗详细识别", "移动:0000-感叹号:True:False",
+				"等待加载", "确认大世界", "非战斗详细识别", "移动:0000-感叹号:True:False",
+				"等待加载", "确认大世界", "非战斗详细识别", "移动:0000-感叹号:True:False",
+				"保存错误信息:准备最终退出",
+				"停止自动战斗",
+				"失败退出空洞"
+			}, runtime.Calls);
+			Assert.Equal(4, runtime.Calls.Count((string call) => call == "等待加载"));
+			Assert.Equal(1, runtime.Calls.Count((string call) => call == "保存错误信息:准备最终退出"));
 			Assert.Equal(1, controller.ClickCount);
 		}
 		finally
@@ -2267,8 +2280,20 @@ public sealed class LostVoidContextTests
 			Assert.True(result.IsSuccess);
 			Assert.Equal("通关", result.Status);
 			Assert.Equal("入口", result.Data);
-			Assert.Equal<List<string>>(new List<string>(5) { "等待加载", "确认大世界", "保存错误信息:执行超时", "停止自动战斗", "失败退出空洞" }, runtime.Calls);
+			// 非战斗识别超时同样路由到"处理寻路失败或阵亡"的共享预算：
+			// 4 次循环（3 次重试 + 1 次最终退出），每次在详细识别前即失败。
+			Assert.Equal<List<string>>(new List<string>(11)
+			{
+				"等待加载", "确认大世界",
+				"等待加载", "确认大世界",
+				"等待加载", "确认大世界",
+				"等待加载", "确认大世界",
+				"保存错误信息:准备最终退出",
+				"停止自动战斗",
+				"失败退出空洞"
+			}, runtime.Calls);
 			Assert.DoesNotContain("非战斗详细识别", (IEnumerable<string>)runtime.Calls);
+			Assert.Equal(4, runtime.Calls.Count((string call) => call == "确认大世界"));
 			Assert.Equal(1, controller.ClickCount);
 		}
 		finally
@@ -2356,6 +2381,125 @@ public sealed class LostVoidContextTests
 		Assert.True(completed.IsSuccess);
 		Assert.Equal("识别正在交互", completed.Status);
 		Assert.Equal(1, runtime.StopAutoBattleCount);
+	}
+
+	[Fact]
+	public async Task RunLevel_InBattleAgentDeadRequiresTwoConsecutiveFrames()
+	{
+		// 对齐参考：战斗中连续 2 次命中"战斗画面/代理人阵亡"才确认阵亡，停止自动战斗一次并进入阵亡流转。
+		using ZContext context = new ZContext(new OneDragonEnvironment(CreateTempRoot()));
+		ScriptedLostVoidRunLevelRuntime runtime = new ScriptedLostVoidRunLevelRuntime
+		{
+			BattleState = new LostVoidBattleState(CurrentFrameInBattle: true, AgentDead: true)
+		};
+		LostVoidRunLevel operation = new LostVoidRunLevel(context, new LostVoidRunRecord(new LostVoidConfig()), "挚交会谈", runtime);
+
+		OperationRoundResult single = await InvokeInBattleAsync(operation);
+		Assert.Equal(OperationRoundResultKind.Wait, single.Kind);
+		Assert.Equal(0, runtime.StopAutoBattleCount);
+
+		OperationRoundResult confirmed = await InvokeInBattleAsync(operation);
+		Assert.False(confirmed.IsSuccess);
+		Assert.Equal("代理人阵亡", confirmed.Status);
+		Assert.Equal(1, runtime.StopAutoBattleCount);
+	}
+
+	[Fact]
+	public async Task RunLevel_InBattleAgentDeadMissResetsConsecutiveCounter()
+	{
+		// 任一帧未命中阵亡就清零连续计数；命中/未命中/命中/命中 只在最后一对连续命中时触发。
+		using ZContext context = new ZContext(new OneDragonEnvironment(CreateTempRoot()));
+		ScriptedLostVoidRunLevelRuntime runtime = new ScriptedLostVoidRunLevelRuntime
+		{
+			BattleStates = new Queue<LostVoidBattleState>(new LostVoidBattleState[]
+			{
+				new(CurrentFrameInBattle: true, AgentDead: true),
+				new(CurrentFrameInBattle: true, AgentDead: false),
+				new(CurrentFrameInBattle: true, AgentDead: true),
+				new(CurrentFrameInBattle: true, AgentDead: true)
+			})
+		};
+		LostVoidRunLevel operation = new LostVoidRunLevel(context, new LostVoidRunRecord(new LostVoidConfig()), "挚交会谈", runtime);
+
+		Assert.Equal(OperationRoundResultKind.Wait, (await InvokeInBattleAsync(operation)).Kind);
+		Assert.Equal(OperationRoundResultKind.Wait, (await InvokeInBattleAsync(operation)).Kind);
+		Assert.Equal(OperationRoundResultKind.Wait, (await InvokeInBattleAsync(operation)).Kind);
+		OperationRoundResult confirmed = await InvokeInBattleAsync(operation);
+		Assert.False(confirmed.IsSuccess);
+		Assert.Equal("代理人阵亡", confirmed.Status);
+		Assert.Equal(1, runtime.StopAutoBattleCount);
+	}
+
+	[Fact]
+	public async Task RunLevel_InBattleAgentDeadCounterStaysIndependentFromNoInBattleCounter()
+	{
+		// 阵亡连续计数与脱战计数互不合并：YOLO 脱战帧跳过阵亡检查（不清零阵亡计数），
+		// 下一帧命中即凑齐连续两帧触发；确认帧提前返回，_noInBattleTimes 保持不变。
+		using ZContext context = new ZContext(new OneDragonEnvironment(CreateTempRoot()));
+		ScriptedLostVoidRunLevelRuntime runtime = new ScriptedLostVoidRunLevelRuntime
+		{
+			BattleStates = new Queue<LostVoidBattleState>(new LostVoidBattleState[]
+			{
+				new(CurrentFrameInBattle: true, AgentDead: true, NoLongerInBattleByDetection: false, DetectorChecked: true),
+				new(CurrentFrameInBattle: true, AgentDead: false, NoLongerInBattleByDetection: true, DetectorChecked: true),
+				new(CurrentFrameInBattle: true, AgentDead: true, NoLongerInBattleByDetection: false, DetectorChecked: true)
+			})
+		};
+		LostVoidRunLevel operation = new LostVoidRunLevel(context, new LostVoidRunRecord(new LostVoidConfig()), "挚交会谈", runtime);
+
+		Assert.Equal(OperationRoundResultKind.Wait, (await InvokeInBattleAsync(operation)).Kind);
+		Assert.Equal(0, operation.NoInBattleTimes);
+		Assert.Equal(OperationRoundResultKind.Wait, (await InvokeInBattleAsync(operation)).Kind);
+		Assert.Equal(1, operation.NoInBattleTimes);
+		OperationRoundResult confirmed = await InvokeInBattleAsync(operation);
+		Assert.Equal("代理人阵亡", confirmed.Status);
+		Assert.Equal(1, operation.NoInBattleTimes);
+		Assert.Equal(1, runtime.StopAutoBattleCount);
+	}
+
+	[Fact]
+	public async Task RunLevel_HandleFindTargetFailSharesRestartBudgetThenFinalExit()
+	{
+		// 处理寻路失败或阵亡 共享 3 次重开预算：耗尽后返回"准备最终退出"，
+		// 由 保存错误信息 接续最终退出流转。
+		using ZContext context = new ZContext(new OneDragonEnvironment(CreateTempRoot()));
+		ScriptedLostVoidRunLevelRuntime runtime = new ScriptedLostVoidRunLevelRuntime();
+		LostVoidRunLevel operation = new LostVoidRunLevel(context, new LostVoidRunRecord(new LostVoidConfig()), "挚交会谈", runtime);
+
+		Assert.Equal("准备重试", (await InvokeHandleFindTargetFailAsync(operation)).Status);
+		Assert.Equal("准备重试", (await InvokeHandleFindTargetFailAsync(operation)).Status);
+		Assert.Equal("准备重试", (await InvokeHandleFindTargetFailAsync(operation)).Status);
+		Assert.Equal("准备最终退出", (await InvokeHandleFindTargetFailAsync(operation)).Status);
+	}
+
+	[Fact]
+	public async Task RunLevel_MixedFailureSourcesShareRestartBudget()
+	{
+		// 不同失败来源（非战斗识别超时 / 战斗中阵亡）产生的失败轮都结算到同一个
+		// 重开预算：累计不足 3 时继续重试，达到 3 后任意来源再次失败即最终退出。
+		// （来源到处理节点的边由 LostVoidAppTests 的节点图断言覆盖。）
+		using ZContext context = new ZContext(new OneDragonEnvironment(CreateTempRoot()));
+		ScriptedLostVoidRunLevelRuntime runtime = new ScriptedLostVoidRunLevelRuntime
+		{
+			BattleState = new LostVoidBattleState(CurrentFrameInBattle: true, AgentDead: true)
+		};
+		LostVoidRunLevel operation = new LostVoidRunLevel(context, new LostVoidRunRecord(new LostVoidConfig()), "挚交会谈", runtime);
+
+		Assert.Equal("执行超时", (await InvokeNonBattleCheckAsync(operation, TimeSpan.FromSeconds(600L))).Status);
+		Assert.Equal("准备重试", (await InvokeHandleFindTargetFailAsync(operation)).Status);
+
+		Assert.Equal(OperationRoundResultKind.Wait, (await InvokeInBattleAsync(operation)).Kind);
+		OperationRoundResult agentDead = await InvokeInBattleAsync(operation);
+		Assert.Equal("代理人阵亡", agentDead.Status);
+		Assert.Equal("准备重试", (await InvokeHandleFindTargetFailAsync(operation)).Status);
+
+		Assert.Equal("执行超时", (await InvokeNonBattleCheckAsync(operation, TimeSpan.FromSeconds(600L))).Status);
+		Assert.Equal("准备重试", (await InvokeHandleFindTargetFailAsync(operation)).Status);
+
+		Assert.Equal(OperationRoundResultKind.Wait, (await InvokeInBattleAsync(operation)).Kind);
+		OperationRoundResult agentDeadExhausted = await InvokeInBattleAsync(operation);
+		Assert.Equal("代理人阵亡", agentDeadExhausted.Status);
+		Assert.Equal("准备最终退出", (await InvokeHandleFindTargetFailAsync(operation)).Status);
 	}
 
 	[Fact]
@@ -2898,6 +3042,13 @@ public sealed class LostVoidContextTests
 		return await task;
 	}
 
+	private static async Task<OperationRoundResult> InvokeHandleFindTargetFailAsync(LostVoidRunLevel operation)
+	{
+		MethodInfo method = typeof(LostVoidRunLevel).GetMethod("HandleFindTargetFailAsync", BindingFlags.Instance | BindingFlags.NonPublic);
+		Task<OperationRoundResult> task = Assert.IsAssignableFrom<Task<OperationRoundResult>>(method.Invoke(operation, null));
+		return await task;
+	}
+
 	private static async Task<OperationRoundResult> InvokeWaitLoadingAsync(LostVoidRunLevel operation)
 	{
 		MethodInfo method = typeof(LostVoidRunLevel).GetMethod("WaitLoadingAsync", BindingFlags.Instance | BindingFlags.NonPublic);
@@ -2995,7 +3146,8 @@ public sealed class LostVoidContextTests
 	{
 		string text = Path.Combine(rootDirectory, "assets", "game_data", "screen_info");
 		Directory.CreateDirectory(text);
-		File.WriteAllText(Path.Combine(text, "_od_merged.yml"), "- screen_id: lost_void_battle_result\n  screen_name: 迷失之地-挑战结果\n  app_id: lost_void\n  area_list:\n    - area_name: 按钮-确定\n      pc_rect: [10, 10, 80, 30]\n      text: 确定\n      lcs_percent: 0.5\n    - area_name: 按钮-完成\n      pc_rect: [10, 30, 80, 50]\n      text: 完成\n      lcs_percent: 0.5\n    - area_name: 奖励-零号业绩\n      pc_rect: [10, 50, 80, 70]\n      text: 零号业绩\n      lcs_percent: 0.5\n    - area_name: 奖励-丁尼\n      pc_rect: [10, 70, 80, 90]\n      text: 丁尼\n      lcs_percent: 0.5\n- screen_id: lost_void_battle_fail\n  screen_name: 迷失之地-战斗失败\n  app_id: lost_void\n  area_list:\n    - area_name: 按钮-撤退\n      pc_rect: [10, 10, 80, 30]\n      text: 撤退\n      lcs_percent: 0.5");
+		File.WriteAllText(Path.Combine(text, "lost_void_battle_result.yml"), "screen_id: lost_void_battle_result\nscreen_name: 迷失之地-挑战结果\napp_id: lost_void\narea_list:\n  - area_name: 按钮-确定\n    pc_rect: [10, 10, 80, 30]\n    text: 确定\n    lcs_percent: 0.5\n  - area_name: 按钮-完成\n    pc_rect: [10, 30, 80, 50]\n    text: 完成\n    lcs_percent: 0.5\n  - area_name: 奖励-零号业绩\n    pc_rect: [10, 50, 80, 70]\n    text: 零号业绩\n    lcs_percent: 0.5\n  - area_name: 奖励-丁尼\n    pc_rect: [10, 70, 80, 90]\n    text: 丁尼\n    lcs_percent: 0.5");
+		File.WriteAllText(Path.Combine(text, "lost_void_battle_fail.yml"), "screen_id: lost_void_battle_fail\nscreen_name: 迷失之地-战斗失败\napp_id: lost_void\narea_list:\n  - area_name: 按钮-撤退\n    pc_rect: [10, 10, 80, 30]\n    text: 撤退\n    lcs_percent: 0.5");
 	}
 
 	private static void WriteAutoBattleScreenYaml(string rootDirectory)

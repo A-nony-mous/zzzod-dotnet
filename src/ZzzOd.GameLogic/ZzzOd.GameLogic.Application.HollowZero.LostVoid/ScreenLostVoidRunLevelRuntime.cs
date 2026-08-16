@@ -515,6 +515,8 @@ public sealed class ScreenLostVoidRunLevelRuntime : ILostVoidRunLevelRuntime
 		goto IL_01ca;
 		IL_01ca:
 		bool flag4 = !flag;
+		// 阵亡标识可能闪烁误匹配：仅当仍判定在战斗中（YOLO 未确认脱战）时检查，命中交给操作层连续计数
+		bool agentDead = flag && !flag2 && FindArea(operation.GameContext, screen, "战斗画面", "代理人阵亡");
 		long startingTimestamp = (flag4 ? Stopwatch.GetTimestamp() : 0);
 		if (flag4)
 		{
@@ -540,7 +542,7 @@ public sealed class ScreenLostVoidRunLevelRuntime : ILostVoidRunLevelRuntime
 		bool flag7 = nextRegionHint;
 		bool inInteractScreen = flag5 || text2 != null || flag6;
 		operation.GameContext.Logger.Information("[.NET诊断] 迷失之地战斗状态: Region={Region}, FrameTimeUtc={FrameTimeUtc}, InBattle={InBattle}, DetectorChecked={DetectorChecked}, Detect={Detect}, NoLongerInBattleByDetection={NoLongerInBattleByDetection}, Screen={Screen}, Interact={Interact}, ConfirmClicked={ConfirmClicked}, NextRegion={NextRegion}, InteractElapsedMilliseconds={InteractElapsedMilliseconds:F2}, ScreenMatchElapsedMilliseconds={ScreenMatchElapsedMilliseconds:F2}, ChallengeConfirmElapsedMilliseconds={ChallengeConfirmElapsedMilliseconds:F2}, DetectorElapsedMilliseconds={DetectorElapsedMilliseconds:F2}", operation.RegionType, dateTimeOffset, flag, flag3, text, flag2, text2 ?? "无", flag5, flag6, flag7, num3, num4, num5, num2);
-		return Task.FromResult(new LostVoidBattleState(flag, flag7, flag2, inInteractScreen, battleFailed, TransitionCheckPerformed: true, flag3, flag4));
+		return Task.FromResult(new LostVoidBattleState(flag, flag7, flag2, inInteractScreen, battleFailed, TransitionCheckPerformed: true, flag3, flag4, AgentDead: agentDead));
 		IL_012d:
 		if (!num)
 		{

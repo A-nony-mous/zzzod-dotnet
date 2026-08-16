@@ -22,6 +22,10 @@ public sealed class LostVoidRunLevel : ZOperation
 
 	private const int NextRegionHintExitThreshold = 1;
 
+	private const int AgentDeadConfirmCount = 2;
+
+	private const int RestartBudget = 3;
+
 	public const string StatusNextLevel = "进入下层";
 
 	public const string StatusComplete = "通关";
@@ -48,6 +52,8 @@ public sealed class LostVoidRunLevel : ZOperation
 
 	public const string StatusPrepareFinalExit = "准备最终退出";
 
+	public const string StatusAgentDead = "代理人阵亡";
+
 	public const string StatusTimeout = "执行超时";
 
 	public const string ItBattle = "xxxx-战斗";
@@ -58,7 +64,7 @@ public sealed class LostVoidRunLevel : ZOperation
 
 	private int _nothingTimes;
 
-	private int _findTargetFailCount;
+	private int _restartCount;
 
 	private int _roomInitedTimes;
 
@@ -67,6 +73,8 @@ public sealed class LostVoidRunLevel : ZOperation
 	private int _noInBattleTimes;
 
 	private int _nextRegionHintTimes;
+
+	private int _agentDeadTimes;
 
 	private bool _interactAttempted;
 
@@ -268,7 +276,7 @@ public sealed class LostVoidRunLevel : ZOperation
 
 	[NodeFrom("非战斗画面识别", Status = "未在大世界")]
 	[NodeFrom("非战斗画面识别", Status = "按钮-挑战-确认")]
-	[NodeFrom("处理寻路失败", Status = "准备重试")]
+	[NodeFrom("处理寻路失败或阵亡", Status = "准备重试")]
 	[OperationNode("等待加载", IsStartNode = true, NodeMaxRetryTimes = 60)]
 	private async Task<OperationRoundResult> WaitLoadingAsync()
 	{
@@ -386,7 +394,7 @@ public sealed class LostVoidRunLevel : ZOperation
 		if (_nothingTimes >= 50)
 		{
 			_nothingTimes = 0;
-			return RoundSuccess("处理寻路失败");
+			return RoundFail("执行超时");
 		}
 		return _runtime.CheckBattleEncounterInPeriod(this, 0.5f) ? EnterBattle(DateTimeOffset.UtcNow, _bossPreBattle) : RoundWait("转动识别目标");
 	}
@@ -553,6 +561,21 @@ public sealed class LostVoidRunLevel : ZOperation
 		}
 		if (_currentFrameInBattle)
 		{
+			if (state.AgentDead)
+			{
+				_agentDeadTimes++;
+				LogBattleTransition("AgentDead", _agentDeadTimes, AgentDeadConfirmCount, _agentDeadTimes >= AgentDeadConfirmCount ? "StopAutoBattleAndRetry" : "KeepAutoBattle");
+				if (_agentDeadTimes >= AgentDeadConfirmCount)
+				{
+					_agentDeadTimes = 0;
+					_runtime.StopAutoBattle(this);
+					return RoundFail(StatusAgentDead);
+				}
+			}
+			else if (!state.NoLongerInBattleByDetection)
+			{
+				_agentDeadTimes = 0;
+			}
 			if (state.NextRegionHint)
 			{
 				_nextRegionHintTimes++;
@@ -663,24 +686,25 @@ public sealed class LostVoidRunLevel : ZOperation
 		return Task.FromResult(RoundSuccess("通关", "挚交会谈", operationRoundResult.Delay));
 	}
 
-	[NodeFrom("非战斗画面识别", Success = false, Status = "处理寻路失败")]
-	[OperationNode("处理寻路失败")]
-	private async Task<OperationRoundResult> HandleFindTargetFailAsync()
-	{
-		if (_findTargetFailCount < 3)
-		{
-			_findTargetFailCount++;
-			OperationResult retry = await _runtime.RestartForRetryAsync(this, _cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
-			return retry.IsSuccess ? RoundSuccess("准备重试") : RoundFail(retry.Status);
-		}
-		return RoundSuccess("准备最终退出");
-	}
-
 	[NodeFrom("非战斗画面识别", Success = false, Status = "执行超时")]
 	[NodeFrom("非战斗画面识别", Success = false, Status = "节点超时")]
 	[NodeFrom("战斗中", Success = false, Status = "执行超时")]
 	[NodeFrom("战斗中", Success = false, Status = "节点超时")]
-	[NodeFrom("处理寻路失败", Status = "准备最终退出")]
+	[NodeFrom("战斗中", Success = false, Status = "代理人阵亡")]
+	[OperationNodeNotify(OperationNodeNotifyTiming.PreviousDone, Detail = true)]
+	[OperationNode("处理寻路失败或阵亡")]
+	private async Task<OperationRoundResult> HandleFindTargetFailAsync()
+	{
+		if (_restartCount < RestartBudget)
+		{
+			_restartCount++;
+			OperationResult retry = await _runtime.RestartForRetryAsync(this, _cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
+			return retry.IsSuccess ? RoundSuccess(StatusPrepareRetry) : RoundFail(retry.Status);
+		}
+		return RoundSuccess(StatusPrepareFinalExit);
+	}
+
+	[NodeFrom("处理寻路失败或阵亡", Status = "准备最终退出")]
 	[OperationNodeNotify(OperationNodeNotifyTiming.CurrentDone, Detail = true)]
 	[OperationNode("保存错误信息")]
 	private async Task<OperationRoundResult> PushErrorAsync()

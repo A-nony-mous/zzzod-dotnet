@@ -389,14 +389,14 @@ public sealed class LostVoidAppTests
 		string[] source = new string[18]
 		{
 			"等待加载", "区域类型初始化", "非战斗画面识别", "更新优先级", "追加代理人类型优先级", "下层入口处理", "尝试交互", "交互处理", "交互后处理", "准备自动战斗",
-			"战斗中", "挑战结果处理确定", "挑战结果处理完成", "处理寻路失败", "保存错误信息", "失败退出空洞", "处理战斗失败", "点击失败退出完成"
+			"战斗中", "挑战结果处理确定", "挑战结果处理完成", "处理寻路失败或阵亡", "保存错误信息", "失败退出空洞", "处理战斗失败", "点击失败退出完成"
 		};
 		Assert.Equal(source.Order<string>(StringComparer.Ordinal), readOnlyDictionary.Keys.Order<string>(StringComparer.Ordinal));
 		string[] source2 = new string[40]
 		{
 			Edge("非战斗画面识别", "等待加载", success: true, "未在大世界"),
 			Edge("非战斗画面识别", "等待加载", success: true, "按钮-挑战-确认"),
-			Edge("处理寻路失败", "等待加载", success: true, "准备重试"),
+			Edge("处理寻路失败或阵亡", "等待加载", success: true, "准备重试"),
 			Edge("等待加载", "区域类型初始化"),
 			Edge("区域类型初始化", "非战斗画面识别", success: true, "非战斗区域"),
 			Edge("非战斗画面识别", "非战斗画面识别", success: true, "0001-距离"),
@@ -424,12 +424,12 @@ public sealed class LostVoidAppTests
 			Edge("准备自动战斗", "战斗中"),
 			Edge("交互后处理", "挑战结果处理确定", success: true, "挑战结果-确定"),
 			Edge("交互后处理", "挑战结果处理完成", success: true, "挑战结果-完成"),
-			Edge("非战斗画面识别", "处理寻路失败", success: false, "处理寻路失败"),
-			Edge("非战斗画面识别", "保存错误信息", success: false, "执行超时"),
-			Edge("非战斗画面识别", "保存错误信息", success: false, "节点超时"),
-			Edge("战斗中", "保存错误信息", success: false, "执行超时"),
-			Edge("战斗中", "保存错误信息", success: false, "节点超时"),
-			Edge("处理寻路失败", "保存错误信息", success: true, "准备最终退出"),
+			Edge("非战斗画面识别", "处理寻路失败或阵亡", success: false, "执行超时"),
+			Edge("非战斗画面识别", "处理寻路失败或阵亡", success: false, "节点超时"),
+			Edge("战斗中", "处理寻路失败或阵亡", success: false, "执行超时"),
+			Edge("战斗中", "处理寻路失败或阵亡", success: false, "节点超时"),
+			Edge("战斗中", "处理寻路失败或阵亡", success: false, "代理人阵亡"),
+			Edge("处理寻路失败或阵亡", "保存错误信息", success: true, "准备最终退出"),
 			Edge("保存错误信息", "失败退出空洞", success: false),
 			Edge("战斗中", "处理战斗失败", success: true, "迷失之地-战斗失败"),
 			Edge("失败退出空洞", "点击失败退出完成"),
