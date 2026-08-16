@@ -1340,6 +1340,203 @@ public sealed class AutoBattleOperatorTests
 		}
 	}
 
+	private const string RemielleQuickAssistConfigName = "蕾米快速支援";
+
+	private const string RemielleQuickAssistYaml = "author: tester\nscenes:\n  - triggers: [\"自定义-蕾米触发\"]\n    priority: 5\n    interval: 0\n    handlers:\n      - state_template: \"速切模板-蕾米埃尔\"";
+
+	private static readonly string[] RemielleQuickAssistStates = ["自定义-动作不打断", "自定义-无视闪光", "自定义-蕾米埃尔-长按强化特殊技"];
+
+	private static void CopyRemielleConfigTree(string rootDirectory)
+	{
+		CopyConfigTree(rootDirectory, "config/auto_battle_operation");
+		CopyConfigTree(rootDirectory, "config/auto_battle_state_handler");
+		string config = Path.Combine(rootDirectory, "config", "auto_battle");
+		Directory.CreateDirectory(config);
+		File.WriteAllText(Path.Combine(config, RemielleQuickAssistConfigName + ".yml"), RemielleQuickAssistYaml);
+	}
+
+	private static AutoBattleCondOpStateHandler? LoadRemielleQuickAssistHandler(string rootDirectory)
+	{
+		AutoBattleReferenceGraphSnapshot snapshot = new AutoBattleReferenceGraphLoader(new OneDragonEnvironment(rootDirectory))
+			.Load("auto_battle", RemielleQuickAssistConfigName);
+		return FindHandler(snapshot.Scenes[0].Handlers, "等待快速支援出现");
+	}
+
+	[Fact]
+	public void RemielleQuickAssistScene_KeepsThreeOpSequenceWith005SecondProtection()
+	{
+		string root = CreateTempRoot();
+		try
+		{
+			CopyRemielleConfigTree(root);
+			AutoBattleCondOpStateHandler? quickAssist = LoadRemielleQuickAssistHandler(root);
+			Assert.NotNull(quickAssist);
+			Assert.Equal("[按键可用-快速支援]", quickAssist.States);
+			IReadOnlyList<OperationDef> operations = quickAssist.Operations;
+			Assert.Equal(3, operations.Count);
+			Assert.Equal("设置状态", operations[0].OpName);
+			Assert.Equal(0.05, operations[0].Seconds);
+			Assert.Equal(RemielleQuickAssistStates, operations[0].StateNameList);
+			Assert.Equal("按键-快速支援", operations[1].OpName);
+			Assert.Equal("清除状态", operations[2].OpName);
+			Assert.Equal(RemielleQuickAssistStates, operations[2].StateNameList);
+		}
+		finally
+		{
+			Directory.Delete(root, recursive: true);
+		}
+	}
+
+	[Fact]
+	public async Task OperationExecutorInterrupt_ReplaysClearStateForQuickAssist()
+	{
+		string root = CreateTempRoot();
+		try
+		{
+			CopyRemielleConfigTree(root);
+			AutoBattleCondOpStateHandler? quickAssist = LoadRemielleQuickAssistHandler(root);
+			Assert.NotNull(quickAssist);
+			using ZContext zctx = new ZContext(new OneDragonEnvironment(root));
+			AtomicOp setState = zctx.AutoBattleContext.AtomicOpFactory.GetAtomicOp(quickAssist.Operations[0]);
+			AtomicOp clearState = zctx.AutoBattleContext.AtomicOpFactory.GetAtomicOp(quickAssist.Operations[2]);
+			RecordingAtomicOp button = new RecordingAtomicOp("按键-快速支援", blockUntilStopped: true);
+			OperationExecutor executor = new OperationExecutor(new AtomicOp[] { setState, button, clearState }, Now());
+			Task<bool> runTask = executor.RunAsync();
+			Assert.True(button.Started.Wait(TimeSpan.FromSeconds(5)));
+			AssertStateSet(zctx, RemielleQuickAssistStates[0]);
+			AssertStateSet(zctx, RemielleQuickAssistStates[1]);
+			AssertStateSet(zctx, RemielleQuickAssistStates[2]);
+			Assert.False(executor.Stop());
+			await runTask;
+			AssertStateCleared(zctx, RemielleQuickAssistStates[0]);
+			AssertStateCleared(zctx, RemielleQuickAssistStates[1]);
+			AssertStateCleared(zctx, RemielleQuickAssistStates[2]);
+			Assert.Equal(1, button.StopCount);
+		}
+		finally
+		{
+			Directory.Delete(root, recursive: true);
+		}
+	}
+
+	[Fact]
+	public async Task OperationExecutorCompletion_ClearsQuickAssistStatesAfterButton()
+	{
+		string root = CreateTempRoot();
+		try
+		{
+			CopyRemielleConfigTree(root);
+			AutoBattleCondOpStateHandler? quickAssist = LoadRemielleQuickAssistHandler(root);
+			Assert.NotNull(quickAssist);
+			using ZContext zctx = new ZContext(new OneDragonEnvironment(root));
+			AtomicOp setState = zctx.AutoBattleContext.AtomicOpFactory.GetAtomicOp(quickAssist.Operations[0]);
+			AtomicOp clearState = zctx.AutoBattleContext.AtomicOpFactory.GetAtomicOp(quickAssist.Operations[2]);
+			RecordingAtomicOp button = new RecordingAtomicOp("按键-快速支援", executeMilliseconds: 200);
+			OperationExecutor executor = new OperationExecutor(new AtomicOp[] { setState, button, clearState }, Now());
+			Task<bool> runTask = executor.RunAsync();
+			Assert.True(button.Started.Wait(TimeSpan.FromSeconds(5)));
+			AssertStateSet(zctx, RemielleQuickAssistStates[0]);
+			AssertStateSet(zctx, RemielleQuickAssistStates[1]);
+			AssertStateSet(zctx, RemielleQuickAssistStates[2]);
+			Assert.True(await runTask);
+			AssertStateCleared(zctx, RemielleQuickAssistStates[0]);
+			AssertStateCleared(zctx, RemielleQuickAssistStates[1]);
+			AssertStateCleared(zctx, RemielleQuickAssistStates[2]);
+		}
+		finally
+		{
+			Directory.Delete(root, recursive: true);
+		}
+	}
+
+	[Fact]
+	public async Task OperationExecutorOpException_StillRunsTrailingClearState()
+	{
+		string root = CreateTempRoot();
+		try
+		{
+			CopyRemielleConfigTree(root);
+			AutoBattleCondOpStateHandler? quickAssist = LoadRemielleQuickAssistHandler(root);
+			Assert.NotNull(quickAssist);
+			using ZContext zctx = new ZContext(new OneDragonEnvironment(root));
+			AtomicOp setState = zctx.AutoBattleContext.AtomicOpFactory.GetAtomicOp(quickAssist.Operations[0]);
+			AtomicOp clearState = zctx.AutoBattleContext.AtomicOpFactory.GetAtomicOp(quickAssist.Operations[2]);
+			RecordingAtomicOp throwing = new RecordingAtomicOp("按键-快速支援", throwOnExecute: true);
+			OperationExecutor executor = new OperationExecutor(new AtomicOp[] { setState, throwing, clearState }, Now());
+			Task<bool> runTask = executor.RunAsync();
+			Assert.True(await runTask);
+			Assert.NotNull(executor.LastException);
+			AssertStateCleared(zctx, RemielleQuickAssistStates[0]);
+			AssertStateCleared(zctx, RemielleQuickAssistStates[1]);
+			AssertStateCleared(zctx, RemielleQuickAssistStates[2]);
+		}
+		finally
+		{
+			Directory.Delete(root, recursive: true);
+		}
+	}
+
+	[Fact]
+	public async Task RemielleQuickAssistScene_EngineSetsProtectionThenClears()
+	{
+		string root = CreateTempRoot();
+		try
+		{
+			CopyRemielleConfigTree(root);
+			using ZContext zctx = new ZContext(new OneDragonEnvironment(root));
+			List<string> executed = new();
+			RecordingAtomicOp button = new RecordingAtomicOp("按键-快速支援", blockUntilStopped: true);
+			AutoBattleOperator op = new(
+				zctx.AutoBattleContext,
+				"auto_battle",
+				RemielleQuickAssistConfigName,
+				readFromMerged: false,
+				atomicOpFactory: opDef =>
+				{
+					if (opDef.OpName is "设置状态" or "清除状态")
+					{
+						return zctx.AutoBattleContext.AtomicOpFactory.GetAtomicOp(opDef);
+					}
+					if (opDef.OpName == "按键-快速支援")
+					{
+						return button;
+					}
+					return new RecordingNamedOp(executed, opDef.OpName ?? "?");
+				});
+			Assert.True(op.InitBeforeRunning().Success);
+			op.StartRunningAsync();
+			zctx.AutoBattleContext.StateRecordService.UpdateState(new StateRecord("前台-蕾米埃尔", Now()));
+			zctx.AutoBattleContext.StateRecordService.UpdateState(new StateRecord("按键可用-快速支援", Now()));
+			zctx.AutoBattleContext.StateRecordService.UpdateState(new StateRecord("自定义-蕾米触发", Now()));
+			Assert.True(button.Started.Wait(TimeSpan.FromSeconds(5)));
+			AssertStateSet(zctx, RemielleQuickAssistStates[0]);
+			AssertStateSet(zctx, RemielleQuickAssistStates[1]);
+			AssertStateSet(zctx, RemielleQuickAssistStates[2]);
+			zctx.AutoBattleContext.StateRecordService.UpdateState(new StateRecord("按键可用-快速支援", 0.0, isClear: true));
+			button.Stop();
+			await WaitUntilIdle(op);
+			op.StopRunning();
+			Assert.Equal(1, button.ExecuteCount);
+			AssertStateCleared(zctx, RemielleQuickAssistStates[0]);
+			AssertStateCleared(zctx, RemielleQuickAssistStates[1]);
+			AssertStateCleared(zctx, RemielleQuickAssistStates[2]);
+		}
+		finally
+		{
+			Directory.Delete(root, recursive: true);
+		}
+	}
+
+	private static void AssertStateSet(ZContext context, string stateName)
+	{
+		Assert.True(context.AutoBattleContext.StateRecordService.GetStateRecorder(stateName).LastRecordTime > 0.0, "状态 " + stateName + " 应在按键前写入保护记录");
+	}
+
+	private static void AssertStateCleared(ZContext context, string stateName)
+	{
+		Assert.Equal(0.0, context.AutoBattleContext.StateRecordService.GetStateRecorder(stateName).LastRecordTime);
+	}
+
 	private sealed class RecordingNamedOp : AtomicOp
 	{
 		private readonly List<string> _log;

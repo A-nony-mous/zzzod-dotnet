@@ -4,7 +4,7 @@ using OneDragon.Core.Operation;
 
 namespace ZzzOd.GameLogic.AutoBattle.AtomicOp;
 
-public sealed class AtomicClearState : AutoBattleAtomicOp
+public sealed class AtomicClearState : AutoBattleAtomicOp, IStateClearOp
 {
 	public const string OP_NAME = "清除状态";
 
