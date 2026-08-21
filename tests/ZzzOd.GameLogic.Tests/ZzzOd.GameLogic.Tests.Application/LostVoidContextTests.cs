@@ -28,6 +28,7 @@ using Xunit;
 using ZzzOd.GameLogic.Application.HollowZero.LostVoid;
 using ZzzOd.GameLogic.AutoBattle;
 using ZzzOd.GameLogic.Config;
+using ZzzOd.GameLogic.Tests.TestSupport;
 using ZzzOd.GameLogic.Context;
 using ZzzOd.GameLogic.Controller;
 using ZzzOd.GameLogic.DebugData;
@@ -3373,21 +3374,21 @@ public sealed class LostVoidContextTests
 	{
 		string text = Path.Combine(rootDirectory, "assets", "game_data", "screen_info");
 		Directory.CreateDirectory(text);
-		File.WriteAllText(Path.Combine(text, "_od_merged.yml"), "- screen_id: battle\n  screen_name: 战斗画面\n  area_list:\n    - area_name: 按键-普通攻击\n      pc_rect: [0, 0, 100, 100]\n    - area_name: 距离显示区域\n      pc_rect: [0, 0, 100, 100]");
+		ScreenSeed.WriteScreens(text, "- screen_id: battle\n  screen_name: 战斗画面\n  area_list:\n    - area_name: 按键-普通攻击\n      pc_rect: [0, 0, 100, 100]\n    - area_name: 距离显示区域\n      pc_rect: [0, 0, 100, 100]");
 	}
 
 	private static void WriteLostVoidRuntimeOrderingScreenYaml(string rootDirectory)
 	{
 		string text = Path.Combine(rootDirectory, "assets", "game_data", "screen_info");
 		Directory.CreateDirectory(text);
-		File.WriteAllText(Path.Combine(text, "_od_merged.yml"), "- screen_id: lost_void_normal_world\n  screen_name: 迷失之地-大世界\n  app_id: lost_void\n  area_list:\n    - area_name: 按钮-挑战-确认\n      pc_rect: [10, 10, 80, 30]\n      text: 确认\n      lcs_percent: 0.5\n    - area_name: 区域-对话角色名称\n      pc_rect: [10, 40, 160, 70]\n    - area_name: 区域-文本提示\n      pc_rect: [10, 80, 200, 110]\n- screen_id: lost_void_battle_result\n  screen_name: 迷失之地-挑战结果\n  app_id: lost_void\n  area_list:\n    - area_name: 标题-挑战结果\n      id_mark: true\n      pc_rect: [10, 120, 200, 160]\n      text: 挑战结果\n      lcs_percent: 0.5");
+		ScreenSeed.WriteScreens(text, "- screen_id: lost_void_normal_world\n  screen_name: 迷失之地-大世界\n  app_id: lost_void\n  area_list:\n    - area_name: 按钮-挑战-确认\n      pc_rect: [10, 10, 80, 30]\n      text: 确认\n      lcs_percent: 0.5\n    - area_name: 区域-对话角色名称\n      pc_rect: [10, 40, 160, 70]\n    - area_name: 区域-文本提示\n      pc_rect: [10, 80, 200, 110]\n- screen_id: lost_void_battle_result\n  screen_name: 迷失之地-挑战结果\n  app_id: lost_void\n  area_list:\n    - area_name: 标题-挑战结果\n      id_mark: true\n      pc_rect: [10, 120, 200, 160]\n      text: 挑战结果\n      lcs_percent: 0.5");
 	}
 
 	private static void WriteLostVoidTitleOnlyScreenYaml(string rootDirectory)
 	{
 		string text = Path.Combine(rootDirectory, "assets", "game_data", "screen_info");
 		Directory.CreateDirectory(text);
-		File.WriteAllText(Path.Combine(text, "_od_merged.yml"), "- screen_id: battle\n  screen_name: 战斗画面\n  area_list:\n    - area_name: 按键-普通攻击\n      pc_rect: [0, 0, 100, 100]\n    - area_name: 按键-交互\n      pc_rect: [0, 0, 100, 100]\n- screen_id: lost_void_common\n  screen_name: 迷失之地-通用选择\n  app_id: lost_void\n  area_list:\n    - area_name: 按钮-确定\n      id_mark: true\n      pc_rect: [0, 0, 100, 40]\n      text: 确定\n    - area_name: 区域-标题\n      pc_rect: [0, 40, 200, 80]\n- screen_id: lost_void_gear\n  screen_name: 迷失之地-武备选择\n  app_id: lost_void\n  area_list:\n    - area_name: 按钮-携带\n      id_mark: true\n      pc_rect: [0, 0, 100, 40]\n      text: 携带\n- screen_id: lost_void_result\n  screen_name: 迷失之地-挑战结果\n  app_id: lost_void\n  area_list:\n    - area_name: 按钮-完成\n      id_mark: true\n      pc_rect: [0, 0, 100, 40]\n      text: 完成\n- screen_id: lost_void_battle_fail\n  screen_name: 迷失之地-战斗失败\n  app_id: lost_void\n  area_list:\n    - area_name: 按钮-撤退\n      id_mark: true\n      pc_rect: [0, 0, 100, 40]\n      text: 撤退");
+		ScreenSeed.WriteScreens(text, "- screen_id: battle\n  screen_name: 战斗画面\n  area_list:\n    - area_name: 按键-普通攻击\n      pc_rect: [0, 0, 100, 100]\n    - area_name: 按键-交互\n      pc_rect: [0, 0, 100, 100]\n- screen_id: lost_void_common\n  screen_name: 迷失之地-通用选择\n  app_id: lost_void\n  area_list:\n    - area_name: 按钮-确定\n      id_mark: true\n      pc_rect: [0, 0, 100, 40]\n      text: 确定\n    - area_name: 区域-标题\n      pc_rect: [0, 40, 200, 80]\n- screen_id: lost_void_gear\n  screen_name: 迷失之地-武备选择\n  app_id: lost_void\n  area_list:\n    - area_name: 按钮-携带\n      id_mark: true\n      pc_rect: [0, 0, 100, 40]\n      text: 携带\n- screen_id: lost_void_result\n  screen_name: 迷失之地-挑战结果\n  app_id: lost_void\n  area_list:\n    - area_name: 按钮-完成\n      id_mark: true\n      pc_rect: [0, 0, 100, 40]\n      text: 完成\n- screen_id: lost_void_battle_fail\n  screen_name: 迷失之地-战斗失败\n  app_id: lost_void\n  area_list:\n    - area_name: 按钮-撤退\n      id_mark: true\n      pc_rect: [0, 0, 100, 40]\n      text: 撤退");
 	}
 
 	private static void WriteLostVoidInteractOcrScreenYaml(string rootDirectory)
@@ -3402,28 +3403,28 @@ public sealed class LostVoidContextTests
 	{
 		string text = Path.Combine(rootDirectory, "assets", "game_data", "screen_info");
 		Directory.CreateDirectory(text);
-		File.WriteAllText(Path.Combine(text, "_od_merged.yml"), "- screen_id: lost_void_common\n  screen_name: 迷失之地-通用选择\n  app_id: lost_void\n  area_list:\n    - area_name: 按钮-确定\n      pc_rect: [0, 0, 100, 40]\n      text: 确定\n    - area_name: 区域-标题\n      pc_rect: [0, 40, 200, 80]\n    - area_name: 文本-详情\n      pc_rect: [0, 80, 200, 140]");
+		ScreenSeed.WriteScreens(text, "- screen_id: lost_void_common\n  screen_name: 迷失之地-通用选择\n  app_id: lost_void\n  area_list:\n    - area_name: 按钮-确定\n      pc_rect: [0, 0, 100, 40]\n      text: 确定\n    - area_name: 区域-标题\n      pc_rect: [0, 40, 200, 80]\n    - area_name: 文本-详情\n      pc_rect: [0, 80, 200, 140]");
 	}
 
 	private static void WriteBattleMenuScreenYaml(string rootDirectory)
 	{
 		string text = Path.Combine(rootDirectory, "assets", "game_data", "screen_info");
 		Directory.CreateDirectory(text);
-		File.WriteAllText(Path.Combine(text, "_od_merged.yml"), "- screen_id: battle\n  screen_name: 战斗画面\n  area_list:\n    - area_name: 菜单\n      pc_rect: [0, 0, 200, 40]\n- screen_id: battle_menu\n  screen_name: 战斗-菜单\n  area_list:\n    - area_name: 按钮-退出战斗\n      pc_rect: [0, 0, 200, 40]\n      text: 退出战斗\n      lcs_percent: 0.8\n    - area_name: 按钮-重新开始\n      pc_rect: [0, 0, 200, 40]\n      text: 重新开始\n      lcs_percent: 0.8\n    - area_name: 按钮-退出战斗-确认\n      pc_rect: [0, 0, 200, 40]\n      text: 退出战斗确认\n      lcs_percent: 0.8\n- screen_id: lost_void_battle_result\n  screen_name: 迷失之地-挑战结果\n  app_id: lost_void\n  area_list:\n    - area_name: 按钮-完成\n      pc_rect: [0, 0, 200, 40]\n      text: 完成\n      lcs_percent: 0.8");
+		ScreenSeed.WriteScreens(text, "- screen_id: battle\n  screen_name: 战斗画面\n  area_list:\n    - area_name: 菜单\n      pc_rect: [0, 0, 200, 40]\n- screen_id: battle_menu\n  screen_name: 战斗-菜单\n  area_list:\n    - area_name: 按钮-退出战斗\n      pc_rect: [0, 0, 200, 40]\n      text: 退出战斗\n      lcs_percent: 0.8\n    - area_name: 按钮-重新开始\n      pc_rect: [0, 0, 200, 40]\n      text: 重新开始\n      lcs_percent: 0.8\n    - area_name: 按钮-退出战斗-确认\n      pc_rect: [0, 0, 200, 40]\n      text: 退出战斗确认\n      lcs_percent: 0.8\n- screen_id: lost_void_battle_result\n  screen_name: 迷失之地-挑战结果\n  app_id: lost_void\n  area_list:\n    - area_name: 按钮-完成\n      pc_rect: [0, 0, 200, 40]\n      text: 完成\n      lcs_percent: 0.8");
 	}
 
 	private static void WriteLostVoidNormalWorldTabYaml(string rootDirectory)
 	{
 		string text = Path.Combine(rootDirectory, "assets", "game_data", "screen_info");
 		Directory.CreateDirectory(text);
-		File.WriteAllText(Path.Combine(text, "_od_merged.yml"), "- screen_id: lost_void_normal_world\n  screen_name: 迷失之地-大世界\n  app_id: lost_void\n  area_list:\n    - area_name: 迷失之地-TAB\n      pc_rect: [10, 10, 80, 40]");
+		ScreenSeed.WriteScreens(text, "- screen_id: lost_void_normal_world\n  screen_name: 迷失之地-大世界\n  app_id: lost_void\n  area_list:\n    - area_name: 迷失之地-TAB\n      pc_rect: [10, 10, 80, 40]");
 	}
 
 	private static void WriteLostVoidBattleFailScreenYaml(string rootDirectory)
 	{
 		string text = Path.Combine(rootDirectory, "assets", "game_data", "screen_info");
 		Directory.CreateDirectory(text);
-		File.WriteAllText(Path.Combine(text, "_od_merged.yml"), "- screen_id: lost_void_battle_fail\n  screen_name: 迷失之地-战斗失败\n  app_id: lost_void\n  area_list:\n    - area_name: 按钮-撤退\n      pc_rect: [0, 0, 200, 40]\n      text: 撤退\n      lcs_percent: 0.8");
+		ScreenSeed.WriteScreens(text, "- screen_id: lost_void_battle_fail\n  screen_name: 迷失之地-战斗失败\n  app_id: lost_void\n  area_list:\n    - area_name: 按钮-撤退\n      pc_rect: [0, 0, 200, 40]\n      text: 撤退\n      lcs_percent: 0.8");
 	}
 
 	private static string CreateTempRoot()

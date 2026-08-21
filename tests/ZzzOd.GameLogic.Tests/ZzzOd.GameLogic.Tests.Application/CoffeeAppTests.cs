@@ -611,6 +611,6 @@ public sealed class CoffeeAppTests
 	{
 		string text = Path.Combine(rootDirectory, "assets", "game_data", "screen_info");
 		Directory.CreateDirectory(text);
-		File.WriteAllText(Path.Combine(text, "_od_merged.yml"), "- screen_id: coffee_shop\n  screen_name: \"咖啡店\"\n  area_list:\n    - area_name: \"咖啡列表\"\n      pc_rect: [10, 20, 90, 100]");
+		ScreenSeed.WriteScreens(text, "- screen_id: coffee_shop\n  screen_name: \"咖啡店\"\n  area_list:\n    - area_name: \"咖啡列表\"\n      pc_rect: [10, 20, 90, 100]");
 	}
 }

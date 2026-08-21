@@ -21,6 +21,7 @@ using Serilog.Events;
 using Xunit;
 using ZzzOd.GameLogic.Application.IntelBoard;
 using ZzzOd.GameLogic.Context;
+using ZzzOd.GameLogic.Tests.TestSupport;
 
 namespace ZzzOd.GameLogic.Tests.Application;
 
@@ -1932,20 +1933,20 @@ public sealed class IntelBoardAppTests
 	{
 		string text = Path.Combine(rootDirectory, "assets", "game_data", "screen_info");
 		Directory.CreateDirectory(text);
-		File.WriteAllText(Path.Combine(text, "_od_merged.yml"), "- screen_id: battle\n  screen_name: 战斗画面\n  area_list:\n    - area_name: 按键-普通攻击\n      pc_rect: [0, 0, 100, 100]\n    - area_name: 距离显示区域\n      pc_rect: [0, 0, 100, 100]\n    - area_name: 战斗结果-完成\n      pc_rect: [10, 10, 80, 30]\n      text: 完成\n      lcs_percent: 0.5\n    - area_name: 战斗结果-撤退\n      pc_rect: [10, 10, 80, 30]\n      text: 撤退\n      lcs_percent: 0.5\n    - area_name: 战斗结果-倒带\n      pc_rect: [10, 10, 80, 30]\n      text: 倒带\n      lcs_percent: 0.5\n- screen_id: intel_board\n  screen_name: 情报板\n  app_id: intel_board\n  area_list:\n    - area_name: 点数兑换\n      pc_rect: [10, 10, 80, 30]\n      text: 点数兑换\n      lcs_percent: 0.5\n    - area_name: 筛选按钮\n      pc_rect: [100, 100, 180, 140]\n    - area_name: 关闭筛选\n      pc_rect: [200, 100, 280, 140]");
+		ScreenSeed.WriteScreens(text, "- screen_id: battle\n  screen_name: 战斗画面\n  area_list:\n    - area_name: 按键-普通攻击\n      pc_rect: [0, 0, 100, 100]\n    - area_name: 距离显示区域\n      pc_rect: [0, 0, 100, 100]\n    - area_name: 战斗结果-完成\n      pc_rect: [10, 10, 80, 30]\n      text: 完成\n      lcs_percent: 0.5\n    - area_name: 战斗结果-撤退\n      pc_rect: [10, 10, 80, 30]\n      text: 撤退\n      lcs_percent: 0.5\n    - area_name: 战斗结果-倒带\n      pc_rect: [10, 10, 80, 30]\n      text: 倒带\n      lcs_percent: 0.5\n- screen_id: intel_board\n  screen_name: 情报板\n  app_id: intel_board\n  area_list:\n    - area_name: 点数兑换\n      pc_rect: [10, 10, 80, 30]\n      text: 点数兑换\n      lcs_percent: 0.5\n    - area_name: 筛选按钮\n      pc_rect: [100, 100, 180, 140]\n    - area_name: 关闭筛选\n      pc_rect: [200, 100, 280, 140]");
 	}
 
 	private static void WriteFunctionGuideScreenYaml(string rootDirectory)
 	{
 		string text = Path.Combine(rootDirectory, "assets", "game_data", "screen_info");
 		Directory.CreateDirectory(text);
-		File.WriteAllText(Path.Combine(text, "_od_merged.yml"), "- screen_id: normal_world_basic\n  screen_name: 大世界-普通\n  pc_alt: true\n  area_list:\n    - area_name: 功能导览\n      pc_rect: [1776, 28, 1869, 117]\n      template_sub_dir: normal_world\n      template_id: function_menu\n      template_match_threshold: 0.7\n      gamepad_key: function_menu");
+		ScreenSeed.WriteScreens(text, "- screen_id: normal_world_basic\n  screen_name: 大世界-普通\n  pc_alt: true\n  area_list:\n    - area_name: 功能导览\n      pc_rect: [1776, 28, 1869, 117]\n      template_sub_dir: normal_world\n      template_id: function_menu\n      template_match_threshold: 0.7\n      gamepad_key: function_menu");
 	}
 
 	private static void WriteIntelBoardScopeScreenYaml(string rootDirectory)
 	{
 		string text = Path.Combine(rootDirectory, "assets", "game_data", "screen_info");
 		Directory.CreateDirectory(text);
-		File.WriteAllText(Path.Combine(text, "_od_merged.yml"), "- screen_id: normal_world\n  screen_name: 大世界-普通\n  area_list: []\n- screen_id: intel_board\n  screen_name: 情报板\n  app_id: intel_board\n  area_list: []\n- screen_id: other_application\n  screen_name: 其他应用画面\n  app_id: other_application\n  area_list: []");
+		ScreenSeed.WriteScreens(text, "- screen_id: normal_world\n  screen_name: 大世界-普通\n  area_list: []\n- screen_id: intel_board\n  screen_name: 情报板\n  app_id: intel_board\n  area_list: []\n- screen_id: other_application\n  screen_name: 其他应用画面\n  app_id: other_application\n  area_list: []");
 	}
 }

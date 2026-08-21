@@ -14,6 +14,7 @@ using ZzzOd.GameLogic.Application.HouHouBakery;
 using ZzzOd.GameLogic.Application.RiduWeekly;
 using ZzzOd.GameLogic.Application.TrigramsCollection;
 using ZzzOd.GameLogic.Context;
+using ZzzOd.GameLogic.Tests.TestSupport;
 
 namespace ZzzOd.GameLogic.Tests.Application;
 
@@ -161,6 +162,6 @@ public sealed class DailyApplicationScreenScopeParityTests
 	{
 		string text = Path.Combine(rootDirectory, "assets", "game_data", "screen_info");
 		Directory.CreateDirectory(text);
-		File.WriteAllText(Path.Combine(text, "_od_merged.yml"), "- screen_id: global\n  screen_name: 全局页面\n  area_list: []\n- screen_id: engagement_reward_local\n  screen_name: engagement_reward 本地页面\n  app_id: engagement_reward\n  area_list: []\n- screen_id: hou_hou_bakery_local\n  screen_name: hou_hou_bakery 本地页面\n  app_id: hou_hou_bakery\n  area_list: []\n- screen_id: ridu_weekly_local\n  screen_name: ridu_weekly 本地页面\n  app_id: ridu_weekly\n  area_list: []\n- screen_id: trigrams_collection_local\n  screen_name: trigrams_collection 本地页面\n  app_id: trigrams_collection\n  area_list: []\n- screen_id: email_local\n  screen_name: email 本地页面\n  app_id: email\n  area_list: []");
+		ScreenSeed.WriteScreens(text, "- screen_id: global\n  screen_name: 全局页面\n  area_list: []\n- screen_id: engagement_reward_local\n  screen_name: engagement_reward 本地页面\n  app_id: engagement_reward\n  area_list: []\n- screen_id: hou_hou_bakery_local\n  screen_name: hou_hou_bakery 本地页面\n  app_id: hou_hou_bakery\n  area_list: []\n- screen_id: ridu_weekly_local\n  screen_name: ridu_weekly 本地页面\n  app_id: ridu_weekly\n  area_list: []\n- screen_id: trigrams_collection_local\n  screen_name: trigrams_collection 本地页面\n  app_id: trigrams_collection\n  area_list: []\n- screen_id: email_local\n  screen_name: email 本地页面\n  app_id: email\n  area_list: []");
 	}
 }

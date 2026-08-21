@@ -23,6 +23,7 @@ using ZzzOd.GameLogic.Config;
 using ZzzOd.GameLogic.Context;
 using ZzzOd.GameLogic.Controller;
 using ZzzOd.GameLogic.GameData;
+using ZzzOd.GameLogic.Tests.TestSupport;
 
 namespace ZzzOd.GameLogic.Tests.Application;
 
@@ -2145,7 +2146,7 @@ public sealed class WorldPatrolOperationTests
 	{
 		string text = Path.Combine(rootDirectory, "assets", "game_data", "screen_info");
 		Directory.CreateDirectory(text);
-		File.WriteAllText(Path.Combine(text, "_od_merged.yml"), "- screen_id: normal_world\n  screen_name: 大世界\n  pc_alt: true\n  area_list:\n    - area_name: 小地图\n      pc_rect: [0, 0, 240, 240]\n      gamepad_key: minimap\n    - area_name: 任务追踪\n      pc_rect: [0, 0, 240, 240]\n      text: 按自己的步调度过这一天");
+		ScreenSeed.WriteScreens(text, "- screen_id: normal_world\n  screen_name: 大世界\n  pc_alt: true\n  area_list:\n    - area_name: 小地图\n      pc_rect: [0, 0, 240, 240]\n      gamepad_key: minimap\n    - area_name: 任务追踪\n      pc_rect: [0, 0, 240, 240]\n      text: 按自己的步调度过这一天");
 	}
 
 	private static SizeAwareOcrMatcher CreateNoTrackingOcrMatcher()
@@ -2171,7 +2172,7 @@ public sealed class WorldPatrolOperationTests
 	{
 		string text = Path.Combine(rootDirectory, "assets", "game_data", "screen_info");
 		Directory.CreateDirectory(text);
-		File.WriteAllText(Path.Combine(text, "_od_merged.yml"), "- screen_id: map_3d\n  screen_name: 3D地图\n  area_list:\n    - area_name: 区域-区域列表\n      pc_rect: [0, 0, 100, 300]\n    - area_name: 区域-子区域列表\n      pc_rect: [120, 0, 220, 300]\n    - area_name: 区域-筛选选项\n      pc_rect: [240, 0, 360, 300]\n    - area_name: 区域-地图\n      pc_rect: [100, 100, 300, 300]\n    - area_name: 按钮-当前子区域\n      pc_rect: [0, 320, 100, 360]\n    - area_name: 标题-标识点筛选\n      id_mark: true\n      pc_rect: [110, 320, 210, 360]\n      text: 标识点筛选\n    - area_name: 按钮-筛选\n      pc_rect: [220, 320, 260, 360]\n    - area_name: 按钮-关闭筛选\n      pc_rect: [270, 320, 310, 360]\n    - area_name: 按钮-区域信息-关闭\n      pc_rect: [320, 320, 360, 360]\n      template_sub_dir: normal_world_investigation\n      template_id: btn_area_info_close\n    - area_name: 按钮-前往\n      pc_rect: [220, 0, 320, 80]\n      text: 前往\n    - area_name: 标题-当前选择传送点\n      pc_rect: [220, 100, 420, 160]");
+		ScreenSeed.WriteScreens(text, "- screen_id: map_3d\n  screen_name: 3D地图\n  area_list:\n    - area_name: 区域-区域列表\n      pc_rect: [0, 0, 100, 300]\n    - area_name: 区域-子区域列表\n      pc_rect: [120, 0, 220, 300]\n    - area_name: 区域-筛选选项\n      pc_rect: [240, 0, 360, 300]\n    - area_name: 区域-地图\n      pc_rect: [100, 100, 300, 300]\n    - area_name: 按钮-当前子区域\n      pc_rect: [0, 320, 100, 360]\n    - area_name: 标题-标识点筛选\n      id_mark: true\n      pc_rect: [110, 320, 210, 360]\n      text: 标识点筛选\n    - area_name: 按钮-筛选\n      pc_rect: [220, 320, 260, 360]\n    - area_name: 按钮-关闭筛选\n      pc_rect: [270, 320, 310, 360]\n    - area_name: 按钮-区域信息-关闭\n      pc_rect: [320, 320, 360, 360]\n      template_sub_dir: normal_world_investigation\n      template_id: btn_area_info_close\n    - area_name: 按钮-前往\n      pc_rect: [220, 0, 320, 80]\n      text: 前往\n    - area_name: 标题-当前选择传送点\n      pc_rect: [220, 100, 420, 160]");
 	}
 
 	private static void WriteAreaInfoCloseTemplate(string rootDirectory)

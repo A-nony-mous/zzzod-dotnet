@@ -17,6 +17,7 @@ using ZzzOd.GameLogic.Application.SuibianTemple;
 using ZzzOd.GameLogic.Application.SuibianTemple.Operations;
 using ZzzOd.GameLogic.Context;
 using ZzzOd.GameLogic.Operations;
+using ZzzOd.GameLogic.Tests.TestSupport;
 
 namespace ZzzOd.GameLogic.Tests.Application;
 
@@ -260,7 +261,7 @@ public sealed class SuibianTempleOperationNodesTests
 		{
 			string text2 = Path.Combine(text, "assets", "game_data", "screen_info");
 			Directory.CreateDirectory(text2);
-			File.WriteAllText(Path.Combine(text2, "_od_merged.yml"), "- screen_id: suibian_temple_entry\n  screen_name: \"随便观-入口\"\n  area_list:\n    - area_name: \"按钮-游历\"\n      pc_rect: [0, 0, 200, 100]\n      text: \"游历\"");
+			ScreenSeed.WriteScreens(text2, "- screen_id: suibian_temple_entry\n  screen_name: \"随便观-入口\"\n  area_list:\n    - area_name: \"按钮-游历\"\n      pc_rect: [0, 0, 200, 100]\n      text: \"游历\"");
 			using ZContext zContext = new ZContext(new OneDragonEnvironment(text));
 			zContext.ScreenContext.Reload();
 			using Mat screenshot = CreateScreen();
@@ -844,28 +845,28 @@ public sealed class SuibianTempleOperationNodesTests
 	{
 		string text = Path.Combine(rootDirectory, "assets", "game_data", "screen_info");
 		Directory.CreateDirectory(text);
-		File.WriteAllText(Path.Combine(text, "_od_merged.yml"), "- screen_id: suibian_temple_craft\n  screen_name: \"随便观-制造坊\"\n  area_list:\n    - area_name: \"区域-邦布-1\"\n      pc_rect: [0, 0, 100, 100]\n    - area_name: \"区域-邦布-2\"\n      pc_rect: [100, 0, 200, 100]\n    - area_name: \"区域-商品列表\"\n      pc_rect: [0, 0, 1000, 500]");
+		ScreenSeed.WriteScreens(text, "- screen_id: suibian_temple_craft\n  screen_name: \"随便观-制造坊\"\n  area_list:\n    - area_name: \"区域-邦布-1\"\n      pc_rect: [0, 0, 100, 100]\n    - area_name: \"区域-邦布-2\"\n      pc_rect: [100, 0, 200, 100]\n    - area_name: \"区域-商品列表\"\n      pc_rect: [0, 0, 1000, 500]");
 	}
 
 	private static void WriteBooBoxScreenYaml(string rootDirectory)
 	{
 		string text = Path.Combine(rootDirectory, "assets", "game_data", "screen_info");
 		Directory.CreateDirectory(text);
-		File.WriteAllText(Path.Combine(text, "_od_merged.yml"), "- screen_id: suibian_temple_boo_box\n  screen_name: \"随便观-邦巢\"\n  area_list:\n    - area_name: \"按钮-聘用\"\n      pc_rect: [0, 0, 200, 50]\n      text: \"聘用\"\n    - area_name: \"区域-邦布列表\"\n      pc_rect: [0, 100, 1000, 900]\n    - area_name: \"标题-邦布名称\"\n      pc_rect: [0, 50, 200, 100]\n      text: \"售卖\"\n    - area_name: \"按钮-刷新\"\n      pc_rect: [1200, 800, 1400, 900]\n    - area_name: \"标题-无法聘用\"\n      pc_rect: [0, 900, 200, 950]\n      text: \"无法聘用\"\n    - area_name: \"取消\"\n      pc_rect: [200, 0, 400, 50]\n      text: \"取消\"\n    - area_name: \"按钮-跳过\"\n      pc_rect: [500, 500, 700, 600]");
+		ScreenSeed.WriteScreens(text, "- screen_id: suibian_temple_boo_box\n  screen_name: \"随便观-邦巢\"\n  area_list:\n    - area_name: \"按钮-聘用\"\n      pc_rect: [0, 0, 200, 50]\n      text: \"聘用\"\n    - area_name: \"区域-邦布列表\"\n      pc_rect: [0, 100, 1000, 900]\n    - area_name: \"标题-邦布名称\"\n      pc_rect: [0, 50, 200, 100]\n      text: \"售卖\"\n    - area_name: \"按钮-刷新\"\n      pc_rect: [1200, 800, 1400, 900]\n    - area_name: \"标题-无法聘用\"\n      pc_rect: [0, 900, 200, 950]\n      text: \"无法聘用\"\n    - area_name: \"取消\"\n      pc_rect: [200, 0, 400, 50]\n      text: \"取消\"\n    - area_name: \"按钮-跳过\"\n      pc_rect: [500, 500, 700, 600]");
 	}
 
 	private static void WritePawnshopScreenYaml(string rootDirectory)
 	{
 		string text = Path.Combine(rootDirectory, "assets", "game_data", "screen_info");
 		Directory.CreateDirectory(text);
-		File.WriteAllText(Path.Combine(text, "_od_merged.yml"), "- screen_id: suibian_temple_pawnshop\n  screen_name: \"随便观-德丰大押\"\n  area_list:\n    - area_name: \"区域-商品列表\"\n      pc_rect: [1051, 221, 1816, 937]\n    - area_name: \"按钮-购买件数-最小\"\n      pc_rect: [741, 659, 771, 688]\n    - area_name: \"按钮-购买件数-最大\"\n      pc_rect: [1150, 659, 1168, 687]\n    - area_name: \"按钮-确认\"\n      pc_rect: [995, 712, 1254, 801]\n      text: \"确认\"\n    - area_name: \"按钮-兑换关闭\"\n      pc_rect: [1279, 289, 1333, 337]\n    - area_name: \"区域-购买货币\"\n      pc_rect: [683, 712, 985, 807]");
+		ScreenSeed.WriteScreens(text, "- screen_id: suibian_temple_pawnshop\n  screen_name: \"随便观-德丰大押\"\n  area_list:\n    - area_name: \"区域-商品列表\"\n      pc_rect: [1051, 221, 1816, 937]\n    - area_name: \"按钮-购买件数-最小\"\n      pc_rect: [741, 659, 771, 688]\n    - area_name: \"按钮-购买件数-最大\"\n      pc_rect: [1150, 659, 1168, 687]\n    - area_name: \"按钮-确认\"\n      pc_rect: [995, 712, 1254, 801]\n      text: \"确认\"\n    - area_name: \"按钮-兑换关闭\"\n      pc_rect: [1279, 289, 1333, 337]\n    - area_name: \"区域-购买货币\"\n      pc_rect: [683, 712, 985, 807]");
 	}
 
 	private static void WriteYumChaSinScreenYaml(string rootDirectory)
 	{
 		string text = Path.Combine(rootDirectory, "assets", "game_data", "screen_info");
 		Directory.CreateDirectory(text);
-		File.WriteAllText(Path.Combine(text, "_od_merged.yml"), "- screen_id: suibian_temple_yum_cha_sin\n  screen_name: \"随便观-饮茶仙\"\n  area_list:\n    - area_name: \"区域-任务列表\"\n      pc_rect: [0, 0, 400, 300]\n    - area_name: \"区域-材料名称\"\n      pc_rect: [0, 80, 400, 120]\n    - area_name: \"区域-材料数量\"\n      pc_rect: [0, 80, 400, 120]\n    - area_name: \"区域-材料-1\"\n      pc_rect: [0, 80, 200, 120]\n    - area_name: \"区域-材料-2\"\n      pc_rect: [0, 200, 200, 240]\n    - area_name: \"区域-材料-3\"\n      pc_rect: [0, 320, 200, 360]");
+		ScreenSeed.WriteScreens(text, "- screen_id: suibian_temple_yum_cha_sin\n  screen_name: \"随便观-饮茶仙\"\n  area_list:\n    - area_name: \"区域-任务列表\"\n      pc_rect: [0, 0, 400, 300]\n    - area_name: \"区域-材料名称\"\n      pc_rect: [0, 80, 400, 120]\n    - area_name: \"区域-材料数量\"\n      pc_rect: [0, 80, 400, 120]\n    - area_name: \"区域-材料-1\"\n      pc_rect: [0, 80, 200, 120]\n    - area_name: \"区域-材料-2\"\n      pc_rect: [0, 200, 200, 240]\n    - area_name: \"区域-材料-3\"\n      pc_rect: [0, 320, 200, 360]");
 	}
 
 	private static void SetLastScreenshot(ZOperation operation, Mat screenshot)
