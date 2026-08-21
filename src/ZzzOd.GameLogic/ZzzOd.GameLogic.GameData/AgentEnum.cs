@@ -21,7 +21,7 @@ public sealed class AgentEnum
 
 	public static readonly AgentEnum KOLEDA = new AgentEnum(Create("koleda", "珂蕾妲", RareTypeEnum.S, AgentTypeEnum.STUN, DmgTypeEnum.FIRE, new string[] { "koleda" }));
 
-	public static readonly AgentEnum LUCY = new AgentEnum(Create("lucy", "露西", RareTypeEnum.A, AgentTypeEnum.SUPPORT, DmgTypeEnum.FIRE, new string[] { "lucy" }));
+	public static readonly AgentEnum LUCY = new AgentEnum(Create("lucy", "露西", RareTypeEnum.A, AgentTypeEnum.SUPPORT, DmgTypeEnum.FIRE, new string[2] { "lucy", "lucy_princess_on_holiday" }));
 
 	public static readonly AgentEnum LYCAON = new AgentEnum(Create("lycaon", "莱卡恩", RareTypeEnum.S, AgentTypeEnum.STUN, DmgTypeEnum.ICE, new string[] { "lycaon" }));
 
@@ -117,7 +117,7 @@ public sealed class AgentEnum
 
 	public static readonly AgentEnum NORMA = new AgentEnum(Create("norma", "诺姆", RareTypeEnum.S, AgentTypeEnum.STUN, DmgTypeEnum.FIRE, new string[] { "norma" }, new string[] { "诺姆-预热" }));
 
-	public static readonly AgentEnum REMIELLE = new AgentEnum(Create("remielle", "蕾米埃尔", RareTypeEnum.S, AgentTypeEnum.ANOMALY, DmgTypeEnum.LUMIFLUX, new string[2] { "remielle", "remielle_dark" }, new string[2] { "蕾米埃尔-浮晖", "蕾米埃尔-虚曜" }));
+	public static readonly AgentEnum REMIELLE = new AgentEnum(Create("remielle", "蕾米埃尔", RareTypeEnum.S, AgentTypeEnum.ANOMALY, DmgTypeEnum.LUMIFLUX, new string[4] { "remielle", "remielle_dark", "remielle_dark_veil", "remielle_seashade" }, new string[2] { "蕾米埃尔-浮晖", "蕾米埃尔-虚曜" }));
 
 	public Agent Value { get; }
 
