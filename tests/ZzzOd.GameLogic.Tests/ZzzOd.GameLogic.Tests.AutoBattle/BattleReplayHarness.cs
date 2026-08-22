@@ -468,12 +468,10 @@ internal sealed class BattleReplayRunner
 {
 	private static readonly TimeSpan ExecutionTimeout = TimeSpan.FromSeconds(2);
 
-	public async Task<IReadOnlyList<BattleReplayDecision>> RunAsync(
-		BattleReplayPackage package,
-		string configurationRoot,
-		bool readFromMerged)
+	public async Task<IReadOnlyList<BattleReplayDecision>> RunAsync(BattleReplayPackage package)
 	{
-		using ZContext context = new(new OneDragonEnvironment(configurationRoot));
+		BattleReplayConfiguration configuration = package.Configuration;
+		using ZContext context = new(new OneDragonEnvironment(configuration.WorkDirectory));
 		var clock = new BattleReplayClock([]);
 		var actual = new List<BattleReplayDecision>();
 		var actualLock = new object();
@@ -481,9 +479,9 @@ internal sealed class BattleReplayRunner
 		var replayOpsLock = new object();
 		var autoBattleOperator = new AutoBattleOperator(
 			context.AutoBattleContext,
-			"auto_battle",
-			package.Manifest.ConfigurationName,
-			readFromMerged,
+			configuration.SubDirectory,
+			configuration.TemplateName,
+			configuration.ReadFromMerged,
 			clock,
 			operationDef =>
 			{

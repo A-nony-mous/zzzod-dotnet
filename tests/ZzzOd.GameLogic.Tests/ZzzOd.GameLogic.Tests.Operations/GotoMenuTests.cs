@@ -237,7 +237,7 @@ public sealed class GotoMenuTests : IDisposable
 		buffer[2] = "game_data";
 		buffer[3] = "screen_info";
 		buffer[4] = "_od_merged.yml";
-		File.WriteAllText(Path.Combine(buffer), "- screen_id: normal_world\n  screen_name: 大世界-普通\n  area_list:\n    - area_name: 信息\n      id_mark: true\n      pc_rect: [10, 10, 30, 30]\n      text: 信息\n      lcs_percent: 0.8\n    - area_name: 打开菜单\n      pc_rect: [10, 40, 30, 60]\n      text: 菜单\n      lcs_percent: 0.8\n      goto_list: [菜单]\n- screen_id: menu\n  screen_name: 菜单\n  area_list:\n    - area_name: 返回\n      id_mark: true\n      pc_rect: [10, 70, 30, 90]\n      text: 返回\n      lcs_percent: 0.8");
+		ScreenSeed.WriteScreens(Path.Combine(buffer[..4]), "- screen_id: normal_world\n  screen_name: 大世界-普通\n  area_list:\n    - area_name: 信息\n      id_mark: true\n      pc_rect: [10, 10, 30, 30]\n      text: 信息\n      lcs_percent: 0.8\n    - area_name: 打开菜单\n      pc_rect: [10, 40, 30, 60]\n      text: 菜单\n      lcs_percent: 0.8\n      goto_list: [菜单]\n- screen_id: menu\n  screen_name: 菜单\n  area_list:\n    - area_name: 返回\n      id_mark: true\n      pc_rect: [10, 70, 30, 90]\n      text: 返回\n      lcs_percent: 0.8");
 	}
 
 	private static bool CanUseOpenCv()

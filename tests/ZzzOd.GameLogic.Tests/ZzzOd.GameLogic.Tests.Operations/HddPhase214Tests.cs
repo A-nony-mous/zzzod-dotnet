@@ -225,7 +225,7 @@ public sealed class HddPhase214Tests : IDisposable
 		buffer[2] = "game_data";
 		buffer[3] = "screen_info";
 		buffer[4] = "_od_merged.yml";
-		File.WriteAllText(Path.Combine(buffer), "- screen_id: hdd\n  screen_name: HDD\n  area_list:\n    - area_name: 章节列表\n      pc_rect: [0, 0, 200, 40]\n    - area_name: 章节显示\n      pc_rect: [0, 0, 200, 40]\n      text: 第二章间章\n      lcs_percent: 0.8\n    - area_name: 委托区域\n      pc_rect: [0, 40, 200, 80]\n    - area_name: 副本区域\n      pc_rect: [0, 80, 200, 110]\n    - area_name: 下一步\n      pc_rect: [10, 130, 30, 150]\n      text: 下一步\n      lcs_percent: 0.8\n    - area_name: 出战\n      pc_rect: [10, 160, 30, 180]\n      text: 出战\n      lcs_percent: 0.8\n    - area_name: 确定并出战\n      pc_rect: [10, 190, 30, 210]\n      text: 确定并出战\n      lcs_percent: 0.8");
+		ScreenSeed.WriteScreens(Path.Combine(buffer[..4]), "- screen_id: hdd\n  screen_name: HDD\n  area_list:\n    - area_name: 章节列表\n      pc_rect: [0, 0, 200, 40]\n    - area_name: 章节显示\n      pc_rect: [0, 0, 200, 40]\n      text: 第二章间章\n      lcs_percent: 0.8\n    - area_name: 委托区域\n      pc_rect: [0, 40, 200, 80]\n    - area_name: 副本区域\n      pc_rect: [0, 80, 200, 110]\n    - area_name: 下一步\n      pc_rect: [10, 130, 30, 150]\n      text: 下一步\n      lcs_percent: 0.8\n    - area_name: 出战\n      pc_rect: [10, 160, 30, 180]\n      text: 出战\n      lcs_percent: 0.8\n    - area_name: 确定并出战\n      pc_rect: [10, 190, 30, 210]\n      text: 确定并出战\n      lcs_percent: 0.8");
 	}
 
 	private static bool CanUseOpenCv()

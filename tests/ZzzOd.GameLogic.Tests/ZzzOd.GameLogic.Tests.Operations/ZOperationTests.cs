@@ -897,7 +897,7 @@ public sealed class ZOperationTests : IDisposable
 		buffer[2] = "game_data";
 		buffer[3] = "screen_info";
 		buffer[4] = "_od_merged.yml";
-		File.WriteAllText(Path.Combine(buffer), "- screen_id: text_screen\n  screen_name: 文本界面\n  area_list:\n    - area_name: 奖励文本\n      id_mark: true\n      pc_rect: [1, 1, 40, 30]\n      text: 领取奖励\n      lcs_percent: 0.6\n    - area_name: 不存在文本\n      id_mark: true\n      pc_rect: [1, 1, 40, 30]\n      text: 每日任务\n      lcs_percent: 0.9\n    - area_name: 确认文本\n      id_mark: true\n      pc_rect: [1, 1, 40, 30]\n      text: 确认已出现\n      lcs_percent: 0.6");
+		ScreenSeed.WriteScreens(Path.Combine(buffer[..4]), "- screen_id: text_screen\n  screen_name: 文本界面\n  area_list:\n    - area_name: 奖励文本\n      id_mark: true\n      pc_rect: [1, 1, 40, 30]\n      text: 领取奖励\n      lcs_percent: 0.6\n    - area_name: 不存在文本\n      id_mark: true\n      pc_rect: [1, 1, 40, 30]\n      text: 每日任务\n      lcs_percent: 0.9\n    - area_name: 确认文本\n      id_mark: true\n      pc_rect: [1, 1, 40, 30]\n      text: 确认已出现\n      lcs_percent: 0.6");
 	}
 
 	private void WriteClickOnlyScreenYaml()
@@ -908,7 +908,7 @@ public sealed class ZOperationTests : IDisposable
 		buffer[2] = "game_data";
 		buffer[3] = "screen_info";
 		buffer[4] = "_od_merged.yml";
-		File.WriteAllText(Path.Combine(buffer), "- screen_id: click_screen\n  screen_name: 点击界面\n  area_list:\n    - area_name: 确认\n      pc_rect: [10, 20, 50, 60]\n      goto_list: [结果界面]\n- screen_id: result_screen\n  screen_name: 结果界面\n  area_list: []");
+		ScreenSeed.WriteScreens(Path.Combine(buffer[..4]), "- screen_id: click_screen\n  screen_name: 点击界面\n  area_list:\n    - area_name: 确认\n      pc_rect: [10, 20, 50, 60]\n      goto_list: [结果界面]\n- screen_id: result_screen\n  screen_name: 结果界面\n  area_list: []");
 	}
 
 	private void WriteGotoScreenYaml(bool includeRoute = true)
@@ -920,7 +920,7 @@ public sealed class ZOperationTests : IDisposable
 		buffer[2] = "game_data";
 		buffer[3] = "screen_info";
 		buffer[4] = "_od_merged.yml";
-		File.WriteAllText(Path.Combine(buffer), "- screen_id: current_screen\n  screen_name: 当前界面\n  area_list:\n    - area_name: 当前标识\n      id_mark: true\n      pc_rect: [0, 0, 24, 12]\n      text: CURMARK\n      lcs_percent: 0.6\n    - area_name: 跳转按钮\n      pc_rect: [20, 12, 60, 40]\n      text: OPENNEXT\n      lcs_percent: 0.6\n" + text + "- screen_id: target_screen\n  screen_name: 目标界面\n  area_list:\n    - area_name: 目标标识\n      id_mark: true\n      pc_rect: [0, 0, 24, 12]\n      text: TARGETMARK\n      lcs_percent: 0.6");
+		ScreenSeed.WriteScreens(Path.Combine(buffer[..4]), "- screen_id: current_screen\n  screen_name: 当前界面\n  area_list:\n    - area_name: 当前标识\n      id_mark: true\n      pc_rect: [0, 0, 24, 12]\n      text: CURMARK\n      lcs_percent: 0.6\n    - area_name: 跳转按钮\n      pc_rect: [20, 12, 60, 40]\n      text: OPENNEXT\n      lcs_percent: 0.6\n" + text + "- screen_id: target_screen\n  screen_name: 目标界面\n  area_list:\n    - area_name: 目标标识\n      id_mark: true\n      pc_rect: [0, 0, 24, 12]\n      text: TARGETMARK\n      lcs_percent: 0.6");
 	}
 
 	private static Mat CreateScreen()

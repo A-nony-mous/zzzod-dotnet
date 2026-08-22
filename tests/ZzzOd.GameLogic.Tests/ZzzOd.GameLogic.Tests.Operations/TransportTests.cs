@@ -455,7 +455,7 @@ public sealed class TransportTests : IDisposable
 		buffer[2] = "game_data";
 		buffer[3] = "screen_info";
 		buffer[4] = "_od_merged.yml";
-		File.WriteAllText(Path.Combine(buffer), "- screen_id: map\n  screen_name: 地图\n  area_list:\n    - area_name: 左上角返回\n      pc_rect: [1, 1, 40, 20]\n      text: 返回\n      lcs_percent: 0.9\n    - area_name: 传送点名称\n      pc_rect: [20, 20, 70, 50]\n    - area_name: 确认\n      pc_rect: [10, 10, 30, 30]\n      text: 确认\n      lcs_percent: 0.9");
+		ScreenSeed.WriteScreens(Path.Combine(buffer[..4]), "- screen_id: map\n  screen_name: 地图\n  area_list:\n    - area_name: 左上角返回\n      pc_rect: [1, 1, 40, 20]\n      text: 返回\n      lcs_percent: 0.9\n    - area_name: 传送点名称\n      pc_rect: [20, 20, 70, 50]\n    - area_name: 确认\n      pc_rect: [10, 10, 30, 30]\n      text: 确认\n      lcs_percent: 0.9");
 	}
 
 	private void WriteTransportScreenYaml()
@@ -466,7 +466,7 @@ public sealed class TransportTests : IDisposable
 		buffer[2] = "game_data";
 		buffer[3] = "screen_info";
 		buffer[4] = "_od_merged.yml";
-		File.WriteAllText(Path.Combine(buffer), "- screen_id: normal_world_basic\n  screen_name: 大世界-普通\n  area_list:\n    - area_name: 普通标识\n      id_mark: true\n      pc_rect: [1, 1, 40, 20]\n      text: 普通世界标识\n      lcs_percent: 0.9\n- screen_id: normal_world\n  screen_name: 大世界\n  area_list:\n    - area_name: 地图\n      pc_rect: [10, 10, 30, 30]\n      text: 地图\n      lcs_percent: 0.9\n- screen_id: map\n  screen_name: 地图\n  area_list:\n    - area_name: 左上角返回\n      pc_rect: [1, 1, 40, 20]\n      text: 返回\n      lcs_percent: 0.9\n    - area_name: 传送点名称\n      pc_rect: [20, 20, 70, 50]\n    - area_name: 确认\n      pc_rect: [10, 10, 30, 30]\n      text: 确认\n      lcs_percent: 0.9");
+		ScreenSeed.WriteScreens(Path.Combine(buffer[..4]), "- screen_id: normal_world_basic\n  screen_name: 大世界-普通\n  area_list:\n    - area_name: 普通标识\n      id_mark: true\n      pc_rect: [1, 1, 40, 20]\n      text: 普通世界标识\n      lcs_percent: 0.9\n- screen_id: normal_world\n  screen_name: 大世界\n  area_list:\n    - area_name: 地图\n      pc_rect: [10, 10, 30, 30]\n      text: 地图\n      lcs_percent: 0.9\n- screen_id: map\n  screen_name: 地图\n  area_list:\n    - area_name: 左上角返回\n      pc_rect: [1, 1, 40, 20]\n      text: 返回\n      lcs_percent: 0.9\n    - area_name: 传送点名称\n      pc_rect: [20, 20, 70, 50]\n    - area_name: 确认\n      pc_rect: [10, 10, 30, 30]\n      text: 确认\n      lcs_percent: 0.9");
 	}
 
 	private static Mat CreateScreen()

@@ -32,9 +32,12 @@ public static class ScreenSeed
             }
             else if (current is not null)
             {
-                current.AppendLine();
+                string contentLine = line.TrimEnd();
+                current.Append('\n');
                 // 条目内容行统一去掉列表项的 2 空格缩进，保持映射内部相对层级不变。
-                current.Append(line.Length >= 2 && line[0] == ' ' && line[1] == ' ' ? line[2..] : line);
+                current.Append(contentLine.Length >= 2 && contentLine[0] == ' ' && contentLine[1] == ' '
+                    ? contentLine[2..]
+                    : contentLine);
             }
         }
         if (current is not null)
@@ -51,7 +54,7 @@ public static class ScreenSeed
             }
             File.WriteAllText(
                 Path.Combine(screenInfoDirectory, match.Groups["id"].Value + ".yml"),
-                document.TrimEnd() + System.Environment.NewLine);
+                document.TrimEnd() + "\n");
         }
     }
 }

@@ -211,7 +211,7 @@ public sealed class WaitNormalWorldTests : IDisposable
 		buffer[2] = "game_data";
 		buffer[3] = "screen_info";
 		buffer[4] = "_od_merged.yml";
-		File.WriteAllText(Path.Combine(buffer), "- screen_id: normal_world_basic\n  screen_name: 大世界-普通\n  area_list:\n    - area_name: 普通标识\n      id_mark: true\n      pc_rect: [1, 1, 40, 20]\n      text: 普通世界标识\n      lcs_percent: 0.9\n- screen_id: normal_world_investigation\n  screen_name: 大世界-勘域\n  area_list:\n    - area_name: 勘域标识\n      id_mark: true\n      pc_rect: [1, 1, 40, 20]\n      text: 勘域世界标识\n      lcs_percent: 0.9\n- screen_id: normal_world\n  screen_name: 大世界\n  area_list:\n    - area_name: 信息\n      pc_rect: [1, 1, 40, 20]\n      text: 信息\n      lcs_percent: 0.9\n    - area_name: 星期\n      pc_rect: [1, 1, 40, 20]\n      text: 星期\n      lcs_percent: 0.9");
+		ScreenSeed.WriteScreens(Path.Combine(buffer[..4]), "- screen_id: normal_world_basic\n  screen_name: 大世界-普通\n  area_list:\n    - area_name: 普通标识\n      id_mark: true\n      pc_rect: [1, 1, 40, 20]\n      text: 普通世界标识\n      lcs_percent: 0.9\n- screen_id: normal_world_investigation\n  screen_name: 大世界-勘域\n  area_list:\n    - area_name: 勘域标识\n      id_mark: true\n      pc_rect: [1, 1, 40, 20]\n      text: 勘域世界标识\n      lcs_percent: 0.9\n- screen_id: normal_world\n  screen_name: 大世界\n  area_list:\n    - area_name: 信息\n      pc_rect: [1, 1, 40, 20]\n      text: 信息\n      lcs_percent: 0.9\n    - area_name: 星期\n      pc_rect: [1, 1, 40, 20]\n      text: 星期\n      lcs_percent: 0.9");
 	}
 
 	private static Mat CreateScreen()

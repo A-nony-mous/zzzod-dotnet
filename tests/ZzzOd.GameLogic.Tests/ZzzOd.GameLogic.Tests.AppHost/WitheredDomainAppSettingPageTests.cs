@@ -171,7 +171,8 @@ public sealed class WitheredDomainAppSettingPageTests
 	{
 		for (DirectoryInfo directoryInfo = new DirectoryInfo(AppContext.BaseDirectory); directoryInfo != null; directoryInfo = directoryInfo.Parent)
 		{
-			if (Directory.Exists(Path.Combine(directoryInfo.FullName, "zzzod-dotnet", "src", "ZzzOd.Gui")))
+			if (Directory.Exists(Path.Combine(directoryInfo.FullName, "zzzod-dotnet", "src", "ZzzOd.Gui")) &&
+			    Directory.Exists(Path.Combine(directoryInfo.FullName, "assets", "game_data", "hollow_zero")))
 			{
 				return directoryInfo.FullName;
 			}

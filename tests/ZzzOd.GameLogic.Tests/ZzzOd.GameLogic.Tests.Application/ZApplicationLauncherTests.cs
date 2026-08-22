@@ -8,6 +8,7 @@ using OpenCvSharp;
 using Xunit;
 using ZzzOd.GameLogic.Application;
 using ZzzOd.GameLogic.Context;
+using ZzzOd.GameLogic.Tests.TestSupport;
 
 namespace ZzzOd.GameLogic.Tests.Application;
 
@@ -79,13 +80,9 @@ public sealed class ZApplicationLauncherTests : IDisposable
 	[Fact]
 	public void CreateContext_ReloadsScreenDefinitions()
 	{
-		string[] buffer = new string[5];
-		buffer[0] = _rootDirectory;
-		buffer[1] = "assets";
-		buffer[2] = "game_data";
-		buffer[3] = "screen_info";
-		buffer[4] = "_od_merged.yml";
-		File.WriteAllText(Path.Combine(buffer), "- screen_id: normal_world\n  screen_name: 大世界\n  area_list:\n  - area_name: 星期\n    pc_rect:\n    - 201\n    - 38\n    - 270\n    - 86\n    text: 星期");
+		ScreenSeed.WriteScreens(
+			Path.Combine(_rootDirectory, "assets", "game_data", "screen_info"),
+			"- screen_id: normal_world\n  screen_name: 大世界\n  area_list:\n  - area_name: 星期\n    pc_rect:\n    - 201\n    - 38\n    - 270\n    - 86\n    text: 星期");
 		OneDragonEnvironment environment = new OneDragonEnvironment(_rootDirectory);
 		TestLauncher testLauncher = new TestLauncher(() => new ZContext(environment), initializeOcrProfile: false, validateAssets: false);
 		using ZContext zContext = testLauncher.CreateContext();

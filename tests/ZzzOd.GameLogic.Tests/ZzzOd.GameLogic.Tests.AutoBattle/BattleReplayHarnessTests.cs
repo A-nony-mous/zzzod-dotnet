@@ -13,8 +13,20 @@ public sealed class BattleReplayHarnessTests
     {
         string packageDirectory = GetSyntheticPackageDirectory();
 
-        BattleReplayLoadResult loaded = BattleReplayPackageReader.Read(packageDirectory, "SYNTHETIC");
-        BattleReplayLoadResult skipped = BattleReplayPackageReader.Read(packageDirectory, "OTHER");
+        BattleReplayLoadResult loaded = BattleReplayPackageReader.Read(packageDirectory, packageDirectory);
+        string tamperedPackageDirectory = CopyPackageToTemporaryDirectory(packageDirectory);
+        BattleReplayLoadResult skipped;
+        try
+        {
+            File.AppendAllText(
+                Path.Combine(tamperedPackageDirectory, "config", "auto_battle", "synthetic.yml"),
+                "\n# tampered");
+            skipped = BattleReplayPackageReader.Read(tamperedPackageDirectory, tamperedPackageDirectory);
+        }
+        finally
+        {
+            Directory.Delete(tamperedPackageDirectory, recursive: true);
+        }
 
 		Assert.False(loaded.IsSkipped, loaded.SkipReason);
 		Assert.NotNull(loaded.Package);
@@ -38,10 +50,12 @@ public sealed class BattleReplayHarnessTests
     [Fact]
 	public async Task SyntheticPackage_DrivesOperatorWindowCooldownAndPrioritySemantics()
 	{
-		BattleReplayPackage package = BattleReplayPackageReader.Read(GetSyntheticPackageDirectory(), "SYNTHETIC").Package!;
+		BattleReplayPackage package = BattleReplayPackageReader.Read(
+			GetSyntheticPackageDirectory(),
+			GetSyntheticPackageDirectory()).Package!;
 		var runner = new BattleReplayRunner();
 
-		IReadOnlyList<BattleReplayDecision> actual = await runner.RunAsync(package, package.Directory, readFromMerged: false);
+		IReadOnlyList<BattleReplayDecision> actual = await runner.RunAsync(package);
 
 		string? mismatch = BattleReplayDecisionComparer.FindFirstMismatch(package.Decisions, actual, TimeSpan.FromMilliseconds(1));
 		Assert.True(mismatch is null, mismatch);
@@ -65,7 +79,6 @@ public sealed class BattleReplayHarnessTests
 	public async Task RealPackages_PassSchemaFingerprintAndDecisionReplay()
 	{
 		string root = Environment.GetEnvironmentVariable(IntegrationEnvironmentVariable)!;
-		string expectedHash = Environment.GetEnvironmentVariable("ZZZOD_BATTLE_REPLAY_CONFIG_HASH") ?? string.Empty;
 		string configurationRoot = Environment.GetEnvironmentVariable("ZZZOD_BATTLE_REPLAY_CONFIG_ROOT")
 			?? Directory.GetParent(Path.GetFullPath(root.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar)))?.FullName
 			?? throw new InvalidOperationException("无法推断回放配置根目录");
@@ -74,17 +87,30 @@ public sealed class BattleReplayHarnessTests
 		var runner = new BattleReplayRunner();
 		foreach (string packageDirectory in packages)
 		{
-			BattleReplayLoadResult result = BattleReplayPackageReader.Read(packageDirectory, expectedHash);
+			BattleReplayLoadResult result = BattleReplayPackageReader.Read(packageDirectory, configurationRoot);
 			Assert.False(result.IsSkipped, result.SkipReason);
 			BattleReplayPackage package = result.Package!;
 			Assert.NotEmpty(package.Decisions);
-			IReadOnlyList<BattleReplayDecision> actual = await runner.RunAsync(package, configurationRoot, readFromMerged: true);
+			IReadOnlyList<BattleReplayDecision> actual = await runner.RunAsync(package);
 			string? mismatch = BattleReplayDecisionComparer.FindFirstMismatch(package.Decisions, actual, TimeSpan.FromMilliseconds(2));
 			Assert.True(mismatch is null, mismatch);
 		}
 	}
 
     private static string GetSyntheticPackageDirectory() => Path.Combine(AppContext.BaseDirectory, "TestData", "BattleReplay", "synthetic");
+
+    private static string CopyPackageToTemporaryDirectory(string sourceDirectory)
+    {
+        string targetDirectory = Path.Combine(Path.GetTempPath(), "zzzod-battle-replay-tests", Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(targetDirectory);
+        foreach (string sourcePath in Directory.GetFiles(sourceDirectory, "*", SearchOption.AllDirectories))
+        {
+            string targetPath = Path.Combine(targetDirectory, Path.GetRelativePath(sourceDirectory, sourcePath));
+            Directory.CreateDirectory(Path.GetDirectoryName(targetPath)!);
+            File.Copy(sourcePath, targetPath);
+        }
+        return targetDirectory;
+    }
 
     private sealed class BattleReplayIntegrationFactAttribute : FactAttribute
     {

@@ -511,7 +511,7 @@ public sealed class EnterGameOperationTests : IDisposable
 		buffer[2] = "game_data";
 		buffer[3] = "screen_info";
 		buffer[4] = "_od_merged.yml";
-		File.WriteAllText(Path.Combine(buffer), "- screen_id: normal_world\n  screen_name: 大世界-普通\n  area_list:\n    - area_name: 信息\n      id_mark: true\n      pc_rect: [0, 0, 30, 20]\n      text: 信息\n      lcs_percent: 0.8\n    - area_name: 打开菜单\n      pc_rect: [40, 0, 80, 20]\n      text: 菜单\n      lcs_percent: 0.8\n      goto_list: [菜单]\n- screen_id: menu\n  screen_name: 菜单\n  area_list:\n    - area_name: 返回\n      id_mark: true\n      pc_rect: [0, 20, 30, 40]\n      text: 返回\n      lcs_percent: 0.8\n    - area_name: 底部列表\n      pc_rect: [0, 0, 120, 40]\n    - area_name: 更多功能\n      pc_rect: [0, 0, 120, 40]\n    - area_name: 更多登出确认\n      pc_rect: [0, 0, 120, 40]\n      text: 确认\n      lcs_percent: 0.8\n- screen_id: open_game\n  screen_name: 打开游戏\n  area_list:\n    - area_name: 点击进入游戏\n      pc_rect: [0, 0, 140, 40]\n      text: 点击进入游戏\n      lcs_percent: 0.8\n    - area_name: B服新-登录记录\n      pc_rect: [0, 0, 140, 40]\n      text: 登录记录\n      lcs_percent: 0.8");
+		ScreenSeed.WriteScreens(Path.Combine(buffer[..4]), "- screen_id: normal_world\n  screen_name: 大世界-普通\n  area_list:\n    - area_name: 信息\n      id_mark: true\n      pc_rect: [0, 0, 30, 20]\n      text: 信息\n      lcs_percent: 0.8\n    - area_name: 打开菜单\n      pc_rect: [40, 0, 80, 20]\n      text: 菜单\n      lcs_percent: 0.8\n      goto_list: [菜单]\n- screen_id: menu\n  screen_name: 菜单\n  area_list:\n    - area_name: 返回\n      id_mark: true\n      pc_rect: [0, 20, 30, 40]\n      text: 返回\n      lcs_percent: 0.8\n    - area_name: 底部列表\n      pc_rect: [0, 0, 120, 40]\n    - area_name: 更多功能\n      pc_rect: [0, 0, 120, 40]\n    - area_name: 更多登出确认\n      pc_rect: [0, 0, 120, 40]\n      text: 确认\n      lcs_percent: 0.8\n- screen_id: open_game\n  screen_name: 打开游戏\n  area_list:\n    - area_name: 点击进入游戏\n      pc_rect: [0, 0, 140, 40]\n      text: 点击进入游戏\n      lcs_percent: 0.8\n    - area_name: B服新-登录记录\n      pc_rect: [0, 0, 140, 40]\n      text: 登录记录\n      lcs_percent: 0.8");
 	}
 
 	private void WriteEnterClickScreenYaml()
@@ -522,7 +522,7 @@ public sealed class EnterGameOperationTests : IDisposable
 		buffer[2] = "game_data";
 		buffer[3] = "screen_info";
 		buffer[4] = "_od_merged.yml";
-		File.WriteAllText(Path.Combine(buffer), "- screen_id: enter_game\n  screen_name: 打开游戏\n  area_list:\n    - area_name: 点击进入游戏\n      pc_rect: [782, 846, 1136, 1032]\n      text: 点击进入游戏\n      lcs_percent: 0.6\n    - area_name: 进入游戏点击后状态\n      pc_rect: [700, 820, 1220, 1032]");
+		ScreenSeed.WriteScreens(Path.Combine(buffer[..4]), "- screen_id: enter_game\n  screen_name: 打开游戏\n  area_list:\n    - area_name: 点击进入游戏\n      pc_rect: [782, 846, 1136, 1032]\n      text: 点击进入游戏\n      lcs_percent: 0.6\n    - area_name: 进入游戏点击后状态\n      pc_rect: [700, 820, 1220, 1032]");
 	}
 
 	private static bool CanUseOpenCv()

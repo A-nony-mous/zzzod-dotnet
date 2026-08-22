@@ -1,8 +1,9 @@
-schemaVersion: 1
+schemaVersion: 2
 startedAtUtc: 1970-01-01T00:00:10.0000000+00:00
 endedAtUtc: 1970-01-01T00:00:32.1000000+00:00
 configurationName: "synthetic"
-configurationHash: SYNTHETIC
+configurationHash: CD9CF587B0290F2A6457FE634D6C94C646AE385742EB221461FB4CC7DEA9C94D
+configurationRelativePath: "config/auto_battle/synthetic.yml"
 frameWidth: 0
 frameHeight: 0
 droppedFrameCount: 0
