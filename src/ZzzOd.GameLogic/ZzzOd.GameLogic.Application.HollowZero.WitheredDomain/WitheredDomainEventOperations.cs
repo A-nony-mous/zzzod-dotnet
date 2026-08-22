@@ -18,7 +18,7 @@ using ZzzOd.GameLogic.HollowZero.GameData;
 namespace ZzzOd.GameLogic.Application.HollowZero.WitheredDomain;
 
 /// <summary>
-/// BaselineParity <c>normal_event_handler.py</c> 的普通事件 OCR 选择。
+/// 枯萎之都普通事件的 OCR 选择操作。
 /// </summary>
 internal static class WitheredDomainEventOperations
 {
@@ -27,7 +27,7 @@ internal static class WitheredDomainEventOperations
 	private const string EventTextArea = "事件文本";
 
 	/// <summary>
-	/// 清除侵蚀症状（remove_corruption.py）使用的白色 OCR 过滤范围。
+	/// 清除侵蚀症状使用的白色 OCR 过滤范围。
 	/// </summary>
 	internal static readonly IReadOnlyList<IReadOnlyList<int>> WhiteColorRange = new IReadOnlyList<int>[2]
 	{
@@ -514,14 +514,14 @@ internal static class WitheredDomainEventOperations
 	}
 
 	/// <summary>
-	/// 对齐 BaselineParity <c>confirm_resonium.py</c> 与 <c>remove_corruption.py</c>：在底部列表区域用 OCR 找到目标文本并点击。
+	/// 在底部列表区域用 OCR 找到鸣徽确认或侵蚀症状目标文本并点击。
 	/// </summary>
 	/// <param name="context">运行上下文。</param>
 	/// <param name="eventName">事件名称。</param>
 	/// <param name="areaName">识别区域名称。</param>
 	/// <param name="targets">按优先级排列的目标文本列表。</param>
 	/// <param name="cropFirst">是否先裁剪区域再识别；为 false 时先全图识别再筛选落在区域内的文本，清除侵蚀症状使用该模式以兼容当前识别模型。</param>
-	/// <param name="colorRange">OCR 颜色过滤范围；鸣徽确认（confirm_resonium.py）不传颜色范围，清除侵蚀症状（remove_corruption.py）传 <see cref="WhiteColorRange"/>。</param>
+	/// <param name="colorRange">OCR 颜色过滤范围；鸣徽确认不传颜色范围，清除侵蚀症状传 <see cref="WhiteColorRange"/>。</param>
 	/// <param name="cancellationToken">取消令牌。</param>
 	internal static async Task<HollowEventHandleResult> HandleConfirmOrCorruptionAsync(ZContext context, string eventName, string areaName, IReadOnlyList<string> targets, bool cropFirst, IReadOnlyList<IReadOnlyList<int>>? colorRange, CancellationToken cancellationToken)
 	{
@@ -608,7 +608,7 @@ internal static class WitheredDomainEventOperations
 	}
 
 	/// <summary>
-	/// 对齐 BaselineParity <c>door_battle.py</c>：优先点击开门，并兼容侵蚀门的普通事件选项。
+	/// 优先点击开门，并兼容侵蚀门的普通事件选项。
 	/// </summary>
 	internal static async Task<HollowEventHandleResult> HandleDoorBattleAsync(ZContext context, WitheredDomainEventDataService eventData, string entryName, CancellationToken cancellationToken)
 	{
@@ -659,7 +659,7 @@ internal static class WitheredDomainEventOperations
 	}
 
 	/// <summary>
-	/// 对齐 BaselineParity <c>leave_random_zone.py</c>：抵达后等待特殊区域，交互提示出现时按交互键再次触发。
+	/// 抵达后等待特殊区域；交互提示出现时再次按交互键触发。
 	/// </summary>
 	internal static async Task<HollowEventHandleResult> HandleLeaveRandomZoneAsync(ZContext context, CancellationToken cancellationToken)
 	{

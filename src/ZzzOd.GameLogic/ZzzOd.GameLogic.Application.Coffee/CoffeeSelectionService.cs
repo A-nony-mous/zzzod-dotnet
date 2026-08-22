@@ -62,7 +62,7 @@ public sealed class CoffeeSelectionService
 	{
 		ArgumentNullException.ThrowIfNull(coffee, "coffee");
 		ArgumentNullException.ThrowIfNull(plan, "plan");
-		// 合成电池计划不喝咖啡加成（对应 Python _is_coffee_for_plan 显式短路）
+			// 合成电池计划不使用咖啡加成。
 		if (plan.CategoryName == "合成电池")
 		{
 			return false;

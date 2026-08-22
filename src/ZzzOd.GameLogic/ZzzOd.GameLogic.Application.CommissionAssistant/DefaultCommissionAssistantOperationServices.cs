@@ -646,7 +646,7 @@ public sealed class DefaultCommissionAssistantOperationServices : ICommissionAss
 	{
 		if (ScreenUtils.FindArea(context, screen, "钓鱼", "按键-时机上鱼") != FindAreaResultEnum.True)
 		{
-			// 对应 commission_assistant_app.py:534 的 wait_round_time=0.1（"这个要尽快按"）。
+				// 把本轮总时长补足到 0.1 秒，以便尽快按键。
 			return new OperationResult(IsSuccess: true, status, new FishingRoundPacing(TimeSpan.FromMilliseconds(100L)));
 		}
 		return InteractForFishing(context, status);
@@ -670,7 +670,7 @@ public sealed class DefaultCommissionAssistantOperationServices : ICommissionAss
 			areaName = "按键-强力-右";
 		}
 		PressFishingPowerKeyIfVisible(context, screen, areaName);
-		// 对应 commission_assistant_app.py:547 的 wait_round_time=0.1（"这个要尽快按"）。
+			// 把本轮总时长补足到 0.1 秒，以便尽快按键。
 		return new OperationResult(IsSuccess: true, status, new FishingRoundPacing(TimeSpan.FromMilliseconds(100L)));
 	}
 
@@ -702,7 +702,7 @@ public sealed class DefaultCommissionAssistantOperationServices : ICommissionAss
 			Thread.Sleep(TimeSpan.FromMilliseconds(50L));
 			PressFishingPowerKey(context);
 		}
-		// 对应 commission_assistant_app.py:566 的 wait_round_time=0.1。
+			// 把本轮总时长补足到 0.1 秒。
 		return new OperationResult(IsSuccess: true, status, new FishingRoundPacing(TimeSpan.FromMilliseconds(100L)));
 	}
 

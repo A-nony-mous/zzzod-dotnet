@@ -463,8 +463,7 @@ public sealed class WorldPatrolService
 			return null;
 		}
 		OneDragon.Core.Abstractions.Geometry.Point offset;
-		// 搜索窗钳制后小于小地图模板时 CropWithOffset 抛出，不再当成普通"本帧无坐标"：
-		// 对应 world_patrol_service.py:596-609 里 matchTemplate 源图小于模板时 cv2 抛错。
+			// 搜索窗钳制后小于模板时抛错，不按普通“本帧无坐标”处理。
 		using Mat mat = CropWithOffset(largeMap.RoadMask, largeMapRect, miniMap.RoadMask.Width, miniMap.RoadMask.Height, out offset);
 		MatchResultList matchResultList = CvImageUtils.MatchTemplate(mat, miniMap.RoadMask, 0.1);
 		if (matchResultList.Max == null)
@@ -512,8 +511,7 @@ public sealed class WorldPatrolService
 		foreach (MatchResult candidate in candidates)
 		{
 			OneDragon.Core.Abstractions.Geometry.Point offset;
-			// 候选区域越界时 CropWithOffset 抛出，不再静默跳过候选：
-			// 对应 world_patrol_service.py:566-577 原生切片越界后 bitwise_and 尺寸不匹配抛错。
+				// 候选区域越界时抛错，不静默跳过该候选。
 			using Mat mat = CropWithOffset(rect: new OneDragon.Core.Abstractions.Geometry.Rect(candidate.X, candidate.Y, candidate.X + miniMap.RoadMask.Cols, candidate.Y + miniMap.RoadMask.Rows), source: largeMap.RoadMask, minWidth: miniMap.RoadMask.Width, minHeight: miniMap.RoadMask.Height, offset: out offset);
 			using Mat mat2 = new Mat();
 			Cv2.BitwiseAnd(mat, miniMap.RoadMask, mat2);
@@ -531,12 +529,9 @@ public sealed class WorldPatrolService
 	/// 按大地图边界钳制裁剪区并返回裁剪结果。
 	/// </summary>
 	/// <remarks>
-	/// 钳制后小于小地图模板时抛出，与参考实现 可观测行为一致：
-	/// 参考实现 <c>cv2_utils.crop_image</c>（cv2_utils.py:600-624）只钳制、不保证最小尺寸，
-	/// 随后 <c>cal_pos_by_road</c>（world_patrol_service.py:596-609）直接 <c>matchTemplate</c>，
-	/// 源图小于模板时 cv2 抛错；<c>cal_pos_by_icon</c>（:566-577）用原生切片，越界后 <c>bitwise_and</c> 尺寸不匹配同样抛错。
-	/// 两边都走"轮内异常 → 状态 <c>异常</c> 重试 → 额度耗尽节点失败"，
-	/// 而不是被当成普通"本帧无坐标"静默进入定位失败重启阶梯。
+	/// 钳制后的裁剪区小于模板时抛错。道路匹配的源图小于模板，或图标候选越界后
+	/// 与道路掩码尺寸不一致，都会进入“轮内异常 → 状态 <c>异常</c> 重试 → 额度耗尽节点失败”，
+	/// 不会被当成普通“本帧无坐标”而静默进入定位失败重启阶梯。
 	/// </remarks>
 	/// <exception cref="InvalidOperationException">钳制后的裁剪区小于模板尺寸。</exception>
 	private static Mat CropWithOffset(Mat source, OneDragon.Core.Abstractions.Geometry.Rect rect, int minWidth, int minHeight, out OneDragon.Core.Abstractions.Geometry.Point offset)

@@ -51,9 +51,9 @@ internal sealed class LostVoidInBattleProbe
 
 	private (long Generation, LostVoidInBattleProbeResult Result)? _pending;
 
-	/// <param name="minInterval">两次探测之间的最小间隔，对齐参考实现迷失之地战斗中 0.8 秒的检测节流。</param>
+	/// <param name="minInterval">两次探测之间的最小间隔，默认使用 0.8 秒的战斗检测节流。</param>
 	/// <param name="dispatchOverride">测试用的同步执行入口；为空时投递到专用调度线程。</param>
-	/// <param name="candidateInterval">已有脱战候选时的复检间隔，对齐参考实现的 0.1 秒。</param>
+	/// <param name="candidateInterval">已有脱战候选时的复检间隔，默认 0.1 秒。</param>
 	/// <param name="maxFrameAge">探测结果允许被当前战斗帧消费的最大帧龄。</param>
 	internal LostVoidInBattleProbe(TimeSpan? minInterval = null, Action<Action>? dispatchOverride = null, TimeSpan? candidateInterval = null, TimeSpan? maxFrameAge = null)
 	{

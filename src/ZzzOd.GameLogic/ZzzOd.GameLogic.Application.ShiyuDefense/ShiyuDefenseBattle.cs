@@ -64,7 +64,7 @@ public sealed class ShiyuDefenseBattle : ZOperation
 	[OperationNode("等待战斗画面加载", NodeMaxRetryTimes = 60)]
 	public OperationRoundResult WaitBattleScreen()
 	{
-		// 对应 shiyu_defense_battle.py:58 的 retry_wait_round=1（补足制，非固定延时）。
+			// 重试时把本轮总时长补足到 1 秒，不追加固定延时。
 		return _services.IsBattleScreenReady(base.ZContext, base.LastScreenshot) ? RoundSuccess("按键-普通攻击") : RoundRetry("未找到 按键-普通攻击", null, null, TimeSpan.FromSeconds(1L));
 	}
 

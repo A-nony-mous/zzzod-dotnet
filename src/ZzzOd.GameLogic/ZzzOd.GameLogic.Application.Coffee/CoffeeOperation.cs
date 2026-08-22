@@ -156,7 +156,7 @@ public sealed class CoffeeOperation : ZOperation
 		}
 		// 六分街/澄辉坪/布亚斯特均返回无状态成功，由「等待咖啡店加载」按传送点分支确认进入点单界面。
 		// 不能在交互后直接返回「对话点单」状态：C# 状态边会优先匹配而跳过「等待咖啡店加载」，
-		// 导致对话标题尚未出现时「对话选咖啡」误判「已喝过」。与 Python move_and_interact 一致。
+			// 对话标题尚未出现时，直接进入“对话选咖啡”会误判为“已喝过”。
 		return operationRoundResult;
 	}
 

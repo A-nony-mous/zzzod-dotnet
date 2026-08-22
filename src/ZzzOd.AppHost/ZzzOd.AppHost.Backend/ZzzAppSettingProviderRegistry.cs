@@ -10,7 +10,7 @@ namespace ZzzOd.AppHost.Backend;
 public static class ZzzAppSettingProviderRegistry
 {
 	/// <summary>
-	/// 与 BaselineParity 当前全部 *_app_setting.py 一致的 provider 清单。
+		/// 当前支持的应用设置 provider 清单。
 	/// </summary>
 	public static IReadOnlyList<ZzzAppSettingProviderDescriptor> All { get; } = new ZzzAppSettingProviderDescriptor[14]
 	{

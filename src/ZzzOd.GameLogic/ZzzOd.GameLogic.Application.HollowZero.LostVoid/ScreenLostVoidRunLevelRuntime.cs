@@ -414,8 +414,8 @@ public sealed class ScreenLostVoidRunLevelRuntime : ILostVoidRunLevelRuntime
 	/// </summary>
 	private void ScheduleInBattleProbe(LostVoidRunLevel operation, Mat screen, DateTimeOffset frameTimeUtc)
 	{
-		// 对齐参考实现：道中危机与终结之役不识别下层入口，因此也不受 0.8 秒检测节流限制，
-		// 只按单飞节奏持续做 前往下一个区域 OCR。
+			// 道中危机与终结之役不识别下层入口，因此不受 0.8 秒检测节流限制，
+			// 只按单飞节奏持续执行“前往下一个区域”OCR。
 		bool skipDetector = string.Equals(operation.RegionType, "战斗-道中危机", StringComparison.Ordinal) || string.Equals(operation.RegionType, "战斗-终结之役", StringComparison.Ordinal);
 		TimeSpan? minIntervalOverride = (skipDetector ? new TimeSpan?(TimeSpan.Zero) : null);
 		Mat? leasedScreen = null;

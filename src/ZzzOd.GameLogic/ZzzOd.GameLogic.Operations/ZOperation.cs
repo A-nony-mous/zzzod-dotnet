@@ -133,12 +133,12 @@ public abstract class ZOperation : Operation
 	}
 
 	/// <summary>
-	/// 按 参考实现 <c>wait_round_time</c> 语义把本轮总时长补足到 <paramref name="minimumRoundTime" />。
+	/// 把本轮总时长补足到 <paramref name="minimumRoundTime" />。
 	/// </summary>
 	/// <remarks>
 	/// 补足计算由框架轮循环完成（<see cref="OperationRoundResult.DelayUntilRoundTime" />），
-	/// 锚点是循环顶部、截图之前，对应参考实现 <c>operation.py:404</c> 的 <c>round_start_time</c>。
-	/// 原先按 <c>LastScreenshotTimeUtc</c>（截图完成时刻）自行计算的实现已下线：那个锚点每轮会多等一个截图耗时。
+	/// 锚点是截图前的循环顶部。原先按 <c>LastScreenshotTimeUtc</c> 自行计算的实现已下线，
+	/// 因为以截图完成时刻为锚点会让每轮额外等待一次截图耗时。
 	/// </remarks>
 	protected OperationRoundResult RoundWaitForScreenshotRound(TimeSpan minimumRoundTime, string? status = null, object? data = null)
 	{
@@ -163,9 +163,8 @@ public abstract class ZOperation : Operation
 	/// 查找画面区域并转换为轮次结果。
 	/// </summary>
 	/// <remarks>
-	/// <c>successDelayUntilRoundTime</c> / <c>retryDelayUntilRoundTime</c> 是补足制通道，
-	/// 对应参考实现 <c>round_by_find_area</c> 的 <c>success_wait_round</c> / <c>retry_wait_round</c>；
-	/// <c>successDelay</c> / <c>retryDelay</c> 是固定延时，对应 <c>success_wait</c> / <c>retry_wait</c>。
+	/// <c>successDelayUntilRoundTime</c> / <c>retryDelayUntilRoundTime</c> 是补足制通道；
+	/// <c>successDelay</c> / <c>retryDelay</c> 是固定延时通道。
 	/// </remarks>
 	protected OperationRoundResult RoundByFindArea(Mat? screen, string screenName, string areaName, TimeSpan? successDelay = null, TimeSpan? retryDelay = null, bool cropFirst = true, TimeSpan? successDelayUntilRoundTime = null, TimeSpan? retryDelayUntilRoundTime = null)
 	{
@@ -220,8 +219,7 @@ public abstract class ZOperation : Operation
 	/// 查找画面区域并点击，转换为轮次结果。
 	/// </summary>
 	/// <remarks>
-	/// <c>successDelayUntilRoundTime</c> / <c>retryDelayUntilRoundTime</c> 是补足制通道，
-	/// 对应参考实现 <c>round_by_find_and_click_area</c> 的 <c>success_wait_round</c> / <c>retry_wait_round</c>。
+	/// <c>successDelayUntilRoundTime</c> / <c>retryDelayUntilRoundTime</c> 是补足制通道。
 	/// </remarks>
 	protected OperationRoundResult RoundByFindAndClickArea(Mat? screen = null, string? screenName = null, string? areaName = null, TimeSpan? preDelay = null, TimeSpan? successDelay = null, TimeSpan? retryDelay = null, bool cropFirst = true, bool centerX = false, IReadOnlyList<(string ScreenName, string AreaName)>? untilFindAll = null, IReadOnlyList<(string ScreenName, string AreaName)>? untilNotFindAll = null, TimeSpan? successDelayUntilRoundTime = null, TimeSpan? retryDelayUntilRoundTime = null)
 	{

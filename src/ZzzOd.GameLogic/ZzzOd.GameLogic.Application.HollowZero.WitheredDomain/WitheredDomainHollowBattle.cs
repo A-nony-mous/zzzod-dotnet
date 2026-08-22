@@ -15,7 +15,7 @@ using ZzzOd.GameLogic.Operations;
 namespace ZzzOd.GameLogic.Application.HollowZero.WitheredDomain;
 
 /// <summary>
-/// 枯萎之都战斗节点图，与 BaselineParity <c>hollow_battle.py</c> 保持同一状态消费顺序。
+/// 枯萎之都战斗节点图，按既定顺序消费战斗状态。
 /// </summary>
 public sealed class WitheredDomainHollowBattle : ZOperation
 {
@@ -62,7 +62,7 @@ public sealed class WitheredDomainHollowBattle : ZOperation
 	[OperationNode("等待战斗画面加载", NodeMaxRetryTimes = 60)]
 	public OperationRoundResult WaitBattleScreen()
 	{
-		// 对应参考实现 hollow_zero/hollow_battle.py:65 的 retry_wait_round=1（补足制，非固定延时）。
+			// 重试时把本轮总时长补足到 1 秒，不追加固定延时。
 		return RoundByFindArea(base.LastScreenshot, "战斗画面", "按键-普通攻击", null, null, cropFirst: true, null, TimeSpan.FromSeconds(1L));
 	}
 

@@ -350,7 +350,7 @@ public sealed class BackToNormalWorld : ZOperation
 				RetryStoppedBecauseOfSuspectedLoop = false
 			});
 		}
-		// 点击成功或失败都只等待 0.5s，与参考实现 侧未区分点击结果的重试语义保持一致。
+			// 点击成功或失败都只等待 0.5 秒，不按点击结果区分重试节奏。
 		return RoundRetry(operationRoundResult.Status, null, TimeSpan.FromMilliseconds(500L));
 	}
 

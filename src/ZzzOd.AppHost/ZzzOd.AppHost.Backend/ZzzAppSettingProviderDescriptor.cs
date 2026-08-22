@@ -1,7 +1,7 @@
 namespace ZzzOd.AppHost.Backend;
 
 /// <summary>
-/// BaselineParity *_app_setting.py provider 的产品迁移状态。
+/// 应用设置 provider 的产品实现状态。
 /// </summary>
 /// <param name="AppId">应用编号。</param>
 /// <param name="SettingType">BaselineParity provider 声明的展示方式。</param>

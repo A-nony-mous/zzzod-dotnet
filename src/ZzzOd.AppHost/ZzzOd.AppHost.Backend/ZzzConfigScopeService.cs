@@ -1306,7 +1306,7 @@ internal sealed class ZzzConfigScopeService
 		}
 
 		/// <summary>
-		/// 校验体力计划项业务合法性（对应 Python charge_plan_config.validate_item）。
+		/// 校验体力计划项业务合法性。
 		/// 合成电池等无 mission_type 的分类要求 mission_type_name 为空，防止写入非法计划。
 		/// </summary>
 		private static void ValidateChargePlanItems(IReadOnlyList<ChargePlanItem> plans)

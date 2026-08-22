@@ -8,7 +8,7 @@ namespace ZzzOd.GameLogic.Application.BattleAssistant;
 public static class BattleAssistantSettings
 {
 	/// <summary>
-	/// BaselineParity battle_assistant_config.py 字段。
+		/// 战斗助手配置字段。
 	/// </summary>
 	public static IReadOnlyList<BattleAssistantSettingField> Fields { get; } = new BattleAssistantSettingField[5]
 	{

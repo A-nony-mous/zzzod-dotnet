@@ -10,7 +10,7 @@ internal interface IZzzImageClipboardService
 }
 
 /// <summary>
-/// 用 Win32 CF_DIB 同步写入剪贴板，对齐 Python 参考实现 debug_utils.copy_image_to_clipboard。
+/// 用 Win32 CF_DIB 同步写入剪贴板。
 /// 不依赖 Avalonia OLE 延迟渲染，CloseClipboard 后数据立即可用。
 /// </summary>
 internal sealed class ZzzImageClipboardService : IZzzImageClipboardService

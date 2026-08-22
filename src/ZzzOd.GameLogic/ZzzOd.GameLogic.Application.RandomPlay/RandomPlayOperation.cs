@@ -217,7 +217,7 @@ public sealed class RandomPlayOperation : ZOperation
 	{
 		if (!_services.IsAreaVisible(base.ZContext, base.LastScreenshot, "影像店营业", "选择宣传员"))
 		{
-			// 对应参考实现 random_play_app.py:152 的 wait_round_time=1（补足制，非固定延时）。
+				// 重试时把本轮总时长补足到 1 秒，不追加固定延时。
 			return RoundRetry("未找到 选择宣传员", null, null, TimeSpan.FromSeconds(1L));
 		}
 		if (_services.IsAreaVisible(base.ZContext, base.LastScreenshot, "影像店营业", "换下"))
@@ -370,7 +370,7 @@ public sealed class RandomPlayOperation : ZOperation
 		}
 		OperationResult operationResult = _services.ClickArea(base.ZContext, "影像店营业", "上架");
 		OperationResult operationResult2 = _services.ClickArea(base.ZContext, "影像店营业", "上架", TimeSpan.FromMilliseconds(500L));
-		// 成功分支对应 random_play_app.py:367 的 wait=1（固定，不动）；重试分支对应 :369 的 wait_round_time=1（补足制）。
+			// 成功分支固定等待 1 秒；重试分支把本轮总时长补足到 1 秒。
 		return (operationResult.IsSuccess && operationResult2.IsSuccess) ? RoundWait("上架", null, TimeSpan.FromSeconds(1L)) : RoundRetry(operationResult.Status, null, null, TimeSpan.FromSeconds(1L));
 	}
 

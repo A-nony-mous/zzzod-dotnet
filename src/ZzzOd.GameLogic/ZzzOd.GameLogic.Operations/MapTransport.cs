@@ -131,7 +131,7 @@ public sealed class MapTransport : ZOperation
 		IReadOnlyDictionary<string, MatchResultList> ocrResultMap = base.ZContext.OcrService.GetOcrResultMap(base.LastScreenshot);
 		if (ocrResultMap.Count == 0)
 		{
-			// 对应参考实现 map_transport.py:66 的 wait_round_time=1（补足制，非固定延时）。
+				// 重试时把本轮总时长补足到 1 秒，不追加固定延时。
 			return RoundRetry("未识别到传送点", null, null, _retryDelay);
 		}
 		string text = null;

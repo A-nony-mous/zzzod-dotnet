@@ -194,7 +194,7 @@ public abstract class CompendiumChallengeOperationBase : ZOperation
 	[OperationNode("等待战斗画面加载", NodeMaxRetryTimes = 60)]
 	protected virtual OperationRoundResult WaitBattleScreen()
 	{
-		// 对应参考实现的 retry_wait_round=1（补足制，非固定延时）。
+			// 重试时把本轮总时长补足到 1 秒，不追加固定延时。
 		return RoundByFindArea(base.LastScreenshot, "战斗画面", "按键-普通攻击", null, null, cropFirst: true, null, _retryDelay);
 	}
 
