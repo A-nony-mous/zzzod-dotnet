@@ -682,6 +682,26 @@ public sealed class ChargePlanAppTests
 	}
 
 	[Fact]
+	public void ImageAnalysisPipelineRunner_HsvFilterWrapsHueAtBoundary()
+	{
+		// 输入为 BGR 约定（与 Python 侧 RGB 约定等价，内部各自转换），
+		// 验证 H 回绕：H∈[0,0] 白字段应保留（Python 语义），S/V 越界应滤除。
+		OpenCvTestRuntime.RequireAvailable();
+		using Mat image = new Mat(1, 4, MatType.CV_8UC3, Scalar.Black);
+		image.Set(0, 0, new Vec3b(250, 250, 250)); // H=0 白色，位于回绕段
+		image.Set(0, 1, new Vec3b(170, 0, 255)); // 高饱和红，S=255 超容差
+		image.Set(0, 2, new Vec3b(100, 100, 100)); // 深灰，V=100 低于下界
+		image.Set(0, 3, new Vec3b(0, 200, 255)); // 金色，H 不在目标范围
+
+		using Mat mask = ImageAnalysisPipelineRunner.FilterByHsv(image, new int[] { 160, 0, 255 }, new int[] { 20, 10, 100 });
+
+		Assert.Equal(byte.MaxValue, mask.At<byte>(0, 0));
+		Assert.Equal(0, mask.At<byte>(0, 1));
+		Assert.Equal(0, mask.At<byte>(0, 2));
+		Assert.Equal(0, mask.At<byte>(0, 3));
+	}
+
+	[Fact]
 	public void ChargePlanOperation_BatteryCheckRetriesWhenAnyFieldMissingAndChecksDoubleRewardOnce()
 	{
 		string rootDirectory = CreateTempRoot();

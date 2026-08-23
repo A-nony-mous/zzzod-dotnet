@@ -102,18 +102,13 @@ public sealed class ImageAnalysisPipelineRunner
 				{
 					int[] array = IntTuple(item, "hsv_color");
 					int[] array2 = IntTuple(item, "hsv_diff");
-					using (Mat mat7 = new Mat())
-					{
-						Cv2.CvtColor(mat, mat7, ColorConversionCodes.BGR2HSV);
-						Mat mat8 = new Mat();
-						Cv2.InRange(mat7, new Scalar(Math.Clamp(array[0] - array2[0], 0, 179), Math.Clamp(array[1] - array2[1], 0, 255), Math.Clamp(array[2] - array2[2], 0, 255)), new Scalar(Math.Clamp(array[0] + array2[0], 0, 179), Math.Clamp(array[1] + array2[1], 0, 255), Math.Clamp(array[2] + array2[2], 0, 255)), mat8);
-						Mat mat9 = new Mat();
-						Cv2.BitwiseAnd(mat, mat, mat9, mat8);
-						mat.Dispose();
-						mat = mat9;
-						mat2?.Dispose();
-						mat2 = mat8;
-					}
+					Mat mat8 = FilterByHsv(mat, array, array2);
+					Mat mat9 = new Mat();
+					Cv2.BitwiseAnd(mat, mat, mat9, mat8);
+					mat.Dispose();
+					mat = mat9;
+					mat2?.Dispose();
+					mat2 = mat8;
 					break;
 				}
 				case "腐蚀":
@@ -228,6 +223,50 @@ public sealed class ImageAnalysisPipelineRunner
 							["pipeline_path"] = pipelinePath,
 						})));
 		}
+	}
+
+	/// <summary>
+	/// 按 HSV 颜色范围过滤图像，与 Python 参考 filter_by_color 的 hsv 分支对齐：
+	/// H 通道跨 0/179 边界时拆两段范围并合并，S/V 通道钳位到 [0,255]。
+	/// 输入约定为 BGR（OpenCV 截图通道序），内部直接 BGR2HSV，不做额外通道转换；
+	/// 与 Python 侧 RGB 输入 + RGB2HSV 数学等价（1080p 截图逐像素验证一致），两语言各自约定内部成立，无需统一转换。
+	/// </summary>
+	internal static Mat FilterByHsv(Mat image, int[] hsvColor, int[] hsvDiff)
+	{
+		using Mat hsv = new Mat();
+		Cv2.CvtColor(image, hsv, ColorConversionCodes.BGR2HSV);
+		int lowerS = Math.Clamp(hsvColor[1] - hsvDiff[1], 0, 255);
+		int upperS = Math.Clamp(hsvColor[1] + hsvDiff[1], 0, 255);
+		int lowerV = Math.Clamp(hsvColor[2] - hsvDiff[2], 0, 255);
+		int upperV = Math.Clamp(hsvColor[2] + hsvDiff[2], 0, 255);
+		int lowerH = hsvColor[0] - hsvDiff[0];
+		int upperH = hsvColor[0] + hsvDiff[0];
+		Mat mask = new Mat();
+		if (lowerH < 0)
+		{
+			Mat segment1 = new Mat();
+			Mat segment2 = new Mat();
+			Cv2.InRange(hsv, new Scalar(lowerH + 180, lowerS, lowerV), new Scalar(179, upperS, upperV), segment1);
+			Cv2.InRange(hsv, new Scalar(0, lowerS, lowerV), new Scalar(upperH, upperS, upperV), segment2);
+			Cv2.BitwiseOr(segment1, segment2, mask);
+			segment1.Dispose();
+			segment2.Dispose();
+		}
+		else if (upperH > 179)
+		{
+			Mat segment1 = new Mat();
+			Mat segment2 = new Mat();
+			Cv2.InRange(hsv, new Scalar(lowerH, lowerS, lowerV), new Scalar(179, upperS, upperV), segment1);
+			Cv2.InRange(hsv, new Scalar(0, lowerS, lowerV), new Scalar(upperH - 180, upperS, upperV), segment2);
+			Cv2.BitwiseOr(segment1, segment2, mask);
+			segment1.Dispose();
+			segment2.Dispose();
+		}
+		else
+		{
+			Cv2.InRange(hsv, new Scalar(lowerH, lowerS, lowerV), new Scalar(upperH, upperS, upperV), mask);
+		}
+		return mask;
 	}
 
 	/// <summary>
