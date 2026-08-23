@@ -119,16 +119,18 @@ public sealed class AgentEnum
 
 	public static readonly AgentEnum REMIELLE = new AgentEnum(Create("remielle", "蕾米埃尔", RareTypeEnum.S, AgentTypeEnum.ANOMALY, DmgTypeEnum.LUMIFLUX, new string[4] { "remielle", "remielle_dark", "remielle_dark_veil", "remielle_seashade" }, new string[2] { "蕾米埃尔-浮晖", "蕾米埃尔-虚曜" }));
 
+	public static readonly AgentEnum SIGRID = new AgentEnum(Create("sigrid", "希格莉德", RareTypeEnum.S, AgentTypeEnum.ATTACK, DmgTypeEnum.ICE, new string[2] { "sigrid", "sigrid_majestic_wavechaser" }, new string[] { "希格莉德-巡空枪势" }));
+
 	public Agent Value { get; }
 
-	public static IReadOnlyList<AgentEnum> Values { get; } = new AgentEnum[57]
+	public static IReadOnlyList<AgentEnum> Values { get; } = new AgentEnum[58]
 	{
 		ANBY, ANTON, BEN, BILLY, CORIN, ELLEN, GRACE, KOLEDA, LUCY, LYCAON,
 		NEKOMATA, NICOLE, PIPER, RINA, SOLDIER_11, SOUKAKU, ZHU_YUAN, QINGYI, JANE_DOE, SETH_LOWELL,
 		CAESAR_KING, BURNICE_WHITE, YANAGI, LIGHTER, ASABA_HARUMASA, HOSHIMI_MIYABI, ASTRA_YAO, EVELYN_CHEVALIER, SOLDIER_0_ANBY, PULCHRA,
 		TRIGGER, VIVIAN, HUGO_VLAD, YIXUAN, PANYINHU, JU_FUFU, YUZUHA, ALICE, SEED, ORPHIE,
 		LUCIA, MANATO, YIDHARI, DIALYN, BANYUE, ZHAO, SUNNA, YESHUNGUANG, ARIA, NANGONGYU,
-		CISSIA, PROMEIA, VELINA, PYROIS_WISE, STARLIGHT_BILLY_KID, NORMA, REMIELLE
+		CISSIA, PROMEIA, VELINA, PYROIS_WISE, STARLIGHT_BILLY_KID, NORMA, REMIELLE, SIGRID
 	};
 
 	private AgentEnum(Agent value)
