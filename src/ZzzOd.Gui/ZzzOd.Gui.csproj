@@ -28,4 +28,14 @@
     <PackageReference Include="OpenCvSharp4" Version="4.11.0.20250507" />
     <PackageReference Include="Serilog" Version="4.3.0" />
   </ItemGroup>
+
+  <Target Name="SyncWorkspaceAssetsToBin" AfterTargets="Build">
+    <PropertyGroup>
+      <_WorkspaceRoot>$([System.IO.Path]::GetFullPath('$(MSBuildProjectDirectory)\..\..\..'))</_WorkspaceRoot>
+    </PropertyGroup>
+    <!-- assets 为静态真源，镜像同步：删除 bin 残留旧名、覆盖过期同名文件。
+         config 只同步基线（auto_battle 等），实例目录 [0-9]* 与 app_run_record 属可变数据不覆盖。 -->
+    <Exec Command="robocopy &quot;$(_WorkspaceRoot)\assets&quot; &quot;$(TargetDir)assets&quot; /MIR /XD .install uv_cache /NFL /NDL /NJH /NJS /NP /R:1 /W:1" IgnoreExitCode="true" />
+    <Exec Command="robocopy &quot;$(_WorkspaceRoot)\config&quot; &quot;$(TargetDir)config&quot; /MIR /XD [0-9]* app_run_record /NFL /NDL /NJH /NJS /NP /R:1 /W:1" IgnoreExitCode="true" />
+  </Target>
 </Project>
