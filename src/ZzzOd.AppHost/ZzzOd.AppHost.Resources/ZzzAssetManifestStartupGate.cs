@@ -16,6 +16,30 @@ public static class ZzzAssetManifestStartupGate
         new ZzzAssetManifestValidator().Validate(runRoot, RuntimeInformation.RuntimeIdentifier);
 
     /// <summary>
+    /// 以兼容模式解析运行根：清单存在且有效时严格校验；清单缺失或校验失败时
+    /// 打印警告并降级为未校验运行根，保证手动复制 config 的开发用法不被阻塞。
+    /// </summary>
+    /// <param name="runRoot">已解析的运行根目录。</param>
+    /// <param name="error">警告输出。</param>
+    /// <returns>可使用的运行根；严格校验失败时摘要为空字符串。</returns>
+    public static ZzzValidatedRunRoot ResolveRunRootCompat(string runRoot, TextWriter error)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(runRoot);
+        ArgumentNullException.ThrowIfNull(error);
+        ZzzAssetManifestValidationResult validation = new ZzzAssetManifestValidator().Validate(
+            runRoot,
+            RuntimeInformation.RuntimeIdentifier);
+        if (validation.IsValid)
+        {
+            return CreateValidatedRunRoot(validation);
+        }
+
+        WriteIssues(validation.Issues, error);
+        error.WriteLine($"[apphost] 资源清单校验未通过，按未校验运行根继续启动：{validation.RunRoot}");
+        return new ZzzValidatedRunRoot(Path.GetFullPath(runRoot), string.Empty);
+    }
+
+    /// <summary>
     /// 将已通过校验的结果转换为宿主可使用的运行根。
     /// </summary>
     /// <param name="validationResult">已经执行的资源清单校验结果。</param>

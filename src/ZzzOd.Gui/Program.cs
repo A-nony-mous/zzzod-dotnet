@@ -34,13 +34,7 @@ internal static class Program
 
         ZzzRunRootResolution runRootResolution = ZzzRunRootResolver.Resolve(args);
         string runRoot = runRootResolution.RunRoot.Path;
-		ZzzAssetManifestValidationResult manifestValidation = ZzzAssetManifestStartupGate.Validate(runRoot);
-		if (!manifestValidation.IsValid)
-		{
-			ZzzAssetManifestStartupGate.WriteIssues(manifestValidation.Issues, Console.Error);
-			return 3;
-		}
-		ZzzValidatedRunRoot validatedRunRoot = ZzzAssetManifestStartupGate.CreateValidatedRunRoot(manifestValidation);
+		ZzzValidatedRunRoot validatedRunRoot = ZzzAssetManifestStartupGate.ResolveRunRootCompat(runRoot, Console.Error);
         using ZzzRuntimeLock? runtimeLock = AcquireRuntimeLock(runRoot, args);
         if (runtimeLock is null)
         {
