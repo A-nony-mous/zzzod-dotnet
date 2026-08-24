@@ -484,8 +484,8 @@ internal sealed record AutoBattleLoadBenchmarkOptions(
 {
     public static AutoBattleLoadBenchmarkOptions Parse(string rootDirectory, IReadOnlyList<string> args)
     {
-        string imagePath = Path.Combine(rootDirectory, "zzzod-dotnet", "tests", "ZzzOd.GameLogic.Tests", "TestData", "IntelBoard", "intel-board-running.png");
-        string lostVoidImagePath = Path.Combine(rootDirectory, "zzzod-dotnet", "tests", "ZzzOd.GameLogic.Tests", "TestData", "LostVoid", "lost_void-before.png");
+        string imagePath = Path.Combine(rootDirectory, "tests", "ZzzOd.GameLogic.Tests", "TestData", "IntelBoard", "intel-board-running.png");
+        string lostVoidImagePath = Path.Combine(rootDirectory, "tests", "ZzzOd.GameLogic.Tests", "TestData", "LostVoid", "lost_void-before.png");
         string audioPath = Path.Combine(rootDirectory, "assets", "template", "dodge_audio", "template_1.wav");
         IReadOnlyList<int> intraOpValues = [1, 2, 4];
         int iterations = 30;

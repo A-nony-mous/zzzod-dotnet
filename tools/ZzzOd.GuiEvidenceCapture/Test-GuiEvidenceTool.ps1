@@ -87,7 +87,7 @@ try {
     $markerPath = Join-Path $negativeTestRoot 'gui-started.marker'
     $markerCommandPath = Join-Path $negativeTestRoot 'gui-started.cmd'
     $metadataPath = Join-Path $negativeTestRoot 'capture-manifest.json'
-    $workspaceRoot = (Resolve-Path (Join-Path $PSScriptRoot '..\..\..')).Path
+    $workspaceRoot = (Resolve-Path (Join-Path $PSScriptRoot '..\..')).Path
     Set-Content -LiteralPath $invalidRulesPath -Value '{ invalid json' -Encoding utf8NoBOM
     Set-Content -LiteralPath $markerCommandPath -Value "@echo launched>$markerPath" -Encoding ascii
 

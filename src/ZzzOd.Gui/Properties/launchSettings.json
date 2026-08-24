@@ -3,7 +3,11 @@
   "profiles": {
     "ZzzOd.Gui": {
       "commandName": "Project",
-      "commandLineArgs": "--run-root ..\\..\\..\\..\\..\\.."
+      "commandLineArgs": "--run-root ..\\..\\..\\..\\..",
+      "environmentVariables": {
+        "Logging__LogLevel__Default": "Debug",
+        "Logging__LogLevel__Microsoft": "Information"
+      }
     }
   }
 }

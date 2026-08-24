@@ -512,7 +512,7 @@ public sealed class OverlaySettingsParityTests
 	{
 		for (DirectoryInfo directoryInfo = new DirectoryInfo(AppContext.BaseDirectory); directoryInfo != null; directoryInfo = directoryInfo.Parent)
 		{
-			if (File.Exists(Path.Combine(directoryInfo.FullName, "ZzzOneDragon.slnx")))
+			if (File.Exists(Path.Combine(directoryInfo.FullName, "ZzzOd.slnx")))
 			{
 				return directoryInfo.FullName;
 			}
