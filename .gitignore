@@ -2,11 +2,19 @@
 **/obj/
 .vs/
 .idea/
+.run/
 *.sln.DotSettings.user
 TestResults/
 .log/
 .tmp/
-assets/
+# 静态资源入库，排除模型与动态背景等运行时下载内容
+assets/models/
+assets/ui/version_poster.webp
+assets/ui/static_background.webp
+assets/ui/dynamic_background.webm
+assets/ui/official_dynamic.webm
+assets/ui/remote_banner.webp
+custom/assets/ui/banner
 config/custom.yml
 config/env.yml
 config/api_host.json
