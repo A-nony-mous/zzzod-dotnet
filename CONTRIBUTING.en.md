@@ -8,7 +8,7 @@ This project is developed with C# and .NET 10. This guide covers the dual-reposi
 
 If C# is new to you, or you mainly work with Python and AI coding tools, you can still follow this guide to complete a reliable local development cycle.
 
-First-time contributors should read "Understand the Project" and complete "Set Up the Environment" once. For later work, follow "Modify Code" and "Test and Validate."
+First-time contributors should read ["Understand the Project"](#1-understand-the-project) and complete ["Set Up the Environment"](#2-set-up-the-environment) once. For later work, follow ["Modify Code"](#3-modify-code) and ["Test and Validate"](#4-test-and-validate).
 
 ## 1. Understand the Project
 
@@ -71,7 +71,7 @@ Commit only the asset changes required by your feature.
 
 ## 2. Set Up the Environment
 
-This section is required only for the initial source setup. After installing the tools, cloning both repositories, and completing the first build, use section 4 for later builds, launches, and validation.
+This section is required only for the initial source setup. After installing the tools, cloning both repositories, and completing the first build, continue with [Modify Code](#3-modify-code) and then [Test and Validate](#4-test-and-validate).
 
 ### 1. Install Development Tools
 
@@ -100,16 +100,16 @@ dotnet build
 
 Continue after the output reports a successful build with zero errors.
 
-To confirm startup without changing code, go directly to section 4.1.
+To confirm startup without changing code, follow [Test and Validate - Manual Validation - Start from the Command Line](#11-start-from-the-command-line).
 
 ## 3. Modify Code
 
 After the first successful build, use this routine for normal development.
 
-1. Use the project map in section 1 to locate the relevant project and file.
+1. Use the project map in [Understand the Project](#1-understand-the-project) to locate the relevant project and file.
 2. Stop ZZZ OD if it is still running.
 3. Make and save only the changes required for the current issue.
-4. Follow section 4 to validate the behavior and run relevant tests when needed.
+4. Continue with [Test and Validate](#4-test-and-validate) to validate the behavior and run relevant tests when needed.
 
 <details>
 <summary>AI-assisted development (optional)</summary>
@@ -117,7 +117,7 @@ After the first successful build, use this routine for normal development.
 1. Tell the AI that the project uses C#, .NET 10, and a dual-repository source layout. Provide relevant paths, errors, or interface definitions.
 2. Describe the issue, expected result, and allowed scope. ZZZ-specific logic belongs in `zzzod-dotnet`; reusable framework capabilities belong in `od-dotnet`.
 3. Ask the AI to inspect the relevant code and explain its approach before generating changes.
-4. After editing, select the appropriate manual validation and targeted test steps from section 4.
+4. After editing, follow [Test and Validate](#4-test-and-validate) for manual validation and targeted tests.
 
 AI-generated code may compile while still containing incorrect runtime flow, state transitions, recognition results, or input timing. Compilation is not a substitute for behavior validation.
 
@@ -125,13 +125,13 @@ AI-generated code may compile while still containing incorrect runtime flow, sta
 
 ## 4. Test and Validate
 
-After changing program code, manually validate the affected behavior first. Use breakpoint debugging and automated tests according to the scope of the change. The complete pre-submission build is covered in section 6.
+After changing program code, manually validate the affected behavior. Use breakpoint debugging and automated tests according to the scope of the change. If validation reveals a problem, see [Troubleshoot Problems](#5-troubleshoot-problems); after validation passes, follow [Submit Changes](#6-submit-changes).
 
 ### 1. Manual Validation (Primary Workflow)
 
 Choose one of the startup methods below; the program builds automatically. Because `ZzzOd.Gui` requires administrator privileges, run the IDE or PowerShell as administrator.
 
-After the main window opens, trigger the affected feature, confirm that the result and logs match expectations, and then stop the program. See section 4.2 when automated tests are needed.
+After the main window opens, trigger the affected feature, confirm that the result and logs match expectations, and then stop the program. See [Test and Validate - Automated Tests](#2-automated-tests-run-as-needed) when needed.
 
 #### 1.1 Start from the Command Line
 
