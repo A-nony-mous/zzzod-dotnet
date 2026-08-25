@@ -1,159 +1,300 @@
 # Contributing Guide
 
-[中文](CONTRIBUTING.md)
+[简体中文](CONTRIBUTING.md)
 
-Thank you for your interest in contributing to the ZZZ OD project.
+Thank you for your interest in contributing to ZZZ OD.
 
-This project is built with C# / .NET 10. To help contributors who are more accustomed to Python or who develop using AI tools get started quickly, this guide provides a complete walkthrough for local setup, dual-repository collaboration, an AI-assisted development workflow, and manual breakpoint debugging.
+This project is developed with C# and .NET 10. This guide covers the dual-repository layout, initial environment setup, code changes, manual validation, targeted tests, and Pull Request workflow.
 
----
+If C# is new to you, or you mainly work with Python and AI coding tools, you can still follow this guide to complete a reliable local development cycle.
 
-## 📁 1. Architecture & Dual-Repository Setup
+First-time contributors should read "Understand the Project" and complete "Set Up the Environment" once. For later work, follow "Modify Code" and "Test and Validate."
 
-The codebase is split into the **shared framework repository** and the **ZZZ business repository**. During local development, both repositories must be cloned into the **same parent directory**:
+## 1. Understand the Project
+
+ZZZ OD consists of a shared framework repository and a Zenless Zone Zero business repository.
 
 ```text
-<workspace>/
-├── od-dotnet/             # 🛠️ Shared low-level framework (OCR, template matching, screen capture, input simulation, ONNX inference)
-└── zzzod-dotnet/          # 🎯 ZZZ business logic & Avalonia desktop GUI ⭐
-    ├── assets/            # 📦 Tracked static assets (templates, game data, patrol routes, etc.)
-    ├── config/            # ⚙️ Configuration templates (*.sample.yml / *.merged.yml)
-    ├── src/
-    │   ├── ZzzOd.GameLogic/   # 🎮 Core business: tasks, combat strategies, state recognition
-    │   ├── ZzzOd.AppHost/     # 💼 Dependency injection, application hosts, background services
-    │   ├── ZzzOd.Gui/         # 🖥️ Avalonia desktop GUI (primary startup project)
-    │   ├── ZzzOd.Api/         # 🌐 API interface definitions
-    │   └── ZzzOd.ApiHost/     # 🚪 Standalone API service host
-    ├── tests/                 # 🧪 Unit and integration tests
-    └── tools/                 # 🔧 Acceptance tools and helper scripts
+<workspace>\
+|-- od-dotnet\                              # Shared automation framework
+|   `-- src\
+|       |-- OneDragon.Core.Abstractions\    # Shared interfaces and data contracts
+|       |-- OneDragon.Core\                 # OCR, image processing, and runtime services
+|       `-- OneDragon.Core.Windows\         # Windows capture and input control
+`-- zzzod-dotnet\                           # ZZZ business logic and GUI
+    |-- assets\                             # Templates, game data, and routes
+    |-- config\                             # Configuration templates
+    |-- src\
+    |   |-- ZzzOd.GameLogic\                # Tasks, state detection, and combat logic
+    |   |-- ZzzOd.AppHost\                  # Dependency injection and background services
+    |   |-- ZzzOd.Gui\                      # Avalonia desktop GUI and startup project
+    |   |-- ZzzOd.Api\                      # API contracts
+    |   `-- ZzzOd.ApiHost\                  # Standalone API host
+    |-- tests\
+    |   `-- ZzzOd.GameLogic.Tests\          # Automated tests
+    `-- tools\
+        |-- ZzzOd.GuiEvidenceCapture\       # GUI evidence capture tool
+        `-- ZzzOd.RealGameE2E\              # Real-game end-to-end validation tool
 ```
 
-### Why two repositories?
-- **`od-dotnet`**: Focuses on game-agnostic automation primitives (e.g., vision engines, input drivers, window capturing, task scheduling).
-- **`zzzod-dotnet`**: Houses Zenless Zone Zero specific logic (e.g., daily task routines, agent rotation configurations, GUI views, game metadata).
+### 1. Why Two Repositories Are Required
 
-> **Collaboration mechanism**: `zzzod-dotnet/ZzzOd.slnx` references `od-dotnet` project source files directly via relative paths. Opening this solution allows you to inspect, edit, and step-debug both business and framework code simultaneously. Once the framework API stabilizes, it is planned to be published to NuGet.
+- [`od-dotnet`](https://github.com/A-nony-mous/od-dotnet) provides game-independent automation capabilities such as OCR, image processing, window capture, and input control.
+- `zzzod-dotnet` contains Zenless Zone Zero task flows, combat logic, GUI code, and game data.
 
----
+Projects loaded by `ZzzOd.slnx` reference the sibling `od-dotnet` source through relative paths. Keep both repositories at the same directory level so the solution can build and debug code from both repositories.
 
-## 📋 2. Prerequisites & Clone / Build
+### 2. Assets and Configuration
 
-### Prerequisites
-- **Operating System**: Windows 10 (2004+) or Windows 11
-- **IDE**: **JetBrains Rider** (recommended for Avalonia XAML preview, `.slnx` solutions, and cross-project debugging) or **Visual Studio 2022+**
-- **SDK**: [.NET 10 SDK](https://dotnet.microsoft.com/download/dotnet/10.0)
+Normal development does not require extra asset synchronization. Only use the process below when your change depends on newer templates, routes, or game data from the Python repository.
 
-### Clone & Build
-Run the following commands in your terminal (`pwsh` or `cmd`):
+<details>
+<summary>Show asset details and synchronization command</summary>
 
-```bash
-# 1. Create and enter a unified workspace directory
-mkdir zzzod-dev && cd zzzod-dev
+The repository already includes the static assets and configuration baselines needed for development.
 
-# 2. Clone both repositories side-by-side
+- `assets/` contains templates, game data, routes, and other static files. Runtime content such as `assets/models/` and dynamic backgrounds is not committed.
+- `config/` contains project baselines and examples such as `*.sample.yml` and `*.merged.yml`. Local account and runtime configuration is ignored by Git.
+
+> [!CAUTION]
+> `robocopy /MIR` deletes files from the destination when they do not exist in the source. Verify both paths and check both repositories for uncommitted asset changes before running it.
+
+Run the command from the `zzzod-dotnet` root and replace the example path with the actual Python repository path.
+
+```powershell
+robocopy "<zzzod_main_repo_path>\assets" ".\assets" /MIR /XD models .install uv_cache /XF version_poster.webp static_background.webp dynamic_background.webm official_dynamic.webm remote_banner.webp /NP /NFL /NDL
+```
+
+Commit only the asset changes required by your feature.
+
+</details>
+
+## 2. Set Up the Environment
+
+This section is required only for the initial source setup. After installing the tools, cloning both repositories, and completing the first build, use section 4 for later builds, launches, and validation.
+
+### 1. Install Development Tools
+
+- A Windows 10 or Windows 11 version supported by [.NET 10](https://github.com/dotnet/core/blob/main/release-notes/10.0/supported-os.md)
+- [Git](https://git-scm.com/download/win)
+- [.NET 10 SDK](https://dotnet.microsoft.com/download/dotnet/10.0)
+- Any code editor or IDE you are comfortable with
+
+### 2. Clone and Build the Source
+
+Open PowerShell in the directory where you want to store the source, then run:
+
+```powershell
+# 1. Create and enter a shared workspace directory
+mkdir zzzod-dev
+cd zzzod-dev
+
+# 2. Clone both repositories without changing their directory names
 git clone https://github.com/A-nony-mous/od-dotnet.git
 git clone https://github.com/A-nony-mous/zzzod-dotnet.git
 
-# 3. Enter the business repository and build
+# 3. Enter the business repository and build the solution
 cd zzzod-dotnet
 dotnet build
 ```
 
----
+Continue after the output reports a successful build with zero errors.
 
-## 🤖 3. Practical AI-Assisted Workflow for C#
+To confirm startup without changing code, go directly to section 4.1.
 
-If you use Claude, Cursor, Copilot, ChatGPT, or other AI tools to write code, we recommend this practical workflow:
+## 3. Modify Code
 
-1. **Provide clear context to the AI**:
-   - Tell the AI that the project uses a C# / .NET 10 dual-repo structure (`od-dotnet` provides base context like `OneDragonContext` / `IController`, and `zzzod-dotnet` contains specific business logic).
-   - Provide the specific file paths and interface definitions you want to modify.
-2. **Scope your changes**:
-   - Game-specific logic (tasks, combat rotations, views) belongs in `zzzod-dotnet`.
-   - General automation primitives (OCR algorithms, capture methods) belong in `od-dotnet`.
-3. **Compile and iterate**:
-   - After code generation, run `dotnet build` in your terminal.
-   - If there are compiler errors, copy the error message and line number back to the AI for targeted fixes.
-4. **Always perform manual debugging**:
-   - Code that compiles can still contain runtime logic flaws, state machine bugs, or incorrect click coordinates. Follow the debugging guide below to verify changes.
+After the first successful build, use this routine for normal development.
 
----
+1. Use the project map in section 1 to locate the relevant project and file.
+2. Stop ZZZ OD if it is still running.
+3. Make and save only the changes required for the current issue.
+4. Follow section 4 to validate the behavior and run relevant tests when needed.
 
-## 🐞 4. Step-by-Step Breakpoint Debugging Guide
+<details>
+<summary>AI-assisted development (optional)</summary>
 
-Even if you are new to C#, your IDE makes breakpoint debugging straightforward:
+1. Tell the AI that the project uses C#, .NET 10, and a dual-repository source layout. Provide relevant paths, errors, or interface definitions.
+2. Describe the issue, expected result, and allowed scope. ZZZ-specific logic belongs in `zzzod-dotnet`; reusable framework capabilities belong in `od-dotnet`.
+3. Ask the AI to inspect the relevant code and explain its approach before generating changes.
+4. After editing, select the appropriate manual validation and targeted test steps from section 4.
 
-### Launch Debugging
-1. Open `zzzod-dotnet/ZzzOd.slnx` in Rider or Visual Studio.
-2. Set **`ZzzOd.Gui`** as the startup project.
-3. Press **F5** (or click the green Debug icon) to start debugging.
-   - `Properties/launchSettings.json` is preconfigured with the `--run-root` argument to load `assets` and `config` from the repo root.
-   - On the first run, open **Settings → Resource Download** in the app to install necessary recognition models.
+AI-generated code may compile while still containing incorrect runtime flow, state transitions, recognition results, or input timing. Compilation is not a substitute for behavior validation.
 
-### Key Debugger Shortcuts
-- **`F9`**: Toggle breakpoint on the current line (a red circle appears in the margin).
-- **`F5`**: Start debugging / Resume execution until the next breakpoint.
-- **`F10`**: Step Over (execute the current line and advance to the next).
-- **`F11`**: Step Into (step into the method called on the current line).
-- **`Shift + F5`**: Stop debugging.
-- **Inspect variables**: When execution pauses at a breakpoint, hover over any variable to inspect its value or object hierarchy in the Debugger window.
+</details>
 
-### Recommended Breakpoint Locations
+## 4. Test and Validate
 
-| Area / Feature | Suggested Breakpoint Entry | Notes |
-|---|---|---|
-| 🎮 **Routine Task Workflows** (Coffee, Sign-in, Farming) | `src/ZzzOd.GameLogic/ZzzOd.GameLogic.Application.*/` corresponding App's `ExecuteAsync` | Intercept task startup, state validation, and branch decisions |
-| ⚔️ **Combat & Skill Rotations** | `src/ZzzOd.GameLogic/ZzzOd.GameLogic.AutoBattle/AutoBattleContext.cs` | Intercept combat loops, state transitions, and key inputs |
-| 🛡️ **Dodge & Enemy State Checks** | `src/ZzzOd.GameLogic/ZzzOd.GameLogic.AutoBattle/AgentStateChecker.cs` | Intercept damage intake, energy checks, and yellow/red flash indicators |
-| 🖥️ **UI, Buttons & Config Saving** | `src/ZzzOd.Gui/ViewModels/` corresponding ViewModels | Intercept UI click events, data bindings, and config persistence |
-| 👁️ **Low-Level OCR Engine** | `../od-dotnet/src/OneDragon.Core/Ocr/` implementations | Intercept text region extraction and OCR matching |
-| ⌨️ **Input Simulation (Mouse/Gamepad)** | `../od-dotnet/src/OneDragon.Core.Windows/Input/` | Intercept Win32 / virtual gamepad signal emission |
+After changing program code, manually validate the affected behavior first. Use breakpoint debugging and automated tests according to the scope of the change. The complete pre-submission build is covered in section 6.
 
----
+### 1. Manual Validation (Primary Workflow)
 
-## 📦 5. Asset & Resource Preparation / Syncing
+Choose one of the startup methods below; the program builds automatically. Because `ZzzOd.Gui` requires administrator privileges, run the IDE or PowerShell as administrator.
 
-The repository includes common static crops and configuration templates:
-- **Static Assets**: Located in `zzzod-dotnet/assets/` (excluding runtime-downloaded models in `assets/models/` and dynamic backgrounds).
-- **Configuration Baselines**: Located in `zzzod-dotnet/config/` (such as `*.sample.yml` and `*.merged.yml`; local instance configurations like `config/00` are ignored by `.gitignore`).
+After the main window opens, trigger the affected feature, confirm that the result and logs match expectations, and then stop the program. See section 4.2 when automated tests are needed.
 
-To sync the latest template images, patrol routes, or configuration baselines from the zzzod main repository, run the following PowerShell command from the `zzzod-dotnet` root directory:
+#### 1.1 Start from the Command Line
+
+Run the following command from the `zzzod-dotnet` root in an administrator PowerShell window:
 
 ```powershell
-# Replace <zzzod_main_repo_path> with your actual local path to the zzzod main repo
-robocopy "<zzzod_main_repo_path>\assets" "assets" /MIR /XD models .install uv_cache /XF version_poster.webp static_background.webp dynamic_background.webm official_dynamic.webm remote_banner.webp /NP /NFL /NDL
+dotnet run --project .\src\ZzzOd.Gui\ZzzOd.Gui.csproj --configuration Debug
 ```
 
----
+The application is ready when the main window appears. Close the window to stop it.
 
-## 🔍 6. Runtime Logging & Diagnostics
+#### 1.2 Start and Debug with VS Code
 
-If an issue occurs during execution, inspect the log files in `.log/`:
-- **`zzz-app-host.log`**: Main host logs recording state transitions, node execution results, vision matching details, and execution timing.
-- **`zzz-gui-startup-error.log`**: UI startup crashes or unhandled exceptions.
+VS Code requires C# Dev Kit. On the first launch, select the C# debugger and the `ZzzOd.Gui` startup configuration.
 
-> 💡 **Tip**: You can add logging statements in your C# code such as `_logger.LogInformation("Detected state: {State}", state);` to observe behavior in real time.
+<details>
+<summary>Show VS Code startup steps</summary>
 
----
+**First-time setup**
 
-## 🧪 7. Testing & Targeted Regression
+1. Install [Visual Studio Code](https://code.visualstudio.com/).
+2. Install `C# Dev Kit` from the Extensions view.
+3. Close all VS Code windows.
+4. Start VS Code as administrator.
+5. Select `File -> Open Folder` and open the cloned `zzzod-dotnet` directory.
+6. Wait for C# Dev Kit to load the projects and restore dependencies.
 
-Before submitting code, run tests to verify that existing functionality remains intact:
+Open the complete `zzzod-dotnet` folder rather than double-clicking `ZzzOd.slnx`. Seeing XML after opening `ZzzOd.slnx` directly is normal; it is a solution manifest, not the application entry point.
 
-```bash
-# 1. Run tests for a specific class or module
-dotnet test --filter "ClassName=ZzzOd.GameLogic.Tests.AppHost.RealConfigFoundationTests"
+**First launch**
 
-# 2. Run basic automated test suites (automatically excludes live-game E2E tests)
-dotnet test --filter "Category!=E2E"
+1. Open `src/ZzzOd.Gui/Program.cs` from the Explorer.
+2. Press `F5`.
+3. If prompted to select a debugger, choose `C#`.
+4. If prompted to select a startup configuration, choose the item containing `C#: ZzzOd.Gui`.
+5. Wait for the build to finish and the ZZZ OD window to appear.
+
+The project reads `src/ZzzOd.Gui/Properties/launchSettings.json` automatically. You do not need to create `.vscode/launch.json` manually.
+
+The GUI can be used normally for manual validation without setting a breakpoint.
+
+**Later manual validation**
+
+1. Save the current changes.
+2. If the program is running, press `Shift + F5` to stop it.
+3. Press `F5` to start the modified program.
+4. Trigger the changed behavior in the GUI.
+5. Press `Shift + F5` after validation.
+
+**Common issues**
+
+| Symptom | Resolution |
+| --- | --- |
+| Startup fails with `Access denied` | Close VS Code and restart it as administrator |
+| Pressing `F5` prompts for an XML extension | Cancel the prompt, open `src/ZzzOd.Gui/Program.cs`, and press `F5` again |
+| `ZzzOd.Gui` is missing from the startup list | Confirm that C# Dev Kit is installed and wait for project loading to finish |
+| Build fails with `MSB3021` or `MSB3027` | Press `Shift + F5` to stop the running GUI, then retry |
+
+</details>
+
+#### 1.3 Start and Debug with Visual Studio or Rider
+
+These IDEs do not require C# Dev Kit or the VS Code debugger-selection steps. Start Visual Studio or Rider as administrator, open `zzzod-dotnet/ZzzOd.slnx`, set `ZzzOd.Gui` as the startup project, and start it with the Debug configuration.
+
+#### 1.4 Debug with an IDE (Optional)
+
+IDEs such as VS Code with C# Dev Kit, Visual Studio, and Rider support breakpoint debugging. Breakpoints are not required for startup or manual validation; use them only to pause execution, inspect variables, or trace control flow.
+
+<details>
+<summary>Show IDE breakpoint debugging steps</summary>
+
+**Common workflow**
+
+1. Set a breakpoint on an executable line you want to inspect.
+2. Start `ZzzOd.Gui` with the IDE's Debug mode.
+3. Trigger the relevant feature and wait for the breakpoint to be hit.
+4. Inspect variables, branches, and the call stack, then step or continue as needed.
+5. Stop debugging after locating the cause.
+
+**Default VS Code shortcuts**
+
+| Action | Shortcut |
+| --- | --- |
+| Start or continue debugging | `F5` |
+| Toggle a breakpoint | `F9` |
+| Step over | `F10` |
+| Step into | `F11` |
+| Stop debugging | `Shift + F5` |
+
+Visual Studio and Rider shortcuts may vary by keymap. Their Debug menus and toolbars provide the same operations.
+
+**Common breakpoint locations**
+
+| Scenario | Suggested entry | Purpose |
+| --- | --- | --- |
+| Routine task flow | Matching `*AppFlow.cs` and `*Operation.cs` under `src/ZzzOd.GameLogic/ZzzOd.GameLogic.Application.*/` | Observe startup, state checks, and branches |
+| Shared application entry | `ExecuteAsync` in `src/ZzzOd.GameLogic/ZzzOd.GameLogic.Application/ZApplication.cs` | Observe application lifecycle and results |
+| Auto battle | `src/ZzzOd.GameLogic/ZzzOd.GameLogic.AutoBattle/AutoBattleContext.cs` | Observe combat state and input decisions |
+| Dodge and agent state | `src/ZzzOd.GameLogic/ZzzOd.GameLogic.AutoBattle/AgentStateChecker.cs` | Observe agent and dodge state |
+| GUI state and configuration | Matching page model under `src/ZzzOd.Gui/PageModels/` | Observe UI state and configuration access |
+| GUI control events | Matching view under `src/ZzzOd.Gui/Views/` | Observe control events |
+| OCR | `../od-dotnet/src/OneDragon.Core/Ocr/` | Observe region extraction and recognition results |
+| Windows input | `../od-dotnet/src/OneDragon.Core.Windows/Input/` | Observe keyboard, mouse, or controller input |
+
+Set breakpoints on executable statements rather than blank lines or braces. Stepping through input-control code may immediately send keyboard, mouse, or controller input to the game.
+
+</details>
+
+### 2. Automated Tests (Run as Needed)
+
+Run relevant tests when changing business logic, shared components, or code that already has test coverage. Documentation-only changes that do not affect behavior can skip this section. Automated tests repeatedly verify results; breakpoints help locate runtime causes, so they serve different purposes.
+
+<details>
+<summary>Show automated test guidance and commands</summary>
+
+Prefer the test class closest to the changed module and feature instead of running every test.
+
+| Changed code | Recommended test directory |
+| --- | --- |
+| `src/ZzzOd.GameLogic/ZzzOd.GameLogic.Application.*` | `tests/ZzzOd.GameLogic.Tests/ZzzOd.GameLogic.Tests.Application/` |
+| `src/ZzzOd.GameLogic/ZzzOd.GameLogic.AutoBattle/` | `tests/ZzzOd.GameLogic.Tests/ZzzOd.GameLogic.Tests.AutoBattle/` |
+| `src/ZzzOd.GameLogic/ZzzOd.GameLogic.Operations.*` | `tests/ZzzOd.GameLogic.Tests/ZzzOd.GameLogic.Tests.Operations/` |
+| `src/ZzzOd.GameLogic/ZzzOd.GameLogic.Const/`, `src/ZzzOd.GameLogic/ZzzOd.GameLogic.Config/`, or `src/ZzzOd.GameLogic/ZzzOd.GameLogic.GameData/` | Matching `tests/ZzzOd.GameLogic.Tests/ZzzOd.GameLogic.Tests.Const/`, `tests/ZzzOd.GameLogic.Tests/ZzzOd.GameLogic.Tests.Config/`, or `tests/ZzzOd.GameLogic.Tests/ZzzOd.GameLogic.Tests.GameData/` directory |
+| `src/ZzzOd.AppHost/` or `src/ZzzOd.Gui/` | `tests/ZzzOd.GameLogic.Tests/ZzzOd.GameLogic.Tests.AppHost/` |
+
+The following example runs `GameConstTests` for the `ZzzOd.GameLogic.Const` module. It checks contracts such as window titles, resource paths, and application IDs. Replace the filter with the test class matching your change.
+
+```powershell
+dotnet test .\tests\ZzzOd.GameLogic.Tests\ZzzOd.GameLogic.Tests.csproj `
+  --configuration Debug `
+  --filter "FullyQualifiedName~ZzzOd.GameLogic.Tests.Const.GameConstTests"
 ```
 
----
+New contributors should not run the complete test suite by default. Some tests still require additional workspace configuration or a real runtime environment and may fail in the standard dual-repository layout even when `Category=E2E` tests are excluded.
 
-## 🤝 8. Submitting a Pull Request
+</details>
 
-1. Fork this repository and create a feature branch from `master` (e.g., `feature/new-agent-rotation`).
-2. Verify that `dotnet build` succeeds and test/debug your changes manually.
-3. Submit a PR describing your change, implementation approach, and verification results.
+## 5. Troubleshoot Problems
 
-Issues and Pull Requests are always welcome. Thank you for supporting the project.
+| Symptom | Resolution |
+| --- | --- |
+| Startup fails with `Access denied` | Close the terminal and restart PowerShell as administrator |
+| The build cannot find an `od-dotnet` project | Confirm that both repositories are siblings and their directory names have not changed |
+| Build fails with `MSB3021` or `MSB3027` | Close the running ZZZ OD process and retry |
+| The GUI does not open or exits during startup | Check terminal output and the log files below |
+
+After the application enters its startup flow, logs are written under `.log/` in the repository root.
+
+- `zzz-app-host.log` records host startup, task state, node execution, recognition results, and timing.
+- `zzz-gui-startup-error.log` records unhandled exceptions during GUI startup.
+- `zzz-gui-unhandled.log` records unhandled exceptions while the GUI is running.
+
+If `.log/` does not exist, the application may not have entered its own startup flow. Check build and startup output in the terminal first.
+
+For temporary diagnostics, inject `ILogger<T>` and write structured logs, for example `_logger.LogInformation("Detected state: {State}", state)`.
+
+## 6. Submit Changes
+
+1. Fork the repository if you do not have write access.
+2. Create a focused branch from `master`.
+3. Change and commit only files required for the current issue.
+4. For program-code changes, run `dotnet build` from the `zzzod-dotnet` root, run relevant tests, and manually validate the affected scenario.
+5. Use a Conventional Commits message, for example `docs: improve the contribution and debugging guides`.
+6. In the PR, describe the issue, changes, verification results, and any remaining risk.
+
+Issues and Pull Requests are welcome. Thank you for supporting the project.
