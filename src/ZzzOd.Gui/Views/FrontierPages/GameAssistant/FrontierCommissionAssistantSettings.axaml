@@ -6,7 +6,7 @@
              x:DataType="local:ZzzCommissionAssistantSettingsViewModel">
   <UserControl.Styles>
     <Style Selector="fa|FASettingsExpander">
-      <Setter Property="Height" Value="48" />
+      <Setter Property="MinHeight" Value="48" />
     </Style>
   </UserControl.Styles>
 
@@ -28,7 +28,6 @@
             </fa:FASettingsExpander.IconSource>
             <fa:FASettingsExpander.Footer>
               <Button Content="点此查看指南"
-                      Width="88"
                       Click="OnGuideClicked" />
             </fa:FASettingsExpander.Footer>
           </fa:FASettingsExpander>
@@ -71,7 +70,7 @@
             </fa:FASettingsExpander.IconSource>
             <fa:FASettingsExpander.Footer>
               <fa:FAComboBox x:Name="CommissionDodgeCombo"
-                             Width="72"
+                             MinWidth="72"
                              ItemsSource="{Binding DodgeOptions}"
                              SelectedItem="{Binding SelectedDodgeConfig, Mode=TwoWay}"
                              IsEnabled="{Binding ConfigValuesAvailable}" />
@@ -83,7 +82,7 @@
             </fa:FASettingsExpander.IconSource>
             <fa:FASettingsExpander.Footer>
               <fa:FAComboBox x:Name="CommissionAutoBattleCombo"
-                             Width="114"
+                             MinWidth="114"
                              ItemsSource="{Binding AutoBattleOptions}"
                              SelectedItem="{Binding SelectedAutoBattleConfig, Mode=TwoWay}"
                              IsEnabled="{Binding ConfigValuesAvailable}" />
@@ -112,7 +111,7 @@
             </fa:FASettingsExpander.IconSource>
             <fa:FASettingsExpander.Footer>
               <fa:FAComboBox x:Name="DialogOptionCombo"
-                             Width="100"
+                             MinWidth="100"
                              ItemsSource="{Binding DialogOptions}"
                              SelectedItem="{Binding DialogOption, Mode=TwoWay}"
                              IsEnabled="{Binding ConfigValuesAvailable}" />
@@ -124,7 +123,7 @@
             </fa:FASettingsExpander.IconSource>
             <fa:FASettingsExpander.Footer>
               <fa:FAComboBox x:Name="StoryModeCombo"
-                             Width="100"
+                             MinWidth="100"
                              ItemsSource="{Binding StoryModes}"
                              SelectedItem="{Binding StoryMode, Mode=TwoWay}"
                              IsEnabled="{Binding ConfigValuesAvailable}" />

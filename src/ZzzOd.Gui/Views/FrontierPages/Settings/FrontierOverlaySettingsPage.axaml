@@ -98,12 +98,12 @@
         </fa:FASettingsExpanderItem>
         <fa:FASettingsExpanderItem Content="视觉层 X 缩放">
           <fa:FASettingsExpanderItem.Footer>
-            <fa:FANumberBox x:Name="VisionScaleXNumber" Width="180" Minimum="0.5" Maximum="1.5" SmallChange="0.01" Value="{Binding VisionScaleX, Mode=TwoWay}" />
+            <fa:FANumberBox x:Name="VisionScaleXNumber" Width="180" Minimum="0.5" Maximum="1.5" SmallChange="0.01" SimpleNumberFormat="F2" Value="{Binding VisionScaleX, Mode=TwoWay}" />
           </fa:FASettingsExpanderItem.Footer>
         </fa:FASettingsExpanderItem>
         <fa:FASettingsExpanderItem Content="视觉层 Y 缩放">
           <fa:FASettingsExpanderItem.Footer>
-            <fa:FANumberBox x:Name="VisionScaleYNumber" Width="180" Minimum="0.5" Maximum="1.5" SmallChange="0.01" Value="{Binding VisionScaleY, Mode=TwoWay}" />
+            <fa:FANumberBox x:Name="VisionScaleYNumber" Width="180" Minimum="0.5" Maximum="1.5" SmallChange="0.01" SimpleNumberFormat="F2" Value="{Binding VisionScaleY, Mode=TwoWay}" />
           </fa:FASettingsExpanderItem.Footer>
         </fa:FASettingsExpanderItem>
       </fa:FASettingsExpander>

@@ -5,6 +5,13 @@
              x:Class="ZzzOd.Gui.Controls.Home.ZzzNoticeCard"
              Width="589"
              Height="150">
+  <UserControl.Styles>
+    <Style Selector="ListBoxItem">
+      <Setter Property="Padding" Value="0" />
+      <Setter Property="MinHeight" Value="0" />
+    </Style>
+  </UserControl.Styles>
+
   <UserControl.Resources>
     <DataTemplate x:Key="NoticePostTemplate"
                   x:DataType="notices:ZzzNoticePost">

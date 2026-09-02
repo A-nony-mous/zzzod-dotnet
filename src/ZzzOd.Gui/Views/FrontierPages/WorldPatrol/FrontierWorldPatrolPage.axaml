@@ -186,6 +186,7 @@
                                   Minimum="0.1"
                                   Maximum="1.0"
                                   SmallChange="0.1"
+                                  SimpleNumberFormat="F2"
                                   Value="0.7" />
                     <Button Content="应用" Click="OnApplyLargeMapIconThresholdClicked" />
                   </StackPanel>

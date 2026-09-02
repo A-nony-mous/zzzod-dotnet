@@ -124,6 +124,7 @@
                               Minimum="0.01"
                               Maximum="0.2"
                               SmallChange="0.01"
+                              SimpleNumberFormat="F2"
                               SpinButtonPlacementMode="Compact"
                               Value="{Binding MouseFlashDuration, Mode=TwoWay}" />
             </Grid>
@@ -236,6 +237,7 @@
                               Minimum="0"
                               Maximum="10"
                               SmallChange="0.01"
+                              SimpleNumberFormat="F2"
                               SpinButtonPlacementMode="Compact"
                               Value="{Binding GamepadKeyPressTime, Mode=TwoWay}" />
             </Grid>

@@ -31,6 +31,7 @@
                         Minimum="0.01"
                         Maximum="60"
                         SmallChange="0.01"
+                        SimpleNumberFormat="F2"
                         SpinButtonPlacementMode="Compact"
                         Value="{Binding FrequencySecond, Mode=TwoWay}"
                         IsEnabled="{Binding ValuesAvailable}" />
@@ -47,6 +48,7 @@
                         Minimum="0.01"
                         Maximum="3600"
                         SmallChange="0.1"
+                        SimpleNumberFormat="F2"
                         SpinButtonPlacementMode="Compact"
                         Value="{Binding LengthSecond, Mode=TwoWay}"
                         IsEnabled="{Binding ValuesAvailable}" />
